@@ -473,6 +473,11 @@
     // place (see `MastodonServer.appSecret`'s own doc) for this to send even if it wanted to. Mirrors
     // how `mastodonRegisterApp` never asks the Rellm server for anything either: this whole flow is
     // between the browser and the Mastodon instance, no Rellm backend involved either way.
+    // Returns `{ accessToken, refreshToken }` -- unlike the exchange itself, `refresh_token` isn't
+    // guaranteed present (a Mastodon instance can omit it, e.g. if it's configured to issue
+    // never-expiring tokens to third-party apps), so `refreshToken` may come back `null`; Elm's own
+    // `mastodonLoginResultDecoder` treats that the same as "no refresh token available" -- this
+    // account just won't self-heal past its access token's own (possibly infinite) lifetime.
     function mastodonExchangeCode(instanceHost, clientId, code, codeVerifier, redirectUri) {
       var body = new URLSearchParams();
       body.set("client_id", clientId);
@@ -486,7 +491,7 @@
           return resp.json();
         })
         .then(function (token) {
-          return token.access_token;
+          return { accessToken: token.access_token, refreshToken: token.refresh_token || null };
         });
     }
 
@@ -569,8 +574,17 @@
           // `mastodonExchangeCode`'s own doc on why that's safe with no `client_secret`), so Elm
           // only ever sees a real, usable access token, the same as every other provider's result.
           mastodonExchangeCode(payload.instanceHost, mastodonClientId, e.data.accessToken, mastodonCodeVerifier, redirectUri)
-            .then(function (accessToken) {
-              app.ports.facebookLoginResult.send({ ok: true, value: accessToken });
+            .then(function (tokens) {
+              // `clientId` rides along here too (see `mastodonRegisterApp`'s/the `clientId`
+              // variable's own doc) -- Mastodon's refresh grant needs it again later (just
+              // `client_id` + `refresh_token`, no PKCE/`client_secret`), and it's otherwise only
+              // ever known inside this popup's own closure.
+              app.ports.facebookLoginResult.send({
+                ok: true,
+                value: tokens.accessToken,
+                refreshToken: tokens.refreshToken,
+                clientId: mastodonClientId
+              });
             })
             .catch(function (err) {
               app.ports.facebookLoginResult.send({ ok: false, value: err.message || "Couldn't finish connecting." });

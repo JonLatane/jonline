@@ -49,7 +49,7 @@ import Proto.Rellm.CustomNavigationTab.Icon as ProtoIcon
 import Proto.Rellm.CustomNavigationTab.Target as ProtoTarget
 import Proto.Rellm.NavigationTab exposing (NavigationTab(..))
 import Shared
-import Shared.AccountsPanel as AccountsPanel
+import Shared.AccountsPanel.RellmServers as RellmServers exposing (RellmServer)
 import UI.Classes exposing (classes, hostnameToCSSClass)
 
 
@@ -67,7 +67,7 @@ type CustomTabTarget
 
 
 {-| Elm-land mirror of `CustomNavigationTab`'s `icon` `oneof` -- an emoji glyph, or a `Media` id
-(rendered via `AccountsPanel.mediaUrl`, see `iconView`).
+(rendered via `RellmServers.mediaUrl`, see `iconView`).
 -}
 type CustomTabIcon
     = EmojiIcon String
@@ -514,18 +514,18 @@ serif-italic look `UI.aboutLink`'s own hard-coded `.info-button` class gives its
 default About tab's glyph -- but once a tab's rendered generically through here, whether that's
 `ABOUTTAB` isn't available to key off of the way it is there, so this keys off the glyph itself
 instead, which is the one thing still true either way). A `MediaIcon` renders an `<img>` resolved
-against `server`'s own media (via `AccountsPanel.mediaUrl`, the same helper the server logo/avatar
+against `server`'s own media (via `RellmServers.mediaUrl`, the same helper the server logo/avatar
 pickers use), falling back to a placeholder glyph if that id doesn't resolve to a URL (e.g. a media
 item deleted out from under a still-configured tab).
 -}
-iconView : AccountsPanel.RellmServer -> CustomTabIcon -> Html msg
+iconView : RellmServer -> CustomTabIcon -> Html msg
 iconView server icon =
     case icon of
         EmojiIcon emoji ->
             span [ attribute "data-glyph" emoji ] [ text emoji ]
 
         MediaIcon mediaId ->
-            case AccountsPanel.mediaUrl server mediaId of
+            case RellmServers.mediaUrl server mediaId of
                 Just url ->
                     img [ Html.Attributes.class "custom-nav-tab-icon-image", src url, alt "" ] []
 
@@ -552,7 +552,7 @@ visitor who lands on plain `/events` (an old link, a bookmark, `Gen.Route.routes
 should still see the "Events" tab (now living at `/gigs`) highlighted as current, not dark. Not
 relevant for `TargetPost`/`TargetProfile`, whose only route *is* their own `path` either way.
 -}
-navLinkView : Shared.Model -> Route -> AccountsPanel.RellmServer -> CustomTab -> Html msg
+navLinkView : Shared.Model -> Route -> RellmServer -> CustomTab -> Html msg
 navLinkView shared currentRoute server tab =
     let
         route : Route

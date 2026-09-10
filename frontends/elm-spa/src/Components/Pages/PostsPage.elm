@@ -1,5 +1,6 @@
 module Components.Pages.PostsPage exposing
-    ( Model
+    ( FeedSource(..)
+    , Model
     , Msg
     , fromShared
     , init
@@ -44,6 +45,9 @@ import Proto.Rellm.PostContext exposing (PostContext(..))
 import Set exposing (Set)
 import Shared
 import Shared.AccountsPanel as AccountsPanel
+import Shared.AccountsPanel.BlueskyAccounts as BlueskyAccounts exposing (BlueskyAccount)
+import Shared.AccountsPanel.RellmAccounts as RellmAccounts exposing (RellmAccount)
+import Shared.AccountsPanel.RellmServers as RellmServers exposing (RellmServer)
 import Shared.Breadcrumbs as Breadcrumbs
 import Shared.Conversions as Conversions
 import Shared.CreateNewPanel as CreateNewPanel
@@ -69,6 +73,13 @@ type alias Model =
     { postsByServer : Dict String ServerFeed
     , postAnimations : Dict String PostAnimation
     , author : Maybe ( String, User )
+
+    -- Set only by `Components.Pages.MastodonUserProfilePage`/`BlueskyUserProfilePage`'s own embedded
+    -- copy, to a `MastodonAccountFeed`/`BlueskyAuthorFeed` naming the one profile being viewed --
+    -- see `relevantFeedSources`'s own doc on why this can't just reuse `author` (which is typed to a
+    -- real Rellm `Proto.Rellm.User`, and whose own author-scoping is deliberately Rellm-only, see
+    -- `relevantServers`). `Nothing` for every other caller.
+    , profileFeedSource : Maybe FeedSource
 
     -- `True` for embedded copies of this model (`Pages.Home_`,
     -- `Components.Pages.UserProfilePage`, passed via `init`'s own
@@ -207,7 +218,7 @@ type alias ServerFeed =
 
 
 {-| One source `postsByServer` can hold a feed for -- a real Rellm server (federating in the usual
-way, `AccountsPanel.RellmServer`), or a Mastodon instance/Bluesky account translated client-side (see
+way, `RellmServer`), or a Mastodon instance/Bluesky account translated client-side (see
 `Shared.Federation.Mastodon`/`Bluesky`). Unifies what used to be two entirely separate
 fetch-and-store paths (`postsByServer`/`GotServerPosts`/`fetchNewServers`/`refetchServers` vs.
 `federatedPosts`/`GotFederatedPosts`/`fetchFederatedPosts`) into one, since both are ultimately
@@ -216,14 +227,23 @@ they just reach different APIs, with different capabilities, to do it. See `feed
 `feedSourceAccountId`/`fetchFeedSource` for where the three cases actually diverge.
 -}
 type FeedSource
-    = RellmServer AccountsPanel.RellmServer
+    = RellmServer RellmServer
     | MastodonInstance String
-    | BlueskyFeed AccountsPanel.BlueskyAccount
+    | BlueskyFeed BlueskyAccount
+    | MastodonAccountFeed { instanceHost : String, accountId : String, username : String }
+    | BlueskyAuthorFeed { handle : String }
 
 
 {-| `postsByServer`'s key for a given `FeedSource` -- a real server's own `frontendHost`, or a
 synthetic `"mastodon:"`/`"bluesky:"`-prefixed key that can never collide with one, mirroring
 `Shared.Federation.Mastodon`/`Bluesky`'s own `Post.id` namespacing for the same reason.
+`MastodonAccountFeed`/`BlueskyAuthorFeed` deliberately reuse the exact same `"mastodon:" ++
+instanceHost`/`"bluesky:" ++ handle` shapes `MastodonInstance`/`BlueskyFeed` already use (rather than
+some third, profile-specific prefix): the key doubles as every card's own `postServerHost` (see
+`postCardView`), and clicking through to one of these posts individually needs to build an href
+`Components.Users.parseFederatedUserId`/`Components.Posts.parseFederatedPostId` can actually parse
+back -- both only ever look at the `"mastodon:"`/`"bluesky:"` prefix itself, so reusing it here is
+what makes that round-trip work, not an accident.
 -}
 feedSourceKey : FeedSource -> String
 feedSourceKey source =
@@ -236,6 +256,12 @@ feedSourceKey source =
 
         BlueskyFeed account ->
             "bluesky:" ++ account.handle
+
+        MastodonAccountFeed ref ->
+            "mastodon:" ++ ref.instanceHost
+
+        BlueskyAuthorFeed ref ->
+            "bluesky:" ++ ref.handle
 
 
 {-| The acting credential a `FeedSource`'s feed is fetched with, if any -- a real server's enabled
@@ -252,13 +278,19 @@ feedSourceAccountId : Shared.Model -> FeedSource -> Maybe String
 feedSourceAccountId shared source =
     case source of
         RellmServer server ->
-            AccountsPanel.enabledAccountForServer shared.accounts.accounts server.frontendHost
-                |> Maybe.map AccountsPanel.accountId
+            RellmAccounts.enabledRellmAccountForServer shared.accounts.accounts server.frontendHost
+                |> Maybe.map RellmAccounts.rellmAccountId
 
         MastodonInstance _ ->
             Nothing
 
         BlueskyFeed _ ->
+            Nothing
+
+        MastodonAccountFeed _ ->
+            Nothing
+
+        BlueskyAuthorFeed _ ->
             Nothing
 
 
@@ -269,7 +301,7 @@ branch), so there's nothing lost by discarding the distinction.
 -}
 type FeedResult
     = FeedLoaded (List Post) (Maybe AccountsPanel.Msg)
-    | FeedFailed
+    | FeedFailed (Maybe AccountsPanel.Msg)
 
 
 fromServerResult : Result Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Rellm.GetPostsResponse ) -> FeedResult
@@ -279,7 +311,7 @@ fromServerResult result =
             FeedLoaded response.posts maybeAccountsPanelMsg
 
         Err _ ->
-            FeedFailed
+            FeedFailed Nothing
 
 
 fromFederatedResult : Result Http.Error (List Post) -> FeedResult
@@ -289,7 +321,38 @@ fromFederatedResult result =
             FeedLoaded posts Nothing
 
         Err _ ->
+            FeedFailed Nothing
+
+
+{-| `BlueskyFeed`'s own `FeedResult` conversion -- unlike `fromFederatedResult`, this needs `account`
+(the credential the request was fired with) alongside the raw `Result`, since
+`BlueskyAccounts.performWithBlueskyAccount` may have silently rotated its tokens (a successful
+refresh-and-retry, see that function's own doc) or exhausted its retry entirely (a `needsReauth`-worthy
+failure, see `BlueskyAccounts.isReauthError`) -- either way something needs to reach
+`Shared.AccountsPanel`'s own persisted `blueskyAccounts`, which this page has no direct write access
+to. Piggybacks on the same `Maybe AccountsPanel.Msg` channel `fromServerResult` already uses for a
+Rellm server's own token refresh, so `GotFeedPosts`'s handling doesn't need a federated-specific case.
+-}
+fromBlueskyResult : BlueskyAccount -> Result Http.Error ( BlueskyAccount, List Post ) -> FeedResult
+fromBlueskyResult account result =
+    case result of
+        Ok ( refreshedAccount, posts ) ->
+            FeedLoaded posts
+                (if refreshedAccount.accessToken == account.accessToken then
+                    Nothing
+
+                 else
+                    Just (AccountsPanel.BlueskyAccountRefreshed refreshedAccount)
+                )
+
+        Err err ->
             FeedFailed
+                (if BlueskyAccounts.isReauthError err then
+                    Just (AccountsPanel.MarkBlueskyAccountNeedsReauth account.handle)
+
+                 else
+                    Nothing
+                )
 
 
 {-| A post's fade in/out state, keyed in `postAnimations` by `postAnimationKey`
@@ -332,7 +395,7 @@ heading (see `view`) -- `Pages.Home_` passes `Nothing`,
 already-resolved profile `User` paired with the host it was resolved from
 (`Components.Users.Resolver`'s own `targetHost`, resolved before ever calling
 this, so this module never needs to fetch the `User` itself -- it only needs
-the host alongside it to look up that server's `AccountsPanel.RellmServer`/signed-in
+the host alongside it to look up that server's `RellmServer`/signed-in
 `Account` for `authorHeadingView`'s avatar).
 
 `navKey`/`path`, from the calling page's own `Request`, are what let
@@ -352,9 +415,14 @@ reproduces the same search/cutoff.
 `availableSyncDestinations` seeds `Model.availableSyncDestinations` directly -- `Nothing` for
 every caller except `Components.Pages.UserProfilePage`, which passes `Just user.syncDestinations`.
 Mirrors `Components.Pages.EventsPage.init`'s own trailing param exactly.
+
+`profileFeedSource` seeds `Model.profileFeedSource` directly -- `Nothing` for every caller except
+`Components.Pages.MastodonUserProfilePage`/`BlueskyUserProfilePage`, which pass `Just` a
+`MastodonAccountFeed`/`BlueskyAuthorFeed` naming the one profile being viewed. See that field's own
+doc for why this couldn't just reuse `author` instead.
 -}
-init : Shared.Model -> Maybe ( String, User ) -> Browser.Navigation.Key -> String -> Dict String String -> Bool -> Maybe (List SyncDestination) -> ( Model, Effect Msg )
-init shared author navKey path query embeddedPage availableSyncDestinations =
+init : Shared.Model -> Maybe ( String, User ) -> Browser.Navigation.Key -> String -> Dict String String -> Bool -> Maybe (List SyncDestination) -> Maybe FeedSource -> ( Model, Effect Msg )
+init shared author navKey path query embeddedPage availableSyncDestinations profileFeedSource =
     let
         ( tab, publishedBefore ) =
             case Dict.get "published_before" query |> Maybe.andThen Conversions.posixFromIsoUtcString of
@@ -369,6 +437,7 @@ init shared author navKey path query embeddedPage availableSyncDestinations =
                 { postsByServer = Dict.empty
                 , postAnimations = Dict.empty
                 , author = author
+                , profileFeedSource = profileFeedSource
                 , embeddedPage = embeddedPage
                 , navKey = navKey
                 , path = path
@@ -508,13 +577,20 @@ updateInner shared msg model =
             , accountEffect
             )
 
-        GotFeedPosts host FeedFailed ->
+        GotFeedPosts host (FeedFailed maybeAccountsPanelMsg) ->
+            let
+                accountEffect : Effect Msg
+                accountEffect =
+                    maybeAccountsPanelMsg
+                        |> Maybe.map (Shared.AccountsPanelMsg >> Effect.fromShared)
+                        |> Maybe.withDefault Effect.none
+            in
             ( { model
                 | postsByServer =
                     Dict.update host (Maybe.map (\feed -> { feed | status = Failed })) model.postsByServer
               }
                 |> syncAnimations
-            , Effect.none
+            , accountEffect
             )
 
         Poll ->
@@ -553,7 +629,7 @@ updateInner shared msg model =
                         -- refetch of just `host`'s server), since a successful un-sync changes
                         -- `post.syncDestinations` behind this already-fetched copy's back the same way.
                         Shared.GotPostSyncDestinationDeleteResult host (Ok _) ->
-                            case AccountsPanel.serverForHost shared.accounts.servers host of
+                            case RellmServers.rellmServerForHost shared.accounts.servers host of
                                 Just server ->
                                     refetchFeeds shared model [ RellmServer server ]
 
@@ -701,7 +777,7 @@ updateInner shared msg model =
 
                 maybeAccountServer : ( Maybe String, String )
                 maybeAccountServer =
-                    ( AccountsPanel.enabledAccountForServer shared.accounts.accounts host |> Maybe.map .userId, host )
+                    ( RellmAccounts.enabledRellmAccountForServer shared.accounts.accounts host |> Maybe.map .userId, host )
             in
             ( { model | pushStatuses = Dict.insert key Submitting model.pushStatuses }
             , Posts.syncPost shared.accounts maybeAccountServer postId syncDestinationId
@@ -723,7 +799,7 @@ updateInner shared msg model =
                 Ok ( maybeAccountsPanelMsg, _ ) ->
                     let
                         ( refetchedModel, refetchEffect ) =
-                            case AccountsPanel.serverForHost shared.accounts.servers host of
+                            case RellmServers.rellmServerForHost shared.accounts.servers host of
                                 Just server ->
                                     refetchFeeds shared clearedModel [ RellmServer server ]
 
@@ -753,7 +829,7 @@ pushStatusKey postId syncDestinationId =
 {-| The servers this page should ever fetch from: every enabled server for an
 unfiltered feed (`model.author == Nothing`, e.g. `Pages.Home_`), or, once
 `author` restricts the feed to one user, _only_ that user's own resolved
-host -- looked up via `AccountsPanel.serverForHost` (not `enabledServers`),
+host -- looked up via `RellmServers.rellmServerForHost` (not `enabledServers`),
 since a user profile can be resolved, and its posts fetched anonymously,
 from a known server the viewer hasn't toggled "enabled" (or isn't signed
 into at all) -- see `Components.Users.Resolver.fetchTask`, which resolves
@@ -762,11 +838,11 @@ and (especially) `TEXT_SEARCH` would fan out to every other enabled server
 too, e.g. showing `jon@oakcitysocial.com`'s posts on `jon@jonline.io`'s
 own posts page.
 -}
-relevantServers : Shared.Model -> Model -> List AccountsPanel.RellmServer
+relevantServers : Shared.Model -> Model -> List RellmServer
 relevantServers shared model =
     case model.author of
         Just ( host, _ ) ->
-            AccountsPanel.serverForHost shared.accounts.servers host
+            RellmServers.rellmServerForHost shared.accounts.servers host
                 |> Maybe.map List.singleton
                 |> Maybe.withDefault []
 
@@ -788,8 +864,8 @@ customNavPostIds shared frontendHost =
     let
         maybeCustomTabs : Maybe Proto.Rellm.CustomNavigationTabSet
         maybeCustomTabs =
-            AccountsPanel.serverForHost shared.accounts.servers frontendHost
-                |> Maybe.andThen (\server -> (AccountsPanel.configurationOf server).customTabs)
+            RellmServers.rellmServerForHost shared.accounts.servers frontendHost
+                |> Maybe.andThen (\server -> (RellmServers.configurationOf server).customTabs)
 
         tabPostIds : List String
         tabPostIds =
@@ -838,23 +914,35 @@ search/`PostsBeforeDate` aren't a factor either way, on Home or the standalone p
 is never re-triggered by `applySearchChange`/`TabChanged` (see `refetchFeeds`'s own doc), so an
 already-fetched federated post simply keeps showing, unfiltered by whatever search text is active --
 an accepted first-pass limitation on the standalone page already, not a new one introduced here.
+
+`model.profileFeedSource`, when set, overrides everything above outright -- `Components.Pages.MastodonUserProfilePage`/
+`BlueskyUserProfilePage` embed this module purely to show one specific federated profile's own posts
+(a `MastodonAccountFeed`/`BlueskyAuthorFeed`, see `Model.profileFeedSource`'s own doc), which has no
+Rellm server of its own to resolve via `relevantServers` at all -- unlike `model.author`'s Rellm-only
+author-scoping, there's exactly one source to ever fetch here, not "every relevant server plus zero
+federated ones."
 -}
 relevantFeedSources : Shared.Model -> Model -> List FeedSource
 relevantFeedSources shared model =
-    List.map RellmServer (relevantServers shared model)
-        ++ (if model.author /= Nothing then
-                []
+    case model.profileFeedSource of
+        Just source ->
+            [ source ]
 
-            else
-                List.map MastodonInstance (mastodonHostsToFetch shared)
-                    ++ List.map BlueskyFeed (List.filter .enabled shared.accounts.blueskyAccounts)
-           )
+        Nothing ->
+            List.map RellmServer (relevantServers shared model)
+                ++ (if model.author /= Nothing then
+                        []
+
+                    else
+                        List.map MastodonInstance (mastodonHostsToFetch shared)
+                            ++ List.map BlueskyFeed (List.filter .enabled shared.accounts.blueskyAccounts)
+                   )
 
 
 {-| Every Mastodon instance host worth fetching -- both accounts connected via OAuth
 (`mastodonAccounts`, which have no enable/disable flag of their own -- see that field's own doc) and
 instances just being browsed anonymously and currently enabled (`browsedMastodonInstances`, see
-`AccountsPanel.BrowsedMastodonInstance`'s own doc on what disabling one does here) -- deduplicated,
+`BrowsedMastodonInstance`'s own doc on what disabling one does here) -- deduplicated,
 since `Mastodon.fetchPosts` hits the exact same unauthenticated public-timeline endpoint either way
 (see that function's own doc: it never actually uses a `MastodonAccount`'s `accessToken`) -- there's
 nothing a connected account's fetch gets that a browsed one doesn't, so fetching the same host twice
@@ -894,7 +982,7 @@ fetchFeedSource shared model source =
             in
             Posts.fetchPosts
                 shared.accounts
-                ( AccountsPanel.enabledAccountForServer shared.accounts.accounts server.frontendHost |> Maybe.map .userId
+                ( RellmAccounts.enabledRellmAccountForServer shared.accounts.accounts server.frontendHost |> Maybe.map .userId
                 , server.frontendHost
                 )
                 (model.author |> Maybe.map (Tuple.second >> .id))
@@ -914,15 +1002,39 @@ fetchFeedSource shared model source =
                 trimmedSearch : String
                 trimmedSearch =
                     String.trim model.searchText
-            in
-            (if String.isEmpty trimmedSearch then
-                Bluesky.fetchPosts account.accessToken
 
-             else
-                Bluesky.searchPosts account.accessToken trimmedSearch
-            )
+                request : String -> Task.Task Http.Error (List Post)
+                request accessToken =
+                    if String.isEmpty trimmedSearch then
+                        Bluesky.fetchPosts accessToken
+
+                    else
+                        Bluesky.searchPosts accessToken trimmedSearch
+            in
+            BlueskyAccounts.performWithBlueskyAccount account request
+                |> Task.attempt (fromBlueskyResult account >> GotFeedPosts (feedSourceKey source))
+                |> Effect.fromCmd
+
+        MastodonAccountFeed ref ->
+            Mastodon.fetchAccountStatuses ref.instanceHost ref.accountId
                 |> Task.attempt (fromFederatedResult >> GotFeedPosts (feedSourceKey source))
                 |> Effect.fromCmd
+
+        BlueskyAuthorFeed ref ->
+            case shared.accounts.blueskyAccounts of
+                viewerAccount :: _ ->
+                    BlueskyAccounts.performWithBlueskyAccount viewerAccount (\accessToken -> Bluesky.fetchAuthorFeed accessToken ref.handle)
+                        |> Task.attempt (fromBlueskyResult viewerAccount >> GotFeedPosts (feedSourceKey source))
+                        |> Effect.fromCmd
+
+                [] ->
+                    -- No connected Bluesky account to authenticate this request with at all (AT
+                    -- Proto has no anonymous access -- see `Shared.Federation.Bluesky`'s own doc) --
+                    -- `Components.Pages.BlueskyUserProfilePage.init` already refuses to even mount
+                    -- this `FeedSource` in that case (see its own doc), so this is unreachable in
+                    -- practice; `Effect.none` rather than a synthetic failure since there's no
+                    -- `BlueskyAccount` on hand for `fromBlueskyResult` to attribute one to.
+                    Effect.none
 
 
 {-| Fetches `sourcesToFetch` using the current `model.searchText`/`model.context` (for a `RellmServer`,
@@ -1530,7 +1642,7 @@ onEscape msg =
 filter by (even before that `User` -- already resolved by the caller, see
 `init` -- has actually rendered), upgraded to "Posts | <name>" via
 `Components.Users.ProfileHeading.nameHeader` (with that author's avatar, via
-its resolved-host `AccountsPanel.RellmServer`/signed-in `Account`, if that host is
+its resolved-host `RellmServer`/signed-in `Account`, if that host is
 still a known server -- falling back to `ProfileHeading.usernameHeading`,
 avatar-less, if not) -- absent entirely for `Pages.Home_`'s unfiltered feed
 (`author == Nothing`), which supplies its own "Recent Posts"/"Recent Replies"
@@ -1560,9 +1672,9 @@ authorHeadingView shared maybeAuthor context =
             div [ class "posts-page-heading" ]
                 [ h2 [] [ text headingText ]
                 , a [ href profileUrl, class <| hostnameToCSSClass host ]
-                    [ case AccountsPanel.serverForHost shared.accounts.servers host of
+                    [ case RellmServers.rellmServerForHost shared.accounts.servers host of
                         Just server ->
-                            ProfileHeading.nameHeader server (AccountsPanel.enabledAccountForServer shared.accounts.accounts host) author
+                            ProfileHeading.nameHeader server (RellmAccounts.enabledRellmAccountForServer shared.accounts.accounts host) author
 
                         Nothing ->
                             ProfileHeading.usernameHeading author
@@ -1660,13 +1772,13 @@ postCardView shared showSyncDestinations availableSyncDestinations pushStatuses 
             StarredPanel.toggleStarMsg shared.accounts host displayPost
                 |> Maybe.map (Shared.StarredPanelMsg >> SharedMsg)
 
-        maybeServer : Maybe AccountsPanel.RellmServer
+        maybeServer : Maybe RellmServer
         maybeServer =
-            AccountsPanel.serverForHost shared.accounts.servers host
+            RellmServers.rellmServerForHost shared.accounts.servers host
 
-        maybeAccount : Maybe AccountsPanel.RellmAccount
+        maybeAccount : Maybe RellmAccount
         maybeAccount =
-            AccountsPanel.enabledAccountForServer shared.accounts.accounts host
+            RellmAccounts.enabledRellmAccountForServer shared.accounts.accounts host
 
         onMediaClicked : String -> Msg
         onMediaClicked mediaId =

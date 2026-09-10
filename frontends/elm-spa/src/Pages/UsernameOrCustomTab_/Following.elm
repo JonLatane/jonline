@@ -9,6 +9,11 @@ then handing the resolved `User` to `Components.Pages.UsersPage` (with
 Same reserved-username short-circuit as `Pages.UsernameOrCustomTab_`/`Pages.UsernameOrCustomTab_.Posts`
 -- see their module docs for why.
 
+`host` starting with `"mastodon:"`/`"bluesky:"` (see `Components.Users.parseFederatedUserId`) skips
+the `Resolver` path entirely -- see `Pages.UsernameOrCustomTab_.Followers`'s identical structure/doc,
+one direction over, for why Mastodon still needs one local async resolve step
+(`ResolvingMastodonAccount`) and Bluesky doesn't.
+
 -}
 
 import Components.Pages.UsersPage as UsersPage
@@ -18,10 +23,13 @@ import Effect exposing (Effect)
 import Gen.Params.UsernameOrCustomTab_.Following exposing (Params)
 import Html exposing (p, text)
 import Html.Attributes exposing (class)
+import Http
 import Page
 import Proto.Rellm.UserListingType exposing (UserListingType(..))
 import Request
 import Shared
+import Shared.Federation.Mastodon as Mastodon
+import Task
 import UI
 import View exposing (View)
 
@@ -39,11 +47,13 @@ page shared req =
 type Model
     = Reserved String
     | Resolving Resolver.Model
+    | ResolvingMastodonAccount { instanceHost : String, username : String }
     | Listing UsersPage.Model
 
 
 type Msg
     = ResolverMsg Resolver.Msg
+    | GotMastodonAccount String (Result Http.Error Mastodon.Account)
     | ListingMsg UsersPage.Msg
 
 
@@ -53,13 +63,32 @@ init shared req =
         ( username, targetHost ) =
             Users.parseUserRouteId shared.accounts.mainFrontendHost req.params.usernameOrCustomTab
     in
-    if Users.isReservedUsername username then
-        ( Reserved username, Effect.none )
+    case Users.parseFederatedUserId username targetHost of
+        Just (Users.MastodonUserId mastodonUser) ->
+            ( ResolvingMastodonAccount mastodonUser
+            , Mastodon.lookupAccount mastodonUser.instanceHost mastodonUser.username
+                |> Task.attempt (GotMastodonAccount mastodonUser.instanceHost)
+                |> Effect.fromCmd
+            )
 
-    else
-        Resolver.init shared targetHost (Resolver.ByUsername username)
-            |> Tuple.mapFirst Resolving
-            |> Tuple.mapSecond (Effect.map ResolverMsg)
+        Just (Users.BlueskyUserId { handle }) ->
+            UsersPage.init shared
+                Nothing
+                (Just (UsersPage.BlueskyAccountTarget { handle = handle } UsersPage.FederatedFollowing))
+                req.key
+                req.url.path
+                req.query
+                |> Tuple.mapFirst Listing
+                |> Tuple.mapSecond (Effect.map ListingMsg)
+
+        Nothing ->
+            if Users.isReservedUsername username then
+                ( Reserved username, Effect.none )
+
+            else
+                Resolver.init shared targetHost (Resolver.ByUsername username)
+                    |> Tuple.mapFirst Resolving
+                    |> Tuple.mapSecond (Effect.map ResolverMsg)
 
 
 subscriptions : Model -> Sub Msg
@@ -67,6 +96,9 @@ subscriptions model =
     case model of
         Resolving resolverModel ->
             Sub.map ResolverMsg (Resolver.subscriptions resolverModel)
+
+        ResolvingMastodonAccount _ ->
+            Sub.none
 
         Listing listingModel ->
             Sub.map ListingMsg (UsersPage.subscriptions listingModel)
@@ -87,12 +119,25 @@ update shared req msg model =
                 Resolver.Loaded user ->
                     let
                         ( listingModel, listingEffect ) =
-                            UsersPage.init shared (Just ( newResolver.targetHost, user, FOLLOWING )) req.key req.url.path req.query
+                            UsersPage.init shared (Just ( newResolver.targetHost, user, FOLLOWING )) Nothing req.key req.url.path req.query
                     in
                     ( Listing listingModel, Effect.batch [ Effect.map ResolverMsg resolverEffect, Effect.map ListingMsg listingEffect ] )
 
                 _ ->
                     ( Resolving newResolver, Effect.map ResolverMsg resolverEffect )
+
+        ( GotMastodonAccount instanceHost (Ok account), ResolvingMastodonAccount _ ) ->
+            UsersPage.init shared
+                Nothing
+                (Just (UsersPage.MastodonAccountTarget { instanceHost = instanceHost, accountId = account.id, username = account.username } UsersPage.FederatedFollowing))
+                req.key
+                req.url.path
+                req.query
+                |> Tuple.mapFirst Listing
+                |> Tuple.mapSecond (Effect.map ListingMsg)
+
+        ( GotMastodonAccount _ (Err _), ResolvingMastodonAccount { username } ) ->
+            ( Reserved username, Effect.none )
 
         ( ListingMsg subMsg, Listing listingModel ) ->
             UsersPage.update shared subMsg listingModel
@@ -113,6 +158,11 @@ update shared req msg model =
                 _ ->
                     ( model, Effect.none )
 
+        -- `ResolvingMastodonAccount` has no `Resolver` of its own -- see
+        -- `Pages.UsernameOrCustomTab_.Followers`'s identical catch-all doc.
+        ( ResolverMsg (Resolver.SharedMsg sharedMsg), ResolvingMastodonAccount _ ) ->
+            ( model, Effect.fromShared sharedMsg )
+
         _ ->
             ( model, Effect.none )
 
@@ -129,6 +179,9 @@ view shared req model =
                     p [ class "profile-error" ] [ text ("\"" ++ username ++ "\" isn't a user.") ]
 
                 Resolving _ ->
+                    p [ class "posts-empty" ] [ text "Loading…" ]
+
+                ResolvingMastodonAccount _ ->
                     p [ class "posts-empty" ] [ text "Loading…" ]
 
                 Listing listingModel ->

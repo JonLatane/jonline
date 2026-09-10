@@ -27,7 +27,9 @@ tries those literal static routes first, so this file's `init` never even runs f
 -}
 
 import Browser.Navigation
+import Components.Pages.BlueskyUserProfilePage as BlueskyUserProfilePage
 import Components.Pages.EventsPage as EventsPage
+import Components.Pages.MastodonUserProfilePage as MastodonUserProfilePage
 import Components.Pages.PostOrEventPage as PostOrEventPage
 import Components.Pages.PostPage as PostPage
 import Components.Pages.PostsPage as PostsPage
@@ -45,7 +47,7 @@ import Page
 import Proto.Rellm.NavigationTab exposing (NavigationTab(..))
 import Request
 import Shared
-import Shared.AccountsPanel as AccountsPanel
+import Shared.AccountsPanel.RellmServers as RellmServers
 import UI
 import UI.CustomNav as CustomNav
 import View exposing (View)
@@ -86,6 +88,8 @@ that replaces this page before `view` would otherwise matter.
 type Model
     = Reserved String
     | Profile UserProfilePage.Model
+    | MastodonProfile MastodonUserProfilePage.Model
+    | BlueskyProfile BlueskyUserProfilePage.Model
     | EmbeddedEvents EventsPage.Model
     | EmbeddedPosts PostsPage.Model
     | EmbeddedPeople UsersPage.Model
@@ -105,6 +109,8 @@ identical reasoning for forwarding one incoming `Shared.Msg` to more than one po
 -}
 type Msg
     = ProfileMsg UserProfilePage.Msg
+    | MastodonProfileMsg MastodonUserProfilePage.Msg
+    | BlueskyProfileMsg BlueskyUserProfilePage.Msg
     | EventsMsg EventsPage.Msg
     | PostsMsg PostsPage.Msg
     | PeopleMsg UsersPage.Msg
@@ -123,7 +129,7 @@ init shared req =
 
         Nothing ->
             if Users.startsWithReservedShortUrlCharacter req.params.usernameOrCustomTab then
-                PostOrEventPage.init shared (AccountsPanel.isSecure req) req.params.usernameOrCustomTab req.key
+                PostOrEventPage.init shared (RellmServers.isSecure req) req.params.usernameOrCustomTab req.key
                     |> Tuple.mapFirst EmbeddedPostOrEvent
                     |> Tuple.mapSecond (Effect.map EmbeddedPostOrEventMsg)
 
@@ -133,7 +139,7 @@ init shared req =
 
 {-| `mainFrontendHost`'s own `CustomNavigationTabSet.tabs` entry (if any, and if that server's
 `ServerConfiguration` is even known yet) whose `path` matches `path` exactly -- deliberately built
-off `CustomNav.effectiveTabs (Just customTabs)`, not `AccountsPanel.configurationOf server |> .customTabs
+off `CustomNav.effectiveTabs (Just customTabs)`, not `RellmServers.configurationOf server |> .customTabs
 |> CustomNav.effectiveTabs` directly, so an *unset* `customTabs` (the common case) never falls back to
 `CustomNav.defaultTabs`' own paths here -- those are harmless if matched (see the module doc on why
 they're unreachable anyway), but "no config" should mean "no custom routing," not "pretend the
@@ -141,8 +147,8 @@ defaults were explicitly configured."
 -}
 customTabFor : Shared.Model -> String -> Maybe CustomNav.CustomTab
 customTabFor shared path =
-    AccountsPanel.serverForHost shared.accounts.servers shared.accounts.mainFrontendHost
-        |> Maybe.andThen (\server -> (AccountsPanel.configurationOf server).customTabs)
+    RellmServers.rellmServerForHost shared.accounts.servers shared.accounts.mainFrontendHost
+        |> Maybe.andThen (\server -> (RellmServers.configurationOf server).customTabs)
         |> Maybe.andThen (\customTabs -> CustomNav.effectiveTabs (Just customTabs) |> List.filter (\tab -> tab.path == path) |> List.head)
 
 
@@ -171,17 +177,17 @@ initEmbedded shared req tab =
                 |> Tuple.mapSecond (Effect.map EventsMsg)
 
         CustomNav.TargetTab POSTSTAB ->
-            PostsPage.init shared Nothing req.key req.url.path req.query False Nothing
+            PostsPage.init shared Nothing req.key req.url.path req.query False Nothing Nothing
                 |> Tuple.mapFirst EmbeddedPosts
                 |> Tuple.mapSecond (Effect.map PostsMsg)
 
         CustomNav.TargetTab PEOPLETAB ->
-            UsersPage.init shared Nothing req.key req.url.path req.query
+            UsersPage.init shared Nothing Nothing req.key req.url.path req.query
                 |> Tuple.mapFirst EmbeddedPeople
                 |> Tuple.mapSecond (Effect.map PeopleMsg)
 
         CustomNav.TargetTab ABOUTTAB ->
-            ServerInformationPage.init shared (AccountsPanel.isSecure req) shared.accounts.mainFrontendHost req.key req.url.path req.query
+            ServerInformationPage.init shared (RellmServers.isSecure req) shared.accounts.mainFrontendHost req.key req.url.path req.query
                 |> Tuple.mapFirst EmbeddedAbout
                 |> Tuple.mapSecond (Effect.map AboutMsg)
 
@@ -192,7 +198,7 @@ initEmbedded shared req tab =
             initProfile shared req
 
         CustomNav.TargetPost postId ->
-            PostPage.init shared (AccountsPanel.isSecure req) postId req.key
+            PostPage.init shared (RellmServers.isSecure req) postId req.key
                 |> Tuple.mapFirst EmbeddedPost
                 |> Tuple.mapSecond (Effect.map EmbeddedPostMsg)
 
@@ -201,7 +207,7 @@ initEmbedded shared req tab =
                 ( username, targetHost ) =
                     Users.parseUserRouteId shared.accounts.mainFrontendHost tab.path
             in
-            UserProfilePage.init shared (AccountsPanel.isSecure req) targetHost (Resolver.ByUsername username) req.key req.url.path req.query
+            UserProfilePage.init shared (RellmServers.isSecure req) targetHost (Resolver.ByUsername username) req.key req.url.path req.query
                 |> Tuple.mapFirst EmbeddedProfile
                 |> Tuple.mapSecond (Effect.map EmbeddedProfileMsg)
 
@@ -221,15 +227,27 @@ initProfile shared req =
         ( username, targetHost ) =
             Users.parseUserRouteId shared.accounts.mainFrontendHost req.params.usernameOrCustomTab
     in
-    if Users.isReservedUsername username then
-        ( Reserved username
-        , Effect.none
-        )
+    case Users.parseFederatedUserId username targetHost of
+        Just (Users.MastodonUserId mastodonUser) ->
+            MastodonUserProfilePage.init mastodonUser.instanceHost mastodonUser.username req.key req.url.path req.query
+                |> Tuple.mapFirst MastodonProfile
+                |> Tuple.mapSecond (Effect.map MastodonProfileMsg)
 
-    else
-        UserProfilePage.init shared (AccountsPanel.isSecure req) targetHost (Resolver.ByUsername username) req.key req.url.path req.query
-            |> Tuple.mapFirst Profile
-            |> Tuple.mapSecond (Effect.map ProfileMsg)
+        Just (Users.BlueskyUserId { handle }) ->
+            BlueskyUserProfilePage.init shared handle req.key req.url.path req.query
+                |> Tuple.mapFirst BlueskyProfile
+                |> Tuple.mapSecond (Effect.map BlueskyProfileMsg)
+
+        Nothing ->
+            if Users.isReservedUsername username then
+                ( Reserved username
+                , Effect.none
+                )
+
+            else
+                UserProfilePage.init shared (RellmServers.isSecure req) targetHost (Resolver.ByUsername username) req.key req.url.path req.query
+                    |> Tuple.mapFirst Profile
+                    |> Tuple.mapSecond (Effect.map ProfileMsg)
 
 
 subscriptions : Model -> Sub Msg
@@ -237,6 +255,12 @@ subscriptions model =
     case model of
         Profile subModel ->
             Sub.map ProfileMsg (UserProfilePage.subscriptions subModel)
+
+        MastodonProfile subModel ->
+            Sub.map MastodonProfileMsg (MastodonUserProfilePage.subscriptions subModel)
+
+        BlueskyProfile subModel ->
+            Sub.map BlueskyProfileMsg (BlueskyUserProfilePage.subscriptions subModel)
 
         EmbeddedEvents subModel ->
             Sub.map EventsMsg (EventsPage.subscriptions subModel)
@@ -273,6 +297,16 @@ update shared req msg model =
             UserProfilePage.update shared subMsg subModel
                 |> Tuple.mapFirst Profile
                 |> Tuple.mapSecond (Effect.map ProfileMsg)
+
+        ( MastodonProfileMsg subMsg, MastodonProfile subModel ) ->
+            MastodonUserProfilePage.update shared subMsg subModel
+                |> Tuple.mapFirst MastodonProfile
+                |> Tuple.mapSecond (Effect.map MastodonProfileMsg)
+
+        ( BlueskyProfileMsg subMsg, BlueskyProfile subModel ) ->
+            BlueskyUserProfilePage.update shared subMsg subModel
+                |> Tuple.mapFirst BlueskyProfile
+                |> Tuple.mapSecond (Effect.map BlueskyProfileMsg)
 
         ( EventsMsg subMsg, EmbeddedEvents subModel ) ->
             EventsPage.update shared subMsg subModel
@@ -337,6 +371,21 @@ update shared req msg model =
                         |> Tuple.mapFirst Profile
                         |> Tuple.mapSecond (Effect.map ProfileMsg)
 
+        -- `MastodonProfile`/`BlueskyProfile` don't need the same `customTabFor` re-check `Profile`
+        -- does: `Users.parseFederatedUserId` is a pure function of the route's own params (unlike
+        -- `customTabFor`, which depends on server config that might not have loaded yet at `init`),
+        -- so its result can never change over this page's lifetime -- just forward straight into
+        -- the resolved page's own `fromShared`.
+        ( SharedMsg subMsg, MastodonProfile subModel ) ->
+            MastodonUserProfilePage.update shared (MastodonUserProfilePage.fromShared subMsg) subModel
+                |> Tuple.mapFirst MastodonProfile
+                |> Tuple.mapSecond (Effect.map MastodonProfileMsg)
+
+        ( SharedMsg subMsg, BlueskyProfile subModel ) ->
+            BlueskyUserProfilePage.update shared (BlueskyUserProfilePage.fromShared subMsg) subModel
+                |> Tuple.mapFirst BlueskyProfile
+                |> Tuple.mapSecond (Effect.map BlueskyProfileMsg)
+
         ( SharedMsg subMsg, EmbeddedEvents subModel ) ->
             EventsPage.update shared (EventsPage.fromShared subMsg) subModel
                 |> Tuple.mapFirst EmbeddedEvents
@@ -387,6 +436,12 @@ view shared req model =
                 Profile subModel ->
                     Html.map ProfileMsg (UserProfilePage.view shared subModel)
 
+                MastodonProfile subModel ->
+                    Html.map MastodonProfileMsg (MastodonUserProfilePage.view shared subModel)
+
+                BlueskyProfile subModel ->
+                    Html.map BlueskyProfileMsg (BlueskyUserProfilePage.view shared subModel)
+
                 EmbeddedEvents subModel ->
                     Html.map EventsMsg (EventsPage.view shared True subModel)
 
@@ -433,6 +488,12 @@ titleFor shared req model =
             case model of
                 Profile subModel ->
                     [ UserProfilePage.titleFor subModel ]
+
+                MastodonProfile subModel ->
+                    [ MastodonUserProfilePage.title subModel ]
+
+                BlueskyProfile subModel ->
+                    [ BlueskyUserProfilePage.title subModel ]
 
                 EmbeddedEvents _ ->
                     []

@@ -47,7 +47,8 @@ import Html exposing (Html, a, div, img, span, text)
 import Html.Attributes exposing (alt, attribute, class, src, title)
 import Proto.Rellm exposing (Author)
 import Proto.Rellm.Permission exposing (Permission(..))
-import Shared.AccountsPanel as AccountsPanel
+import Shared.AccountsPanel.RellmAccounts exposing (RellmAccount)
+import Shared.AccountsPanel.RellmServers as RellmServers exposing (RellmServer)
 import UI.Classes exposing (classes)
 
 
@@ -109,7 +110,7 @@ avatar authorName maybeUrl =
             img [ class "post-author-avatar", src url, alt authorName, attribute "loading" "lazy" ] []
 
         Nothing ->
-            div [ classes [ "post-author-avatar", "placeholder" ] ] [ text (AccountsPanel.initialLetter authorName) ]
+            div [ classes [ "post-author-avatar", "placeholder" ] ] [ text (RellmServers.initialLetter authorName) ]
 
 
 {-| An author's avatar + name + Admin/Run Bots badges, linking to their
@@ -121,7 +122,7 @@ link (fine as-is); `postCard`'s needs the "stretched link" dance in its own
 doc comment to keep this independently clickable without nesting an `<a>`
 inside `postCard`'s own enclosing one.
 -}
-link : String -> String -> String -> Maybe AccountsPanel.RellmServer -> Maybe AccountsPanel.RellmAccount -> Maybe Author -> Html msg
+link : String -> String -> String -> Maybe RellmServer -> Maybe RellmAccount -> Maybe Author -> Html msg
 link basePath viewingServerHost hostServerHost maybeServer maybeAccount maybeAuthor =
     let
         authorName : String
@@ -172,15 +173,34 @@ href basePath viewingServerHost hostServerHost maybeAuthor =
                 Users.profileHref basePath
                     viewingServerHost
                     hostServerHost
-                    { userId = author.userId, username = Maybe.withDefault "" author.username }
+                    { userId = author.userId, username = routeUsername hostServerHost (Maybe.withDefault "" author.username) }
             )
+
+
+{-| The bare username `Users.profileHref` needs to round-trip back through `Users.parseFederatedUserId`
+-- `Shared.Federation.Mastodon.toAuthor`'s own `Author.username` is `"username@instanceHost"` (a
+compound *display* string, shown as-is next to a Mastodon post -- see `name` below), not the bare
+route-safe username `withHostSuffix`/`parseUserRouteId` expect (a single `@`, already spent on the
+`@hostServerHost` suffix `profileHref` itself appends): passing the compound string through
+unchanged would produce a route with two `@`s, which `parseUserRouteId`'s own `String.split "@"`
+can't split back apart, so it'd resolve to nothing. Bluesky's `Author.username` (a bare handle, no
+embedded host) needs no such stripping, and any real Rellm `Author` is already unaffected here since
+`hostServerHost` for one never starts with `"mastodon:"`.
+-}
+routeUsername : String -> String -> String
+routeUsername hostServerHost username =
+    if String.startsWith "mastodon:" hostServerHost then
+        String.split "@" username |> List.head |> Maybe.withDefault username
+
+    else
+        username
 
 
 {-| An author's avatar URL -- `Nothing` if `maybeAuthor` is `Nothing`, `server`
 isn't resolved yet (e.g. still connecting), or the author just has no avatar
-set. `server` needs to be the actual resolved `Shared.AccountsPanel.RellmServer` --
+set. `server` needs to be the actual resolved `Shared.RellmServer` --
 building a media URL needs its connection details, not just its hostname (see
-`Shared.AccountsPanel.mediaUrl`).
+`Shared.RellmServers.mediaUrl`).
 
 `author.avatar.url` (see that field's own doc in `protos/media.proto`) is checked first and used
 as-is, with no `server`/`maybeAccount` needed at all -- this is how a Mastodon/Bluesky author's own
@@ -189,7 +209,7 @@ that avatar isn't and never will be Rellm-hosted media) actually shows up in `po
 `replyCard` instead of falling back to the initial-letter placeholder every real `Server`-dependent
 path below would otherwise give a federated author, which has no real `Server` to resolve at all.
 -}
-avatarUrl : Maybe AccountsPanel.RellmServer -> Maybe AccountsPanel.RellmAccount -> Maybe Author -> Maybe String
+avatarUrl : Maybe RellmServer -> Maybe RellmAccount -> Maybe Author -> Maybe String
 avatarUrl maybeServer maybeAccount maybeAuthor =
     case maybeAuthor |> Maybe.andThen .avatar |> Maybe.andThen .url of
         Just externalUrl ->

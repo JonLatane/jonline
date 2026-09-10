@@ -24,6 +24,8 @@ import Proto.Rellm exposing (ServerConfiguration, defaultMediaReference, default
 import Proto.Rellm.WebUserInterface exposing (WebUserInterface(..))
 import Shared
 import Shared.AccountsPanel as AccountsPanel
+import Shared.AccountsPanel.RellmAccounts as RellmAccounts exposing (RellmAccount)
+import Shared.AccountsPanel.RellmServers as RellmServers exposing (RellmServer)
 import Shared.MyMediaPanel as MyMediaPanel
 import Task
 import UI
@@ -120,7 +122,7 @@ subscriptions model =
 -- UPDATE
 
 
-update : Shared.Model -> String -> Maybe AccountsPanel.RellmServer -> Msg -> Model -> ( Model, Effect Msg )
+update : Shared.Model -> String -> Maybe RellmServer -> Msg -> Model -> ( Model, Effect Msg )
 update shared targetHost maybeServer msg model =
     case msg of
         LogoEditClicked ->
@@ -129,7 +131,7 @@ update shared targetHost maybeServer msg model =
                     let
                         squareMediaId : Maybe String
                         squareMediaId =
-                            (AccountsPanel.configurationOf server).serverInfo |> Maybe.andThen .logo |> Maybe.andThen .squareMediaId
+                            (RellmServers.configurationOf server).serverInfo |> Maybe.andThen .logo |> Maybe.andThen .squareMediaId
                     in
                     ( { model
                         | logoEdit =
@@ -194,7 +196,7 @@ update shared targetHost maybeServer msg model =
                     let
                         pending : String
                         pending =
-                            colorArgbFor field (AccountsPanel.configurationOf server)
+                            colorArgbFor field (RellmServers.configurationOf server)
                                 |> Maybe.map ServerTheme.colorMetaFromArgb
                                 |> Maybe.withDefault ServerTheme.neutralColorMeta
                                 |> .color
@@ -373,16 +375,16 @@ setColorEditFor field edit model =
 -- VIEW
 
 
-view : Shared.Model -> AccountsPanel.RellmServer -> Maybe AccountsPanel.RellmAccount -> Model -> Html Msg
+view : Shared.Model -> RellmServer -> Maybe RellmAccount -> Model -> Html Msg
 view shared server maybeAdminAccount model =
     let
         info : Proto.Rellm.ServerInfo
         info =
-            AccountsPanel.serverInfoOf server
+            RellmServers.rellmServerInfoOf server
 
         config : ServerConfiguration
         config =
-            AccountsPanel.configurationOf server
+            RellmServers.configurationOf server
 
         webUi : WebUserInterface
         webUi =
@@ -398,7 +400,7 @@ view shared server maybeAdminAccount model =
             [ h3 [] [ text "Default Web UI" ]
             , case maybeAdminAccount of
                 Just account ->
-                    Html.map SharedMsg (UI.webUiToggleRow (AccountsPanel.accountId account) server.frontendHost webUi)
+                    Html.map SharedMsg (UI.webUiToggleRow (RellmAccounts.rellmAccountId account) server.frontendHost webUi)
 
                 Nothing ->
                     p [] [ text (webUserInterfaceText webUi) ]
@@ -430,7 +432,7 @@ webUserInterfaceText ui =
 has no in-progress `ColorEdit`, or an `<input type="color">` (native, no picker library -- see
 `UI.ServerTheme.argbFromHex`'s own doc) bound to `edit.pending` plus Save/Cancel while being edited.
 -}
-colorEditorRow : ServerColorField -> String -> Maybe AccountsPanel.RellmAccount -> Maybe ColorEdit -> Maybe Int -> Html Msg
+colorEditorRow : ServerColorField -> String -> Maybe RellmAccount -> Maybe ColorEdit -> Maybe Int -> Html Msg
 colorEditorRow field label_ maybeAdminAccount maybeEdit argb =
     case maybeEdit of
         Just edit ->
@@ -630,7 +632,7 @@ The image itself previews `edit.choice` (see `logoPreviewUrl`) rather than `curr
 once editing's started, mirroring `Components.Pages.UserProfilePage.avatarPreviewUrl`'s own
 "preview the pending choice, not the saved value" behavior.
 -}
-logoEditorView : Maybe AccountsPanel.RellmAccount -> Maybe LogoEdit -> AccountsPanel.RellmServer -> Maybe String -> Html Msg
+logoEditorView : Maybe RellmAccount -> Maybe LogoEdit -> RellmServer -> Maybe String -> Html Msg
 logoEditorView maybeAdminAccount maybeEdit server currentSquareMediaId =
     div [ class "server-details-logo" ]
         [ h3 [] [ text "Server Image" ]
@@ -660,7 +662,7 @@ logoEditorView maybeAdminAccount maybeEdit server currentSquareMediaId =
 
             Nothing ->
                 div []
-                    [ case currentSquareMediaId |> Maybe.andThen (AccountsPanel.mediaUrl server) of
+                    [ case currentSquareMediaId |> Maybe.andThen (RellmServers.mediaUrl server) of
                         Just url ->
                             img [ class "server-details-logo-image", src url ] []
 
@@ -682,14 +684,14 @@ logoEditorView maybeAdminAccount maybeEdit server currentSquareMediaId =
 analogous "username" -- `Nothing` just shows the "No server image set." text, same as the
 non-editing case).
 -}
-logoPreviewUrl : AccountsPanel.RellmServer -> LogoChoice -> Maybe String -> Maybe String
+logoPreviewUrl : RellmServer -> LogoChoice -> Maybe String -> Maybe String
 logoPreviewUrl server choice currentSquareMediaId =
     case choice of
         LogoUnchanged ->
-            currentSquareMediaId |> Maybe.andThen (AccountsPanel.mediaUrl server)
+            currentSquareMediaId |> Maybe.andThen (RellmServers.mediaUrl server)
 
         LogoChosen mediaId ->
-            AccountsPanel.mediaUrl server mediaId
+            RellmServers.mediaUrl server mediaId
 
         LogoRemoved ->
             Nothing

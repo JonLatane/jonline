@@ -12,20 +12,21 @@ import Html.Attributes exposing (checked, class, disabled, type_)
 import Html.Events exposing (onClick)
 import Shared
 import Shared.AccountsPanel as AccountsPanel
+import Shared.AccountsPanel.RellmAccounts as RellmAccounts exposing (RellmAccount)
 import UI.Classes exposing (classes)
 
 
 {-| The signed-in, enabled account (if any) on `targetHost`, but only if it actually has `ADMIN` --
 what every tab gates its own Edit buttons/editors on. Renaming (or any other `ConfigureServer`
 mutation) is only possible for a server that's already known, so this only ever matches once the
-page has resolved an `AccountsPanel.RellmServer` for `targetHost` to begin with.
+page has resolved an `RellmServer` for `targetHost` to begin with.
 -}
-adminAccountFor : Shared.Model -> String -> Maybe AccountsPanel.RellmAccount
+adminAccountFor : Shared.Model -> String -> Maybe RellmAccount
 adminAccountFor shared targetHost =
-    AccountsPanel.enabledAccountForServer shared.accounts.accounts targetHost
+    RellmAccounts.enabledRellmAccountForServer shared.accounts.accounts targetHost
         |> Maybe.andThen
             (\account ->
-                if AccountsPanel.isAdmin account then
+                if RellmAccounts.isAdmin account then
                     Just account
 
                 else

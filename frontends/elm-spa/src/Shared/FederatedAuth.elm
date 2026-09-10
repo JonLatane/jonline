@@ -16,7 +16,7 @@ module Shared.FederatedAuth exposing
 
 {-| SSO-style cross-server account hand-off: lets one origin's SPA (e.g.
 `bullcity.social`) hand a different origin's SPA (e.g. `jonline.io`) a fresh
-`Shared.AccountsPanel.AccountAuthTokens` for an already-signed-in account,
+`Shared.RellmAccountAuthTokens` for an already-signed-in account,
 without ever typing that origin's password into `bullcity.social`. See
 `Pages.Auth.To.Key_` (the sending side) and
 `Pages.Auth.From.EncryptedAccountAuthTokens_` (the receiving side).

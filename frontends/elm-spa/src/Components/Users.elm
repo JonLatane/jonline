@@ -1,5 +1,6 @@
 module Components.Users exposing
-    ( allModerations
+    ( FederatedUserId(..)
+    , allModerations
     , allPermissions
     , allowedVisibilities
     , authorAvatarUrl
@@ -13,6 +14,8 @@ module Components.Users exposing
     , fetchUserById
     , fetchUserByUsername
     , fetchUserListing
+    , followersHref
+    , followingHref
     , isReservedUsername
     , mediaReferenceUrl
     , moderationFromText
@@ -20,6 +23,7 @@ module Components.Users exposing
     , moderationPending
     , moderationRejected
     , moderationText
+    , parseFederatedUserId
     , parseUserRouteId
     , permissionFromText
     , permissionText
@@ -29,6 +33,7 @@ module Components.Users exposing
     , updateFollow
     , updateUser
     , userCard
+    , userCardAvatar
     , userIdHref
     , usernameHref
     , visibilityFromText
@@ -37,7 +42,7 @@ module Components.Users exposing
 
 {-| Shared building blocks for displaying `Proto.Rellm.User`s -- the fetch
 helpers both profile routes (`Pages.User.UserId_`, by id; `Pages.UsernameOrCustomTab_`, by
-username) need against a specific `Shared.AccountsPanel.RellmServer`, the
+username) need against a specific `Shared.RellmServer`, the
 `/user/:id[@host]`/`/:username[@host]` route id parsing/linking (mirroring
 `Components.Posts`' `postHref`/`parsePostRouteId` for `/post/:id[@host]`), and
 plain-English labels for a `User`'s `Visibility`/`Moderation`/`Permission`
@@ -56,7 +61,9 @@ import Proto.Rellm.Permission exposing (Permission(..))
 import Proto.Rellm.UserListingType exposing (UserListingType(..))
 import Proto.Rellm.Visibility exposing (Visibility(..))
 import Set exposing (Set)
-import Shared.AccountsPanel as AccountsPanel exposing (performWithAccountServer, performWithOptionalAccountServer, withAccessToken)
+import Shared.AccountsPanel as AccountsPanel exposing (performWithAccountServer, performWithOptionalAccountServer)
+import Shared.AccountsPanel.RellmAccounts exposing (RellmAccount)
+import Shared.AccountsPanel.RellmServers as RellmServers exposing (RellmServer, withAccessToken)
 import Task exposing (Task)
 import UI.Classes exposing (classes, hostnameToCSSClass)
 
@@ -165,7 +172,7 @@ fetchUsers accountsPanelModel maybeAccountServer request =
         maybeAccountServer
         (\server maybeToken ->
             Grpc.new Rellm.getUsers request
-                |> Grpc.setHost (AccountsPanel.serverUrl server)
+                |> Grpc.setHost (RellmServers.rellmServerUrl server)
                 |> withAccessToken maybeToken
                 |> Grpc.toTask
         )
@@ -192,7 +199,7 @@ updateUser accountsPanelModel maybeAccountServer userId updateFn =
         maybeAccountServer
         (\server token ->
             Grpc.new Rellm.getUsers { defaultGetUsersRequest | userId = Just userId }
-                |> Grpc.setHost (AccountsPanel.serverUrl server)
+                |> Grpc.setHost (RellmServers.rellmServerUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
                 |> Task.andThen
@@ -200,7 +207,7 @@ updateUser accountsPanelModel maybeAccountServer userId updateFn =
                         case List.head response.users of
                             Just freshUser ->
                                 Grpc.new Rellm.updateUser (updateFn freshUser)
-                                    |> Grpc.setHost (AccountsPanel.serverUrl server)
+                                    |> Grpc.setHost (RellmServers.rellmServerUrl server)
                                     |> withAccessToken (Just token)
                                     |> Grpc.toTask
 
@@ -227,7 +234,7 @@ federateProfile accountsPanelModel maybeAccountServer target =
         maybeAccountServer
         (\server token ->
             Grpc.new Rellm.federateProfile target
-                |> Grpc.setHost (AccountsPanel.serverUrl server)
+                |> Grpc.setHost (RellmServers.rellmServerUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
         )
@@ -247,7 +254,7 @@ defederateProfile accountsPanelModel maybeAccountServer target =
         maybeAccountServer
         (\server token ->
             Grpc.new Rellm.defederateProfile target
-                |> Grpc.setHost (AccountsPanel.serverUrl server)
+                |> Grpc.setHost (RellmServers.rellmServerUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
         )
@@ -274,7 +281,7 @@ deleteUser accountsPanelModel maybeAccountServer user =
         maybeAccountServer
         (\server token ->
             Grpc.new Rellm.deleteUser user
-                |> Grpc.setHost (AccountsPanel.serverUrl server)
+                |> Grpc.setHost (RellmServers.rellmServerUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
         )
@@ -295,7 +302,7 @@ createFollow accountsPanelModel maybeAccountServer follow =
         maybeAccountServer
         (\server token ->
             Grpc.new Rellm.createFollow follow
-                |> Grpc.setHost (AccountsPanel.serverUrl server)
+                |> Grpc.setHost (RellmServers.rellmServerUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
         )
@@ -316,7 +323,7 @@ updateFollow accountsPanelModel maybeAccountServer follow =
         maybeAccountServer
         (\server token ->
             Grpc.new Rellm.updateFollow follow
-                |> Grpc.setHost (AccountsPanel.serverUrl server)
+                |> Grpc.setHost (RellmServers.rellmServerUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
         )
@@ -337,7 +344,7 @@ deleteFollow accountsPanelModel maybeAccountServer follow =
         maybeAccountServer
         (\server token ->
             Grpc.new Rellm.deleteFollow follow
-                |> Grpc.setHost (AccountsPanel.serverUrl server)
+                |> Grpc.setHost (RellmServers.rellmServerUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
         )
@@ -402,6 +409,24 @@ usernameHref basePath viewingServerHost userServerHost username =
     basePath ++ Gen.Route.toHref (Gen.Route.UsernameOrCustomTab_ { usernameOrCustomTab = withHostSuffix viewingServerHost userServerHost username })
 
 
+{-| The `/:username[@host]/followers` href for a user -- same username-routability caveat as
+`usernameHref` itself (only meaningful for a real, non-reserved username), used directly by
+`Components.Pages.MastodonUserProfilePage`/`BlueskyUserProfilePage` (a federated profile always has a
+real, routable username -- there's no id-based fallback route for one, unlike a Rellm `User`).
+-}
+followersHref : String -> String -> String -> String -> String
+followersHref basePath viewingServerHost userServerHost username =
+    basePath ++ Gen.Route.toHref (Gen.Route.UsernameOrCustomTab___Followers { usernameOrCustomTab = withHostSuffix viewingServerHost userServerHost username })
+
+
+{-| The `/:username[@host]/following` href for a user -- `followersHref`'s own doc, just the other
+direction.
+-}
+followingHref : String -> String -> String -> String -> String
+followingHref basePath viewingServerHost userServerHost username =
+    basePath ++ Gen.Route.toHref (Gen.Route.UsernameOrCustomTab___Following { usernameOrCustomTab = withHostSuffix viewingServerHost userServerHost username })
+
+
 {-| The best available profile link for a user: their `/:username[@host]`
 route if they have one that's actually routable (non-empty, not reserved --
 see `isReservedUsername`), falling back to the always-routable
@@ -439,12 +464,39 @@ parseUserRouteId mainFrontendHost rawId =
             ( rawId, mainFrontendHost )
 
 
+{-| Recognizes a Mastodon/Bluesky profile from `parseUserRouteId`'s own `( username, host )` pair --
+`host` is what actually carries the `"mastodon:"`/`"bluesky:"` tag (see
+`Components.Pages.PostsPage.feedSourceKey`'s own construction, which every federated author link's
+`href` is ultimately built from -- see `Components.Authors.href`), mirroring
+`Components.Posts.parseFederatedPostId` exactly, one level up (a profile instead of a post).
+`Nothing` for a real Rellm user's own `host` (or anything else unrecognized).
+`Components.Pages.MastodonUserProfilePage`/`BlueskyUserProfilePage` are this module's own
+counterparts to `Components.Pages.MastodonPostPage`/`BlueskyPostPage` -- see
+`Pages.UsernameOrCustomTab_.initProfile`/`Pages.User.UserId_.init`, the two callers.
+-}
+type FederatedUserId
+    = MastodonUserId { instanceHost : String, username : String }
+    | BlueskyUserId { handle : String }
+
+
+parseFederatedUserId : String -> String -> Maybe FederatedUserId
+parseFederatedUserId username host =
+    if String.startsWith "mastodon:" host then
+        Just (MastodonUserId { instanceHost = String.dropLeft 9 host, username = username })
+
+    else if String.startsWith "bluesky:" host then
+        Just (BlueskyUserId { handle = username })
+
+    else
+        Nothing
+
+
 
 -- DISPLAY
 
 
 {-| A username display enriched with the user's Real Name, if they have one --
-mirrors `Shared.AccountsPanel.displayName`.
+mirrors `Shared.RellmAccounts.rellmAccountDisplayName`.
 -}
 displayName : User -> String
 displayName user =
@@ -471,9 +523,9 @@ titleName user =
 {-| The URL for a user's avatar, authorized with `maybeAccount`'s access token
 if given -- avatars can be visibility-restricted, so an anonymous request (or
 one from an account that isn't allowed to see it) may still 403 despite this
-returning `Just` a URL. Mirrors `Shared.AccountsPanel.accountAvatarUrl`.
+returning `Just` a URL. Mirrors `Shared.RellmAccounts.rellmAccountAvatarUrl`.
 -}
-avatarUrl : AccountsPanel.RellmServer -> Maybe AccountsPanel.RellmAccount -> User -> Maybe String
+avatarUrl : RellmServer -> Maybe RellmAccount -> User -> Maybe String
 avatarUrl server maybeAccount user =
     mediaReferenceUrl server maybeAccount user.avatar
 
@@ -481,7 +533,7 @@ avatarUrl server maybeAccount user =
 {-| Like `avatarUrl`, but for an `Author` (the smaller, post-embedded version
 of a `User` -- see `Components.Posts.postAuthorHref`) instead of a full `User`.
 -}
-authorAvatarUrl : AccountsPanel.RellmServer -> Maybe AccountsPanel.RellmAccount -> Author -> Maybe String
+authorAvatarUrl : RellmServer -> Maybe RellmAccount -> Author -> Maybe String
 authorAvatarUrl server maybeAccount author =
     mediaReferenceUrl server maybeAccount author.avatar
 
@@ -492,12 +544,12 @@ authorAvatarUrl server maybeAccount author =
 `avatarPreviewUrl`) to preview a newly-picked media item that isn't
 `user.avatar` yet.
 -}
-mediaReferenceUrl : AccountsPanel.RellmServer -> Maybe AccountsPanel.RellmAccount -> Maybe Proto.Rellm.MediaReference -> Maybe String
+mediaReferenceUrl : RellmServer -> Maybe RellmAccount -> Maybe Proto.Rellm.MediaReference -> Maybe String
 mediaReferenceUrl server maybeAccount maybeMedia =
     maybeMedia
         |> Maybe.andThen
             (\media ->
-                AccountsPanel.mediaUrl server media.id
+                RellmServers.mediaUrl server media.id
                     |> Maybe.map
                         (\base ->
                             case maybeAccount of
@@ -528,7 +580,7 @@ needing this function's callers to reach for that module's own "stretched
 link" treatment.
 
 -}
-userCard : String -> String -> AccountsPanel.RellmServer -> Maybe AccountsPanel.RellmAccount -> Html msg -> User -> Html msg
+userCard : String -> String -> RellmServer -> Maybe RellmAccount -> Html msg -> User -> Html msg
 userCard basePath viewingServerHost server maybeAccount followStatusAndButton user =
     a
         [ href (profileHref basePath viewingServerHost server.frontendHost { userId = user.id, username = user.username })
@@ -588,7 +640,7 @@ userCardAvatar name maybeUrl =
             img [ Html.Attributes.class "user-card-avatar", src url, alt name, attribute "loading" "lazy" ] []
 
         Nothing ->
-            div [ classes [ "user-card-avatar", "placeholder" ] ] [ text (AccountsPanel.initialLetter name) ]
+            div [ classes [ "user-card-avatar", "placeholder" ] ] [ text (RellmServers.initialLetter name) ]
 
 
 {-| "N followers · N following" for `userCard` -- either half is dropped

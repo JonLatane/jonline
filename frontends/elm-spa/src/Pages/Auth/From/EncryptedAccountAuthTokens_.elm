@@ -3,7 +3,7 @@ module Pages.Auth.From.EncryptedAccountAuthTokens_ exposing (Model, Msg, page)
 {-| `/auth/from/:encryptedAccountAuthTokens` -- the receiving side of the
 cross-server SSO hand-off (see `Shared.FederatedAuth`): decrypts
 `:encryptedAccountAuthTokens` with this origin's own private key into an
-`AccountsPanel.AccountAuthTokens` (just a server hostname plus a fresh
+`RellmAccountAuthTokens` (just a server hostname plus a fresh
 `refreshToken`/`accessToken` pair -- see that type's own doc), calls
 `GetCurrentUser` against that server to hydrate everything else, then adds the
 resulting account straight to `Shared.AccountsPanel` and navigates on -- no
@@ -29,7 +29,9 @@ import Ports
 import Proto.Rellm exposing (User)
 import Request
 import Shared
-import Shared.AccountsPanel as AccountsPanel exposing (AccountAuthTokens)
+import Shared.AccountsPanel as AccountsPanel
+import Shared.AccountsPanel.RellmAccounts as RellmAccounts exposing (RellmAccount, RellmAccountAuthTokens)
+import Shared.AccountsPanel.RellmServers as RellmServers
 import Shared.FederatedAuth as FederatedAuth
 import Task
 import UI
@@ -60,7 +62,7 @@ type alias Model =
 
 type Msg
     = GotDecryptResult Encode.Value
-    | GotSignInResult AccountAuthTokens (Result Grpc.Error User)
+    | GotSignInResult RellmAccountAuthTokens (Result Grpc.Error User)
     | SharedMsg Shared.Msg
 
 
@@ -100,10 +102,10 @@ update shared req msg model =
         GotDecryptResult value ->
             case FederatedAuth.decryptResult value of
                 Ok tokensJson ->
-                    case Decode.decodeString AccountsPanel.accountAuthTokensDecoder tokensJson of
+                    case Decode.decodeString RellmAccounts.rellmAccountAuthTokensDecoder tokensJson of
                         Ok tokens ->
                             ( { model | status = SigningIn }
-                            , AccountsPanel.resolveFederatedAccountTokens req shared.accounts.servers tokens
+                            , RellmAccounts.resolveFederatedRellmAccountTokens (RellmServers.isSecure req) shared.accounts.servers tokens
                                 |> Task.attempt (GotSignInResult tokens)
                                 |> Effect.fromCmd
                             )
@@ -116,7 +118,7 @@ update shared req msg model =
 
         GotSignInResult tokens (Ok user) ->
             let
-                account : AccountsPanel.RellmAccount
+                account : RellmAccount
                 account =
                     { server = tokens.server
                     , userId = user.id
@@ -128,6 +130,10 @@ update shared req msg model =
                     , permissions = user.permissions
                     , realName = user.realName
                     , needsPassword = False
+
+                    -- Reassigned by `AccountsPanel.FederatedAccountReceived` itself (see that
+                    -- handler's own comment) -- meaningless here either way.
+                    , sortOrder = 0
                     , syncDestinations = user.syncDestinations
                     , syncSources = user.syncSources
                     , availableAiModels = user.availableAiModels

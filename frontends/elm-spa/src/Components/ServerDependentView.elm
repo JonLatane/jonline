@@ -12,7 +12,7 @@ just isn't called, so the caller never has to itself branch on "is this
 server actually usable right now".
 
 Connecting is entirely up to the caller (`onConnectClicked`/`connectStatus`),
-typically by kicking off `Shared.AccountsPanel.connectToServer` and, once it
+typically by kicking off `Shared.RellmServers.connectToRellmServer` and, once it
 resolves, dispatching `Shared.AccountsPanel.ServerConnected` to register it
 (and then whatever the caller actually wanted the server for -- e.g. fetching
 the post it was after all along). Re-enabling a disabled server is simpler --
@@ -24,7 +24,8 @@ just `AccountsPanel.ToggleServerEnabled` -- so `onEnableClicked` is a plain
 import Html exposing (Html, button, div, p, text)
 import Html.Attributes exposing (class, disabled)
 import Html.Events exposing (onClick)
-import Shared.AccountsPanel as AccountsPanel
+import Shared.AccountsPanel.RellmAccounts as RellmAccounts exposing (RellmAccount)
+import Shared.AccountsPanel.RellmServers as RellmServers exposing (RellmServer)
 
 
 {-| The status of a caller-driven attempt to connect to the not-yet-known
@@ -40,19 +41,19 @@ type ConnectStatus
 
 view :
     { hostname : String
-    , servers : List AccountsPanel.RellmServer
-    , accounts : List AccountsPanel.RellmAccount
+    , servers : List RellmServer
+    , accounts : List RellmAccount
     , connectStatus : ConnectStatus
     , onConnectClicked : msg
     , onEnableClicked : msg
     }
-    -> (AccountsPanel.RellmServer -> Maybe AccountsPanel.RellmAccount -> Html msg)
+    -> (RellmServer -> Maybe RellmAccount -> Html msg)
     -> Html msg
 view config render =
-    case AccountsPanel.serverForHost config.servers config.hostname of
+    case RellmServers.rellmServerForHost config.servers config.hostname of
         Just server ->
             if server.enabled then
-                render server (AccountsPanel.enabledAccountForServer config.accounts config.hostname)
+                render server (RellmAccounts.enabledRellmAccountForServer config.accounts config.hostname)
 
             else
                 div [ class "server-dependent-prompt" ]
@@ -93,9 +94,9 @@ exposed for callers (e.g. `Shared.StarredPanel`'s fetching) that need to
 gate something other than rendering on it, without duplicating the `.enabled`
 check themselves.
 -}
-availableServer : List AccountsPanel.RellmServer -> String -> Maybe AccountsPanel.RellmServer
+availableServer : List RellmServer -> String -> Maybe RellmServer
 availableServer servers hostname =
-    AccountsPanel.serverForHost servers hostname
+    RellmServers.rellmServerForHost servers hostname
         |> Maybe.andThen
             (\server ->
                 if server.enabled then

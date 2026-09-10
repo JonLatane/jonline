@@ -36,6 +36,8 @@ import Proto.Rellm exposing (GetPostsResponse, Post, unwrapPost, wrapPost)
 import Set exposing (Set)
 import Shared
 import Shared.AccountsPanel as AccountsPanel
+import Shared.AccountsPanel.RellmAccounts exposing (RellmAccount)
+import Shared.AccountsPanel.RellmServers exposing (RellmServer)
 import Task
 import UI.Flip as Flip
 
@@ -252,8 +254,8 @@ view :
     { basePath : String
     , viewingServerHost : String
     , postServerHost : String
-    , maybeServer : Maybe AccountsPanel.RellmServer
-    , maybeAccount : Maybe AccountsPanel.RellmAccount
+    , maybeServer : Maybe RellmServer
+    , maybeAccount : Maybe RellmAccount
     , onMediaClicked : Post -> String -> msg
     , onReplyClicked : Post -> msg
     , toMsg : Msg -> msg
@@ -295,8 +297,8 @@ replyAnimationView :
         | basePath : String
         , viewingServerHost : String
         , postServerHost : String
-        , maybeServer : Maybe AccountsPanel.RellmServer
-        , maybeAccount : Maybe AccountsPanel.RellmAccount
+        , maybeServer : Maybe RellmServer
+        , maybeAccount : Maybe RellmAccount
         , onMediaClicked : Post -> String -> msg
         , onReplyClicked : Post -> msg
         , toMsg : Msg -> msg

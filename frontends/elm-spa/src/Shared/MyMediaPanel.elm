@@ -60,7 +60,9 @@ import Json.Decode as Decode
 import Proto.Rellm exposing (GetMediaResponse, Media, MediaReference, defaultGetMediaRequest, defaultMedia)
 import Proto.Rellm.Rellm as Rellm
 import Set exposing (Set)
-import Shared.AccountsPanel as AccountsPanel exposing (withAccessToken)
+import Shared.AccountsPanel as AccountsPanel
+import Shared.AccountsPanel.RellmAccounts as RellmAccounts exposing (RellmAccount)
+import Shared.AccountsPanel.RellmServers as RellmServers exposing (RellmServer, withAccessToken)
 import Shared.Conversions exposing (timestampToPosix)
 import Shared.MediaViewerPanel as MediaViewerPanel
 import Task exposing (Task)
@@ -303,8 +305,8 @@ type alias MediaAnimation =
 
 
 type alias Resolved =
-    { server : AccountsPanel.RellmServer
-    , account : AccountsPanel.RellmAccount
+    { server : RellmServer
+    , account : RellmAccount
     }
 
 
@@ -863,7 +865,7 @@ the same problem inline instead of a silent empty panel).
 -}
 resolve : AccountsPanel.Model -> String -> Result String Resolved
 resolve accountsPanelModel host =
-    case AccountsPanel.serverForHost accountsPanelModel.servers host of
+    case RellmServers.rellmServerForHost accountsPanelModel.servers host of
         Nothing ->
             Err "That server isn't connected."
 
@@ -872,7 +874,7 @@ resolve accountsPanelModel host =
                 Err (server.frontendHost ++ " is disabled.")
 
             else
-                case AccountsPanel.enabledAccountForServer accountsPanelModel.accounts host of
+                case RellmAccounts.enabledRellmAccountForServer accountsPanelModel.accounts host of
                     Nothing ->
                         Err "You're not signed in on that server."
 
@@ -887,14 +889,14 @@ backend's "no user\_id means the caller's own media" fallback, keeps this
 request meaningful even though today it only ever runs for the signed-in
 account's own chip.
 -}
-fetchTask : AccountsPanel.Model -> AccountsPanel.RellmAccount -> Task Grpc.Error ( Maybe AccountsPanel.Msg, GetMediaResponse )
+fetchTask : AccountsPanel.Model -> RellmAccount -> Task Grpc.Error ( Maybe AccountsPanel.Msg, GetMediaResponse )
 fetchTask accountsPanelModel account =
     AccountsPanel.performWithAccountServer
         accountsPanelModel
         ( Just account.userId, account.server )
         (\server token ->
             Grpc.new Rellm.getMedia { defaultGetMediaRequest | userId = Just account.userId }
-                |> Grpc.setHost (AccountsPanel.serverUrl server)
+                |> Grpc.setHost (RellmServers.rellmServerUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
         )
@@ -906,14 +908,14 @@ fetchTask accountsPanelModel account =
 reads. Its response is `google.protobuf.Empty`; mapped away to `()` here
 purely so `GotDeleteResult` doesn't need its own import of that type.
 -}
-deleteTask : AccountsPanel.Model -> AccountsPanel.RellmAccount -> Media -> Task Grpc.Error ( Maybe AccountsPanel.Msg, () )
+deleteTask : AccountsPanel.Model -> RellmAccount -> Media -> Task Grpc.Error ( Maybe AccountsPanel.Msg, () )
 deleteTask accountsPanelModel account media =
     AccountsPanel.performWithAccountServer
         accountsPanelModel
         ( Just account.userId, account.server )
         (\server token ->
             Grpc.new Rellm.deleteMedia { defaultMedia | id = media.id }
-                |> Grpc.setHost (AccountsPanel.serverUrl server)
+                |> Grpc.setHost (RellmServers.rellmServerUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
                 |> Task.map (always ())
@@ -936,9 +938,9 @@ uploadTask accountsPanelModel resolved host file =
 sets `Content-Type` from `file`'s own MIME type, so only `Authorization`/
 `Filename` need to be added as headers.
 -}
-postMediaTask : AccountsPanel.RellmServer -> String -> File -> Task Grpc.Error String
+postMediaTask : RellmServer -> String -> File -> Task Grpc.Error String
 postMediaTask server token file =
-    case AccountsPanel.connectionOf server of
+    case RellmServers.connectionOf server of
         -- `server` is reached via `performWithAccountServer`, which only ever
         -- resolves to a connected server -- unreachable in practice.
         Nothing ->
@@ -951,7 +953,7 @@ postMediaTask server token file =
                     [ Http.header "Authorization" token
                     , Http.header "Filename" (File.name file)
                     ]
-                , url = AccountsPanel.mediaBaseUrl connection ++ "/media"
+                , url = RellmServers.mediaBaseUrl connection ++ "/media"
                 , body = Http.fileBody file
                 , resolver = Http.stringResolver toGrpcResult
                 , timeout = Nothing
@@ -1202,7 +1204,7 @@ accountBadge accountsPanelModel model =
         Ok resolved ->
             div [ class "my-media-panel-account" ]
                 [ avatarOrInitial accountsPanelModel.servers resolved.account
-                , span [ class "my-media-panel-username" ] [ text (AccountsPanel.displayName resolved.account) ]
+                , span [ class "my-media-panel-username" ] [ text (RellmAccounts.rellmAccountDisplayName resolved.account) ]
                 ]
 
 
@@ -1210,14 +1212,14 @@ accountBadge accountsPanelModel model =
 avatar -- `UI` itself imports this module (to embed `MyMediaPanel.view`), so
 importing it back here to reuse that helper would be a circular import.
 -}
-avatarOrInitial : List AccountsPanel.RellmServer -> AccountsPanel.RellmAccount -> Html msg
+avatarOrInitial : List RellmServer -> RellmAccount -> Html msg
 avatarOrInitial servers account =
-    case AccountsPanel.accountAvatarUrl servers account of
+    case RellmAccounts.rellmAccountAvatarUrl servers account of
         Just url ->
             img [ class "my-media-panel-avatar", src url, alt account.username, attribute "loading" "lazy" ] []
 
         Nothing ->
-            div [ classes [ "my-media-panel-avatar", "placeholder" ] ] [ text (AccountsPanel.initialLetter account.username) ]
+            div [ classes [ "my-media-panel-avatar", "placeholder" ] ] [ text (RellmServers.initialLetter account.username) ]
 
 
 contentView : AccountsPanel.Model -> Model -> List (Html Msg)
@@ -1333,7 +1335,7 @@ mediaTimestamp media =
 left-to-right, wrap-to-next-row flow (see `flip.css`'s `.flip-animated-grid`
 doc). Mirrors `UI.serverChipFlip` -- see its own doc.
 -}
-mediaAnimationView : AccountsPanel.RellmServer -> AccountsPanel.RellmAccount -> Model -> ( String, MediaAnimation ) -> ( String, Html Msg )
+mediaAnimationView : RellmServer -> RellmAccount -> Model -> ( String, MediaAnimation ) -> ( String, Html Msg )
 mediaAnimationView server account model ( mediaId, anim ) =
     let
         pointerEventsAttr : List (Html.Attribute Msg)
@@ -1380,7 +1382,7 @@ still needs `stopPropagationOn` -- without it, a click there would bubble up
 into this same handler and select/re-add the very item just deleted.
 
 -}
-mediaItemView : AccountsPanel.RellmServer -> AccountsPanel.RellmAccount -> String -> Set String -> Bool -> Media -> Html Msg
+mediaItemView : RellmServer -> RellmAccount -> String -> Set String -> Bool -> Media -> Html Msg
 mediaItemView server account targetHost deletingIds selected media =
     let
         deleting : Bool
@@ -1461,7 +1463,7 @@ is clicked) plus its independent reorder-slide -- exactly mirrors
 full reasoning), `UI.Flip.Horizontal` to match this strip's own left-to-right
 flow.
 -}
-selectedMediaItemFlip : AccountsPanel.RellmServer -> AccountsPanel.RellmAccount -> Model -> Int -> Int -> MediaReference -> Html Msg
+selectedMediaItemFlip : RellmServer -> RellmAccount -> Model -> Int -> Int -> MediaReference -> Html Msg
 selectedMediaItemFlip server account model count index media =
     let
         flipState : UI.Flip.State Msg
@@ -1493,7 +1495,7 @@ server does, so unlike `serverChip` both ends are only ever gated by
 selection outright (`RemoveSelectedMediaClicked`) -- no confirmation, see
 that message's own doc for why.
 -}
-selectedMediaItemView : AccountsPanel.RellmServer -> AccountsPanel.RellmAccount -> Dict String (UI.Flip.MoveState Msg) -> Int -> Int -> MediaReference -> Html Msg
+selectedMediaItemView : RellmServer -> RellmAccount -> Dict String (UI.Flip.MoveState Msg) -> Int -> Int -> MediaReference -> Html Msg
 selectedMediaItemView server account moveAnimations count index media =
     let
         moveAttrs : List (Html.Attribute Msg)

@@ -32,6 +32,8 @@ import Grpc
 import Proto.Rellm
 import Shared
 import Shared.AccountsPanel as AccountsPanel
+import Shared.AccountsPanel.RellmAccounts as RellmAccounts
+import Shared.AccountsPanel.RellmServers as RellmServers
 import Task
 import Time
 
@@ -160,13 +162,13 @@ Name/bio/permissions save succeeds).
 -}
 fetchTask : Shared.Model -> Model -> Maybe (Task.Task Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Rellm.GetUsersResponse ))
 fetchTask shared model =
-    AccountsPanel.knownConnectedServer shared.accounts.servers model.targetHost
+    RellmServers.knownConnectedRellmServer shared.accounts.servers model.targetHost
         |> Maybe.map
             (\_ ->
                 let
                     maybeAccountServer : AccountsPanel.MaybeAccountServer
                     maybeAccountServer =
-                        ( AccountsPanel.enabledAccountForServer shared.accounts.accounts model.targetHost |> Maybe.map .userId
+                        ( RellmAccounts.enabledRellmAccountForServer shared.accounts.accounts model.targetHost |> Maybe.map .userId
                         , model.targetHost
                         )
                 in

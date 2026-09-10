@@ -18,15 +18,13 @@ whether the post id comes from the route directly or from a matched `CustomNavig
 
 `pageIsSecure`/`navKey` are captured once, at `init` (same reasoning as
 `UserProfilePage.Model.pageIsSecure`/`navKey`) -- needed later by `ConnectClicked`
-(`AccountsPanel.connectToServer`) and `update`'s own `Shared.GotPostDeleteResult` handling
+(`RellmServers.connectToRellmServer`) and `update`'s own `Shared.GotPostDeleteResult` handling
 (navigating Home once the viewed Post no longer exists), neither of which otherwise has access to
 the calling page's own `Request`.
 -}
 
 import Browser.Navigation
 import Components.AIModelProviders as AIModelProviders
-import Components.Authors as Authors
-import Components.Markdown as Markdown
 import Components.PostReplies as PostReplies
 import Components.Posts as Posts
 import Components.ServerDependentView as ServerDependentView
@@ -36,10 +34,9 @@ import Dict exposing (Dict)
 import Effect exposing (Effect)
 import Gen.Route
 import Grpc
-import Html exposing (Html, a, button, div, option, p, select, span, text)
-import Html.Attributes exposing (class, disabled, href, rel, selected, target, value)
+import Html exposing (Html, button, div, option, p, select, span, text)
+import Html.Attributes exposing (class, disabled, selected, value)
 import Html.Events exposing (onClick, onInput)
-import Http
 import Proto.Rellm exposing (GetSyncDestinationsResponse, Post, SyncDestination)
 import Proto.Rellm.Moderation exposing (Moderation)
 import Proto.Rellm.Permission exposing (Permission(..))
@@ -47,9 +44,9 @@ import Proto.Rellm.PostContext exposing (PostContext(..))
 import Proto.Rellm.Visibility exposing (Visibility(..))
 import Shared
 import Shared.AccountsPanel as AccountsPanel
+import Shared.AccountsPanel.RellmAccounts as RellmAccounts exposing (RellmAccount)
+import Shared.AccountsPanel.RellmServers as RellmServers exposing (RellmServer)
 import Shared.Breadcrumbs as Breadcrumbs
-import Shared.Federation.Bluesky as Bluesky
-import Shared.Federation.Mastodon as Mastodon
 import Shared.MarkdownPanel as MarkdownPanel
 import Shared.MediaGeneratorPanel as MediaGeneratorPanel
 import Shared.MediaViewerPanel as MediaViewerPanel
@@ -72,7 +69,7 @@ type alias Model =
     , connectStatus : ServerDependentView.ConnectStatus
     , fetchStarted : Bool
 
-    -- The `AccountsPanel.accountId` of whichever account was signed in on
+    -- The `RellmAccounts.rellmAccountId` of whichever account was signed in on
     -- `targetHost` (the Post's own server) when the currently-held
     -- `postStatus` was last fetched, if any -- what `update`'s `SharedMsg`
     -- branch compares `currentAccountId` against to notice an
@@ -128,7 +125,7 @@ type Msg
     | GotBreadcrumbAncestors Post (Result Grpc.Error ( Maybe AccountsPanel.Msg, List Post ))
     | PostRepliesMsg PostReplies.Msg
     | ConnectClicked
-    | GotConnectResult (Result Grpc.Error AccountsPanel.RellmServer)
+    | GotConnectResult (Result Grpc.Error RellmServer)
     | EnableClicked
     | EditClicked Post
     | ReplyClicked Post
@@ -177,9 +174,6 @@ type Msg
     | GotSyncDestinationsResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, GetSyncDestinationsResponse ))
     | Poll
     | SharedMsg Shared.Msg
-      -- A federated (Mastodon/Bluesky) post's own fetch settling -- see `init`'s own doc on why
-      -- that's an entirely separate path from `GotPost`'s real `GetPosts` RPC.
-    | GotFederatedPost (Result Http.Error Post)
 
 
 type PostStatus
@@ -224,15 +218,10 @@ type alias ModerationEdit =
 which is always a bare id with no `@host` suffix -- `Posts.parsePostRouteId` handles both the same
 way, since a bare id with no `@` just falls back to `mainFrontendHost`).
 
-A Mastodon/Bluesky post (`Posts.parseFederatedPostId postId targetHost /= Nothing` -- see that function's own
-doc on the id-namespacing this detects) takes an entirely separate path from here on: no
-`ServerDependentView`/`fetchIfReady` connect-gating (there's no Rellm server to connect to at all),
-no `PostReplies`/breadcrumb-ancestors fetch, no visibility/moderation/media/sync-destination editing
--- just `Mastodon.fetchStatus`/`Bluesky.fetchPost` (see `federatedFetchTask`) straight into
-`model.postStatus`, rendered read-only by `view`'s own federated branch. `Bluesky.fetchPost` needs
-some connected account's token to call at all (AT Protocol has no anonymous access to anything, see
-that function's own doc); with none connected, `federatedFetchTask` fails immediately rather than
-even trying, landing on the same `PostFailed` state a real not-found post would.
+A Mastodon/Bluesky post never reaches this module at all -- `Pages.Post.PostId_` routes those
+straight to `Components.Pages.MastodonPostPage`/`BlueskyPostPage` instead (see
+`Posts.parseFederatedPostId`, and that dispatcher's own doc) -- so everything below can assume a real
+Rellm post on some (possibly not-yet-connected) `RellmServer`.
 -}
 init : Shared.Model -> Bool -> String -> Browser.Navigation.Key -> ( Model, Effect Msg )
 init shared pageIsSecure rawPostId navKey =
@@ -260,16 +249,7 @@ init shared pageIsSecure rawPostId navKey =
             }
 
         ( fetchedModel, fetchEffect ) =
-            case Posts.parseFederatedPostId postId targetHost of
-                Just federatedId ->
-                    ( { baseModel | fetchStarted = True }
-                    , federatedFetchTask shared federatedId
-                        |> Task.attempt GotFederatedPost
-                        |> Effect.fromCmd
-                    )
-
-                Nothing ->
-                    fetchIfReady shared baseModel
+            fetchIfReady shared baseModel
     in
     ( fetchedModel
       -- Clears any breadcrumb trail left over from whichever Post was
@@ -278,27 +258,6 @@ init shared pageIsSecure rawPostId navKey =
       -- so there's no stale trail shown in the meantime.
     , Effect.batch [ fetchEffect, Effect.fromShared (Shared.BreadcrumbsMsg Breadcrumbs.Clear) ]
     )
-
-
-{-| Dispatches a federated post id (see `Posts.parseFederatedPostId`) to the right platform's own
-single-post fetch. `BlueskyPostId` arbitrarily uses whichever connected Bluesky account comes first
--- reading a public post doesn't need to be *that* account's own, any connected token works (see
-`Bluesky.fetchPost`'s own doc) -- and fails outright (a bare `Http.BadStatus 401`, landing on the
-same `PostFailed` state a real auth failure would) if none is connected at all.
--}
-federatedFetchTask : Shared.Model -> Posts.FederatedPostId -> Task.Task Http.Error Post
-federatedFetchTask shared federatedId =
-    case federatedId of
-        Posts.MastodonPostId { instanceHost, statusId } ->
-            Mastodon.fetchStatus instanceHost statusId
-
-        Posts.BlueskyPostId { uri } ->
-            case shared.accounts.blueskyAccounts of
-                account :: _ ->
-                    Bluesky.fetchPost account.accessToken uri
-
-                [] ->
-                    Task.fail (Http.BadStatus 401)
 
 
 subscriptions : Model -> Sub Msg
@@ -326,7 +285,7 @@ update shared msg model =
 
                 maybeUserId : Maybe String
                 maybeUserId =
-                    AccountsPanel.enabledAccountForServer shared.accounts.accounts model.targetHost |> Maybe.map .userId
+                    RellmAccounts.enabledRellmAccountForServer shared.accounts.accounts model.targetHost |> Maybe.map .userId
 
                 ( repliesModel, repliesEffect ) =
                     case ( List.head response.posts, model.repliesModel ) of
@@ -404,12 +363,6 @@ update shared msg model =
         GotPost (Err _) ->
             ( { model | postStatus = PostFailed }, Effect.none )
 
-        GotFederatedPost (Ok post) ->
-            ( { model | postStatus = PostLoaded post }, Effect.none )
-
-        GotFederatedPost (Err _) ->
-            ( { model | postStatus = PostFailed }, Effect.none )
-
         GotSyncDestinationsResult (Ok ( maybeAccountsPanelMsg, response )) ->
             ( { model | availableSyncDestinations = Just response.destinations }
             , accountsPanelEffect maybeAccountsPanelMsg
@@ -455,7 +408,7 @@ update shared msg model =
                     let
                         maybeUserId : Maybe String
                         maybeUserId =
-                            AccountsPanel.enabledAccountForServer shared.accounts.accounts model.targetHost |> Maybe.map .userId
+                            RellmAccounts.enabledRellmAccountForServer shared.accounts.accounts model.targetHost |> Maybe.map .userId
 
                         ( newRepliesModel, effect ) =
                             PostReplies.update shared.accounts maybeUserId subMsg repliesModel
@@ -652,7 +605,7 @@ update shared msg model =
 
         ConnectClicked ->
             ( { model | connectStatus = ServerDependentView.Connecting }
-            , AccountsPanel.connectToServer model.pageIsSecure model.targetHost
+            , RellmServers.connectToRellmServer model.pageIsSecure model.targetHost
                 |> Task.attempt GotConnectResult
                 |> Effect.fromCmd
             )
@@ -794,7 +747,7 @@ fetchIfReady shared model =
         ( model, Effect.none )
 
     else
-        case AccountsPanel.knownConnectedServer shared.accounts.servers model.targetHost of
+        case RellmServers.knownConnectedRellmServer shared.accounts.servers model.targetHost of
             Just _ ->
                 ( { model | fetchStarted = True, fetchedAccountId = currentAccountId shared model }
                 , Posts.fetchPost shared.accounts (maybeAccountServerFor shared model) model.postId
@@ -818,7 +771,7 @@ trigger here.
 -}
 refetch : Shared.Model -> Model -> ( Model, Effect Msg )
 refetch shared model =
-    case AccountsPanel.serverForHost shared.accounts.servers model.targetHost of
+    case RellmServers.rellmServerForHost shared.accounts.servers model.targetHost of
         Just _ ->
             ( { model | fetchedAccountId = currentAccountId shared model }
             , Posts.fetchPost shared.accounts (maybeAccountServerFor shared model) model.postId
@@ -869,76 +822,33 @@ accountsPanelEffect maybeAccountsPanelMsg =
 
 
 {-| Just the body content -- the calling page wraps this in `UI.layout`/its own title (via
-`titleFor`), same split as `Components.Pages.EventsPage.view`/etc. A federated post (see `init`'s own
-doc) skips `ServerDependentView.view`'s connect-gating entirely -- there's no Rellm server behind it
-to connect to -- and renders through `federatedPostView` instead of the real-post trio below.
+`titleFor`), same split as `Components.Pages.EventsPage.view`/etc.
 -}
 view : Shared.Model -> Model -> Html Msg
 view shared model =
-    case Posts.parseFederatedPostId model.postId model.targetHost of
-        Just _ ->
+    ServerDependentView.view
+        { hostname = model.targetHost
+        , servers = shared.accounts.servers
+        , accounts = shared.accounts.accounts
+        , connectStatus = model.connectStatus
+        , onConnectClicked = ConnectClicked
+        , onEnableClicked = EnableClicked
+        }
+        (\_ _ ->
             case model.postStatus of
                 LoadingPost ->
                     p [ class "post-loading" ] [ text "Loading…" ]
 
                 PostFailed ->
-                    p [ class "post-error" ] [ text "Couldn't load this post. Maybe it was deleted, or maybe it's private." ]
+                    p [ class "post-error" ] [ text ("Couldn't load Post " ++ model.postId ++ "@" ++ model.targetHost ++ ". Maybe it doesn't exist, or maybe you need to be logged in?") ]
 
                 PostLoaded post ->
-                    federatedPostView post
-
-        Nothing ->
-            ServerDependentView.view
-                { hostname = model.targetHost
-                , servers = shared.accounts.servers
-                , accounts = shared.accounts.accounts
-                , connectStatus = model.connectStatus
-                , onConnectClicked = ConnectClicked
-                , onEnableClicked = EnableClicked
-                }
-                (\_ _ ->
-                    case model.postStatus of
-                        LoadingPost ->
-                            p [ class "post-loading" ] [ text "Loading…" ]
-
-                        PostFailed ->
-                            p [ class "post-error" ] [ text ("Couldn't load Post " ++ model.postId ++ "@" ++ model.targetHost ++ ". Maybe it doesn't exist, or maybe you need to be logged in?") ]
-
-                        PostLoaded post ->
-                            div []
-                                [ postDetailView shared model post
-                                , postActionsView shared model post
-                                , repliesView shared model
-                                ]
-                )
-
-
-{-| A Mastodon/Bluesky post, read-only -- no reply/edit/delete/visibility/moderation/sync-destination
-affordances (none of that makes sense for a post Rellm doesn't own), and no replies tree (Rellm has
-no way to fetch a Mastodon/Bluesky post's own replies -- a "for now" gap, see `init`'s own doc). Just
-its author, content, and a link back to the original.
--}
-federatedPostView : Post -> Html Msg
-federatedPostView post =
-    div [ class "post-detail" ]
-        [ div [ class "post-author-link" ]
-            [ Authors.avatar (Authors.name post.author) (post.author |> Maybe.andThen .avatar |> Maybe.andThen .url)
-            , text (Authors.name post.author)
-            ]
-        , Markdown.view [ class "post-detail-content" ] (Maybe.withDefault "" post.content)
-        , case post.link of
-            Just link ->
-                a
-                    [ class "post-link"
-                    , href link
-                    , target "_blank"
-                    , rel "noopener noreferrer"
-                    ]
-                    [ text ("View original: " ++ Posts.stripLinkScheme link) ]
-
-            Nothing ->
-                text ""
-        ]
+                    div []
+                        [ postDetailView shared model post
+                        , postActionsView shared model post
+                        , repliesView shared model
+                        ]
+        )
 
 
 postDetailView : Shared.Model -> Model -> Post -> Html Msg
@@ -957,13 +867,13 @@ postDetailView shared model post =
             StarredPanel.toggleStarMsg shared.accounts model.targetHost displayPost
                 |> Maybe.map (Shared.StarredPanelMsg >> SharedMsg)
 
-        maybeServer : Maybe AccountsPanel.RellmServer
+        maybeServer : Maybe RellmServer
         maybeServer =
-            AccountsPanel.serverForHost shared.accounts.servers model.targetHost
+            RellmServers.rellmServerForHost shared.accounts.servers model.targetHost
 
-        maybeAccount : Maybe AccountsPanel.RellmAccount
+        maybeAccount : Maybe RellmAccount
         maybeAccount =
-            AccountsPanel.enabledAccountForServer shared.accounts.accounts model.targetHost
+            RellmAccounts.enabledRellmAccountForServer shared.accounts.accounts model.targetHost
 
         onMediaClicked : String -> Msg
         onMediaClicked mediaId =
@@ -1027,7 +937,7 @@ author (mirrors `Posts.editButton`'s own `isAuthor` gate, matching
 mirroring that same file's `PUBLISHPOSTS*`/`PUBLISHEVENTS*` permission check),
 plus a `setsPublishedAtPermanently` warning below the controls when relevant.
 -}
-visibilityView : Maybe AccountsPanel.RellmAccount -> Maybe VisibilityEdit -> Post -> Html Msg
+visibilityView : Maybe RellmAccount -> Maybe VisibilityEdit -> Post -> Html Msg
 visibilityView maybeAccount maybeEdit post =
     case ( maybeEdit, maybeAccount ) of
         ( Just edit, Just account ) ->
@@ -1111,7 +1021,7 @@ Admin or a `MODERATEPOSTS` holder (unlike `visibilityView`, not gated on
 authorship), and its own "Edit" button reads "Moderate" instead, per this
 feature's own request.
 -}
-moderationView : Maybe AccountsPanel.RellmAccount -> Maybe ModerationEdit -> Post -> Html Msg
+moderationView : Maybe RellmAccount -> Maybe ModerationEdit -> Post -> Html Msg
 moderationView maybeAccount maybeEdit post =
     case maybeAccount of
         Nothing ->
@@ -1180,7 +1090,7 @@ Markdown editor panel (see `Shared.MarkdownPanel`), targeting this Post
 -}
 postActionsView : Shared.Model -> Model -> Post -> Html Msg
 postActionsView shared model post =
-    case AccountsPanel.enabledAccountForServer shared.accounts.accounts model.targetHost of
+    case RellmAccounts.enabledRellmAccountForServer shared.accounts.accounts model.targetHost of
         Just account ->
             div [ class "post-actions" ]
                 [ if List.member REPLYTOPOSTS account.permissions then
@@ -1211,8 +1121,8 @@ repliesView shared model =
                 { basePath = shared.basePath
                 , viewingServerHost = shared.accounts.mainFrontendHost
                 , postServerHost = model.targetHost
-                , maybeServer = AccountsPanel.serverForHost shared.accounts.servers model.targetHost
-                , maybeAccount = AccountsPanel.enabledAccountForServer shared.accounts.accounts model.targetHost
+                , maybeServer = RellmServers.rellmServerForHost shared.accounts.servers model.targetHost
+                , maybeAccount = RellmAccounts.enabledRellmAccountForServer shared.accounts.accounts model.targetHost
                 , onMediaClicked = MediaClicked
                 , onReplyClicked = ReplyClicked
                 , toMsg = PostRepliesMsg
@@ -1242,12 +1152,12 @@ signed in on it -- what `Components.PostCard`/`Components.PostReplies`'
 -}
 maybeAccountServerFor : Shared.Model -> Model -> AccountsPanel.MaybeAccountServer
 maybeAccountServerFor shared model =
-    ( AccountsPanel.enabledAccountForServer shared.accounts.accounts model.targetHost |> Maybe.map .userId
+    ( RellmAccounts.enabledRellmAccountForServer shared.accounts.accounts model.targetHost |> Maybe.map .userId
     , model.targetHost
     )
 
 
-{-| The `AccountsPanel.accountId` of whichever account is currently signed in
+{-| The `RellmAccounts.rellmAccountId` of whichever account is currently signed in
 on `model.targetHost` (the Post's own server), if any -- compared against
 `model.fetchedAccountId` by `update`'s `SharedMsg` branch to notice an
 `AccountsPanel.ToggleAccountEnabled`/`ToggleServerEnabled` changed who's
@@ -1256,19 +1166,19 @@ signed in here (i.e. logging in/out of that account on that server), and
 -}
 currentAccountId : Shared.Model -> Model -> Maybe String
 currentAccountId shared model =
-    AccountsPanel.enabledAccountForServer shared.accounts.accounts model.targetHost
-        |> Maybe.map AccountsPanel.accountId
+    RellmAccounts.enabledRellmAccountForServer shared.accounts.accounts model.targetHost
+        |> Maybe.map RellmAccounts.rellmAccountId
 
 
 {-| The connected `Server`/signed-in `Account` for `model.targetHost`, if
 both exist -- what `VisibilitySaveClicked` needs to actually submit its
 `Posts.updatePost` task. Mirrors `Components.UserProfilePage.serverAndAccount`.
 -}
-serverAndAccount : Shared.Model -> Model -> Maybe ( AccountsPanel.RellmServer, AccountsPanel.RellmAccount )
+serverAndAccount : Shared.Model -> Model -> Maybe ( RellmServer, RellmAccount )
 serverAndAccount shared model =
     Maybe.map2 Tuple.pair
-        (AccountsPanel.serverForHost shared.accounts.servers model.targetHost)
-        (AccountsPanel.enabledAccountForServer shared.accounts.accounts model.targetHost)
+        (RellmServers.rellmServerForHost shared.accounts.servers model.targetHost)
+        (RellmAccounts.enabledRellmAccountForServer shared.accounts.accounts model.targetHost)
 
 
 {-| Lets `Main` forward a `Shared.Msg` that didn't originate from this page

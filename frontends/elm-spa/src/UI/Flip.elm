@@ -25,7 +25,6 @@ module UI.Flip exposing
     , startMove
     , startMoveScaled
     , subscription
-    , swapDeltas
     , syncAnimations
     , syncEnter
     )

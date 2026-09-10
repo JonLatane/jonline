@@ -18,15 +18,21 @@ import Components.Pages.ServerInformationPage.Common as Common
 import Dict exposing (Dict)
 import Effect exposing (Effect)
 import Grpc
-import Html exposing (Html, button, div, h3, input, p, span, text)
-import Html.Attributes exposing (class, disabled, id, placeholder, title, value)
+import Html exposing (Html, button, div, h3, img, input, p, span, text)
+import Html.Attributes exposing (alt, class, disabled, id, placeholder, src, title, value)
 import Html.Events exposing (onClick, onInput, stopPropagationOn)
 import Html.Keyed
+import Http
 import Json.Decode as Decode
 import Proto.Rellm exposing (FederatedServer, MastodonServer, ServerConfiguration)
+import Set exposing (Set)
 import Shared
 import Shared.AccountsPanel as AccountsPanel
+import Shared.AccountsPanel.MastodonServers as MastodonServers exposing (MastodonInstanceInfo)
+import Shared.AccountsPanel.RellmAccounts exposing (RellmAccount)
+import Shared.AccountsPanel.RellmServers as RellmServers exposing (RellmServer)
 import Task
+import Time
 import UI.Classes exposing (classes, hostnameToCSSClass)
 import UI.Flip
 
@@ -44,6 +50,37 @@ type alias Model =
     , xTwitterClientSecretEdit : Maybe TextFieldEdit
     , webPushPublicKeyEdit : Maybe TextFieldEdit
     , webPushPrivateKeyEdit : Maybe TextFieldEdit
+
+    -- A preview image (`MastodonInstanceInfo.logoUrl`, from `GET /api/v1/instance`)
+    -- for each `MastodonServer.domain` this tab has ever shown, whether saved
+    -- (`mastodonServersDisplayView`) or still mid-edit (`mastodonServersEditorView`) -- see
+    -- `ensureMastodonServerLogosFetching`, which populates this reactively (no logo entry at all
+    -- means either not yet fetched or fetched-but-none-found; `mastodonServerLogoFetchesStarted`
+    -- is what actually distinguishes "not yet fetched" from "tried"). Domains are never removed from
+    -- either dict/set once added -- stale entries for a since-removed server are harmless, and
+    -- refetching if the same domain is ever re-added would just be wasted work.
+    , mastodonServerLogos : Dict String String
+
+    -- Every `MastodonServer.domain` `ensureMastodonServerLogosFetching` has ever kicked off a fetch
+    -- for, whether or not it resolved to a real logo -- prevents that function (called on every
+    -- single `update`, reactively, since there's no one dedicated "config just loaded" event to
+    -- hook instead) from re-firing the same request over and over while a result is still in
+    -- flight, or after it resolved with no logo at all (which `mastodonServerLogos` alone can't
+    -- distinguish from "haven't tried yet").
+    , mastodonServerLogoFetchesStarted : Set String
+
+    -- `True` once `ensureMastodonServerLogosFetching` has run at least once with a resolved
+    -- `RellmServer` in hand (i.e. `maybeServer /= Nothing`) -- gates `subscriptions`'
+    -- own short-lived poll (`MastodonServerConfigPollTick`), which exists only because nothing else
+    -- ever calls into this tab's `update` at all on a fresh page load until the user does something
+    -- Federation-tab-specific (clicking the tab itself is handled one level up, in
+    -- `ServerInformationPage`, and doesn't route through here) -- without it, `mastodonServerLogos`
+    -- would only ever get populated once `MastodonServersEditClicked` (or similar) fires the very
+    -- first `Msg` this module ever sees. Once `True`, the poll stops -- by then `maybeServer` has
+    -- been seen, so the ordinary per-Msg reactivity `ensureMastodonServerLogosFetching` already
+    -- provides is enough to catch any later change (e.g. a server that reconnects after starting
+    -- out disconnected).
+    , mastodonServerConfigSeen : Bool
     }
 
 
@@ -54,7 +91,7 @@ type Msg
     | GotFederationSaveResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, ServerConfiguration ))
     | FederatedServerHostInputChanged String
     | FederatedServerAddClicked
-    | GotFederatedServerAddResult String (Result Grpc.Error AccountsPanel.RellmServer)
+    | GotFederatedServerAddResult String (Result Grpc.Error RellmServer)
     | FederatedServerRemoveClicked String
     | FederatedServerRemoved String
     | FederatedServerConfiguredByDefaultToggled String
@@ -85,6 +122,12 @@ type Msg
     | MastodonAppSecretEditClicked String
     | MastodonAppSecretChanged String String
     | MastodonAppSecretCancelClicked String
+      -- See `Model.mastodonServerLogos`/`ensureMastodonServerLogosFetching`.
+    | GotMastodonServerLogoResult String (Result Http.Error MastodonInstanceInfo)
+      -- See `Model.mastodonServerConfigSeen`'s own doc -- a no-op in `updateMsg` itself, purely to
+      -- give `update`'s `ensureMastodonServerLogosFetching` wrapper a reason to run again soon
+      -- after a fresh page load.
+    | MastodonServerConfigPollTick
     | FacebookAppIdEditClicked
     | FacebookAppIdChanged String
     | FacebookAppIdCancelClicked
@@ -122,7 +165,7 @@ type Msg
 fetch -- see `UI.Flip.remove`'s own doc on why a removing-but-not-yet-removed entry has to keep its
 slot rather than being relocated), independent of the actual saved list until `FederationSaveClicked`
 succeeds. `hostInput`/`addStatus` back the "type a host, validate it, add it" row
-(`FederatedServerAddClicked`, validated via `AccountsPanel.connectToServer` the same way this page's
+(`FederatedServerAddClicked`, validated via `RellmServers.connectToRellmServer` the same way this page's
 own probe validates an unknown server); a freshly-added entry always starts with both flags off (see
 `GotFederatedServerAddResult`). `itemAnimations`/`moveAnimations` are this editor's own `UI.Flip`
 state for the chip strip's add/remove fade and left/right reorder-slide -- mirrors
@@ -197,6 +240,9 @@ init =
     , xTwitterClientSecretEdit = Nothing
     , webPushPublicKeyEdit = Nothing
     , webPushPrivateKeyEdit = Nothing
+    , mastodonServerLogos = Dict.empty
+    , mastodonServerLogoFetchesStarted = Set.empty
+    , mastodonServerConfigSeen = False
     }
 
 
@@ -221,6 +267,15 @@ subscriptions model =
 
             Nothing ->
                 Sub.none
+
+        -- See `Model.mastodonServerConfigSeen`'s own doc -- a short-lived poll (stops itself once
+        -- `maybeServer` has been seen at least once) so `mastodonServerLogos` gets populated on a
+        -- fresh page load, not only once the user does something Federation-tab-specific.
+        , if model.mastodonServerConfigSeen then
+            Sub.none
+
+          else
+            Time.every 500 (\_ -> MastodonServerConfigPollTick)
         ]
 
 
@@ -228,8 +283,79 @@ subscriptions model =
 -- UPDATE
 
 
-update : Shared.Model -> String -> Bool -> Maybe AccountsPanel.RellmServer -> Msg -> Model -> ( Model, Effect Msg )
+update : Shared.Model -> String -> Bool -> Maybe RellmServer -> Msg -> Model -> ( Model, Effect Msg )
 update shared targetHost isSecure maybeServer msg model =
+    let
+        ( fetchLogosModel, fetchLogosEffect ) =
+            ensureMastodonServerLogosFetching maybeServer model
+
+        ( updatedModel, effect ) =
+            updateMsg shared targetHost isSecure maybeServer msg fetchLogosModel
+    in
+    ( updatedModel, Effect.batch [ fetchLogosEffect, effect ] )
+
+
+{-| Kicks off `MastodonServers.fetchMastodonInstanceInfoTask` for every `MastodonServer.domain`
+currently visible anywhere in this tab -- both saved (`maybeServer`'s own `federationInfo`) and
+still mid-edit (`model.mastodonServersEdit.pending`, so a domain typed into `MastodonServerAddClicked`
+gets a preview before it's ever saved) -- that hasn't been tried yet (see
+`Model.mastodonServerLogoFetchesStarted`). Run unconditionally at the top of every `update` call (see
+that function): there's no single "the config/edit list just changed" event to hook this to instead,
+and the `Set` guard makes that safe -- each domain is only ever fetched once, no matter how many
+times this runs.
+-}
+ensureMastodonServerLogosFetching : Maybe RellmServer -> Model -> ( Model, Effect Msg )
+ensureMastodonServerLogosFetching maybeServer model0 =
+    let
+        -- See `Model.mastodonServerConfigSeen`'s own doc -- stops `subscriptions`' poll once we've
+        -- ever had a real `server` to look at, whether or not it actually had any Mastodon servers
+        -- configured.
+        model : Model
+        model =
+            case maybeServer of
+                Just _ ->
+                    { model0 | mastodonServerConfigSeen = True }
+
+                Nothing ->
+                    model0
+
+        savedDomains : List String
+        savedDomains =
+            maybeServer
+                |> Maybe.map (RellmServers.configurationOf >> .federationInfo >> Maybe.map .mastodonServers >> Maybe.withDefault [])
+                |> Maybe.withDefault []
+                |> List.map .domain
+
+        pendingDomains : List String
+        pendingDomains =
+            model.mastodonServersEdit
+                |> Maybe.map (.pending >> List.map (.server >> .domain))
+                |> Maybe.withDefault []
+
+        newDomains : List String
+        newDomains =
+            (savedDomains ++ pendingDomains)
+                |> List.filter (\domain -> not (Set.member domain model.mastodonServerLogoFetchesStarted))
+                |> Set.fromList
+                |> Set.toList
+    in
+    if List.isEmpty newDomains then
+        ( model, Effect.none )
+
+    else
+        ( { model | mastodonServerLogoFetchesStarted = List.foldl Set.insert model.mastodonServerLogoFetchesStarted newDomains }
+        , newDomains
+            |> List.map
+                (\domain ->
+                    Task.attempt (GotMastodonServerLogoResult domain) (MastodonServers.fetchMastodonInstanceInfoTask domain)
+                        |> Effect.fromCmd
+                )
+            |> Effect.batch
+        )
+
+
+updateMsg : Shared.Model -> String -> Bool -> Maybe RellmServer -> Msg -> Model -> ( Model, Effect Msg )
+updateMsg shared targetHost isSecure maybeServer msg model =
     case msg of
         FederationEditClicked ->
             case maybeServer of
@@ -237,7 +363,7 @@ update shared targetHost isSecure maybeServer msg model =
                     let
                         savedServers : List FederatedServer
                         savedServers =
-                            (AccountsPanel.configurationOf server).federationInfo |> Maybe.map .servers |> Maybe.withDefault []
+                            (RellmServers.configurationOf server).federationInfo |> Maybe.map .servers |> Maybe.withDefault []
                     in
                     ( { model
                         | federationEdit =
@@ -300,7 +426,7 @@ update shared targetHost isSecure maybeServer msg model =
 
                     else
                         ( { model | federationEdit = Just { edit | addStatus = AccountsPanel.Submitting } }
-                        , AccountsPanel.connectToServer isSecure host
+                        , RellmServers.connectToRellmServer isSecure host
                             |> Task.attempt (GotFederatedServerAddResult host)
                             |> Effect.fromCmd
                         )
@@ -474,7 +600,7 @@ update shared targetHost isSecure maybeServer msg model =
                     let
                         savedServers : List MastodonServer
                         savedServers =
-                            (AccountsPanel.configurationOf server).federationInfo |> Maybe.map .mastodonServers |> Maybe.withDefault []
+                            (RellmServers.configurationOf server).federationInfo |> Maybe.map .mastodonServers |> Maybe.withDefault []
                     in
                     ( { model
                         | mastodonServersEdit =
@@ -728,13 +854,36 @@ update shared targetHost isSecure maybeServer msg model =
             , Effect.none
             )
 
+        GotMastodonServerLogoResult domain (Ok info) ->
+            ( { model
+                | mastodonServerLogos =
+                    case info.logoUrl of
+                        Just logoUrl ->
+                            Dict.insert domain logoUrl model.mastodonServerLogos
+
+                        Nothing ->
+                            model.mastodonServerLogos
+              }
+            , Effect.none
+            )
+
+        GotMastodonServerLogoResult _ (Err _) ->
+            -- No logo to show -- `mastodonServerLogoImage` already renders nothing at all for a
+            -- domain missing from `mastodonServerLogos`, so there's nothing more to do here.
+            ( model, Effect.none )
+
+        MastodonServerConfigPollTick ->
+            -- All the real work happens in `update`'s own `ensureMastodonServerLogosFetching` call,
+            -- which runs before this -- see `Model.mastodonServerConfigSeen`'s own doc.
+            ( model, Effect.none )
+
         FacebookAppIdEditClicked ->
             case maybeServer of
                 Just server ->
                     let
                         currentAppId : String
                         currentAppId =
-                            (AccountsPanel.configurationOf server).federationInfo
+                            (RellmServers.configurationOf server).federationInfo
                                 |> Maybe.andThen .facebookAuthConfig
                                 |> Maybe.map .appId
                                 |> Maybe.withDefault ""
@@ -815,7 +964,7 @@ update shared targetHost isSecure maybeServer msg model =
                     let
                         currentClientId : String
                         currentClientId =
-                            (AccountsPanel.configurationOf server).federationInfo
+                            (RellmServers.configurationOf server).federationInfo
                                 |> Maybe.andThen .xTwitterAuthConfig
                                 |> Maybe.map .clientId
                                 |> Maybe.withDefault ""
@@ -896,7 +1045,7 @@ update shared targetHost isSecure maybeServer msg model =
                     let
                         currentPublicKey : String
                         currentPublicKey =
-                            (AccountsPanel.configurationOf server).webPushConfig
+                            (RellmServers.configurationOf server).webPushConfig
                                 |> Maybe.map .publicVapidKey
                                 |> Maybe.withDefault ""
                     in
@@ -1205,15 +1354,15 @@ mastodonServerChipDomId domain =
     "mastodon-server-chip-" ++ domain
 
 
-{-| The `AccountsPanel.RellmServer` to show a federated host's name/logo off of -- the real,
+{-| The `RellmServer` to show a federated host's name/logo off of -- the real,
 already-known one if `host` happens to also be a known `Server` (e.g. also added to Accounts &
-Servers), otherwise a synthetic unconnected record whose `AccountsPanel.brandingOf` falls back to
+Servers), otherwise a synthetic unconnected record whose `RellmServers.brandingOf` falls back to
 the bare host string (no logo, no separate name) -- same "synthesize an unconnected `Server`"
 fallback `UI.recommendedServerChip` uses for a host it hasn't background-connected to yet.
 -}
-federatedServerFor : Shared.Model -> String -> AccountsPanel.RellmServer
+federatedServerFor : Shared.Model -> String -> RellmServer
 federatedServerFor shared host =
-    AccountsPanel.serverForHost shared.accounts.servers host
+    RellmServers.rellmServerForHost shared.accounts.servers host
         |> Maybe.withDefault { frontendHost = host, enabled = False, connected = Nothing, sortOrder = 0 }
 
 
@@ -1225,7 +1374,7 @@ federatedServerFor shared host =
 `federationEditorView`); anyone else just sees the read-only chip strip
 (`federationDisplayView`), same split as every other editor on this page.
 -}
-view : Shared.Model -> AccountsPanel.RellmServer -> Maybe AccountsPanel.RellmAccount -> Model -> Html Msg
+view : Shared.Model -> RellmServer -> Maybe RellmAccount -> Model -> Html Msg
 view shared server maybeAdminAccount model =
     div [ class "server-details-tab-content server-details-federation" ]
         [ h3 [ class "section-title" ] [ text "Federated Servers" ]
@@ -1237,7 +1386,7 @@ view shared server maybeAdminAccount model =
                 let
                     savedServers : List FederatedServer
                     savedServers =
-                        (AccountsPanel.configurationOf server).federationInfo |> Maybe.map .servers |> Maybe.withDefault []
+                        (RellmServers.configurationOf server).federationInfo |> Maybe.map .servers |> Maybe.withDefault []
                 in
                 federationDisplayView shared savedServers
         , case ( model.federationEdit, maybeAdminAccount ) of
@@ -1257,24 +1406,24 @@ view shared server maybeAdminAccount model =
 `federationEditorView`/`federatedServerEditChip` exactly), except each chip also edits that
 instance's App ID (plain) and App Secret (write-only) inline -- see `MastodonServerEdit`'s own doc
 for why the secret needs its own bit of edit-mode state per chip, unlike `FederatedServer`'s two
-plain boolean toggles. Unlike `FederatedServer` chips, there's no `AccountsPanel.serverNameAndLogo`
+plain boolean toggles. Unlike `FederatedServer` chips, there's no `RellmServers.rellmServerNameAndLogo`
 branding to show -- a Mastodon instance is never also a known Rellm `Server`.
 -}
-mastodonServersSection : AccountsPanel.RellmServer -> Model -> Maybe AccountsPanel.RellmAccount -> Html Msg
+mastodonServersSection : RellmServer -> Model -> Maybe RellmAccount -> Html Msg
 mastodonServersSection server model maybeAdminAccount =
     div [ class "server-details-facebook-auth" ]
         [ h3 [ class "section-title" ] [ text "Mastodon Servers" ]
         , case model.mastodonServersEdit of
             Just edit ->
-                mastodonServersEditorView edit
+                mastodonServersEditorView model.mastodonServerLogos edit
 
             Nothing ->
                 let
                     savedServers : List MastodonServer
                     savedServers =
-                        (AccountsPanel.configurationOf server).federationInfo |> Maybe.map .mastodonServers |> Maybe.withDefault []
+                        (RellmServers.configurationOf server).federationInfo |> Maybe.map .mastodonServers |> Maybe.withDefault []
                 in
-                mastodonServersDisplayView savedServers
+                mastodonServersDisplayView model.mastodonServerLogos savedServers
         , case ( model.mastodonServersEdit, maybeAdminAccount ) of
             ( Nothing, Just _ ) ->
                 button [ class "server-details-rename-button", onClick MastodonServersEditClicked ] [ text "Edit Mastodon Servers" ]
@@ -1284,20 +1433,21 @@ mastodonServersSection server model maybeAdminAccount =
         ]
 
 
-mastodonServersDisplayView : List MastodonServer -> Html Msg
-mastodonServersDisplayView mastodonServers =
+mastodonServersDisplayView : Dict String String -> List MastodonServer -> Html Msg
+mastodonServersDisplayView logos mastodonServers =
     if List.isEmpty mastodonServers then
         p [] [ text "No Mastodon instances are configured." ]
 
     else
-        div [ class "federated-servers-strip" ] (List.map mastodonServerDisplayChip mastodonServers)
+        div [ class "federated-servers-strip" ] (List.map (mastodonServerDisplayChip logos) mastodonServers)
 
 
 {-| One `MastodonServer`, read-only -- mirrors `federatedServerDisplayChip`, just showing whether an
-App ID is configured (never the secret) instead of a Rellm server's logo/name.
+App ID is configured (never the secret) instead of a Rellm server's logo/name. `logos` is
+`Model.mastodonServerLogos` -- see `mastodonServerLogoImage`.
 -}
-mastodonServerDisplayChip : MastodonServer -> Html Msg
-mastodonServerDisplayChip mastodonServer =
+mastodonServerDisplayChip : Dict String String -> MastodonServer -> Html Msg
+mastodonServerDisplayChip logos mastodonServer =
     let
         configuredByDefault : Bool
         configuredByDefault =
@@ -1309,7 +1459,8 @@ mastodonServerDisplayChip mastodonServer =
     in
     div [ classes [ "server-chip", "federated-server-chip", hostnameToCSSClass mastodonServer.domain ] ]
         [ div [ classes [ "server-chip-top", "background-color-primary" ] ]
-            [ div [ class "server-chip-host-row" ] [ div [ class "server-chip-host" ] [ text mastodonServer.domain ] ]
+            [ div [ class "server-chip-host-row" ] [ mastodonServerLogoImage logos mastodonServer.domain ]
+            , div [ class "server-chip-host-row" ] [ div [ class "server-chip-host" ] [ text mastodonServer.domain ] ]
             , div [ class "server-chip-host-row" ]
                 [ text
                     (if String.isEmpty mastodonServer.appId then
@@ -1344,13 +1495,13 @@ mastodonServerDisplayChip mastodonServer =
 `federationEditorView` exactly, minus the "Checking…" submitting state on Add (see
 `MastodonServerAddClicked`'s own doc: there's nothing to check).
 -}
-mastodonServersEditorView : MastodonServersEdit -> Html Msg
-mastodonServersEditorView edit =
+mastodonServersEditorView : Dict String String -> MastodonServersEdit -> Html Msg
+mastodonServersEditorView logos edit =
     div [ class "server-details-federation-edit" ]
         [ Html.Keyed.node "div"
             [ classes [ "federated-servers-strip", "flip-animated-row" ] ]
             (List.indexedMap
-                (\index mastodonServerEdit -> ( mastodonServerEdit.server.domain, mastodonServerEditChipFlip edit (List.length edit.pending) index mastodonServerEdit ))
+                (\index mastodonServerEdit -> ( mastodonServerEdit.server.domain, mastodonServerEditChipFlip logos edit (List.length edit.pending) index mastodonServerEdit ))
                 edit.pending
             )
         , div [ class "server-details-federation-add" ]
@@ -1379,8 +1530,8 @@ mastodonServersEditorView edit =
 {-| Wraps `mastodonServerEditChip` in the same fading/scaling/collapsing outer `div` as
 `federatedServerEditChipFlip` -- see that function's own doc.
 -}
-mastodonServerEditChipFlip : MastodonServersEdit -> Int -> Int -> MastodonServerEdit -> Html Msg
-mastodonServerEditChipFlip edit count index mastodonServerEdit =
+mastodonServerEditChipFlip : Dict String String -> MastodonServersEdit -> Int -> Int -> MastodonServerEdit -> Html Msg
+mastodonServerEditChipFlip logos edit count index mastodonServerEdit =
     let
         domain : String
         domain =
@@ -1403,16 +1554,17 @@ mastodonServerEditChipFlip edit count index mastodonServerEdit =
                 []
     in
     div (UI.Flip.itemAttributes UI.Flip.Horizontal flipState isMoving)
-        [ div pointerEventsAttr [ mastodonServerEditChip edit count index mastodonServerEdit ] ]
+        [ div pointerEventsAttr [ mastodonServerEditChip logos edit count index mastodonServerEdit ] ]
 
 
 {-| One Mastodon instance's editor chip -- mirrors `federatedServerEditChip`'s reorder arrows/domain
 header/remove button exactly, plus inline App ID/App Secret fields (see `mastodonAppIdField`/
 `mastodonAppSecretField`) in place of `FederatedServer`'s two plain boolean toggles... which this
 still also has, since `MastodonServer` carries the same `configuredByDefault`/`pinnedByDefault` pair.
+`logos` is `Model.mastodonServerLogos` -- see `mastodonServerLogoImage`.
 -}
-mastodonServerEditChip : MastodonServersEdit -> Int -> Int -> MastodonServerEdit -> Html Msg
-mastodonServerEditChip edit count index mastodonServerEdit =
+mastodonServerEditChip : Dict String String -> MastodonServersEdit -> Int -> Int -> MastodonServerEdit -> Html Msg
+mastodonServerEditChip logos edit count index mastodonServerEdit =
     let
         mastodonServer : MastodonServer
         mastodonServer =
@@ -1449,15 +1601,16 @@ mastodonServerEditChip edit count index mastodonServerEdit =
     in
     div
         (id (mastodonServerChipDomId domain)
-            :: classes [ "server-chip", "federated-server-chip", "federated-server-chip-edit", hostnameToCSSClass domain ]
+            :: classes [ "server-chip", "federated-server-chip", "federated-server-chip-edit", "mastodon-server-chip-edit", hostnameToCSSClass domain ]
             :: moveAttrs
         )
         [ div [ classes [ "server-chip-top", "background-color-primary" ] ]
             [ div [ class "server-chip-logo-row" ]
                 [ div [ Html.Attributes.classList [ ( "reorder-arrow", True ), ( "reorder-arrow-hidden", not showBackward ) ] ] [ reorderPair.backward ]
-                , div [ class "server-chip-host" ] [ text domain ]
+                , mastodonServerLogoImage logos domain
                 , div [ Html.Attributes.classList [ ( "reorder-arrow", True ), ( "reorder-arrow-hidden", not showForward ) ] ] [ reorderPair.forward ]
                 ]
+            , div [ class "server-chip-host-row" ] [ div [ class "server-chip-host" ] [ text domain ] ]
             ]
         , div [ classes [ "server-chip-bottom", "federated-server-flags-edit", "background-color-nav" ] ]
             [ mastodonAppIdField domain mastodonServer.appId
@@ -1474,6 +1627,22 @@ mastodonServerEditChip edit count index mastodonServerEdit =
                 ]
             ]
         ]
+
+
+{-| A Mastodon server's preview image (`Model.mastodonServerLogos`, fetched via
+`ensureMastodonServerLogosFetching`) -- `text ""` (nothing rendered) until/unless it resolves, same
+"no placeholder while loading" convention as `UI.federatedFeedLogoImage`. Reuses that function's own
+`.server-logo-image` sizing (32px, un-rounded -- this is a server logo, not a user avatar, so no
+`.server-logo-image-circular`).
+-}
+mastodonServerLogoImage : Dict String String -> String -> Html msg
+mastodonServerLogoImage logos domain =
+    case Dict.get domain logos of
+        Just logoUrl ->
+            img [ class "server-logo-image", src logoUrl, alt (domain ++ " logo") ] []
+
+        Nothing ->
+            text ""
 
 
 mastodonAppIdField : String -> String -> Html Msg
@@ -1516,12 +1685,12 @@ mastodonAppSecretField domain mastodonServerEdit =
             ]
 
 
-facebookAuthConfigSection : AccountsPanel.RellmServer -> Model -> Maybe AccountsPanel.RellmAccount -> Html Msg
+facebookAuthConfigSection : RellmServer -> Model -> Maybe RellmAccount -> Html Msg
 facebookAuthConfigSection server model maybeAdminAccount =
     let
         currentAppId : String
         currentAppId =
-            (AccountsPanel.configurationOf server).federationInfo
+            (RellmServers.configurationOf server).federationInfo
                 |> Maybe.andThen .facebookAuthConfig
                 |> Maybe.map .appId
                 |> Maybe.withDefault ""
@@ -1539,7 +1708,7 @@ facebookAuthConfigSection server model maybeAdminAccount =
         )
 
 
-facebookAppIdRow : String -> Maybe TextFieldEdit -> Maybe AccountsPanel.RellmAccount -> Html Msg
+facebookAppIdRow : String -> Maybe TextFieldEdit -> Maybe RellmAccount -> Html Msg
 facebookAppIdRow currentAppId maybeEdit maybeAdminAccount =
     case maybeEdit of
         Just edit ->
@@ -1584,7 +1753,7 @@ is shown regardless of whether a secret is actually configured. Clicking Edit al
 blank `<input>`; saving it blank is a no-op on the backend, same as leaving a "change password"
 field untouched.
 -}
-facebookAppSecretRow : Maybe TextFieldEdit -> Maybe AccountsPanel.RellmAccount -> Html Msg
+facebookAppSecretRow : Maybe TextFieldEdit -> Maybe RellmAccount -> Html Msg
 facebookAppSecretRow maybeEdit maybeAdminAccount =
     case maybeEdit of
         Just edit ->
@@ -1622,12 +1791,12 @@ instead -- one admin-registered X Developer App (Client ID + Client Secret), sha
 own connected `XTwitterAccount` (see `protos/sync.proto`'s doc on that message, and
 `logic::x_twitter_sync` on the backend).
 -}
-xTwitterAuthConfigSection : AccountsPanel.RellmServer -> Model -> Maybe AccountsPanel.RellmAccount -> Html Msg
+xTwitterAuthConfigSection : RellmServer -> Model -> Maybe RellmAccount -> Html Msg
 xTwitterAuthConfigSection server model maybeAdminAccount =
     let
         currentClientId : String
         currentClientId =
-            (AccountsPanel.configurationOf server).federationInfo
+            (RellmServers.configurationOf server).federationInfo
                 |> Maybe.andThen .xTwitterAuthConfig
                 |> Maybe.map .clientId
                 |> Maybe.withDefault ""
@@ -1645,7 +1814,7 @@ xTwitterAuthConfigSection server model maybeAdminAccount =
         )
 
 
-xTwitterClientIdRow : String -> Maybe TextFieldEdit -> Maybe AccountsPanel.RellmAccount -> Html Msg
+xTwitterClientIdRow : String -> Maybe TextFieldEdit -> Maybe RellmAccount -> Html Msg
 xTwitterClientIdRow currentClientId maybeEdit maybeAdminAccount =
     case maybeEdit of
         Just edit ->
@@ -1687,7 +1856,7 @@ xTwitterClientIdRow currentClientId maybeEdit maybeAdminAccount =
 {-| Unlike `xTwitterClientIdRow`, there's no "current value" to show when not editing -- mirrors
 `facebookAppSecretRow`'s own doc exactly.
 -}
-xTwitterClientSecretRow : Maybe TextFieldEdit -> Maybe AccountsPanel.RellmAccount -> Html Msg
+xTwitterClientSecretRow : Maybe TextFieldEdit -> Maybe RellmAccount -> Html Msg
 xTwitterClientSecretRow maybeEdit maybeAdminAccount =
     case maybeEdit of
         Just edit ->
@@ -1725,12 +1894,12 @@ calling `pushManager.subscribe`, see `Shared.AccountsPanel`'s "Enable notificati
 everyone, same as the Facebook section's App ID; the Private VAPID key (needed only to sign
 outgoing pushes, see `backend/src/web_push`) is admin-only, same as the App Secret.
 -}
-webPushConfigSection : AccountsPanel.RellmServer -> Model -> Maybe AccountsPanel.RellmAccount -> Html Msg
+webPushConfigSection : RellmServer -> Model -> Maybe RellmAccount -> Html Msg
 webPushConfigSection server model maybeAdminAccount =
     let
         currentPublicKey : String
         currentPublicKey =
-            (AccountsPanel.configurationOf server).webPushConfig
+            (RellmServers.configurationOf server).webPushConfig
                 |> Maybe.map .publicVapidKey
                 |> Maybe.withDefault ""
     in
@@ -1747,7 +1916,7 @@ webPushConfigSection server model maybeAdminAccount =
         )
 
 
-webPushPublicKeyRow : String -> Maybe TextFieldEdit -> Maybe AccountsPanel.RellmAccount -> Html Msg
+webPushPublicKeyRow : String -> Maybe TextFieldEdit -> Maybe RellmAccount -> Html Msg
 webPushPublicKeyRow currentPublicKey maybeEdit maybeAdminAccount =
     case maybeEdit of
         Just edit ->
@@ -1792,7 +1961,7 @@ shown regardless of whether a key is actually configured. Clicking Edit always s
 `<input>`; saving it blank is a no-op on the backend, same as leaving a "change password" field
 untouched.
 -}
-webPushPrivateKeyRow : Maybe TextFieldEdit -> Maybe AccountsPanel.RellmAccount -> Html Msg
+webPushPrivateKeyRow : Maybe TextFieldEdit -> Maybe RellmAccount -> Html Msg
 webPushPrivateKeyRow maybeEdit maybeAdminAccount =
     case maybeEdit of
         Just edit ->
@@ -1854,7 +2023,7 @@ federatedServerDisplayChip shared federatedServer =
     in
     div [ classes [ "server-chip", "federated-server-chip", hostnameToCSSClass federatedServer.host ] ]
         [ div [ classes [ "server-chip-top", "background-color-primary" ] ]
-            [ AccountsPanel.serverNameAndLogo (federatedServerFor shared federatedServer.host) AccountsPanel.RegularServerLogo
+            [ RellmServers.rellmServerNameAndLogo (federatedServerFor shared federatedServer.host) RellmServers.RegularServerLogo
             , div [ class "server-chip-host-row" ] [ div [ class "server-chip-host" ] [ text federatedServer.host ] ]
             ]
         , div [ classes [ "server-chip-bottom", "federated-server-flags", "background-color-nav" ] ]
@@ -1995,7 +2164,7 @@ federatedServerEditChip shared edit count index federatedServer =
         [ div [ classes [ "server-chip-top", "background-color-primary" ] ]
             [ div [ class "server-chip-logo-row" ]
                 [ div [ Html.Attributes.classList [ ( "reorder-arrow", True ), ( "reorder-arrow-hidden", not showBackward ) ] ] [ reorderPair.backward ]
-                , AccountsPanel.serverNameAndLogo (federatedServerFor shared host) AccountsPanel.RegularServerLogo
+                , RellmServers.rellmServerNameAndLogo (federatedServerFor shared host) RellmServers.RegularServerLogo
                 , div [ Html.Attributes.classList [ ( "reorder-arrow", True ), ( "reorder-arrow-hidden", not showForward ) ] ] [ reorderPair.forward ]
                 ]
             , div [ class "server-chip-host-row" ] [ div [ class "server-chip-host" ] [ text host ] ]

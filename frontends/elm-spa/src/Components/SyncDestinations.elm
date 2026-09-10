@@ -32,7 +32,8 @@ import Html.Events exposing (onClick)
 import Proto.Rellm exposing (GetSyncDestinationsResponse, SyncDestination, SyncDestinationStatus, defaultUser)
 import Proto.Rellm.Rellm as Rellm
 import Proto.Rellm.SyncDestination.Configuration as DestinationConfiguration
-import Shared.AccountsPanel as AccountsPanel exposing (withAccessToken)
+import Shared.AccountsPanel as AccountsPanel
+import Shared.AccountsPanel.RellmServers as RellmServers exposing (withAccessToken)
 import Task exposing (Task)
 
 
@@ -52,7 +53,7 @@ getSyncDestinations accountsPanelModel maybeAccountServer targetUserId =
         maybeAccountServer
         (\server token ->
             Grpc.new Rellm.getSyncDestinations { defaultUser | id = targetUserId }
-                |> Grpc.setHost (AccountsPanel.serverUrl server)
+                |> Grpc.setHost (RellmServers.rellmServerUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
         )
@@ -73,7 +74,7 @@ createSyncDestination accountsPanelModel maybeAccountServer destination =
         maybeAccountServer
         (\server token ->
             Grpc.new Rellm.createSyncDestination destination
-                |> Grpc.setHost (AccountsPanel.serverUrl server)
+                |> Grpc.setHost (RellmServers.rellmServerUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
         )
@@ -95,7 +96,7 @@ deleteSyncDestination accountsPanelModel maybeAccountServer destination =
         (\server token ->
             Grpc.new Rellm.deleteSyncDestination
                 { destination = Just destination, deleteSyncedPosts = False }
-                |> Grpc.setHost (AccountsPanel.serverUrl server)
+                |> Grpc.setHost (RellmServers.rellmServerUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
                 |> Task.map (always ())

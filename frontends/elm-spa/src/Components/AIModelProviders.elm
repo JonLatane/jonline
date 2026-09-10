@@ -40,7 +40,8 @@ import Proto.Rellm
         )
 import Proto.Rellm.AIModelCapability exposing (AIModelCapability(..))
 import Proto.Rellm.Rellm as Rellm
-import Shared.AccountsPanel as AccountsPanel exposing (withAccessToken)
+import Shared.AccountsPanel as AccountsPanel
+import Shared.AccountsPanel.RellmServers as RellmServers exposing (withAccessToken)
 import Task exposing (Task)
 
 
@@ -59,7 +60,7 @@ getAIModelProviders accountsPanelModel maybeAccountServer targetUserId =
         maybeAccountServer
         (\server token ->
             Grpc.new Rellm.getAIModelProviders { defaultUser | id = targetUserId }
-                |> Grpc.setHost (AccountsPanel.serverUrl server)
+                |> Grpc.setHost (RellmServers.rellmServerUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
         )
@@ -80,7 +81,7 @@ createAIModelProvider accountsPanelModel maybeAccountServer provider =
         maybeAccountServer
         (\server token ->
             Grpc.new Rellm.createAIModelProvider provider
-                |> Grpc.setHost (AccountsPanel.serverUrl server)
+                |> Grpc.setHost (RellmServers.rellmServerUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
         )
@@ -97,7 +98,7 @@ updateAIModelProvider accountsPanelModel maybeAccountServer provider =
         maybeAccountServer
         (\server token ->
             Grpc.new Rellm.updateAIModelProvider provider
-                |> Grpc.setHost (AccountsPanel.serverUrl server)
+                |> Grpc.setHost (RellmServers.rellmServerUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
         )
@@ -114,7 +115,7 @@ deleteAIModelProvider accountsPanelModel maybeAccountServer provider =
         maybeAccountServer
         (\server token ->
             Grpc.new Rellm.deleteAIModelProvider { provider = Just provider }
-                |> Grpc.setHost (AccountsPanel.serverUrl server)
+                |> Grpc.setHost (RellmServers.rellmServerUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
                 |> Task.map (always ())
@@ -136,7 +137,7 @@ grantAIModelProvider accountsPanelModel maybeAccountServer request =
         maybeAccountServer
         (\server token ->
             Grpc.new Rellm.grantAIModelProvider request
-                |> Grpc.setHost (AccountsPanel.serverUrl server)
+                |> Grpc.setHost (RellmServers.rellmServerUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
         )
@@ -153,7 +154,7 @@ revokeAIModelProvider accountsPanelModel maybeAccountServer request =
         maybeAccountServer
         (\server token ->
             Grpc.new Rellm.revokeAIModelProvider request
-                |> Grpc.setHost (AccountsPanel.serverUrl server)
+                |> Grpc.setHost (RellmServers.rellmServerUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
                 |> Task.map (always ())
@@ -175,7 +176,7 @@ generateMedia accountsPanelModel maybeAccountServer request =
         maybeAccountServer
         (\server token ->
             Grpc.new Rellm.generateMedia request
-                |> Grpc.setHost (AccountsPanel.serverUrl server)
+                |> Grpc.setHost (RellmServers.rellmServerUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
         )

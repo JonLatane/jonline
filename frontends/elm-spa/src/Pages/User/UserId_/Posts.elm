@@ -75,7 +75,7 @@ update shared req msg model =
                 Resolver.Loaded user ->
                     let
                         ( postsModel, postsEffect ) =
-                            PostsPage.init shared (Just ( newResolver.targetHost, user )) req.key req.url.path req.query False Nothing
+                            PostsPage.init shared (Just ( newResolver.targetHost, user )) req.key req.url.path req.query False Nothing Nothing
                     in
                     ( Posts postsModel, Effect.batch [ Effect.map ResolverMsg resolverEffect, Effect.map PostsMsg postsEffect ] )
 

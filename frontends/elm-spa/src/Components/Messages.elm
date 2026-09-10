@@ -39,7 +39,9 @@ import Proto.Rellm exposing (Author, GetMessagesRequest, GetMessagesResponse, Me
 import Proto.Rellm.Rellm as Rellm
 import Proto.Rellm.MessageListingType exposing (MessageListingType(..))
 import Proto.Rellm.Permission exposing (Permission(..))
-import Shared.AccountsPanel as AccountsPanel exposing (performWithAccountServer, withAccessToken)
+import Shared.AccountsPanel as AccountsPanel exposing (performWithAccountServer)
+import Shared.AccountsPanel.RellmAccounts as RellmAccounts exposing (RellmAccount)
+import Shared.AccountsPanel.RellmServers as RellmServers exposing (RellmServer, withAccessToken)
 import Shared.Conversions exposing (timestampToPosix)
 import Task exposing (Task)
 import Time
@@ -54,7 +56,7 @@ both -- an account signed in somewhere is far more likely to want their own
 messages front and center than every message on the server; there's no UI
 toggle between the two in v1.
 
-Resolves `account.server` via `AccountsPanel.knownConnectedServer`, not plain
+Resolves `account.server` via `RellmServers.knownConnectedRellmServer`, not plain
 `serverForHost` -- `GetMessages` is a real route-driven fetch (see
 `MessagesPage.fetchNewServers`), and `knownConnectedServer`'s own doc comment
 explains why: `serverForHost` alone would happily match the disconnected
@@ -71,7 +73,7 @@ itself dispatches -- see `Pages.Messages.update`) sees it as brand new and
 fetches for the first time, successfully.
 
 -}
-eligibleServers : AccountsPanel.Model -> List { server : AccountsPanel.RellmServer, account : AccountsPanel.RellmAccount, listingType : MessageListingType }
+eligibleServers : AccountsPanel.Model -> List { server : RellmServer, account : RellmAccount, listingType : MessageListingType }
 eligibleServers accountsPanelModel =
     AccountsPanel.enabledAccounts accountsPanelModel
         |> List.filterMap
@@ -79,7 +81,7 @@ eligibleServers accountsPanelModel =
                 let
                     listingType : Maybe MessageListingType
                     listingType =
-                        if AccountsPanel.isAdmin account || List.member READPERSONALMESSAGES account.permissions then
+                        if RellmAccounts.isAdmin account || List.member READPERSONALMESSAGES account.permissions then
                             Just PERSONALMESSAGES
 
                         else if List.member READALLSYSTEMMESSAGES account.permissions then
@@ -89,7 +91,7 @@ eligibleServers accountsPanelModel =
                             Nothing
                 in
                 Maybe.map2 (\server lt -> { server = server, account = account, listingType = lt })
-                    (AccountsPanel.knownConnectedServer accountsPanelModel.servers account.server)
+                    (RellmServers.knownConnectedRellmServer accountsPanelModel.servers account.server)
                     listingType
             )
 
@@ -220,7 +222,7 @@ fetchMessages accountsPanelModel maybeAccountServer request =
         maybeAccountServer
         (\server token ->
             Grpc.new Rellm.getMessages request
-                |> Grpc.setHost (AccountsPanel.serverUrl server)
+                |> Grpc.setHost (RellmServers.rellmServerUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
         )
@@ -471,7 +473,7 @@ markMessagesRead accountsPanelModel maybeAccountServer unread messageIds =
         maybeAccountServer
         (\server token ->
             Grpc.new Rellm.markMessagesRead { defaultMarkMessagesReadRequest | messageIds = messageIds, unread = unread }
-                |> Grpc.setHost (AccountsPanel.serverUrl server)
+                |> Grpc.setHost (RellmServers.rellmServerUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
         )

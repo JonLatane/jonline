@@ -79,7 +79,7 @@ import Proto.Rellm.NavigationTab exposing (NavigationTab(..))
 import Proto.Rellm.PostContext exposing (PostContext(..))
 import Request
 import Shared
-import Shared.AccountsPanel as AccountsPanel
+import Shared.AccountsPanel.RellmServers as RellmServers
 import Shared.Breadcrumbs as Breadcrumbs
 import UI
 import UI.CustomNav as CustomNav
@@ -156,7 +156,7 @@ initFeed shared req =
             homeConfigFor shared
 
         ( postsModel, postsEffect ) =
-            PostsPage.init shared Nothing req.key req.url.path req.query True Nothing
+            PostsPage.init shared Nothing req.key req.url.path req.query True Nothing Nothing
 
         ( eventsModel, eventsEffect ) =
             EventsPage.init shared
@@ -196,7 +196,7 @@ initForTarget shared req home =
                 |> Just
 
         CustomNav.TargetTab POSTSTAB ->
-            PostsPage.init shared Nothing req.key req.url.path req.query False Nothing
+            PostsPage.init shared Nothing req.key req.url.path req.query False Nothing Nothing
                 |> Tuple.mapFirst HomePosts
                 |> Tuple.mapSecond (Effect.map HomePostsMsg)
                 |> Just
@@ -218,7 +218,7 @@ initForTarget shared req home =
                             False
 
                     ( postModel, postEffect ) =
-                        PostPage.init shared (AccountsPanel.isSecure req) postId req.key
+                        PostPage.init shared (RellmServers.isSecure req) postId req.key
                 in
                 Just
                     ( HomePostWithEvents { events = eventsModel, post = postModel }
@@ -226,7 +226,7 @@ initForTarget shared req home =
                     )
 
             else
-                PostPage.init shared (AccountsPanel.isSecure req) postId req.key
+                PostPage.init shared (RellmServers.isSecure req) postId req.key
                     |> Tuple.mapFirst HomePost
                     |> Tuple.mapSecond (Effect.map HomePostMsg)
                     |> Just
@@ -246,8 +246,8 @@ config has finished connecting) still takes effect.
 -}
 homeConfigFor : Shared.Model -> CustomNav.HomePageConfig
 homeConfigFor shared =
-    AccountsPanel.serverForHost shared.accounts.servers shared.accounts.mainFrontendHost
-        |> Maybe.andThen (\server -> (AccountsPanel.configurationOf server).customTabs)
+    RellmServers.rellmServerForHost shared.accounts.servers shared.accounts.mainFrontendHost
+        |> Maybe.andThen (\server -> (RellmServers.configurationOf server).customTabs)
         |> CustomNav.homeConfig
 
 

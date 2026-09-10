@@ -48,6 +48,8 @@ import Proto.Rellm.Rellm as Rellm
 import Proto.Rellm.PostContext exposing (PostContext(..))
 import Set exposing (Set)
 import Shared.AccountsPanel as AccountsPanel
+import Shared.AccountsPanel.RellmAccounts as RellmAccounts exposing (RellmAccount)
+import Shared.AccountsPanel.RellmServers as RellmServers exposing (RellmServer)
 import Shared.MediaViewerPanel as MediaViewerPanel
 import Shared.Time as SharedTime
 import Task
@@ -100,7 +102,7 @@ type alias Model =
 
 
 type Msg
-    = ToggleStar AccountsPanel.RellmServer Post
+    = ToggleStar RellmServer Post
     | GotStarResult String Bool (Result Grpc.Error Post)
     | ToggleStarredPanel
     | CloseStarredPanel
@@ -323,7 +325,7 @@ sendUpdate accountsPanelModel msg model =
                 rpcCmd : Cmd Msg
                 rpcCmd =
                     Grpc.new rpc post
-                        |> Grpc.setHost (AccountsPanel.serverUrl server)
+                        |> Grpc.setHost (RellmServers.rellmServerUrl server)
                         |> Grpc.toTask
                         |> Task.attempt (GotStarResult key starring)
 
@@ -768,7 +770,7 @@ syncItemAnimations model =
 {-| Fetches every starred post that isn't already loaded, in flight, or
 permanently failed (see `PostFetchStatus`) -- grouped by host first, so each
 server's connected `Server`/signed-in `Account` (from `AccountsPanel.Model`,
-see `Shared.AccountsPanel.enabledAccountForServer`) is only looked up once per
+see `Shared.RellmAccounts.enabledRellmAccountForServer`) is only looked up once per
 server rather than once per post, and posts on a server we're not signed into
 are still fetched anonymously (same as `Pages.Home_`/`Pages.Post.PostId_`),
 just without any `LIMITED`/`PRIVATE` visibility they'd need an account for.
@@ -836,7 +838,7 @@ kickOffEventFetches accountsPanelModel model =
 {-| Clears any cached fetched Posts/Events (see `posts`/`events`) on `hosts`
 and kicks off fresh fetches for whichever of those are still starred -- for
 `Shared.update` to call when the signed-in account for a server changes
-(comparing `AccountsPanel.enabledAccountForServer` before/after an
+(comparing `RellmAccounts.enabledRellmAccountForServer` before/after an
 `AccountsPanelMsg`), since a starred post's visibility -- and its cached
 `freshestPost` snapshot -- can depend on which account fetched it. A no-op if
 `hosts` is empty, the common case for most `AccountsPanel.Msg`s.
@@ -904,7 +906,7 @@ persistCmd starOrder =
 
 
 {-| `ServerDependentView.availableServer` -- not the raw
-`AccountsPanel.serverForHost` -- so a starred post whose server is known but
+`RellmServers.rellmServerForHost` -- so a starred post whose server is known but
 disabled (see `Shared.AccountsPanel`'s `Server.enabled`) is treated the same
 as one whose server was never connected at all: marked `ServerUnavailable`
 below rather than fetched, matching the panel's own `starredPostView`, which
@@ -926,7 +928,7 @@ fetchGroup accountsPanelModel ( host, postIds ) ( posts, cmds ) =
             let
                 maybeAccountServer : AccountsPanel.MaybeAccountServer
                 maybeAccountServer =
-                    ( AccountsPanel.enabledAccountForServer accountsPanelModel.accounts host |> Maybe.map .userId, host )
+                    ( RellmAccounts.enabledRellmAccountForServer accountsPanelModel.accounts host |> Maybe.map .userId, host )
 
                 fetchCmds : List (Cmd Msg)
                 fetchCmds =
@@ -959,7 +961,7 @@ fetchEventGroup accountsPanelModel ( host, postIds ) ( events, cmds ) =
     let
         maybeAccountServer : AccountsPanel.MaybeAccountServer
         maybeAccountServer =
-            ( AccountsPanel.enabledAccountForServer accountsPanelModel.accounts host |> Maybe.map .userId, host )
+            ( RellmAccounts.enabledRellmAccountForServer accountsPanelModel.accounts host |> Maybe.map .userId, host )
 
         fetchCmd : Cmd Msg
         fetchCmd =
@@ -1106,13 +1108,13 @@ starredPostView time basePath accountsPanelModel currentPostKey currentInstanceI
                     onStarClicked =
                         toggleStarMsg accountsPanelModel host post
 
-                    maybeServer : Maybe AccountsPanel.RellmServer
+                    maybeServer : Maybe RellmServer
                     maybeServer =
-                        AccountsPanel.serverForHost accountsPanelModel.servers host
+                        RellmServers.rellmServerForHost accountsPanelModel.servers host
 
-                    maybeAccount : Maybe AccountsPanel.RellmAccount
+                    maybeAccount : Maybe RellmAccount
                     maybeAccount =
-                        AccountsPanel.enabledAccountForServer accountsPanelModel.accounts host
+                        RellmAccounts.enabledRellmAccountForServer accountsPanelModel.accounts host
 
                     onMediaClicked : String -> Msg
                     onMediaClicked mediaId =
@@ -1152,10 +1154,10 @@ starredPostView time basePath accountsPanelModel currentPostKey currentInstanceI
                 -- use of `ServerDependentView.availableServer`) -- only the
                 -- latter has anything to offer a button for, so re-derive the
                 -- actual `Server` (if disabled) from `key`'s host.
-                maybeDisabledServer : Maybe AccountsPanel.RellmServer
+                maybeDisabledServer : Maybe RellmServer
                 maybeDisabledServer =
                     parseStarKey key
-                        |> Maybe.andThen (\( _, host ) -> AccountsPanel.serverForHost accountsPanelModel.servers host)
+                        |> Maybe.andThen (\( _, host ) -> RellmServers.rellmServerForHost accountsPanelModel.servers host)
                         |> Maybe.andThen
                             (\server ->
                                 if server.enabled then
@@ -1210,13 +1212,13 @@ starredEventInstanceView time basePath accountsPanelModel currentInstanceId mode
                 onStarClicked =
                     toggleStarMsg accountsPanelModel host post
 
-                maybeServer : Maybe AccountsPanel.RellmServer
+                maybeServer : Maybe RellmServer
                 maybeServer =
-                    AccountsPanel.serverForHost accountsPanelModel.servers host
+                    RellmServers.rellmServerForHost accountsPanelModel.servers host
 
-                maybeAccount : Maybe AccountsPanel.RellmAccount
+                maybeAccount : Maybe RellmAccount
                 maybeAccount =
-                    AccountsPanel.enabledAccountForServer accountsPanelModel.accounts host
+                    RellmAccounts.enabledRellmAccountForServer accountsPanelModel.accounts host
 
                 displayInstance : EventInstance
                 displayInstance =
@@ -1379,7 +1381,7 @@ and this module's own `starredPostView`) so each doesn't re-derive the same
 -}
 toggleStarMsg : AccountsPanel.Model -> String -> Post -> Maybe Msg
 toggleStarMsg accountsPanelModel host post =
-    AccountsPanel.serverForHost accountsPanelModel.servers host
+    RellmServers.rellmServerForHost accountsPanelModel.servers host
         |> Maybe.map (\server -> ToggleStar server post)
 
 

@@ -25,6 +25,8 @@ import Proto.Rellm.Visibility exposing (Visibility(..))
 import Set exposing (Set)
 import Shared
 import Shared.AccountsPanel as AccountsPanel
+import Shared.AccountsPanel.RellmAccounts exposing (RellmAccount)
+import Shared.AccountsPanel.RellmServers as RellmServers exposing (RellmServer)
 import Task
 import UI.Classes exposing (classes)
 
@@ -152,7 +154,7 @@ init =
 -- UPDATE
 
 
-update : Shared.Model -> String -> Maybe AccountsPanel.RellmServer -> Msg -> Model -> ( Model, Effect Msg )
+update : Shared.Model -> String -> Maybe RellmServer -> Msg -> Model -> ( Model, Effect Msg )
 update shared targetHost maybeServer msg model =
     case msg of
         PermissionsEditClicked set ->
@@ -161,7 +163,7 @@ update shared targetHost maybeServer msg model =
                     let
                         currentPermissions : List Permission
                         currentPermissions =
-                            permissionsFor set (AccountsPanel.configurationOf server)
+                            permissionsFor set (RellmServers.configurationOf server)
                     in
                     ( setPermissionsEditFor set (Just (newPermissionsEdit currentPermissions)) model, Effect.none )
 
@@ -253,7 +255,7 @@ update shared targetHost maybeServer msg model =
                     let
                         current : FeatureSettingsSummary
                         current =
-                            currentFeatureSettingsFor set (AccountsPanel.configurationOf server)
+                            currentFeatureSettingsFor set (RellmServers.configurationOf server)
                     in
                     ( setFeatureSettingsEditFor set
                         (Just
@@ -825,12 +827,12 @@ addablePermissions pending =
 -- VIEW
 
 
-view : AccountsPanel.RellmServer -> Maybe AccountsPanel.RellmAccount -> Model -> Html Msg
+view : RellmServer -> Maybe RellmAccount -> Model -> Html Msg
 view server maybeAdminAccount model =
     let
         config : ServerConfiguration
         config =
-            AccountsPanel.configurationOf server
+            RellmServers.configurationOf server
     in
     div [ Html.Attributes.class "server-details-tab-content server-details-settings" ]
         ([ permissionsSection AnonymousPermissions "Anonymous User Permissions" maybeAdminAccount model.anonymousPermissionsEdit config.anonymousUserPermissions
@@ -856,7 +858,7 @@ view server maybeAdminAccount model =
 edited. Mirrors `Components.Pages.UserProfilePage.permissionsSection` exactly, just over a
 `ServerConfiguration`'s permission list instead of a `User`'s.
 -}
-permissionsSection : ServerPermissionsSet -> String -> Maybe AccountsPanel.RellmAccount -> Maybe PermissionsEdit -> List Permission -> Html Msg
+permissionsSection : ServerPermissionsSet -> String -> Maybe RellmAccount -> Maybe PermissionsEdit -> List Permission -> Html Msg
 permissionsSection set label_ maybeAdminAccount maybeEdit permissions =
     case maybeEdit of
         Just edit ->
@@ -931,7 +933,7 @@ checkbox, plus an Edit button for an admin) when this section has no in-progress
 `<select>`s + Save/Cancel) while being edited -- mirrors `permissionsSection`'s own edit/non-edit
 split, just collapsible.
 -}
-featureSettingsSection : FeatureSettingsSet -> Maybe AccountsPanel.RellmAccount -> Maybe FeatureSettingsEdit -> Bool -> FeatureSettingsSummary -> Html Msg
+featureSettingsSection : FeatureSettingsSet -> Maybe RellmAccount -> Maybe FeatureSettingsEdit -> Bool -> FeatureSettingsSummary -> Html Msg
 featureSettingsSection set maybeAdminAccount maybeEdit collapsed current =
     let
         expanded : Bool
@@ -977,7 +979,7 @@ actually show is gated by `featureSettingsFieldsFor set` -- e.g. Media shows non
 Events shows a display mode. The Edit button is only shown to an admin (`maybeAdminAccount`), same
 as `permissionsSection`.
 -}
-featureSettingsDisplayView : FeatureSettingsSet -> Maybe AccountsPanel.RellmAccount -> FeatureSettingsSummary -> Html Msg
+featureSettingsDisplayView : FeatureSettingsSet -> Maybe RellmAccount -> FeatureSettingsSummary -> Html Msg
 featureSettingsDisplayView set maybeAdminAccount current =
     let
         fields : { alias : Bool, replies : Bool, calendarLookback : Bool, calendarDisplayMode : Bool, showStartedOrLongEventsByDefault : Bool }

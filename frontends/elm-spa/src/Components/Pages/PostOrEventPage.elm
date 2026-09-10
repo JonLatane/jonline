@@ -37,6 +37,8 @@ import Html exposing (Html, text)
 import Proto.Rellm exposing (GetEventsResponse)
 import Shared
 import Shared.AccountsPanel as AccountsPanel
+import Shared.AccountsPanel.RellmAccounts as RellmAccounts
+import Shared.AccountsPanel.RellmServers as RellmServers
 import Task
 
 
@@ -107,7 +109,7 @@ fetchIfReady shared resolving =
         ( resolving, Effect.none )
 
     else
-        case AccountsPanel.knownConnectedServer shared.accounts.servers resolving.targetHost of
+        case RellmServers.knownConnectedRellmServer shared.accounts.servers resolving.targetHost of
             Just _ ->
                 ( { resolving | fetchStarted = True }
                 , Events.fetchEvent shared.accounts (maybeAccountServerFor shared resolving) resolving.rawId
@@ -126,7 +128,7 @@ visibility Event could resolve as "not found" here and get (wrongly) treated as 
 -}
 maybeAccountServerFor : Shared.Model -> ResolvingModel -> AccountsPanel.MaybeAccountServer
 maybeAccountServerFor shared resolving =
-    ( AccountsPanel.enabledAccountForServer shared.accounts.accounts resolving.targetHost |> Maybe.map .userId
+    ( RellmAccounts.enabledRellmAccountForServer shared.accounts.accounts resolving.targetHost |> Maybe.map .userId
     , resolving.targetHost
     )
 
