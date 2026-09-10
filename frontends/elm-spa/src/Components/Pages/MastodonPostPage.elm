@@ -73,22 +73,18 @@ view model =
             p [ class "post-error" ] [ text "Couldn't load this post. Maybe it was deleted, or maybe it's private." ]
 
         PostLoaded post ->
-            federatedPostView post
+            federatedPostView model.instanceHost post
 
 
-{-| No title, no URL row -- just the author (marked with a leading "⇄", same as
-`Components.Posts.postCardView` marks a federated post's card), the content, and a "View original"
+{-| No title, no URL row -- just the author (linking to their own `Components.Pages.MastodonUserProfilePage`,
+via `Authors.link`, same as any other federated post card does), the content, and a "View original"
 link back to the real post on Mastodon.
 -}
-federatedPostView : Post -> Html Msg
-federatedPostView post =
+federatedPostView : String -> Post -> Html Msg
+federatedPostView instanceHost post =
     div [ class "post-detail" ]
         [ div [ class "federated-service-label" ] [ text "⇄ Mastodon" ]
-        , div [ class "post-author-link" ]
-            [ text "⇄ "
-            , Authors.avatar (Authors.name post.author) (post.author |> Maybe.andThen .avatar |> Maybe.andThen .url)
-            , text (Authors.name post.author)
-            ]
+        , Authors.link "" "" ("mastodon:" ++ instanceHost) Nothing Nothing post.author
         , Markdown.view [ class "post-detail-content" ] (Maybe.withDefault "" post.content)
         , case post.link of
             Just link ->

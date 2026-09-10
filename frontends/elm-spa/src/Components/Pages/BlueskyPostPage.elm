@@ -125,19 +125,15 @@ view model =
             federatedPostView post
 
 
-{-| No title, no URL row -- just the author (marked with a leading "⇄", same as
-`Components.Posts.postCardView` marks a federated post's card), the content, and a "View original"
+{-| No title, no URL row -- just the author (linking to their own `Components.Pages.BlueskyUserProfilePage`,
+via `Authors.link`, same as any other federated post card does), the content, and a "View original"
 link back to the real post on Bluesky.
 -}
 federatedPostView : Post -> Html Msg
 federatedPostView post =
     div [ class "post-detail" ]
         [ div [ class "federated-service-label" ] [ text "⇄ Bluesky" ]
-        , div [ class "post-author-link" ]
-            [ text "⇄ "
-            , Authors.avatar (Authors.name post.author) (post.author |> Maybe.andThen .avatar |> Maybe.andThen .url)
-            , text (Authors.name post.author)
-            ]
+        , Authors.link "" "" "bluesky:" Nothing Nothing post.author
         , Markdown.view [ class "post-detail-content" ] (Maybe.withDefault "" post.content)
         , case post.link of
             Just link ->
