@@ -180,6 +180,9 @@ fieldNumbersPermission n_ =
         VIEWPRIVATECONTACTMETHODS ->
             10001
 
+        EDITCLUSTERSETTINGS ->
+            10002
+
         PermissionUnrecognized_ m_ ->
             m_
 
@@ -355,6 +358,9 @@ encodePermission value =
             VIEWPRIVATECONTACTMETHODS ->
                 10001
 
+            EDITCLUSTERSETTINGS ->
+                10002
+
             PermissionUnrecognized_ i ->
                 i
 
@@ -524,6 +530,9 @@ decodePermission =
                     10001 ->
                         VIEWPRIVATECONTACTMETHODS
 
+                    10002 ->
+                        EDITCLUSTERSETTINGS
+
                     _ ->
                         PermissionUnrecognized_ i
             )
@@ -585,4 +594,5 @@ type Permission
     | RUNBOTS
     | ADMIN
     | VIEWPRIVATECONTACTMETHODS
+    | EDITCLUSTERSETTINGS
     | PermissionUnrecognized_ Int

@@ -1032,8 +1032,27 @@ service Rellm {
   
 
   // Configure the server (i.e. the response to GetServerConfiguration). *Authenticated.*
-  // Requires `ADMIN` permissions.
+  // Requires `ADMIN` permissions. Editing `cluster_resources` additionally requires
+  // `EDIT_CLUSTER_SETTINGS` -- see that field's own doc.
   rpc ConfigureServer(ServerConfiguration) returns (ServerConfiguration) {}
+
+  // Attempts to acquire one or more `ClusterResource` locks on behalf of `namespace_id`. *Not
+  // part of the authenticated-user auth system* -- this is server-to-server, cluster-internal
+  // coordination, authorized instead by the `cluster-shared-secret` gRPC metadata header (see
+  // [`ClusterResources.cluster_shared_secret`](#rellm-ClusterResources)). Only meaningful when
+  // called against the cluster's conductor (`ClusterResources.conductor_host`) -- fails with
+  // `FAILED_PRECONDITION` if called against an instance that isn't configured as one, and with
+  // `UNAUTHENTICATED` if the header is missing or doesn't match. See
+  // [`LockClusterResourcesResponse`](#rellm-LockClusterResourcesResponse) for the polling
+  // contract this expects of callers.
+  rpc LockClusterResources(LockClusterResourcesRequest) returns (LockClusterResourcesResponse) {}
+
+  // Releases resources previously acquired via
+  // [`LockClusterResources`](#grpc-api-LockClusterResources). Same auth (and conductor-only
+  // requirement) as `LockClusterResources`. See
+  // [`FreeClusterResourcesRequest`](#rellm-FreeClusterResourcesRequest)'s own doc for its
+  // no-op-if-not-held behavior.
+  rpc FreeClusterResources(FreeClusterResourcesRequest) returns (google.protobuf.Empty) {}
 
   // Delete ALL Media, Posts, Groups and Users except the user who performed the RPC. *Authenticated.*
   // Requires `ADMIN` permissions.

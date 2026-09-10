@@ -35,6 +35,7 @@ class ServerConfiguration extends $pb.GeneratedMessage {
     EventSettings? eventSettings,
     MediaSettings? mediaSettings,
     ExternalCDNConfig? externalCdnConfig,
+    ClusterResources? clusterResources,
     PrivateUserStrategy? privateUserStrategy,
     $core.Iterable<AuthenticationFeature>? authenticationFeatures,
     WebPushConfig? webPushConfig,
@@ -76,6 +77,9 @@ class ServerConfiguration extends $pb.GeneratedMessage {
     if (externalCdnConfig != null) {
       $result.externalCdnConfig = externalCdnConfig;
     }
+    if (clusterResources != null) {
+      $result.clusterResources = clusterResources;
+    }
     if (privateUserStrategy != null) {
       $result.privateUserStrategy = privateUserStrategy;
     }
@@ -104,6 +108,7 @@ class ServerConfiguration extends $pb.GeneratedMessage {
     ..aOM<EventSettings>(23, _omitFieldNames ? '' : 'eventSettings', subBuilder: EventSettings.create)
     ..aOM<MediaSettings>(24, _omitFieldNames ? '' : 'mediaSettings', subBuilder: MediaSettings.create)
     ..aOM<ExternalCDNConfig>(90, _omitFieldNames ? '' : 'externalCdnConfig', subBuilder: ExternalCDNConfig.create)
+    ..aOM<ClusterResources>(91, _omitFieldNames ? '' : 'clusterResources', subBuilder: ClusterResources.create)
     ..e<PrivateUserStrategy>(100, _omitFieldNames ? '' : 'privateUserStrategy', $pb.PbFieldType.OE, defaultOrMaker: PrivateUserStrategy.ACCOUNT_IS_FROZEN, valueOf: PrivateUserStrategy.valueOf, enumValues: PrivateUserStrategy.values)
     ..pc<AuthenticationFeature>(101, _omitFieldNames ? '' : 'authenticationFeatures', $pb.PbFieldType.KE, valueOf: AuthenticationFeature.valueOf, enumValues: AuthenticationFeature.values, defaultEnumValue: AuthenticationFeature.AUTHENTICATION_FEATURE_UNKNOWN)
     ..aOM<WebPushConfig>(110, _omitFieldNames ? '' : 'webPushConfig', subBuilder: WebPushConfig.create)
@@ -276,32 +281,441 @@ class ServerConfiguration extends $pb.GeneratedMessage {
   @$pb.TagNumber(90)
   ExternalCDNConfig ensureExternalCdnConfig() => $_ensure(11);
 
+  /// Cluster-internal coordination state -- see `ClusterResources`'s own doc. Visible to any
+  /// logged-in admin (unlike most fields here, this describes infrastructure topology rather than
+  /// anything end users need, so it's stripped entirely from
+  /// [`GetServerConfiguration`](#grpc-api-GetServerConfiguration) for non-admins/anonymous
+  /// callers); editing it via [`ConfigureServer`](#grpc-api-ConfigureServer) additionally requires
+  /// the [`EDIT_CLUSTER_SETTINGS`](#rellm-Permission) permission.
+  @$pb.TagNumber(91)
+  ClusterResources get clusterResources => $_getN(12);
+  @$pb.TagNumber(91)
+  set clusterResources(ClusterResources v) { setField(91, v); }
+  @$pb.TagNumber(91)
+  $core.bool hasClusterResources() => $_has(12);
+  @$pb.TagNumber(91)
+  void clearClusterResources() => clearField(91);
+  @$pb.TagNumber(91)
+  ClusterResources ensureClusterResources() => $_ensure(12);
+
   /// Strategy when a user sets their visibility to `PRIVATE`. Defaults to `ACCOUNT_IS_FROZEN`.
   @$pb.TagNumber(100)
-  PrivateUserStrategy get privateUserStrategy => $_getN(12);
+  PrivateUserStrategy get privateUserStrategy => $_getN(13);
   @$pb.TagNumber(100)
   set privateUserStrategy(PrivateUserStrategy v) { setField(100, v); }
   @$pb.TagNumber(100)
-  $core.bool hasPrivateUserStrategy() => $_has(12);
+  $core.bool hasPrivateUserStrategy() => $_has(13);
   @$pb.TagNumber(100)
   void clearPrivateUserStrategy() => clearField(100);
 
   /// (TODO) Allows admins to enable/disable creating accounts and logging in.
   /// Eventually, external auth too hopefully!
   @$pb.TagNumber(101)
-  $core.List<AuthenticationFeature> get authenticationFeatures => $_getList(13);
+  $core.List<AuthenticationFeature> get authenticationFeatures => $_getList(14);
 
   /// Web Push (VAPID) configuration for the server.
   @$pb.TagNumber(110)
-  WebPushConfig get webPushConfig => $_getN(14);
+  WebPushConfig get webPushConfig => $_getN(15);
   @$pb.TagNumber(110)
   set webPushConfig(WebPushConfig v) { setField(110, v); }
   @$pb.TagNumber(110)
-  $core.bool hasWebPushConfig() => $_has(14);
+  $core.bool hasWebPushConfig() => $_has(15);
   @$pb.TagNumber(110)
   void clearWebPushConfig() => clearField(110);
   @$pb.TagNumber(110)
-  WebPushConfig ensureWebPushConfig() => $_ensure(14);
+  WebPushConfig ensureWebPushConfig() => $_ensure(15);
+}
+
+///  Coordinates a small piece of shared, cluster-wide state across multiple independent Rellm
+///  server instances that are otherwise fully isolated from each other (separate databases, separate
+///  [`FederationInfo`](#rellm-FederationInfo), etc.) but happen to run on shared underlying
+///  infrastructure (e.g. several Kubernetes namespaces sharing one small node pool). Currently used
+///  for exactly one thing: making sure only one instance has a headless Chrome/Brave browser open at
+///  any given moment (for generating link preview images), since launching several at once can
+///  exhaust a shared node's CPU/memory. One participating instance is designated the "conductor" (see
+///  `conductor_host`) and brokers locks via
+///  [`LockClusterResources`](#grpc-api-LockClusterResources)/
+///  [`FreeClusterResources`](#grpc-api-FreeClusterResources); every instance in the cluster --
+///  including the conductor itself -- sets its own `ClusterResources` pointing at whichever host
+///  that is.
+///
+///  See `ServerConfiguration.cluster_resources`'s own doc for who can see/edit this.
+class ClusterResources extends $pb.GeneratedMessage {
+  factory ClusterResources({
+    $core.String? namespaceId,
+    $core.String? conductorHost,
+    $core.String? clusterSharedSecret,
+    ClusterConductorState? conductorState,
+  }) {
+    final $result = create();
+    if (namespaceId != null) {
+      $result.namespaceId = namespaceId;
+    }
+    if (conductorHost != null) {
+      $result.conductorHost = conductorHost;
+    }
+    if (clusterSharedSecret != null) {
+      $result.clusterSharedSecret = clusterSharedSecret;
+    }
+    if (conductorState != null) {
+      $result.conductorState = conductorState;
+    }
+    return $result;
+  }
+  ClusterResources._() : super();
+  factory ClusterResources.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory ClusterResources.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ClusterResources', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'namespaceId')
+    ..aOS(2, _omitFieldNames ? '' : 'conductorHost')
+    ..aOS(3, _omitFieldNames ? '' : 'clusterSharedSecret')
+    ..aOM<ClusterConductorState>(4, _omitFieldNames ? '' : 'conductorState', subBuilder: ClusterConductorState.create)
+    ..hasRequiredFields = false
+  ;
+
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  ClusterResources clone() => ClusterResources()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  ClusterResources copyWith(void Function(ClusterResources) updates) => super.copyWith((message) => updates(message as ClusterResources)) as ClusterResources;
+
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static ClusterResources create() => ClusterResources._();
+  ClusterResources createEmptyInstance() => create();
+  static $pb.PbList<ClusterResources> createRepeated() => $pb.PbList<ClusterResources>();
+  @$core.pragma('dart2js:noInline')
+  static ClusterResources getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<ClusterResources>(create);
+  static ClusterResources? _defaultInstance;
+
+  /// Identifies this instance to the conductor -- e.g. its Kubernetes namespace. Passed as
+  /// `LockClusterResourcesRequest.namespace_id`/`FreeClusterResourcesRequest.namespace_id` so the
+  /// conductor knows who's asking, and echoed back in `ClusterConductorState.browser_lock_holder`
+  /// while this instance holds the lock. By convention, the conductor sets its own `namespace_id`
+  /// equal to its own `conductor_host` -- see `conductor_state`'s doc.
+  @$pb.TagNumber(1)
+  $core.String get namespaceId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set namespaceId($core.String v) { $_setString(0, v); }
+  @$pb.TagNumber(1)
+  $core.bool hasNamespaceId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearNamespaceId() => clearField(1);
+
+  ///  DNS hostname of whichever instance in the cluster is the "conductor" -- the single instance
+  ///  that actually brokers [`LockClusterResources`](#grpc-api-LockClusterResources)/
+  ///  [`FreeClusterResources`](#grpc-api-FreeClusterResources) calls for every other instance
+  ///  (including, by convention, itself -- see `conductor_state`). Every instance in the cluster
+  ///  points this at the same host.
+  ///
+  ///  Note: callers should resolve this the same way any other cross-server Rellm call does --
+  ///  via [`GET {conductor_host}/backend_host`](#http-based-client-host-negotiation-for-external-cdns-get-backend_host)
+  ///  first, falling back to `conductor_host` itself -- rather than connecting to it directly, in
+  ///  case the conductor sits behind an [`ExternalCDNConfig`](#rellm-ExternalCDNConfig).
+  @$pb.TagNumber(2)
+  $core.String get conductorHost => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set conductorHost($core.String v) { $_setString(1, v); }
+  @$pb.TagNumber(2)
+  $core.bool hasConductorHost() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearConductorHost() => clearField(2);
+
+  /// Shared secret proving a `LockClusterResources`/`FreeClusterResources` caller is a legitimate
+  /// member of this cluster, passed as the `cluster-shared-secret` gRPC metadata header (not a
+  /// request field -- there's no per-user auth involved in these calls at all, just this secret).
+  /// The conductor checks it against its own stored `cluster_shared_secret`. Write-only, like
+  /// [`FacebookAuthConfig.app_secret`](#rellm-FacebookAuthConfig)/
+  /// [`WebPushConfig.private_vapid_key`](#rellm-WebPushConfig) -- `GetServerConfiguration` never
+  /// sends the real value back to *any* client (not even an admin), and an empty incoming value on
+  /// `ConfigureServer` means "leave the stored secret alone," not "clear it." Should never be
+  /// transmitted over a non-TLS connection.
+  @$pb.TagNumber(3)
+  $core.String get clusterSharedSecret => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set clusterSharedSecret($core.String v) { $_setString(2, v); }
+  @$pb.TagNumber(3)
+  $core.bool hasClusterSharedSecret() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearClusterSharedSecret() => clearField(3);
+
+  /// The conductor's live view of who currently holds each `ClusterResource`'s lock. Only ever
+  /// populated on the instance that *is* the conductor (i.e. whose own `namespace_id` equals its
+  /// own `conductor_host`) -- every other instance always sees this as unset, since they don't
+  /// hold this state themselves. Reflects the database directly, updated in place by
+  /// `LockClusterResources`/`FreeClusterResources` -- unlike the rest of `ServerConfiguration`,
+  /// [`ConfigureServer`](#grpc-api-ConfigureServer) never lets a caller change this, and it isn't
+  /// versioned the way other `ConfigureServer` changes are.
+  @$pb.TagNumber(4)
+  ClusterConductorState get conductorState => $_getN(3);
+  @$pb.TagNumber(4)
+  set conductorState(ClusterConductorState v) { setField(4, v); }
+  @$pb.TagNumber(4)
+  $core.bool hasConductorState() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearConductorState() => clearField(4);
+  @$pb.TagNumber(4)
+  ClusterConductorState ensureConductorState() => $_ensure(3);
+}
+
+/// The conductor's current lock state, one field per `ClusterResource`. See
+/// `ClusterResources.conductor_state`.
+class ClusterConductorState extends $pb.GeneratedMessage {
+  factory ClusterConductorState({
+    $core.String? browserLockHolder,
+  }) {
+    final $result = create();
+    if (browserLockHolder != null) {
+      $result.browserLockHolder = browserLockHolder;
+    }
+    return $result;
+  }
+  ClusterConductorState._() : super();
+  factory ClusterConductorState.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory ClusterConductorState.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ClusterConductorState', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'browserLockHolder')
+    ..hasRequiredFields = false
+  ;
+
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  ClusterConductorState clone() => ClusterConductorState()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  ClusterConductorState copyWith(void Function(ClusterConductorState) updates) => super.copyWith((message) => updates(message as ClusterConductorState)) as ClusterConductorState;
+
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static ClusterConductorState create() => ClusterConductorState._();
+  ClusterConductorState createEmptyInstance() => create();
+  static $pb.PbList<ClusterConductorState> createRepeated() => $pb.PbList<ClusterConductorState>();
+  @$core.pragma('dart2js:noInline')
+  static ClusterConductorState getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<ClusterConductorState>(create);
+  static ClusterConductorState? _defaultInstance;
+
+  /// The `namespace_id` (see `ClusterResources.namespace_id`) currently holding the
+  /// `CLUSTER_RESOURCE_BROWSER` lock, if any. Set by a successful
+  /// [`LockClusterResources`](#grpc-api-LockClusterResources) call, cleared by the matching
+  /// [`FreeClusterResources`](#grpc-api-FreeClusterResources).
+  @$pb.TagNumber(1)
+  $core.String get browserLockHolder => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set browserLockHolder($core.String v) { $_setString(0, v); }
+  @$pb.TagNumber(1)
+  $core.bool hasBrowserLockHolder() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearBrowserLockHolder() => clearField(1);
+}
+
+/// See [`LockClusterResources`](#grpc-api-LockClusterResources).
+class LockClusterResourcesRequest extends $pb.GeneratedMessage {
+  factory LockClusterResourcesRequest({
+    $core.String? namespaceId,
+    $core.Iterable<ClusterResource>? resources,
+  }) {
+    final $result = create();
+    if (namespaceId != null) {
+      $result.namespaceId = namespaceId;
+    }
+    if (resources != null) {
+      $result.resources.addAll(resources);
+    }
+    return $result;
+  }
+  LockClusterResourcesRequest._() : super();
+  factory LockClusterResourcesRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory LockClusterResourcesRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'LockClusterResourcesRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'namespaceId')
+    ..pc<ClusterResource>(2, _omitFieldNames ? '' : 'resources', $pb.PbFieldType.KE, valueOf: ClusterResource.valueOf, enumValues: ClusterResource.values, defaultEnumValue: ClusterResource.CLUSTER_RESOURCE_BROWSER)
+    ..hasRequiredFields = false
+  ;
+
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  LockClusterResourcesRequest clone() => LockClusterResourcesRequest()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  LockClusterResourcesRequest copyWith(void Function(LockClusterResourcesRequest) updates) => super.copyWith((message) => updates(message as LockClusterResourcesRequest)) as LockClusterResourcesRequest;
+
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static LockClusterResourcesRequest create() => LockClusterResourcesRequest._();
+  LockClusterResourcesRequest createEmptyInstance() => create();
+  static $pb.PbList<LockClusterResourcesRequest> createRepeated() => $pb.PbList<LockClusterResourcesRequest>();
+  @$core.pragma('dart2js:noInline')
+  static LockClusterResourcesRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<LockClusterResourcesRequest>(create);
+  static LockClusterResourcesRequest? _defaultInstance;
+
+  /// This instance's own `ClusterResources.namespace_id`.
+  @$pb.TagNumber(1)
+  $core.String get namespaceId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set namespaceId($core.String v) { $_setString(0, v); }
+  @$pb.TagNumber(1)
+  $core.bool hasNamespaceId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearNamespaceId() => clearField(1);
+
+  /// Which resources to lock. Currently only `CLUSTER_RESOURCE_BROWSER` exists.
+  @$pb.TagNumber(2)
+  $core.List<ClusterResource> get resources => $_getList(1);
+}
+
+/// See [`LockClusterResources`](#grpc-api-LockClusterResources).
+class LockClusterResourcesResponse extends $pb.GeneratedMessage {
+  factory LockClusterResourcesResponse({
+    $core.bool? granted,
+    $core.String? holder,
+  }) {
+    final $result = create();
+    if (granted != null) {
+      $result.granted = granted;
+    }
+    if (holder != null) {
+      $result.holder = holder;
+    }
+    return $result;
+  }
+  LockClusterResourcesResponse._() : super();
+  factory LockClusterResourcesResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory LockClusterResourcesResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'LockClusterResourcesResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
+    ..aOB(1, _omitFieldNames ? '' : 'granted')
+    ..aOS(2, _omitFieldNames ? '' : 'holder')
+    ..hasRequiredFields = false
+  ;
+
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  LockClusterResourcesResponse clone() => LockClusterResourcesResponse()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  LockClusterResourcesResponse copyWith(void Function(LockClusterResourcesResponse) updates) => super.copyWith((message) => updates(message as LockClusterResourcesResponse)) as LockClusterResourcesResponse;
+
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static LockClusterResourcesResponse create() => LockClusterResourcesResponse._();
+  LockClusterResourcesResponse createEmptyInstance() => create();
+  static $pb.PbList<LockClusterResourcesResponse> createRepeated() => $pb.PbList<LockClusterResourcesResponse>();
+  @$core.pragma('dart2js:noInline')
+  static LockClusterResourcesResponse getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<LockClusterResourcesResponse>(create);
+  static LockClusterResourcesResponse? _defaultInstance;
+
+  /// Whether every requested resource was successfully locked for `namespace_id`. `false` means
+  /// none were locked (never a partial grant) -- some other namespace already holds at least one
+  /// of them; see `holder`. There's no server-side wait/queueing: a caller that gets `false` should
+  /// back off and call `LockClusterResources` again later.
+  @$pb.TagNumber(1)
+  $core.bool get granted => $_getBF(0);
+  @$pb.TagNumber(1)
+  set granted($core.bool v) { $_setBool(0, v); }
+  @$pb.TagNumber(1)
+  $core.bool hasGranted() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearGranted() => clearField(1);
+
+  /// Set only when `granted` is `false`: the `namespace_id` currently holding one of the
+  /// requested (and therefore denied) resources.
+  @$pb.TagNumber(2)
+  $core.String get holder => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set holder($core.String v) { $_setString(1, v); }
+  @$pb.TagNumber(2)
+  $core.bool hasHolder() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearHolder() => clearField(2);
+}
+
+/// Releases resources this `namespace_id` previously locked via
+/// [`LockClusterResources`](#grpc-api-LockClusterResources). A no-op (not an error) for any
+/// resource `namespace_id` doesn't currently hold -- e.g. safe to call unconditionally during
+/// cleanup even if the matching lock attempt itself failed or was never confirmed.
+class FreeClusterResourcesRequest extends $pb.GeneratedMessage {
+  factory FreeClusterResourcesRequest({
+    $core.String? namespaceId,
+    $core.Iterable<ClusterResource>? resources,
+  }) {
+    final $result = create();
+    if (namespaceId != null) {
+      $result.namespaceId = namespaceId;
+    }
+    if (resources != null) {
+      $result.resources.addAll(resources);
+    }
+    return $result;
+  }
+  FreeClusterResourcesRequest._() : super();
+  factory FreeClusterResourcesRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory FreeClusterResourcesRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'FreeClusterResourcesRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'namespaceId')
+    ..pc<ClusterResource>(2, _omitFieldNames ? '' : 'resources', $pb.PbFieldType.KE, valueOf: ClusterResource.valueOf, enumValues: ClusterResource.values, defaultEnumValue: ClusterResource.CLUSTER_RESOURCE_BROWSER)
+    ..hasRequiredFields = false
+  ;
+
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  FreeClusterResourcesRequest clone() => FreeClusterResourcesRequest()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  FreeClusterResourcesRequest copyWith(void Function(FreeClusterResourcesRequest) updates) => super.copyWith((message) => updates(message as FreeClusterResourcesRequest)) as FreeClusterResourcesRequest;
+
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static FreeClusterResourcesRequest create() => FreeClusterResourcesRequest._();
+  FreeClusterResourcesRequest createEmptyInstance() => create();
+  static $pb.PbList<FreeClusterResourcesRequest> createRepeated() => $pb.PbList<FreeClusterResourcesRequest>();
+  @$core.pragma('dart2js:noInline')
+  static FreeClusterResourcesRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<FreeClusterResourcesRequest>(create);
+  static FreeClusterResourcesRequest? _defaultInstance;
+
+  /// This instance's own `ClusterResources.namespace_id` -- must match whichever `namespace_id`
+  /// is recorded as the current holder for a resource to actually be released.
+  @$pb.TagNumber(1)
+  $core.String get namespaceId => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set namespaceId($core.String v) { $_setString(0, v); }
+  @$pb.TagNumber(1)
+  $core.bool hasNamespaceId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearNamespaceId() => clearField(1);
+
+  /// Which resources to release.
+  @$pb.TagNumber(2)
+  $core.List<ClusterResource> get resources => $_getList(1);
 }
 
 /// Useful for setting your Rellm instance up to run underneath a CDN.

@@ -212,6 +212,18 @@ export enum Permission {
    * Kept separate from `ADMIN` to allow for more fine-grained privacy control.
    */
   VIEW_PRIVATE_CONTACT_METHODS = 10001,
+  /**
+   * EDIT_CLUSTER_SETTINGS - Allow the user to edit [`ServerConfiguration.cluster_resources`](#rellm-ClusterResources) via
+   * [`ConfigureServer`](#grpc-api-ConfigureServer). `cluster_resources` is otherwise visible
+   * (read-only) to any `ADMIN` -- this permission gates *editing* it specifically, on top of
+   * `ADMIN`, since misconfiguring it (wrong `conductor_host`/`cluster_shared_secret`) affects
+   * cluster-mates this admin may not operate. Kept separate from `ADMIN` the same way
+   * `VIEW_PRIVATE_CONTACT_METHODS` is, and deliberately *not* grantable via
+   * [`UpdateUser`](#grpc-api-UpdateUser) like other permissions -- only settable directly in the
+   * database (e.g. via the `set_permission` binary), so granting it is always a deliberate
+   * operator action, never a side effect of a normal admin-managing-admins flow.
+   */
+  EDIT_CLUSTER_SETTINGS = 10002,
   UNRECOGNIZED = -1,
 }
 
@@ -373,6 +385,9 @@ export function permissionFromJSON(object: any): Permission {
     case 10001:
     case "VIEW_PRIVATE_CONTACT_METHODS":
       return Permission.VIEW_PRIVATE_CONTACT_METHODS;
+    case 10002:
+    case "EDIT_CLUSTER_SETTINGS":
+      return Permission.EDIT_CLUSTER_SETTINGS;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -486,6 +501,8 @@ export function permissionToJSON(object: Permission): string {
       return "ADMIN";
     case Permission.VIEW_PRIVATE_CONTACT_METHODS:
       return "VIEW_PRIVATE_CONTACT_METHODS";
+    case Permission.EDIT_CLUSTER_SETTINGS:
+      return "EDIT_CLUSTER_SETTINGS";
     case Permission.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";

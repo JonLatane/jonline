@@ -347,6 +347,12 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
         <p><a href="#server_configuration-proto">server_configuration.proto</a></p>
         <ul>
           <li>
+            <p><a href="#rellm-ClusterConductorState">ClusterConductorState</a></p>
+          </li>
+          <li>
+            <p><a href="#rellm-ClusterResources">ClusterResources</a></p>
+          </li>
+          <li>
             <p><a href="#rellm-CustomHomePage">CustomHomePage</a></p>
           </li>
           <li>
@@ -363,6 +369,15 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
           </li>
           <li>
             <p><a href="#rellm-FeatureSettings">FeatureSettings</a></p>
+          </li>
+          <li>
+            <p><a href="#rellm-FreeClusterResourcesRequest">FreeClusterResourcesRequest</a></p>
+          </li>
+          <li>
+            <p><a href="#rellm-LockClusterResourcesRequest">LockClusterResourcesRequest</a></p>
+          </li>
+          <li>
+            <p><a href="#rellm-LockClusterResourcesResponse">LockClusterResourcesResponse</a></p>
           </li>
           <li>
             <p><a href="#rellm-MediaSettings">MediaSettings</a></p>
@@ -390,6 +405,9 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
           </li>
           <li>
             <p><a href="#rellm-CalendarDisplayMode">CalendarDisplayMode</a></p>
+          </li>
+          <li>
+            <p><a href="#rellm-ClusterResource">ClusterResource</a></p>
           </li>
           <li>
             <p><a href="#rellm-NavigationTab">NavigationTab</a></p>
@@ -1874,7 +1892,19 @@ directory</a> is (<code>{name}</code> denotes a
           <td>ConfigureServer</td>
           <td><a href="#rellm-ServerConfiguration">ServerConfiguration</a></td>
           <td><a href="#rellm-ServerConfiguration">ServerConfiguration</a></td>
-          <td>Configure the server (i.e. the response to GetServerConfiguration). <em>Authenticated.</em> Requires <code>ADMIN</code> permissions.</td>
+          <td>Configure the server (i.e. the response to GetServerConfiguration). <em>Authenticated.</em> Requires <code>ADMIN</code> permissions. Editing <code>cluster_resources</code> additionally requires <code>EDIT_CLUSTER_SETTINGS</code> -- see that field's own doc.</td>
+        </tr>
+        <tr>
+          <td>LockClusterResources</td>
+          <td><a href="#rellm-LockClusterResourcesRequest">LockClusterResourcesRequest</a></td>
+          <td><a href="#rellm-LockClusterResourcesResponse">LockClusterResourcesResponse</a></td>
+          <td>Attempts to acquire one or more <code>ClusterResource</code> locks on behalf of <code>namespace_id</code>. <em>Not part of the authenticated-user auth system</em> -- this is server-to-server, cluster-internal coordination, authorized instead by the <code>cluster-shared-secret</code> gRPC metadata header (see <a href="#rellm-ClusterResources"><code>ClusterResources.cluster_shared_secret</code></a>). Only meaningful when called against the cluster's conductor (<code>ClusterResources.conductor_host</code>) -- fails with <code>FAILED_PRECONDITION</code> if called against an instance that isn't configured as one, and with <code>UNAUTHENTICATED</code> if the header is missing or doesn't match. See <a href="#rellm-LockClusterResourcesResponse"><code>LockClusterResourcesResponse</code></a> for the polling contract this expects of callers.</td>
+        </tr>
+        <tr>
+          <td>FreeClusterResources</td>
+          <td><a href="#rellm-FreeClusterResourcesRequest">FreeClusterResourcesRequest</a></td>
+          <td><a href="#google-protobuf-Empty">.google.protobuf.Empty</a></td>
+          <td>Releases resources previously acquired via <a href="#grpc-api-LockClusterResources"><code>LockClusterResources</code></a>. Same auth (and conductor-only requirement) as <code>LockClusterResources</code>. See <a href="#rellm-FreeClusterResourcesRequest"><code>FreeClusterResourcesRequest</code></a>'s own doc for its no-op-if-not-held behavior.</td>
         </tr>
         <tr>
           <td>ResetData</td>
@@ -2639,6 +2669,7 @@ directory</a> is (<code>{name}</code> denotes a
       | RUN_BOTS | 9999 | Allow the user to run bots. There is no enforcement of this permission (yet), but it lets other users know that the user is allowed to run bots. |
       | ADMIN | 10000 | Marks the user as an admin. In the context of user permissions, allows the user to configure the server, moderate/update visibility/permissions to any <a href="#rellm-User"><code>User</code></a>, <a href="#rellm-Group"><code>Group</code></a>, <a href="#rellm-Post"><code>Post</code></a> or <a href="#rellm-Event"><code>Event</code></a>. In the context of group permissions, allows the user to configure the group, modify members and member permissions, and moderate <a href="#rellm-GroupPost"><code>GroupPost</code></a>s and <code>GroupEvent</code>s. |
       | VIEW_PRIVATE_CONTACT_METHODS | 10001 | Allow the user to view the private contact methods of other users. Kept separate from <code>ADMIN</code> to allow for more fine-grained privacy control. |
+      | EDIT_CLUSTER_SETTINGS | 10002 | Allow the user to edit <a href="#rellm-ClusterResources"><code>ServerConfiguration.cluster_resources</code></a> via <a href="#grpc-api-ConfigureServer"><code>ConfigureServer</code></a>. <code>cluster_resources</code> is otherwise visible (read-only) to any <code>ADMIN</code> -- this permission gates <em>editing</em> it specifically, on top of <code>ADMIN</code>, since misconfiguring it (wrong <code>conductor_host</code>/<code>cluster_shared_secret</code>) affects cluster-mates this admin may not operate. Kept separate from <code>ADMIN</code> the same way <code>VIEW_PRIVATE_CONTACT_METHODS</code> is, and deliberately <em>not</em> grantable via <a href="#grpc-api-UpdateUser"><code>UpdateUser</code></a> like other permissions -- only settable directly in the database (e.g. via the <code>set_permission</code> binary), so granting it is always a deliberate operator action, never a side effect of a normal admin-managing-admins flow. |
     </p>
     <p><a name="users-proto"></a></p>
     <p align="right"><a href="#top">Top</a></p>
@@ -5710,6 +5741,76 @@ directory</a> is (<code>{name}</code> denotes a
     <p><a name="server_configuration-proto"></a></p>
     <p align="right"><a href="#top">Top</a></p>
     <h2 id="server_configurationproto"><a class="anchor" aria-hidden="true" tabindex="-1" href="#server_configurationproto"><span class="octicon octicon-link"></span></a>server_configuration.proto</h2>
+    <p><a name="rellm-ClusterConductorState"></a></p>
+    <h3 id="clusterconductorstate"><a class="anchor" aria-hidden="true" tabindex="-1" href="#clusterconductorstate"><span class="octicon octicon-link"></span></a>ClusterConductorState</h3>
+    <p>
+      The conductor's current lock state, one field per <code>ClusterResource</code>. See
+      <code>ClusterResources.conductor_state</code>.
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>browser_lock_holder</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td>The <code>namespace_id</code> (see <code>ClusterResources.namespace_id</code>) currently holding the <code>CLUSTER_RESOURCE_BROWSER</code> lock, if any. Set by a successful <a href="#grpc-api-LockClusterResources"><code>LockClusterResources</code></a> call, cleared by the matching <a href="#grpc-api-FreeClusterResources"><code>FreeClusterResources</code></a>.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="rellm-ClusterResources"></a></p>
+    <h3 id="clusterresources"><a class="anchor" aria-hidden="true" tabindex="-1" href="#clusterresources"><span class="octicon octicon-link"></span></a>ClusterResources</h3>
+    <p>
+      Coordinates a small piece of shared, cluster-wide state across multiple independent Rellm
+      server instances that are otherwise fully isolated from each other (separate databases, separate
+      <a href="#rellm-FederationInfo"><code>FederationInfo</code></a>, etc.) but happen to run on shared underlying
+      infrastructure (e.g. several Kubernetes namespaces sharing one small node pool). Currently used
+      for exactly one thing: making sure only one instance has a headless Chrome/Brave browser open at
+      any given moment (for generating link preview images), since launching several at once can
+      exhaust a shared node's CPU/memory. One participating instance is designated the "conductor" (see
+      <code>conductor_host</code>) and brokers locks via
+      <a href="#grpc-api-LockClusterResources"><code>LockClusterResources</code></a>/
+      <a href="#grpc-api-FreeClusterResources"><code>FreeClusterResources</code></a>; every instance in the cluster --
+      including the conductor itself -- sets its own <code>ClusterResources</code> pointing at whichever host
+      that is.
+    </p>
+    <p>See <code>ServerConfiguration.cluster_resources</code>'s own doc for who can see/edit this.</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>namespace_id</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>Identifies this instance to the conductor -- e.g. its Kubernetes namespace. Passed as <code>LockClusterResourcesRequest.namespace_id</code>/<code>FreeClusterResourcesRequest.namespace_id</code> so the conductor knows who's asking, and echoed back in <code>ClusterConductorState.browser_lock_holder</code> while this instance holds the lock. By convention, the conductor sets its own <code>namespace_id</code> equal to its own <code>conductor_host</code> -- see <code>conductor_state</code>'s doc.</td>
+        </tr>
+        <tr>
+          <td>conductor_host</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>DNS hostname of whichever instance in the cluster is the "conductor" -- the single instance that actually brokers <a href="#grpc-api-LockClusterResources"><code>LockClusterResources</code></a>/ <a href="#grpc-api-FreeClusterResources"><code>FreeClusterResources</code></a> calls for every other instance (including, by convention, itself -- see <code>conductor_state</code>). Every instance in the cluster points this at the same host.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      Note: callers should resolve this the same way any other cross-server Rellm call does -- via <a href="#http-based-client-host-negotiation-for-external-cdns-get-backend_host"><code>GET {conductor_host}/backend_host</code></a> first, falling back to <code>conductor_host</code> itself -- rather than connecting to it directly, in case the conductor sits behind an <a href="#rellm-ExternalCDNConfig"><code>ExternalCDNConfig</code></a>. |
+      | cluster_shared_secret | <a href="#string">string</a> | | Shared secret proving a <code>LockClusterResources</code>/<code>FreeClusterResources</code> caller is a legitimate member of this cluster, passed as the <code>cluster-shared-secret</code> gRPC metadata header (not a request field -- there's no per-user auth involved in these calls at all, just this secret). The conductor checks it against its own stored <code>cluster_shared_secret</code>. Write-only, like <a href="#rellm-FacebookAuthConfig"><code>FacebookAuthConfig.app_secret</code></a>/ <a href="#rellm-WebPushConfig"><code>WebPushConfig.private_vapid_key</code></a> -- <code>GetServerConfiguration</code> never sends the real value back to <em>any</em> client (not even an admin), and an empty incoming value on <code>ConfigureServer</code> means "leave the stored secret alone," not "clear it." Should never be transmitted over a non-TLS connection. |
+      | conductor_state | <a href="#rellm-ClusterConductorState">ClusterConductorState</a> | optional | The conductor's live view of who currently holds each <code>ClusterResource</code>'s lock. Only ever populated on the instance that <em>is</em> the conductor (i.e. whose own <code>namespace_id</code> equals its own <code>conductor_host</code>) -- every other instance always sees this as unset, since they don't hold this state themselves. Reflects the database directly, updated in place by <code>LockClusterResources</code>/<code>FreeClusterResources</code> -- unlike the rest of <code>ServerConfiguration</code>, <a href="#grpc-api-ConfigureServer"><code>ConfigureServer</code></a> never lets a caller change this, and it isn't versioned the way other <code>ConfigureServer</code> changes are. |
+    </p>
     <p><a name="rellm-CustomHomePage"></a></p>
     <h3 id="customhomepage"><a class="anchor" aria-hidden="true" tabindex="-1" href="#customhomepage"><span class="octicon octicon-link"></span></a>CustomHomePage</h3>
     <p>
@@ -6022,6 +6123,92 @@ directory</a> is (<code>{name}</code> denotes a
         </tr>
       </tbody>
     </table>
+    <p><a name="rellm-FreeClusterResourcesRequest"></a></p>
+    <h3 id="freeclusterresourcesrequest"><a class="anchor" aria-hidden="true" tabindex="-1" href="#freeclusterresourcesrequest"><span class="octicon octicon-link"></span></a>FreeClusterResourcesRequest</h3>
+    <p>
+      Releases resources this <code>namespace_id</code> previously locked via
+      <a href="#grpc-api-LockClusterResources"><code>LockClusterResources</code></a>. A no-op (not an error) for any
+      resource <code>namespace_id</code> doesn't currently hold -- e.g. safe to call unconditionally during
+      cleanup even if the matching lock attempt itself failed or was never confirmed.
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>namespace_id</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>This instance's own <code>ClusterResources.namespace_id</code> -- must match whichever <code>namespace_id</code> is recorded as the current holder for a resource to actually be released.</td>
+        </tr>
+        <tr>
+          <td>resources</td>
+          <td><a href="#rellm-ClusterResource">ClusterResource</a></td>
+          <td>repeated</td>
+          <td>Which resources to release.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="rellm-LockClusterResourcesRequest"></a></p>
+    <h3 id="lockclusterresourcesrequest"><a class="anchor" aria-hidden="true" tabindex="-1" href="#lockclusterresourcesrequest"><span class="octicon octicon-link"></span></a>LockClusterResourcesRequest</h3>
+    <p>See <a href="#grpc-api-LockClusterResources"><code>LockClusterResources</code></a>.</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>namespace_id</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>This instance's own <code>ClusterResources.namespace_id</code>.</td>
+        </tr>
+        <tr>
+          <td>resources</td>
+          <td><a href="#rellm-ClusterResource">ClusterResource</a></td>
+          <td>repeated</td>
+          <td>Which resources to lock. Currently only <code>CLUSTER_RESOURCE_BROWSER</code> exists.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="rellm-LockClusterResourcesResponse"></a></p>
+    <h3 id="lockclusterresourcesresponse"><a class="anchor" aria-hidden="true" tabindex="-1" href="#lockclusterresourcesresponse"><span class="octicon octicon-link"></span></a>LockClusterResourcesResponse</h3>
+    <p>See <a href="#grpc-api-LockClusterResources"><code>LockClusterResources</code></a>.</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>granted</td>
+          <td><a href="#bool">bool</a></td>
+          <td></td>
+          <td>Whether every requested resource was successfully locked for <code>namespace_id</code>. <code>false</code> means none were locked (never a partial grant) -- some other namespace already holds at least one of them; see <code>holder</code>. There's no server-side wait/queueing: a caller that gets <code>false</code> should back off and call <code>LockClusterResources</code> again later.</td>
+        </tr>
+        <tr>
+          <td>holder</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td>Set only when <code>granted</code> is <code>false</code>: the <code>namespace_id</code> currently holding one of the requested (and therefore denied) resources.</td>
+        </tr>
+      </tbody>
+    </table>
     <p><a name="rellm-MediaSettings"></a></p>
     <h3 id="mediasettings"><a class="anchor" aria-hidden="true" tabindex="-1" href="#mediasettings"><span class="octicon octicon-link"></span></a>MediaSettings</h3>
     <p>Media is a special type and less customizable than "Features."</p>
@@ -6237,6 +6424,12 @@ directory</a> is (<code>{name}</code> denotes a
           <td>If set, enables External CDN support for the server. This means that the non-secure HTTP server (on port 80) will <em>not</em> redirect to the secure server, and instead serve up Tamagui Web/Flutter clients directly. This allows you to point Cloudflare's "CNAME HTTPS Proxy" feature at your Rellm server to serve up HTML/CS/JS and Media files with caching from Cloudflare's CDN. See ExternalCDNConfig for more details on securing this setup.</td>
         </tr>
         <tr>
+          <td>cluster_resources</td>
+          <td><a href="#rellm-ClusterResources">ClusterResources</a></td>
+          <td>optional</td>
+          <td>Cluster-internal coordination state -- see <code>ClusterResources</code>'s own doc. Visible to any logged-in admin (unlike most fields here, this describes infrastructure topology rather than anything end users need, so it's stripped entirely from <a href="#grpc-api-GetServerConfiguration"><code>GetServerConfiguration</code></a> for non-admins/anonymous callers); editing it via <a href="#grpc-api-ConfigureServer"><code>ConfigureServer</code></a> additionally requires the <a href="#rellm-Permission"><code>EDIT_CLUSTER_SETTINGS</code></a> permission.</td>
+        </tr>
+        <tr>
           <td>private_user_strategy</td>
           <td><a href="#rellm-PrivateUserStrategy">PrivateUserStrategy</a></td>
           <td></td>
@@ -6446,6 +6639,29 @@ directory</a> is (<code>{name}</code> denotes a
           <td>CALENDAR_DISPLAY_DAY</td>
           <td>3</td>
           <td>Shows a single day at a time. Better for servers with many events.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="rellm-ClusterResource"></a></p>
+    <h3 id="clusterresource"><a class="anchor" aria-hidden="true" tabindex="-1" href="#clusterresource"><span class="octicon octicon-link"></span></a>ClusterResource</h3>
+    <p>
+      A resource <code>ClusterResources.conductor_host</code> can hand out an exclusive, cluster-wide lock on
+      via <a href="#grpc-api-LockClusterResources"><code>LockClusterResources</code></a>/
+      <a href="#grpc-api-FreeClusterResources"><code>FreeClusterResources</code></a>.
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Number</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>CLUSTER_RESOURCE_BROWSER</td>
+          <td>0</td>
+          <td>The ability to launch a headless Chrome/Brave browser -- see <code>ClusterResources</code>'s own doc for why more than one running at once across a cluster's instances can be a problem.</td>
         </tr>
       </tbody>
     </table>

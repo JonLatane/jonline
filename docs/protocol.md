@@ -105,12 +105,17 @@
     - [EventListingType](#rellm-EventListingType)
   
 - [server_configuration.proto](#server_configuration-proto)
+    - [ClusterConductorState](#rellm-ClusterConductorState)
+    - [ClusterResources](#rellm-ClusterResources)
     - [CustomHomePage](#rellm-CustomHomePage)
     - [CustomNavigationTab](#rellm-CustomNavigationTab)
     - [CustomNavigationTabSet](#rellm-CustomNavigationTabSet)
     - [EventSettings](#rellm-EventSettings)
     - [ExternalCDNConfig](#rellm-ExternalCDNConfig)
     - [FeatureSettings](#rellm-FeatureSettings)
+    - [FreeClusterResourcesRequest](#rellm-FreeClusterResourcesRequest)
+    - [LockClusterResourcesRequest](#rellm-LockClusterResourcesRequest)
+    - [LockClusterResourcesResponse](#rellm-LockClusterResourcesResponse)
     - [MediaSettings](#rellm-MediaSettings)
     - [PostSettings](#rellm-PostSettings)
     - [ServerColors](#rellm-ServerColors)
@@ -121,6 +126,7 @@
   
     - [AuthenticationFeature](#rellm-AuthenticationFeature)
     - [CalendarDisplayMode](#rellm-CalendarDisplayMode)
+    - [ClusterResource](#rellm-ClusterResource)
     - [NavigationTab](#rellm-NavigationTab)
     - [PrivateUserStrategy](#rellm-PrivateUserStrategy)
     - [WebUserInterface](#rellm-WebUserInterface)
@@ -1059,7 +1065,9 @@ discarded and a fresh keypair generated, so it&#39;s single-use per completed/fa
 | DeleteEventAttendance | [EventAttendance](#rellm-EventAttendance) | [.google.protobuf.Empty](#google-protobuf-Empty) | Delete an EventAttendance. *Publicly accessible **or** Authenticated, with anonymous RSVP support.* |
 | FederateProfile | [FederatedAccount](#rellm-FederatedAccount) | [FederatedAccount](#rellm-FederatedAccount) | Federate the current user&#39;s profile with another user profile. *Authenticated*. |
 | DefederateProfile | [FederatedAccount](#rellm-FederatedAccount) | [.google.protobuf.Empty](#google-protobuf-Empty) | Authenticated*. |
-| ConfigureServer | [ServerConfiguration](#rellm-ServerConfiguration) | [ServerConfiguration](#rellm-ServerConfiguration) | Configure the server (i.e. the response to GetServerConfiguration). *Authenticated.* Requires `ADMIN` permissions. |
+| ConfigureServer | [ServerConfiguration](#rellm-ServerConfiguration) | [ServerConfiguration](#rellm-ServerConfiguration) | Configure the server (i.e. the response to GetServerConfiguration). *Authenticated.* Requires `ADMIN` permissions. Editing `cluster_resources` additionally requires `EDIT_CLUSTER_SETTINGS` -- see that field&#39;s own doc. |
+| LockClusterResources | [LockClusterResourcesRequest](#rellm-LockClusterResourcesRequest) | [LockClusterResourcesResponse](#rellm-LockClusterResourcesResponse) | Attempts to acquire one or more `ClusterResource` locks on behalf of `namespace_id`. *Not part of the authenticated-user auth system* -- this is server-to-server, cluster-internal coordination, authorized instead by the `cluster-shared-secret` gRPC metadata header (see [`ClusterResources.cluster_shared_secret`](#rellm-ClusterResources)). Only meaningful when called against the cluster&#39;s conductor (`ClusterResources.conductor_host`) -- fails with `FAILED_PRECONDITION` if called against an instance that isn&#39;t configured as one, and with `UNAUTHENTICATED` if the header is missing or doesn&#39;t match. See [`LockClusterResourcesResponse`](#rellm-LockClusterResourcesResponse) for the polling contract this expects of callers. |
+| FreeClusterResources | [FreeClusterResourcesRequest](#rellm-FreeClusterResourcesRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Releases resources previously acquired via [`LockClusterResources`](#grpc-api-LockClusterResources). Same auth (and conductor-only requirement) as `LockClusterResources`. See [`FreeClusterResourcesRequest`](#rellm-FreeClusterResourcesRequest)&#39;s own doc for its no-op-if-not-held behavior. |
 | ResetData | [.google.protobuf.Empty](#google-protobuf-Empty) | [.google.protobuf.Empty](#google-protobuf-Empty) | Delete ALL Media, Posts, Groups and Users except the user who performed the RPC. *Authenticated.* Requires `ADMIN` permissions. Note: Server Configuration is not deleted. |
 | StreamReplies | [Post](#rellm-Post) | [Post](#rellm-Post) stream | (TODO) Reply streaming interface. Currently just streams fake example data. |
 
@@ -1429,6 +1437,7 @@ Allow the user to create/update [`SyncDestination`](#rellm-SyncDestination)s tha
 | RUN_BOTS | 9999 | Allow the user to run bots. There is no enforcement of this permission (yet), but it lets other users know that the user is allowed to run bots. |
 | ADMIN | 10000 | Marks the user as an admin. In the context of user permissions, allows the user to configure the server, moderate/update visibility/permissions to any [`User`](#rellm-User), [`Group`](#rellm-Group), [`Post`](#rellm-Post) or [`Event`](#rellm-Event). In the context of group permissions, allows the user to configure the group, modify members and member permissions, and moderate [`GroupPost`](#rellm-GroupPost)s and `GroupEvent`s. |
 | VIEW_PRIVATE_CONTACT_METHODS | 10001 | Allow the user to view the private contact methods of other users. Kept separate from `ADMIN` to allow for more fine-grained privacy control. |
+| EDIT_CLUSTER_SETTINGS | 10002 | Allow the user to edit [`ServerConfiguration.cluster_resources`](#rellm-ClusterResources) via [`ConfigureServer`](#grpc-api-ConfigureServer). `cluster_resources` is otherwise visible (read-only) to any `ADMIN` -- this permission gates *editing* it specifically, on top of `ADMIN`, since misconfiguring it (wrong `conductor_host`/`cluster_shared_secret`) affects cluster-mates this admin may not operate. Kept separate from `ADMIN` the same way `VIEW_PRIVATE_CONTACT_METHODS` is, and deliberately *not* grantable via [`UpdateUser`](#grpc-api-UpdateUser) like other permissions -- only settable directly in the database (e.g. via the `set_permission` binary), so granting it is always a deliberate operator action, never a side effect of a normal admin-managing-admins flow. |
 
 
  
@@ -2839,6 +2848,55 @@ Events returned are ordered by start time unless otherwise specified (specifical
 
 
 
+<a name="rellm-ClusterConductorState"></a>
+
+### ClusterConductorState
+The conductor&#39;s current lock state, one field per `ClusterResource`. See
+`ClusterResources.conductor_state`.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| browser_lock_holder | [string](#string) | optional | The `namespace_id` (see `ClusterResources.namespace_id`) currently holding the `CLUSTER_RESOURCE_BROWSER` lock, if any. Set by a successful [`LockClusterResources`](#grpc-api-LockClusterResources) call, cleared by the matching [`FreeClusterResources`](#grpc-api-FreeClusterResources). |
+
+
+
+
+
+
+<a name="rellm-ClusterResources"></a>
+
+### ClusterResources
+Coordinates a small piece of shared, cluster-wide state across multiple independent Rellm
+server instances that are otherwise fully isolated from each other (separate databases, separate
+[`FederationInfo`](#rellm-FederationInfo), etc.) but happen to run on shared underlying
+infrastructure (e.g. several Kubernetes namespaces sharing one small node pool). Currently used
+for exactly one thing: making sure only one instance has a headless Chrome/Brave browser open at
+any given moment (for generating link preview images), since launching several at once can
+exhaust a shared node&#39;s CPU/memory. One participating instance is designated the &#34;conductor&#34; (see
+`conductor_host`) and brokers locks via
+[`LockClusterResources`](#grpc-api-LockClusterResources)/
+[`FreeClusterResources`](#grpc-api-FreeClusterResources); every instance in the cluster --
+including the conductor itself -- sets its own `ClusterResources` pointing at whichever host
+that is.
+
+See `ServerConfiguration.cluster_resources`&#39;s own doc for who can see/edit this.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| namespace_id | [string](#string) |  | Identifies this instance to the conductor -- e.g. its Kubernetes namespace. Passed as `LockClusterResourcesRequest.namespace_id`/`FreeClusterResourcesRequest.namespace_id` so the conductor knows who&#39;s asking, and echoed back in `ClusterConductorState.browser_lock_holder` while this instance holds the lock. By convention, the conductor sets its own `namespace_id` equal to its own `conductor_host` -- see `conductor_state`&#39;s doc. |
+| conductor_host | [string](#string) |  | DNS hostname of whichever instance in the cluster is the &#34;conductor&#34; -- the single instance that actually brokers [`LockClusterResources`](#grpc-api-LockClusterResources)/ [`FreeClusterResources`](#grpc-api-FreeClusterResources) calls for every other instance (including, by convention, itself -- see `conductor_state`). Every instance in the cluster points this at the same host.
+
+Note: callers should resolve this the same way any other cross-server Rellm call does -- via [`GET {conductor_host}/backend_host`](#http-based-client-host-negotiation-for-external-cdns-get-backend_host) first, falling back to `conductor_host` itself -- rather than connecting to it directly, in case the conductor sits behind an [`ExternalCDNConfig`](#rellm-ExternalCDNConfig). |
+| cluster_shared_secret | [string](#string) |  | Shared secret proving a `LockClusterResources`/`FreeClusterResources` caller is a legitimate member of this cluster, passed as the `cluster-shared-secret` gRPC metadata header (not a request field -- there&#39;s no per-user auth involved in these calls at all, just this secret). The conductor checks it against its own stored `cluster_shared_secret`. Write-only, like [`FacebookAuthConfig.app_secret`](#rellm-FacebookAuthConfig)/ [`WebPushConfig.private_vapid_key`](#rellm-WebPushConfig) -- `GetServerConfiguration` never sends the real value back to *any* client (not even an admin), and an empty incoming value on `ConfigureServer` means &#34;leave the stored secret alone,&#34; not &#34;clear it.&#34; Should never be transmitted over a non-TLS connection. |
+| conductor_state | [ClusterConductorState](#rellm-ClusterConductorState) | optional | The conductor&#39;s live view of who currently holds each `ClusterResource`&#39;s lock. Only ever populated on the instance that *is* the conductor (i.e. whose own `namespace_id` equals its own `conductor_host`) -- every other instance always sees this as unset, since they don&#39;t hold this state themselves. Reflects the database directly, updated in place by `LockClusterResources`/`FreeClusterResources` -- unlike the rest of `ServerConfiguration`, [`ConfigureServer`](#grpc-api-ConfigureServer) never lets a caller change this, and it isn&#39;t versioned the way other `ConfigureServer` changes are. |
+
+
+
+
+
+
 <a name="rellm-CustomHomePage"></a>
 
 ### CustomHomePage
@@ -2965,6 +3023,57 @@ Encompasses both the feature&#39;s visibility and moderation settings.
 
 
 
+<a name="rellm-FreeClusterResourcesRequest"></a>
+
+### FreeClusterResourcesRequest
+Releases resources this `namespace_id` previously locked via
+[`LockClusterResources`](#grpc-api-LockClusterResources). A no-op (not an error) for any
+resource `namespace_id` doesn&#39;t currently hold -- e.g. safe to call unconditionally during
+cleanup even if the matching lock attempt itself failed or was never confirmed.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| namespace_id | [string](#string) |  | This instance&#39;s own `ClusterResources.namespace_id` -- must match whichever `namespace_id` is recorded as the current holder for a resource to actually be released. |
+| resources | [ClusterResource](#rellm-ClusterResource) | repeated | Which resources to release. |
+
+
+
+
+
+
+<a name="rellm-LockClusterResourcesRequest"></a>
+
+### LockClusterResourcesRequest
+See [`LockClusterResources`](#grpc-api-LockClusterResources).
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| namespace_id | [string](#string) |  | This instance&#39;s own `ClusterResources.namespace_id`. |
+| resources | [ClusterResource](#rellm-ClusterResource) | repeated | Which resources to lock. Currently only `CLUSTER_RESOURCE_BROWSER` exists. |
+
+
+
+
+
+
+<a name="rellm-LockClusterResourcesResponse"></a>
+
+### LockClusterResourcesResponse
+See [`LockClusterResources`](#grpc-api-LockClusterResources).
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| granted | [bool](#bool) |  | Whether every requested resource was successfully locked for `namespace_id`. `false` means none were locked (never a partial grant) -- some other namespace already holds at least one of them; see `holder`. There&#39;s no server-side wait/queueing: a caller that gets `false` should back off and call `LockClusterResources` again later. |
+| holder | [string](#string) | optional | Set only when `granted` is `false`: the `namespace_id` currently holding one of the requested (and therefore denied) resources. |
+
+
+
+
+
+
 <a name="rellm-MediaSettings"></a>
 
 ### MediaSettings
@@ -3041,6 +3150,7 @@ Configuration for a Rellm server instance.
 | event_settings | [EventSettings](#rellm-EventSettings) |  | Configuration for events on the server. If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must* contain `PUBLISH_EVENTS_GLOBALLY`. |
 | media_settings | [MediaSettings](#rellm-MediaSettings) |  | Configuration for media on the server. If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must* contain `PUBLISH_MEDIA_GLOBALLY`. |
 | external_cdn_config | [ExternalCDNConfig](#rellm-ExternalCDNConfig) | optional | If set, enables External CDN support for the server. This means that the non-secure HTTP server (on port 80) will *not* redirect to the secure server, and instead serve up Tamagui Web/Flutter clients directly. This allows you to point Cloudflare&#39;s &#34;CNAME HTTPS Proxy&#34; feature at your Rellm server to serve up HTML/CS/JS and Media files with caching from Cloudflare&#39;s CDN. See ExternalCDNConfig for more details on securing this setup. |
+| cluster_resources | [ClusterResources](#rellm-ClusterResources) | optional | Cluster-internal coordination state -- see `ClusterResources`&#39;s own doc. Visible to any logged-in admin (unlike most fields here, this describes infrastructure topology rather than anything end users need, so it&#39;s stripped entirely from [`GetServerConfiguration`](#grpc-api-GetServerConfiguration) for non-admins/anonymous callers); editing it via [`ConfigureServer`](#grpc-api-ConfigureServer) additionally requires the [`EDIT_CLUSTER_SETTINGS`](#rellm-Permission) permission. |
 | private_user_strategy | [PrivateUserStrategy](#rellm-PrivateUserStrategy) |  | Strategy when a user sets their visibility to `PRIVATE`. Defaults to `ACCOUNT_IS_FROZEN`. |
 | authentication_features | [AuthenticationFeature](#rellm-AuthenticationFeature) | repeated | (TODO) Allows admins to enable/disable creating accounts and logging in. Eventually, external auth too hopefully! |
 | web_push_config | [WebPushConfig](#rellm-WebPushConfig) | optional | Web Push (VAPID) configuration for the server. |
@@ -3132,6 +3242,19 @@ The Events Calendar&#39;s default UI granularity.
 | CALENDAR_DISPLAY_WEEK | 0 | Shows a 7-day week at a time. Good default for most servers. |
 | CALENDAR_DISPLAY_MONTH | 1 | Shows a full month at a time. Better for servers with fewer events. |
 | CALENDAR_DISPLAY_DAY | 3 | Shows a single day at a time. Better for servers with many events. |
+
+
+
+<a name="rellm-ClusterResource"></a>
+
+### ClusterResource
+A resource `ClusterResources.conductor_host` can hand out an exclusive, cluster-wide lock on
+via [`LockClusterResources`](#grpc-api-LockClusterResources)/
+[`FreeClusterResources`](#grpc-api-FreeClusterResources).
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| CLUSTER_RESOURCE_BROWSER | 0 | The ability to launch a headless Chrome/Brave browser -- see `ClusterResources`&#39;s own doc for why more than one running at once across a cluster&#39;s instances can be a problem. |
 
 
 

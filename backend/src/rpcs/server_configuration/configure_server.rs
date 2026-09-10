@@ -90,6 +90,44 @@ pub fn configure_server(
         );
     }
 
+    // `cluster_resources` is admin-visible but only *editable* with `EDIT_CLUSTER_SETTINGS` (see
+    // that permission's own doc), and `conductor_state` specifically is never settable via
+    // `ConfigureServer` at all regardless of permission -- only `LockClusterResources`/
+    // `FreeClusterResources` ever mutate it (in place, outside this function's own versioned
+    // insert). So this always overwrites whatever `to_db()` naively produced: without
+    // `EDIT_CLUSTER_SETTINGS`, the whole field is carried forward unchanged from the currently
+    // active config (ignoring the incoming request's copy of it entirely); with it, `namespace_id`/
+    // `conductor_host` come from the request (blank `cluster_shared_secret` preserving the
+    // existing one, same write-only treatment as `FacebookAuthConfig.app_secret` above), but
+    // `conductor_state` is still always carried forward from the active config.
+    let existing_cluster_resources = get_server_configuration_model(conn)
+        .ok()
+        .and_then(|c| c.cluster_resources)
+        .and_then(|v| serde_json::from_value::<protos::ClusterResources>(v).ok());
+    let can_edit_cluster_settings =
+        validate_permission(&Some(user), Permission::EditClusterSettings).is_ok();
+    new_config.cluster_resources = if can_edit_cluster_settings {
+        request.cluster_resources.as_ref().map(|incoming| {
+            let existing_secret = existing_cluster_resources
+                .as_ref()
+                .map(|c| c.cluster_shared_secret.clone())
+                .unwrap_or_default();
+            serde_json::to_value(protos::ClusterResources {
+                namespace_id: incoming.namespace_id.clone(),
+                conductor_host: incoming.conductor_host.clone(),
+                cluster_shared_secret: if incoming.cluster_shared_secret.is_empty() {
+                    existing_secret
+                } else {
+                    incoming.cluster_shared_secret.clone()
+                },
+                conductor_state: existing_cluster_resources.and_then(|c| c.conductor_state),
+            })
+            .unwrap()
+        })
+    } else {
+        existing_cluster_resources.map(|c| serde_json::to_value(c).unwrap())
+    };
+
     let result =
         conn.transaction::<models::ServerConfiguration, diesel::result::Error, _>(|conn| {
             update(server_configurations)

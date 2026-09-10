@@ -913,6 +913,9 @@ permissionText permission =
         VIEWPRIVATECONTACTMETHODS ->
             "View Private Contact Methods"
 
+        EDITCLUSTERSETTINGS ->
+            "Edit Cluster Settings"
+
         SYNCEVENTSTOFACEBOOK ->
             "Sync Events To Facebook"
 

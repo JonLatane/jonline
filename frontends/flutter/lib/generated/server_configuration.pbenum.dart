@@ -13,6 +13,22 @@ import 'dart:core' as $core;
 
 import 'package:protobuf/protobuf.dart' as $pb;
 
+/// A resource `ClusterResources.conductor_host` can hand out an exclusive, cluster-wide lock on
+/// via [`LockClusterResources`](#grpc-api-LockClusterResources)/
+/// [`FreeClusterResources`](#grpc-api-FreeClusterResources).
+class ClusterResource extends $pb.ProtobufEnum {
+  static const ClusterResource CLUSTER_RESOURCE_BROWSER = ClusterResource._(0, _omitEnumNames ? '' : 'CLUSTER_RESOURCE_BROWSER');
+
+  static const $core.List<ClusterResource> values = <ClusterResource> [
+    CLUSTER_RESOURCE_BROWSER,
+  ];
+
+  static final $core.Map<$core.int, ClusterResource> _byValue = $pb.ProtobufEnum.initByValue(values);
+  static ClusterResource? valueOf($core.int value) => _byValue[value];
+
+  const ClusterResource._($core.int v, $core.String n) : super(v, n);
+}
+
 /// Authentication features that can be enabled/disabled by the server admin.
 class AuthenticationFeature extends $pb.ProtobufEnum {
   static const AuthenticationFeature AUTHENTICATION_FEATURE_UNKNOWN = AuthenticationFeature._(0, _omitEnumNames ? '' : 'AUTHENTICATION_FEATURE_UNKNOWN');

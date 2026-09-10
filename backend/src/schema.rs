@@ -329,6 +329,7 @@ diesel::table! {
         federation_info -> Jsonb,
         web_push_config -> Nullable<Jsonb>,
         custom_tabs -> Nullable<Jsonb>,
+        cluster_resources -> Nullable<Jsonb>,
     }
 }
 

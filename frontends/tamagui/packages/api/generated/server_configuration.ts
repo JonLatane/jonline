@@ -19,6 +19,42 @@ import {
 
 export const protobufPackage = "rellm";
 
+/**
+ * A resource `ClusterResources.conductor_host` can hand out an exclusive, cluster-wide lock on
+ * via [`LockClusterResources`](#grpc-api-LockClusterResources)/
+ * [`FreeClusterResources`](#grpc-api-FreeClusterResources).
+ */
+export enum ClusterResource {
+  /**
+   * CLUSTER_RESOURCE_BROWSER - The ability to launch a headless Chrome/Brave browser -- see `ClusterResources`'s own doc for
+   * why more than one running at once across a cluster's instances can be a problem.
+   */
+  CLUSTER_RESOURCE_BROWSER = 0,
+  UNRECOGNIZED = -1,
+}
+
+export function clusterResourceFromJSON(object: any): ClusterResource {
+  switch (object) {
+    case 0:
+    case "CLUSTER_RESOURCE_BROWSER":
+      return ClusterResource.CLUSTER_RESOURCE_BROWSER;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return ClusterResource.UNRECOGNIZED;
+  }
+}
+
+export function clusterResourceToJSON(object: ClusterResource): string {
+  switch (object) {
+    case ClusterResource.CLUSTER_RESOURCE_BROWSER:
+      return "CLUSTER_RESOURCE_BROWSER";
+    case ClusterResource.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
 /** Authentication features that can be enabled/disabled by the server admin. */
 export enum AuthenticationFeature {
   /** AUTHENTICATION_FEATURE_UNKNOWN - An authentication feature that is not known to the server. (Likely, the client and server use different versions of the Rellm protocol.) */
@@ -358,6 +394,17 @@ export interface ServerConfiguration {
   externalCdnConfig?:
     | ExternalCDNConfig
     | undefined;
+  /**
+   * Cluster-internal coordination state -- see `ClusterResources`'s own doc. Visible to any
+   * logged-in admin (unlike most fields here, this describes infrastructure topology rather than
+   * anything end users need, so it's stripped entirely from
+   * [`GetServerConfiguration`](#grpc-api-GetServerConfiguration) for non-admins/anonymous
+   * callers); editing it via [`ConfigureServer`](#grpc-api-ConfigureServer) additionally requires
+   * the [`EDIT_CLUSTER_SETTINGS`](#rellm-Permission) permission.
+   */
+  clusterResources?:
+    | ClusterResources
+    | undefined;
   /** Strategy when a user sets their visibility to `PRIVATE`. Defaults to `ACCOUNT_IS_FROZEN`. */
   privateUserStrategy: PrivateUserStrategy;
   /**
@@ -367,6 +414,122 @@ export interface ServerConfiguration {
   authenticationFeatures: AuthenticationFeature[];
   /** Web Push (VAPID) configuration for the server. */
   webPushConfig?: WebPushConfig | undefined;
+}
+
+/**
+ * Coordinates a small piece of shared, cluster-wide state across multiple independent Rellm
+ * server instances that are otherwise fully isolated from each other (separate databases, separate
+ * [`FederationInfo`](#rellm-FederationInfo), etc.) but happen to run on shared underlying
+ * infrastructure (e.g. several Kubernetes namespaces sharing one small node pool). Currently used
+ * for exactly one thing: making sure only one instance has a headless Chrome/Brave browser open at
+ * any given moment (for generating link preview images), since launching several at once can
+ * exhaust a shared node's CPU/memory. One participating instance is designated the "conductor" (see
+ * `conductor_host`) and brokers locks via
+ * [`LockClusterResources`](#grpc-api-LockClusterResources)/
+ * [`FreeClusterResources`](#grpc-api-FreeClusterResources); every instance in the cluster --
+ * including the conductor itself -- sets its own `ClusterResources` pointing at whichever host
+ * that is.
+ *
+ * See `ServerConfiguration.cluster_resources`'s own doc for who can see/edit this.
+ */
+export interface ClusterResources {
+  /**
+   * Identifies this instance to the conductor -- e.g. its Kubernetes namespace. Passed as
+   * `LockClusterResourcesRequest.namespace_id`/`FreeClusterResourcesRequest.namespace_id` so the
+   * conductor knows who's asking, and echoed back in `ClusterConductorState.browser_lock_holder`
+   * while this instance holds the lock. By convention, the conductor sets its own `namespace_id`
+   * equal to its own `conductor_host` -- see `conductor_state`'s doc.
+   */
+  namespaceId: string;
+  /**
+   * DNS hostname of whichever instance in the cluster is the "conductor" -- the single instance
+   * that actually brokers [`LockClusterResources`](#grpc-api-LockClusterResources)/
+   * [`FreeClusterResources`](#grpc-api-FreeClusterResources) calls for every other instance
+   * (including, by convention, itself -- see `conductor_state`). Every instance in the cluster
+   * points this at the same host.
+   *
+   * Note: callers should resolve this the same way any other cross-server Rellm call does --
+   * via [`GET {conductor_host}/backend_host`](#http-based-client-host-negotiation-for-external-cdns-get-backend_host)
+   * first, falling back to `conductor_host` itself -- rather than connecting to it directly, in
+   * case the conductor sits behind an [`ExternalCDNConfig`](#rellm-ExternalCDNConfig).
+   */
+  conductorHost: string;
+  /**
+   * Shared secret proving a `LockClusterResources`/`FreeClusterResources` caller is a legitimate
+   * member of this cluster, passed as the `cluster-shared-secret` gRPC metadata header (not a
+   * request field -- there's no per-user auth involved in these calls at all, just this secret).
+   * The conductor checks it against its own stored `cluster_shared_secret`. Write-only, like
+   * [`FacebookAuthConfig.app_secret`](#rellm-FacebookAuthConfig)/
+   * [`WebPushConfig.private_vapid_key`](#rellm-WebPushConfig) -- `GetServerConfiguration` never
+   * sends the real value back to *any* client (not even an admin), and an empty incoming value on
+   * `ConfigureServer` means "leave the stored secret alone," not "clear it." Should never be
+   * transmitted over a non-TLS connection.
+   */
+  clusterSharedSecret: string;
+  /**
+   * The conductor's live view of who currently holds each `ClusterResource`'s lock. Only ever
+   * populated on the instance that *is* the conductor (i.e. whose own `namespace_id` equals its
+   * own `conductor_host`) -- every other instance always sees this as unset, since they don't
+   * hold this state themselves. Reflects the database directly, updated in place by
+   * `LockClusterResources`/`FreeClusterResources` -- unlike the rest of `ServerConfiguration`,
+   * [`ConfigureServer`](#grpc-api-ConfigureServer) never lets a caller change this, and it isn't
+   * versioned the way other `ConfigureServer` changes are.
+   */
+  conductorState?: ClusterConductorState | undefined;
+}
+
+/**
+ * The conductor's current lock state, one field per `ClusterResource`. See
+ * `ClusterResources.conductor_state`.
+ */
+export interface ClusterConductorState {
+  /**
+   * The `namespace_id` (see `ClusterResources.namespace_id`) currently holding the
+   * `CLUSTER_RESOURCE_BROWSER` lock, if any. Set by a successful
+   * [`LockClusterResources`](#grpc-api-LockClusterResources) call, cleared by the matching
+   * [`FreeClusterResources`](#grpc-api-FreeClusterResources).
+   */
+  browserLockHolder?: string | undefined;
+}
+
+/** See [`LockClusterResources`](#grpc-api-LockClusterResources). */
+export interface LockClusterResourcesRequest {
+  /** This instance's own `ClusterResources.namespace_id`. */
+  namespaceId: string;
+  /** Which resources to lock. Currently only `CLUSTER_RESOURCE_BROWSER` exists. */
+  resources: ClusterResource[];
+}
+
+/** See [`LockClusterResources`](#grpc-api-LockClusterResources). */
+export interface LockClusterResourcesResponse {
+  /**
+   * Whether every requested resource was successfully locked for `namespace_id`. `false` means
+   * none were locked (never a partial grant) -- some other namespace already holds at least one
+   * of them; see `holder`. There's no server-side wait/queueing: a caller that gets `false` should
+   * back off and call `LockClusterResources` again later.
+   */
+  granted: boolean;
+  /**
+   * Set only when `granted` is `false`: the `namespace_id` currently holding one of the
+   * requested (and therefore denied) resources.
+   */
+  holder?: string | undefined;
+}
+
+/**
+ * Releases resources this `namespace_id` previously locked via
+ * [`LockClusterResources`](#grpc-api-LockClusterResources). A no-op (not an error) for any
+ * resource `namespace_id` doesn't currently hold -- e.g. safe to call unconditionally during
+ * cleanup even if the matching lock attempt itself failed or was never confirmed.
+ */
+export interface FreeClusterResourcesRequest {
+  /**
+   * This instance's own `ClusterResources.namespace_id` -- must match whichever `namespace_id`
+   * is recorded as the current holder for a resource to actually be released.
+   */
+  namespaceId: string;
+  /** Which resources to release. */
+  resources: ClusterResource[];
 }
 
 /**
@@ -771,6 +934,7 @@ function createBaseServerConfiguration(): ServerConfiguration {
     eventSettings: undefined,
     mediaSettings: undefined,
     externalCdnConfig: undefined,
+    clusterResources: undefined,
     privateUserStrategy: 0,
     authenticationFeatures: [],
     webPushConfig: undefined,
@@ -820,6 +984,9 @@ export const ServerConfiguration: MessageFns<ServerConfiguration> = {
     }
     if (message.externalCdnConfig !== undefined) {
       ExternalCDNConfig.encode(message.externalCdnConfig, writer.uint32(722).fork()).join();
+    }
+    if (message.clusterResources !== undefined) {
+      ClusterResources.encode(message.clusterResources, writer.uint32(730).fork()).join();
     }
     if (message.privateUserStrategy !== 0) {
       writer.uint32(800).int32(message.privateUserStrategy);
@@ -968,6 +1135,14 @@ export const ServerConfiguration: MessageFns<ServerConfiguration> = {
           message.externalCdnConfig = ExternalCDNConfig.decode(reader, reader.uint32());
           continue;
         }
+        case 91: {
+          if (tag !== 730) {
+            break;
+          }
+
+          message.clusterResources = ClusterResources.decode(reader, reader.uint32());
+          continue;
+        }
         case 100: {
           if (tag !== 800) {
             break;
@@ -1033,6 +1208,7 @@ export const ServerConfiguration: MessageFns<ServerConfiguration> = {
       externalCdnConfig: isSet(object.externalCdnConfig)
         ? ExternalCDNConfig.fromJSON(object.externalCdnConfig)
         : undefined,
+      clusterResources: isSet(object.clusterResources) ? ClusterResources.fromJSON(object.clusterResources) : undefined,
       privateUserStrategy: isSet(object.privateUserStrategy)
         ? privateUserStrategyFromJSON(object.privateUserStrategy)
         : 0,
@@ -1081,6 +1257,9 @@ export const ServerConfiguration: MessageFns<ServerConfiguration> = {
     if (message.externalCdnConfig !== undefined) {
       obj.externalCdnConfig = ExternalCDNConfig.toJSON(message.externalCdnConfig);
     }
+    if (message.clusterResources !== undefined) {
+      obj.clusterResources = ClusterResources.toJSON(message.clusterResources);
+    }
     if (message.privateUserStrategy !== 0) {
       obj.privateUserStrategy = privateUserStrategyToJSON(message.privateUserStrategy);
     }
@@ -1128,11 +1307,440 @@ export const ServerConfiguration: MessageFns<ServerConfiguration> = {
     message.externalCdnConfig = (object.externalCdnConfig !== undefined && object.externalCdnConfig !== null)
       ? ExternalCDNConfig.fromPartial(object.externalCdnConfig)
       : undefined;
+    message.clusterResources = (object.clusterResources !== undefined && object.clusterResources !== null)
+      ? ClusterResources.fromPartial(object.clusterResources)
+      : undefined;
     message.privateUserStrategy = object.privateUserStrategy ?? 0;
     message.authenticationFeatures = object.authenticationFeatures?.map((e) => e) || [];
     message.webPushConfig = (object.webPushConfig !== undefined && object.webPushConfig !== null)
       ? WebPushConfig.fromPartial(object.webPushConfig)
       : undefined;
+    return message;
+  },
+};
+
+function createBaseClusterResources(): ClusterResources {
+  return { namespaceId: "", conductorHost: "", clusterSharedSecret: "", conductorState: undefined };
+}
+
+export const ClusterResources: MessageFns<ClusterResources> = {
+  encode(message: ClusterResources, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.namespaceId !== "") {
+      writer.uint32(10).string(message.namespaceId);
+    }
+    if (message.conductorHost !== "") {
+      writer.uint32(18).string(message.conductorHost);
+    }
+    if (message.clusterSharedSecret !== "") {
+      writer.uint32(26).string(message.clusterSharedSecret);
+    }
+    if (message.conductorState !== undefined) {
+      ClusterConductorState.encode(message.conductorState, writer.uint32(34).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ClusterResources {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseClusterResources();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.namespaceId = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.conductorHost = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.clusterSharedSecret = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.conductorState = ClusterConductorState.decode(reader, reader.uint32());
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ClusterResources {
+    return {
+      namespaceId: isSet(object.namespaceId) ? globalThis.String(object.namespaceId) : "",
+      conductorHost: isSet(object.conductorHost) ? globalThis.String(object.conductorHost) : "",
+      clusterSharedSecret: isSet(object.clusterSharedSecret) ? globalThis.String(object.clusterSharedSecret) : "",
+      conductorState: isSet(object.conductorState) ? ClusterConductorState.fromJSON(object.conductorState) : undefined,
+    };
+  },
+
+  toJSON(message: ClusterResources): unknown {
+    const obj: any = {};
+    if (message.namespaceId !== "") {
+      obj.namespaceId = message.namespaceId;
+    }
+    if (message.conductorHost !== "") {
+      obj.conductorHost = message.conductorHost;
+    }
+    if (message.clusterSharedSecret !== "") {
+      obj.clusterSharedSecret = message.clusterSharedSecret;
+    }
+    if (message.conductorState !== undefined) {
+      obj.conductorState = ClusterConductorState.toJSON(message.conductorState);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ClusterResources>, I>>(base?: I): ClusterResources {
+    return ClusterResources.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<ClusterResources>, I>>(object: I): ClusterResources {
+    const message = createBaseClusterResources();
+    message.namespaceId = object.namespaceId ?? "";
+    message.conductorHost = object.conductorHost ?? "";
+    message.clusterSharedSecret = object.clusterSharedSecret ?? "";
+    message.conductorState = (object.conductorState !== undefined && object.conductorState !== null)
+      ? ClusterConductorState.fromPartial(object.conductorState)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseClusterConductorState(): ClusterConductorState {
+  return { browserLockHolder: undefined };
+}
+
+export const ClusterConductorState: MessageFns<ClusterConductorState> = {
+  encode(message: ClusterConductorState, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.browserLockHolder !== undefined) {
+      writer.uint32(10).string(message.browserLockHolder);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ClusterConductorState {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseClusterConductorState();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.browserLockHolder = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ClusterConductorState {
+    return {
+      browserLockHolder: isSet(object.browserLockHolder) ? globalThis.String(object.browserLockHolder) : undefined,
+    };
+  },
+
+  toJSON(message: ClusterConductorState): unknown {
+    const obj: any = {};
+    if (message.browserLockHolder !== undefined) {
+      obj.browserLockHolder = message.browserLockHolder;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ClusterConductorState>, I>>(base?: I): ClusterConductorState {
+    return ClusterConductorState.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<ClusterConductorState>, I>>(object: I): ClusterConductorState {
+    const message = createBaseClusterConductorState();
+    message.browserLockHolder = object.browserLockHolder ?? undefined;
+    return message;
+  },
+};
+
+function createBaseLockClusterResourcesRequest(): LockClusterResourcesRequest {
+  return { namespaceId: "", resources: [] };
+}
+
+export const LockClusterResourcesRequest: MessageFns<LockClusterResourcesRequest> = {
+  encode(message: LockClusterResourcesRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.namespaceId !== "") {
+      writer.uint32(10).string(message.namespaceId);
+    }
+    writer.uint32(18).fork();
+    for (const v of message.resources) {
+      writer.int32(v);
+    }
+    writer.join();
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): LockClusterResourcesRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseLockClusterResourcesRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.namespaceId = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag === 16) {
+            message.resources.push(reader.int32() as any);
+
+            continue;
+          }
+
+          if (tag === 18) {
+            const end2 = reader.uint32() + reader.pos;
+            while (reader.pos < end2) {
+              message.resources.push(reader.int32() as any);
+            }
+
+            continue;
+          }
+
+          break;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): LockClusterResourcesRequest {
+    return {
+      namespaceId: isSet(object.namespaceId) ? globalThis.String(object.namespaceId) : "",
+      resources: globalThis.Array.isArray(object?.resources)
+        ? object.resources.map((e: any) => clusterResourceFromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: LockClusterResourcesRequest): unknown {
+    const obj: any = {};
+    if (message.namespaceId !== "") {
+      obj.namespaceId = message.namespaceId;
+    }
+    if (message.resources?.length) {
+      obj.resources = message.resources.map((e) => clusterResourceToJSON(e));
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<LockClusterResourcesRequest>, I>>(base?: I): LockClusterResourcesRequest {
+    return LockClusterResourcesRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<LockClusterResourcesRequest>, I>>(object: I): LockClusterResourcesRequest {
+    const message = createBaseLockClusterResourcesRequest();
+    message.namespaceId = object.namespaceId ?? "";
+    message.resources = object.resources?.map((e) => e) || [];
+    return message;
+  },
+};
+
+function createBaseLockClusterResourcesResponse(): LockClusterResourcesResponse {
+  return { granted: false, holder: undefined };
+}
+
+export const LockClusterResourcesResponse: MessageFns<LockClusterResourcesResponse> = {
+  encode(message: LockClusterResourcesResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.granted !== false) {
+      writer.uint32(8).bool(message.granted);
+    }
+    if (message.holder !== undefined) {
+      writer.uint32(18).string(message.holder);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): LockClusterResourcesResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseLockClusterResourcesResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.granted = reader.bool();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.holder = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): LockClusterResourcesResponse {
+    return {
+      granted: isSet(object.granted) ? globalThis.Boolean(object.granted) : false,
+      holder: isSet(object.holder) ? globalThis.String(object.holder) : undefined,
+    };
+  },
+
+  toJSON(message: LockClusterResourcesResponse): unknown {
+    const obj: any = {};
+    if (message.granted !== false) {
+      obj.granted = message.granted;
+    }
+    if (message.holder !== undefined) {
+      obj.holder = message.holder;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<LockClusterResourcesResponse>, I>>(base?: I): LockClusterResourcesResponse {
+    return LockClusterResourcesResponse.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<LockClusterResourcesResponse>, I>>(object: I): LockClusterResourcesResponse {
+    const message = createBaseLockClusterResourcesResponse();
+    message.granted = object.granted ?? false;
+    message.holder = object.holder ?? undefined;
+    return message;
+  },
+};
+
+function createBaseFreeClusterResourcesRequest(): FreeClusterResourcesRequest {
+  return { namespaceId: "", resources: [] };
+}
+
+export const FreeClusterResourcesRequest: MessageFns<FreeClusterResourcesRequest> = {
+  encode(message: FreeClusterResourcesRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.namespaceId !== "") {
+      writer.uint32(10).string(message.namespaceId);
+    }
+    writer.uint32(18).fork();
+    for (const v of message.resources) {
+      writer.int32(v);
+    }
+    writer.join();
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): FreeClusterResourcesRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseFreeClusterResourcesRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.namespaceId = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag === 16) {
+            message.resources.push(reader.int32() as any);
+
+            continue;
+          }
+
+          if (tag === 18) {
+            const end2 = reader.uint32() + reader.pos;
+            while (reader.pos < end2) {
+              message.resources.push(reader.int32() as any);
+            }
+
+            continue;
+          }
+
+          break;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): FreeClusterResourcesRequest {
+    return {
+      namespaceId: isSet(object.namespaceId) ? globalThis.String(object.namespaceId) : "",
+      resources: globalThis.Array.isArray(object?.resources)
+        ? object.resources.map((e: any) => clusterResourceFromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: FreeClusterResourcesRequest): unknown {
+    const obj: any = {};
+    if (message.namespaceId !== "") {
+      obj.namespaceId = message.namespaceId;
+    }
+    if (message.resources?.length) {
+      obj.resources = message.resources.map((e) => clusterResourceToJSON(e));
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<FreeClusterResourcesRequest>, I>>(base?: I): FreeClusterResourcesRequest {
+    return FreeClusterResourcesRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<FreeClusterResourcesRequest>, I>>(object: I): FreeClusterResourcesRequest {
+    const message = createBaseFreeClusterResourcesRequest();
+    message.namespaceId = object.namespaceId ?? "";
+    message.resources = object.resources?.map((e) => e) || [];
     return message;
   },
 };

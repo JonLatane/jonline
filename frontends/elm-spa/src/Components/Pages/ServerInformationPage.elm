@@ -49,6 +49,7 @@ is active, even though only `AboutTab`'s `view` ever displays them.
 import Browser.Navigation
 import Components.Pages.ServerInformationPage.AboutTab as AboutTab
 import Components.Pages.ServerInformationPage.CdnTab as CdnTab
+import Components.Pages.ServerInformationPage.ClusterTab as ClusterTab
 import Components.Pages.ServerInformationPage.Common as Common
 import Components.Pages.ServerInformationPage.FederationTab as FederationTab
 import Components.Pages.ServerInformationPage.SettingsTab as SettingsTab
@@ -90,6 +91,7 @@ type alias Model =
     , settingsTab : SettingsTab.Model
     , federationTab : FederationTab.Model
     , cdnTab : CdnTab.Model
+    , clusterTab : ClusterTab.Model
     }
 
 
@@ -104,6 +106,7 @@ type Msg
     | SettingsTabMsg SettingsTab.Msg
     | FederationTabMsg FederationTab.Msg
     | CdnTabMsg CdnTab.Msg
+    | ClusterTabMsg ClusterTab.Msg
     | SharedMsg Shared.Msg
 
 
@@ -117,6 +120,7 @@ type Tab
     | TabSettings
     | TabFederation
     | TabCdn
+    | TabCluster
 
 
 {-| `Tab`'s URL-facing form for the `tab` query param (see `pushTabUrl`) -- lowercase, mirroring
@@ -141,6 +145,9 @@ tabParam tab =
         TabCdn ->
             "cdn"
 
+        TabCluster ->
+            "cluster"
+
 
 {-| Case-insensitive inverse of `tabParam`, mirroring
 `Components.Pages.PostsPage.postContextFromParam`. Any unrecognized value (e.g. a hand-edited link)
@@ -163,6 +170,9 @@ tabFromParam param =
 
         "cdn" ->
             Just TabCdn
+
+        "cluster" ->
+            Just TabCluster
 
         _ ->
             Nothing
@@ -208,6 +218,7 @@ init shared pageIsSecure targetHost navKey path query =
             , settingsTab = SettingsTab.init
             , federationTab = FederationTab.init
             , cdnTab = CdnTab.init
+            , clusterTab = ClusterTab.init
             }
 
         ( fetchedModel, fetchEffect ) =
@@ -322,6 +333,11 @@ updateInner shared msg model =
             CdnTab.update shared model.targetHost (effectiveServer shared model) subMsg model.cdnTab
                 |> Tuple.mapFirst (\subModel -> { model | cdnTab = subModel })
                 |> Tuple.mapSecond (Effect.map CdnTabMsg)
+
+        ClusterTabMsg subMsg ->
+            ClusterTab.update shared model.targetHost (effectiveServer shared model) subMsg model.clusterTab
+                |> Tuple.mapFirst (\subModel -> { model | clusterTab = subModel })
+                |> Tuple.mapSecond (Effect.map ClusterTabMsg)
 
         SharedMsg subMsg ->
             ( { model
@@ -457,7 +473,7 @@ view shared model =
         Just server ->
             div [ class "server-details" ]
                 [ addServerButton shared model server
-                , tabBar model
+                , tabBar shared model
                 , tabContent shared model server
                 ]
 
@@ -488,16 +504,27 @@ addServerButton shared model server =
             ]
 
 
-tabBar : Model -> Html Msg
-tabBar model =
+{-| `TabCluster` only appears for a logged-in admin -- `cluster_resources` is stripped from
+`GetServerConfiguration` entirely for anyone else (see `ClusterTab`'s own doc), so there'd be
+nothing to show a non-admin there.
+-}
+tabBar : Shared.Model -> Model -> Html Msg
+tabBar shared model =
     div [ class "server-details-tab-bar" ]
         (List.map (tabButton model)
-            [ ( TabAbout, "About" )
-            , ( TabTheme, "Theme" )
-            , ( TabSettings, "Settings" )
-            , ( TabFederation, "Federation" )
-            , ( TabCdn, "CDN" )
-            ]
+            ([ ( TabAbout, "About" )
+             , ( TabTheme, "Theme" )
+             , ( TabSettings, "Settings" )
+             , ( TabFederation, "Federation" )
+             , ( TabCdn, "CDN" )
+             ]
+                ++ (if Common.adminAccountFor shared model.targetHost /= Nothing then
+                        [ ( TabCluster, "Cluster" ) ]
+
+                    else
+                        []
+                   )
+            )
         )
 
 
@@ -540,3 +567,6 @@ tabContent shared model server =
 
         TabCdn ->
             Html.map CdnTabMsg (CdnTab.view server maybeAdminAccount model.cdnTab)
+
+        TabCluster ->
+            Html.map ClusterTabMsg (ClusterTab.view server maybeAdminAccount model.clusterTab)

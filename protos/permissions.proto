@@ -160,4 +160,15 @@ enum Permission {
   // Allow the user to view the private contact methods of other users.
   // Kept separate from `ADMIN` to allow for more fine-grained privacy control.
   VIEW_PRIVATE_CONTACT_METHODS = 10001;
+
+  // Allow the user to edit [`ServerConfiguration.cluster_resources`](#rellm-ClusterResources) via
+  // [`ConfigureServer`](#grpc-api-ConfigureServer). `cluster_resources` is otherwise visible
+  // (read-only) to any `ADMIN` -- this permission gates *editing* it specifically, on top of
+  // `ADMIN`, since misconfiguring it (wrong `conductor_host`/`cluster_shared_secret`) affects
+  // cluster-mates this admin may not operate. Kept separate from `ADMIN` the same way
+  // `VIEW_PRIVATE_CONTACT_METHODS` is, and deliberately *not* grantable via
+  // [`UpdateUser`](#grpc-api-UpdateUser) like other permissions -- only settable directly in the
+  // database (e.g. via the `set_permission` binary), so granting it is always a deliberate
+  // operator action, never a side effect of a normal admin-managing-admins flow.
+  EDIT_CLUSTER_SETTINGS = 10002;
 }

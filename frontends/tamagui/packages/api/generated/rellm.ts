@@ -61,7 +61,12 @@ import {
   Post,
   SyncPostRequest,
 } from "./posts";
-import { ServerConfiguration } from "./server_configuration";
+import {
+  FreeClusterResourcesRequest,
+  LockClusterResourcesRequest,
+  LockClusterResourcesResponse,
+  ServerConfiguration,
+} from "./server_configuration";
 import {
   DeleteSyncDestinationRequest,
   DeleteSyncSourceRequest,
@@ -1619,13 +1624,48 @@ export const RellmDefinition = {
     },
     /**
      * Configure the server (i.e. the response to GetServerConfiguration). *Authenticated.*
-     * Requires `ADMIN` permissions.
+     * Requires `ADMIN` permissions. Editing `cluster_resources` additionally requires
+     * `EDIT_CLUSTER_SETTINGS` -- see that field's own doc.
      */
     configureServer: {
       name: "ConfigureServer",
       requestType: ServerConfiguration,
       requestStream: false,
       responseType: ServerConfiguration,
+      responseStream: false,
+      options: {},
+    },
+    /**
+     * Attempts to acquire one or more `ClusterResource` locks on behalf of `namespace_id`. *Not
+     * part of the authenticated-user auth system* -- this is server-to-server, cluster-internal
+     * coordination, authorized instead by the `cluster-shared-secret` gRPC metadata header (see
+     * [`ClusterResources.cluster_shared_secret`](#rellm-ClusterResources)). Only meaningful when
+     * called against the cluster's conductor (`ClusterResources.conductor_host`) -- fails with
+     * `FAILED_PRECONDITION` if called against an instance that isn't configured as one, and with
+     * `UNAUTHENTICATED` if the header is missing or doesn't match. See
+     * [`LockClusterResourcesResponse`](#rellm-LockClusterResourcesResponse) for the polling
+     * contract this expects of callers.
+     */
+    lockClusterResources: {
+      name: "LockClusterResources",
+      requestType: LockClusterResourcesRequest,
+      requestStream: false,
+      responseType: LockClusterResourcesResponse,
+      responseStream: false,
+      options: {},
+    },
+    /**
+     * Releases resources previously acquired via
+     * [`LockClusterResources`](#grpc-api-LockClusterResources). Same auth (and conductor-only
+     * requirement) as `LockClusterResources`. See
+     * [`FreeClusterResourcesRequest`](#rellm-FreeClusterResourcesRequest)'s own doc for its
+     * no-op-if-not-held behavior.
+     */
+    freeClusterResources: {
+      name: "FreeClusterResources",
+      requestType: FreeClusterResourcesRequest,
+      requestStream: false,
+      responseType: Empty,
       responseStream: false,
       options: {},
     },
@@ -1980,12 +2020,39 @@ export interface RellmServiceImplementation<CallContextExt = {}> {
   defederateProfile(request: FederatedAccount, context: CallContext & CallContextExt): Promise<DeepPartial<Empty>>;
   /**
    * Configure the server (i.e. the response to GetServerConfiguration). *Authenticated.*
-   * Requires `ADMIN` permissions.
+   * Requires `ADMIN` permissions. Editing `cluster_resources` additionally requires
+   * `EDIT_CLUSTER_SETTINGS` -- see that field's own doc.
    */
   configureServer(
     request: ServerConfiguration,
     context: CallContext & CallContextExt,
   ): Promise<DeepPartial<ServerConfiguration>>;
+  /**
+   * Attempts to acquire one or more `ClusterResource` locks on behalf of `namespace_id`. *Not
+   * part of the authenticated-user auth system* -- this is server-to-server, cluster-internal
+   * coordination, authorized instead by the `cluster-shared-secret` gRPC metadata header (see
+   * [`ClusterResources.cluster_shared_secret`](#rellm-ClusterResources)). Only meaningful when
+   * called against the cluster's conductor (`ClusterResources.conductor_host`) -- fails with
+   * `FAILED_PRECONDITION` if called against an instance that isn't configured as one, and with
+   * `UNAUTHENTICATED` if the header is missing or doesn't match. See
+   * [`LockClusterResourcesResponse`](#rellm-LockClusterResourcesResponse) for the polling
+   * contract this expects of callers.
+   */
+  lockClusterResources(
+    request: LockClusterResourcesRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<LockClusterResourcesResponse>>;
+  /**
+   * Releases resources previously acquired via
+   * [`LockClusterResources`](#grpc-api-LockClusterResources). Same auth (and conductor-only
+   * requirement) as `LockClusterResources`. See
+   * [`FreeClusterResourcesRequest`](#rellm-FreeClusterResourcesRequest)'s own doc for its
+   * no-op-if-not-held behavior.
+   */
+  freeClusterResources(
+    request: FreeClusterResourcesRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<Empty>>;
   /**
    * Delete ALL Media, Posts, Groups and Users except the user who performed the RPC. *Authenticated.*
    * Requires `ADMIN` permissions.
@@ -2322,12 +2389,39 @@ export interface RellmClient<CallOptionsExt = {}> {
   defederateProfile(request: DeepPartial<FederatedAccount>, options?: CallOptions & CallOptionsExt): Promise<Empty>;
   /**
    * Configure the server (i.e. the response to GetServerConfiguration). *Authenticated.*
-   * Requires `ADMIN` permissions.
+   * Requires `ADMIN` permissions. Editing `cluster_resources` additionally requires
+   * `EDIT_CLUSTER_SETTINGS` -- see that field's own doc.
    */
   configureServer(
     request: DeepPartial<ServerConfiguration>,
     options?: CallOptions & CallOptionsExt,
   ): Promise<ServerConfiguration>;
+  /**
+   * Attempts to acquire one or more `ClusterResource` locks on behalf of `namespace_id`. *Not
+   * part of the authenticated-user auth system* -- this is server-to-server, cluster-internal
+   * coordination, authorized instead by the `cluster-shared-secret` gRPC metadata header (see
+   * [`ClusterResources.cluster_shared_secret`](#rellm-ClusterResources)). Only meaningful when
+   * called against the cluster's conductor (`ClusterResources.conductor_host`) -- fails with
+   * `FAILED_PRECONDITION` if called against an instance that isn't configured as one, and with
+   * `UNAUTHENTICATED` if the header is missing or doesn't match. See
+   * [`LockClusterResourcesResponse`](#rellm-LockClusterResourcesResponse) for the polling
+   * contract this expects of callers.
+   */
+  lockClusterResources(
+    request: DeepPartial<LockClusterResourcesRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<LockClusterResourcesResponse>;
+  /**
+   * Releases resources previously acquired via
+   * [`LockClusterResources`](#grpc-api-LockClusterResources). Same auth (and conductor-only
+   * requirement) as `LockClusterResources`. See
+   * [`FreeClusterResourcesRequest`](#rellm-FreeClusterResourcesRequest)'s own doc for its
+   * no-op-if-not-held behavior.
+   */
+  freeClusterResources(
+    request: DeepPartial<FreeClusterResourcesRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<Empty>;
   /**
    * Delete ALL Media, Posts, Groups and Users except the user who performed the RPC. *Authenticated.*
    * Requires `ADMIN` permissions.

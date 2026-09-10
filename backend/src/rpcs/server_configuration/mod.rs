@@ -11,5 +11,11 @@ pub use get_server_configuration::create_default_server_configuration;
 mod configure_server;
 pub use configure_server::configure_server;
 
+mod lock_cluster_resources;
+pub use lock_cluster_resources::lock_cluster_resources;
+
+mod free_cluster_resources;
+pub use free_cluster_resources::free_cluster_resources;
+
 mod reset_data;
 pub use reset_data::reset_data;

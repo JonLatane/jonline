@@ -13,6 +13,18 @@ import 'dart:convert' as $convert;
 import 'dart:core' as $core;
 import 'dart:typed_data' as $typed_data;
 
+@$core.Deprecated('Use clusterResourceDescriptor instead')
+const ClusterResource$json = {
+  '1': 'ClusterResource',
+  '2': [
+    {'1': 'CLUSTER_RESOURCE_BROWSER', '2': 0},
+  ],
+};
+
+/// Descriptor for `ClusterResource`. Decode as a `google.protobuf.EnumDescriptorProto`.
+final $typed_data.Uint8List clusterResourceDescriptor = $convert.base64Decode(
+    'Cg9DbHVzdGVyUmVzb3VyY2USHAoYQ0xVU1RFUl9SRVNPVVJDRV9CUk9XU0VSEAA=');
+
 @$core.Deprecated('Use authenticationFeatureDescriptor instead')
 const AuthenticationFeature$json = {
   '1': 'AuthenticationFeature',
@@ -111,15 +123,17 @@ const ServerConfiguration$json = {
     {'1': 'event_settings', '3': 23, '4': 1, '5': 11, '6': '.rellm.EventSettings', '10': 'eventSettings'},
     {'1': 'media_settings', '3': 24, '4': 1, '5': 11, '6': '.rellm.MediaSettings', '10': 'mediaSettings'},
     {'1': 'external_cdn_config', '3': 90, '4': 1, '5': 11, '6': '.rellm.ExternalCDNConfig', '9': 3, '10': 'externalCdnConfig', '17': true},
+    {'1': 'cluster_resources', '3': 91, '4': 1, '5': 11, '6': '.rellm.ClusterResources', '9': 4, '10': 'clusterResources', '17': true},
     {'1': 'private_user_strategy', '3': 100, '4': 1, '5': 14, '6': '.rellm.PrivateUserStrategy', '10': 'privateUserStrategy'},
     {'1': 'authentication_features', '3': 101, '4': 3, '5': 14, '6': '.rellm.AuthenticationFeature', '10': 'authenticationFeatures'},
-    {'1': 'web_push_config', '3': 110, '4': 1, '5': 11, '6': '.rellm.WebPushConfig', '9': 4, '10': 'webPushConfig', '17': true},
+    {'1': 'web_push_config', '3': 110, '4': 1, '5': 11, '6': '.rellm.WebPushConfig', '9': 5, '10': 'webPushConfig', '17': true},
   ],
   '8': [
     {'1': '_server_info'},
     {'1': '_federation_info'},
     {'1': '_custom_tabs'},
     {'1': '_external_cdn_config'},
+    {'1': '_cluster_resources'},
     {'1': '_web_push_config'},
   ],
 };
@@ -141,12 +155,99 @@ final $typed_data.Uint8List serverConfigurationDescriptor = $convert.base64Decod
     'RXZlbnRTZXR0aW5nc1INZXZlbnRTZXR0aW5ncxI7Cg5tZWRpYV9zZXR0aW5ncxgYIAEoCzIULn'
     'JlbGxtLk1lZGlhU2V0dGluZ3NSDW1lZGlhU2V0dGluZ3MSTQoTZXh0ZXJuYWxfY2RuX2NvbmZp'
     'ZxhaIAEoCzIYLnJlbGxtLkV4dGVybmFsQ0ROQ29uZmlnSANSEWV4dGVybmFsQ2RuQ29uZmlniA'
-    'EBEk4KFXByaXZhdGVfdXNlcl9zdHJhdGVneRhkIAEoDjIaLnJlbGxtLlByaXZhdGVVc2VyU3Ry'
-    'YXRlZ3lSE3ByaXZhdGVVc2VyU3RyYXRlZ3kSVQoXYXV0aGVudGljYXRpb25fZmVhdHVyZXMYZS'
-    'ADKA4yHC5yZWxsbS5BdXRoZW50aWNhdGlvbkZlYXR1cmVSFmF1dGhlbnRpY2F0aW9uRmVhdHVy'
-    'ZXMSQQoPd2ViX3B1c2hfY29uZmlnGG4gASgLMhQucmVsbG0uV2ViUHVzaENvbmZpZ0gEUg13ZW'
-    'JQdXNoQ29uZmlniAEBQg4KDF9zZXJ2ZXJfaW5mb0ISChBfZmVkZXJhdGlvbl9pbmZvQg4KDF9j'
-    'dXN0b21fdGFic0IWChRfZXh0ZXJuYWxfY2RuX2NvbmZpZ0ISChBfd2ViX3B1c2hfY29uZmln');
+    'EBEkkKEWNsdXN0ZXJfcmVzb3VyY2VzGFsgASgLMhcucmVsbG0uQ2x1c3RlclJlc291cmNlc0gE'
+    'UhBjbHVzdGVyUmVzb3VyY2VziAEBEk4KFXByaXZhdGVfdXNlcl9zdHJhdGVneRhkIAEoDjIaLn'
+    'JlbGxtLlByaXZhdGVVc2VyU3RyYXRlZ3lSE3ByaXZhdGVVc2VyU3RyYXRlZ3kSVQoXYXV0aGVu'
+    'dGljYXRpb25fZmVhdHVyZXMYZSADKA4yHC5yZWxsbS5BdXRoZW50aWNhdGlvbkZlYXR1cmVSFm'
+    'F1dGhlbnRpY2F0aW9uRmVhdHVyZXMSQQoPd2ViX3B1c2hfY29uZmlnGG4gASgLMhQucmVsbG0u'
+    'V2ViUHVzaENvbmZpZ0gFUg13ZWJQdXNoQ29uZmlniAEBQg4KDF9zZXJ2ZXJfaW5mb0ISChBfZm'
+    'VkZXJhdGlvbl9pbmZvQg4KDF9jdXN0b21fdGFic0IWChRfZXh0ZXJuYWxfY2RuX2NvbmZpZ0IU'
+    'ChJfY2x1c3Rlcl9yZXNvdXJjZXNCEgoQX3dlYl9wdXNoX2NvbmZpZw==');
+
+@$core.Deprecated('Use clusterResourcesDescriptor instead')
+const ClusterResources$json = {
+  '1': 'ClusterResources',
+  '2': [
+    {'1': 'namespace_id', '3': 1, '4': 1, '5': 9, '10': 'namespaceId'},
+    {'1': 'conductor_host', '3': 2, '4': 1, '5': 9, '10': 'conductorHost'},
+    {'1': 'cluster_shared_secret', '3': 3, '4': 1, '5': 9, '10': 'clusterSharedSecret'},
+    {'1': 'conductor_state', '3': 4, '4': 1, '5': 11, '6': '.rellm.ClusterConductorState', '9': 0, '10': 'conductorState', '17': true},
+  ],
+  '8': [
+    {'1': '_conductor_state'},
+  ],
+};
+
+/// Descriptor for `ClusterResources`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List clusterResourcesDescriptor = $convert.base64Decode(
+    'ChBDbHVzdGVyUmVzb3VyY2VzEiEKDG5hbWVzcGFjZV9pZBgBIAEoCVILbmFtZXNwYWNlSWQSJQ'
+    'oOY29uZHVjdG9yX2hvc3QYAiABKAlSDWNvbmR1Y3Rvckhvc3QSMgoVY2x1c3Rlcl9zaGFyZWRf'
+    'c2VjcmV0GAMgASgJUhNjbHVzdGVyU2hhcmVkU2VjcmV0EkoKD2NvbmR1Y3Rvcl9zdGF0ZRgEIA'
+    'EoCzIcLnJlbGxtLkNsdXN0ZXJDb25kdWN0b3JTdGF0ZUgAUg5jb25kdWN0b3JTdGF0ZYgBAUIS'
+    'ChBfY29uZHVjdG9yX3N0YXRl');
+
+@$core.Deprecated('Use clusterConductorStateDescriptor instead')
+const ClusterConductorState$json = {
+  '1': 'ClusterConductorState',
+  '2': [
+    {'1': 'browser_lock_holder', '3': 1, '4': 1, '5': 9, '9': 0, '10': 'browserLockHolder', '17': true},
+  ],
+  '8': [
+    {'1': '_browser_lock_holder'},
+  ],
+};
+
+/// Descriptor for `ClusterConductorState`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List clusterConductorStateDescriptor = $convert.base64Decode(
+    'ChVDbHVzdGVyQ29uZHVjdG9yU3RhdGUSMwoTYnJvd3Nlcl9sb2NrX2hvbGRlchgBIAEoCUgAUh'
+    'Ficm93c2VyTG9ja0hvbGRlcogBAUIWChRfYnJvd3Nlcl9sb2NrX2hvbGRlcg==');
+
+@$core.Deprecated('Use lockClusterResourcesRequestDescriptor instead')
+const LockClusterResourcesRequest$json = {
+  '1': 'LockClusterResourcesRequest',
+  '2': [
+    {'1': 'namespace_id', '3': 1, '4': 1, '5': 9, '10': 'namespaceId'},
+    {'1': 'resources', '3': 2, '4': 3, '5': 14, '6': '.rellm.ClusterResource', '10': 'resources'},
+  ],
+};
+
+/// Descriptor for `LockClusterResourcesRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List lockClusterResourcesRequestDescriptor = $convert.base64Decode(
+    'ChtMb2NrQ2x1c3RlclJlc291cmNlc1JlcXVlc3QSIQoMbmFtZXNwYWNlX2lkGAEgASgJUgtuYW'
+    '1lc3BhY2VJZBI0CglyZXNvdXJjZXMYAiADKA4yFi5yZWxsbS5DbHVzdGVyUmVzb3VyY2VSCXJl'
+    'c291cmNlcw==');
+
+@$core.Deprecated('Use lockClusterResourcesResponseDescriptor instead')
+const LockClusterResourcesResponse$json = {
+  '1': 'LockClusterResourcesResponse',
+  '2': [
+    {'1': 'granted', '3': 1, '4': 1, '5': 8, '10': 'granted'},
+    {'1': 'holder', '3': 2, '4': 1, '5': 9, '9': 0, '10': 'holder', '17': true},
+  ],
+  '8': [
+    {'1': '_holder'},
+  ],
+};
+
+/// Descriptor for `LockClusterResourcesResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List lockClusterResourcesResponseDescriptor = $convert.base64Decode(
+    'ChxMb2NrQ2x1c3RlclJlc291cmNlc1Jlc3BvbnNlEhgKB2dyYW50ZWQYASABKAhSB2dyYW50ZW'
+    'QSGwoGaG9sZGVyGAIgASgJSABSBmhvbGRlcogBAUIJCgdfaG9sZGVy');
+
+@$core.Deprecated('Use freeClusterResourcesRequestDescriptor instead')
+const FreeClusterResourcesRequest$json = {
+  '1': 'FreeClusterResourcesRequest',
+  '2': [
+    {'1': 'namespace_id', '3': 1, '4': 1, '5': 9, '10': 'namespaceId'},
+    {'1': 'resources', '3': 2, '4': 3, '5': 14, '6': '.rellm.ClusterResource', '10': 'resources'},
+  ],
+};
+
+/// Descriptor for `FreeClusterResourcesRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List freeClusterResourcesRequestDescriptor = $convert.base64Decode(
+    'ChtGcmVlQ2x1c3RlclJlc291cmNlc1JlcXVlc3QSIQoMbmFtZXNwYWNlX2lkGAEgASgJUgtuYW'
+    '1lc3BhY2VJZBI0CglyZXNvdXJjZXMYAiADKA4yFi5yZWxsbS5DbHVzdGVyUmVzb3VyY2VSCXJl'
+    'c291cmNlcw==');
 
 @$core.Deprecated('Use externalCDNConfigDescriptor instead')
 const ExternalCDNConfig$json = {

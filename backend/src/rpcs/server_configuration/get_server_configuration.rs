@@ -4,16 +4,29 @@ use crate::schema::server_configurations::dsl::*;
 use diesel::*;
 use tonic::{Code, Status};
 
-use crate::marshaling::ToProtoServerConfiguration;
+use crate::marshaling::{ToProtoPermissions, ToProtoServerConfiguration};
 use crate::{models, protos};
 
 pub fn get_server_configuration(
     _request: (),
-    _user: &Option<&models::User>,
+    user: &Option<&models::User>,
     conn: &mut PgPooledConnection,
 ) -> Result<protos::ServerConfiguration, Status> {
     log::info!("GetServerConfiguration called");
-    let result = get_server_configuration_proto(conn)?;
+    let mut result = get_server_configuration_proto(conn)?;
+    // `cluster_resources` describes internal cluster topology, not anything end users need -- see
+    // that field's own doc. Stripped here (rather than in `to_proto`, which has no user context)
+    // so `ConfigureServer`'s own response -- always admin-only already -- can still include it.
+    let is_admin = user
+        .map(|u| {
+            u.permissions
+                .to_proto_permissions()
+                .contains(&protos::Permission::Admin)
+        })
+        .unwrap_or(false);
+    if !is_admin {
+        result.cluster_resources = None;
+    }
     // log::info!("GetServerConfiguration called, returning {:?}", result);
     Ok(result)
 }

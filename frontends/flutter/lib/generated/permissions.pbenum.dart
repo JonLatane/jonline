@@ -71,6 +71,7 @@ class Permission extends $pb.ProtobufEnum {
   static const Permission RUN_BOTS = Permission._(9999, _omitEnumNames ? '' : 'RUN_BOTS');
   static const Permission ADMIN = Permission._(10000, _omitEnumNames ? '' : 'ADMIN');
   static const Permission VIEW_PRIVATE_CONTACT_METHODS = Permission._(10001, _omitEnumNames ? '' : 'VIEW_PRIVATE_CONTACT_METHODS');
+  static const Permission EDIT_CLUSTER_SETTINGS = Permission._(10002, _omitEnumNames ? '' : 'EDIT_CLUSTER_SETTINGS');
 
   static const $core.List<Permission> values = <Permission> [
     PERMISSION_UNKNOWN,
@@ -125,6 +126,7 @@ class Permission extends $pb.ProtobufEnum {
     RUN_BOTS,
     ADMIN,
     VIEW_PRIVATE_CONTACT_METHODS,
+    EDIT_CLUSTER_SETTINGS,
   ];
 
   static final $core.Map<$core.int, Permission> _byValue = $pb.ProtobufEnum.initByValue(values);
