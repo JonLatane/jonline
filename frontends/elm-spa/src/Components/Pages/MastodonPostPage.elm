@@ -83,7 +83,8 @@ link back to the real post on Mastodon.
 federatedPostView : Post -> Html Msg
 federatedPostView post =
     div [ class "post-detail" ]
-        [ div [ class "post-author-link" ]
+        [ div [ class "federated-service-label" ] [ text "⇄ Mastodon" ]
+        , div [ class "post-author-link" ]
             [ text "⇄ "
             , Authors.avatar (Authors.name post.author) (post.author |> Maybe.andThen .avatar |> Maybe.andThen .url)
             , text (Authors.name post.author)

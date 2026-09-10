@@ -22,7 +22,7 @@ import Components.Pages.PostsPage as PostsPage
 import Components.Users as Users
 import Dict exposing (Dict)
 import Effect exposing (Effect)
-import Html exposing (Html, a, div, h1, p, span, text)
+import Html exposing (Html, a, div, h1, h3, p, span, text)
 import Html.Attributes exposing (class, href)
 import Http
 import Shared
@@ -140,19 +140,6 @@ subscriptions model =
 
 view : Shared.Model -> Model -> Html Msg
 view shared model =
-    div [ class "profile-detail" ]
-        [ headerView shared model
-        , case model.posts of
-            Just postsModel ->
-                Html.map PostsMsg (PostsPage.view shared True False postsModel)
-
-            Nothing ->
-                text ""
-        ]
-
-
-headerView : Shared.Model -> Model -> Html Msg
-headerView shared model =
     case model.profileStatus of
         LoadingProfile ->
             p [ class "post-loading" ] [ text "Loading…" ]
@@ -166,31 +153,62 @@ headerView shared model =
                 handle =
                     account.username ++ "@" ++ model.instanceHost
             in
-            div [ class "profile-header" ]
-                [ Authors.avatar handle account.avatarUrl
-                , div [ class "profile-header-names" ]
-                    [ h1 [ class "profile-username" ] [ text ("⇄ @" ++ handle) ]
-                    , case account.displayName of
-                        Just displayName ->
-                            div [ class "profile-real-name-display" ] [ span [ class "profile-real-name" ] [ text displayName ] ]
+            div [ class "profile-detail" ]
+                [ div [ class "federated-service-label" ] [ text "⇄ Mastodon" ]
+                , div [ class "profile-header-row" ]
+                    [ div [ class "profile-header" ]
+                        [ Authors.avatar handle account.avatarUrl
+                        , div [ class "profile-header-names" ]
+                            [ h1 [ class "profile-username" ] [ text ("@" ++ handle) ]
+                            , case account.displayName of
+                                Just displayName ->
+                                    div [ class "profile-real-name-display" ] [ span [ class "profile-real-name" ] [ text displayName ] ]
 
-                        Nothing ->
-                            text ""
+                                Nothing ->
+                                    text ""
+                            ]
+                        ]
+                    ]
+                , div [ class "profile-counts" ]
+                    [ profileCountView Nothing "Posts" account.statusesCount
+                    , profileCountView (Just (Users.followersHref "" shared.accounts.mainFrontendHost ("mastodon:" ++ model.instanceHost) account.username)) "Followers" account.followersCount
+                    , profileCountView (Just (Users.followingHref "" shared.accounts.mainFrontendHost ("mastodon:" ++ model.instanceHost) account.username)) "Following" account.followingCount
                     ]
                 , case account.note of
                     Just note ->
-                        Markdown.view [ class "profile-bio" ] note
+                        div [ class "profile-bio-section" ] [ Markdown.view [ class "profile-bio" ] note ]
 
                     Nothing ->
                         text ""
-                , div [ class "profile-counts" ]
-                    [ span [] [ text (String.fromInt account.statusesCount ++ " Posts") ]
-                    , a [ href (Users.followersHref "" shared.accounts.mainFrontendHost ("mastodon:" ++ model.instanceHost) account.username) ]
-                        [ text (String.fromInt account.followersCount ++ " Followers") ]
-                    , a [ href (Users.followingHref "" shared.accounts.mainFrontendHost ("mastodon:" ++ model.instanceHost) account.username) ]
-                        [ text (String.fromInt account.followingCount ++ " Following") ]
-                    ]
+                , h3 [] [ text "Recent Posts" ]
+                , case model.posts of
+                    Just postsModel ->
+                        Html.map PostsMsg (PostsPage.view shared False False postsModel)
+
+                    Nothing ->
+                        text ""
                 ]
+
+
+{-| Mirrors `Components.Pages.UserProfilePage.profileCountView` exactly (not exposed there, so
+duplicated here rather than imported) -- the same "big number, small label below" `.profile-count`
+styling every profile page's follower/following/post counts use.
+-}
+profileCountView : Maybe String -> String -> Int -> Html Msg
+profileCountView maybeHref label count =
+    let
+        content : List (Html Msg)
+        content =
+            [ div [ class "profile-count-value" ] [ text (String.fromInt count) ]
+            , div [ class "profile-count-label" ] [ text label ]
+            ]
+    in
+    case maybeHref of
+        Just linkHref ->
+            a [ class "profile-count", href linkHref ] content
+
+        Nothing ->
+            div [ class "profile-count" ] content
 
 
 {-| Just the subtitle -- the loaded account's own handle, or "Profile" before it's loaded -- for the

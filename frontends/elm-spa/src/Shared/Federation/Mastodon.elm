@@ -8,6 +8,7 @@ module Shared.Federation.Mastodon exposing
     , fetchPosts
     , fetchStatus
     , lookupAccount
+    , searchAccounts
     , toPost
     )
 
@@ -167,12 +168,32 @@ type alias Account =
     , followersCount : Int
     , followingCount : Int
     , statusesCount : Int
+
+    -- Whether this account approves followers manually -- when `True`, `fetchFollowers`/
+    -- `fetchFollowing` come back an empty list (not an error) unless the requester is
+    -- authenticated as this account or one it's approved, since Mastodon treats a locked
+    -- account's own relationship lists as private. Lets `Components.Pages.UsersPage` show "this
+    -- account's followers/following are private" instead of a misleading "nobody here yet" for
+    -- that specific, common case.
+    , locked : Bool
     }
 
 
 accountDecoder : Decoder Account
 accountDecoder =
-    Decode.map8 Account
+    Decode.map8
+        (\id username displayName note avatarUrl followersCount followingCount statusesCount locked ->
+            { id = id
+            , username = username
+            , displayName = displayName
+            , note = note
+            , avatarUrl = avatarUrl
+            , followersCount = followersCount
+            , followingCount = followingCount
+            , statusesCount = statusesCount
+            , locked = locked
+            }
+        )
         (Decode.field "id" Decode.string)
         (Decode.field "username" Decode.string)
         (Decode.field "display_name" Decode.string |> Decode.map nonEmpty)
@@ -181,6 +202,7 @@ accountDecoder =
         (Decode.field "followers_count" Decode.int)
         (Decode.field "following_count" Decode.int)
         (Decode.field "statuses_count" Decode.int)
+        |> Decode.andThen (\f -> Decode.map f (Decode.oneOf [ Decode.field "locked" Decode.bool, Decode.succeed False ]))
 
 
 {-| `GET /api/v1/accounts/lookup?acct=username` -- resolves a bare Mastodon username (as it appears
@@ -224,10 +246,12 @@ fetchAccountStatuses instanceHost accountId =
 
 
 {-| `GET /api/v1/accounts/:id/followers` -- up to 40 of `accountId`'s followers, unauthenticated (an
-unlocked account's follower list is public Mastodon API data, same as its profile/statuses). No
-pagination beyond that first page -- see `Components.Pages.MastodonUsersPage`'s own doc on why that's
-an accepted first-pass limitation, mirroring `Components.Pages.UsersPage`'s own lack of pagination
-for Rellm's real `GetUsers` RPC.
+unlocked account's follower list is public Mastodon API data, same as its profile/statuses). Returns
+an empty list, not an error, for a *locked* account's followers/following when the requester isn't
+authenticated as that account or one it approved -- see `Account.locked`'s own doc; there's currently
+no way to distinguish "genuinely has none" from "locked" in `Components.Pages.UsersPage`'s rendering,
+an accepted first-pass limitation. No pagination beyond the first 40 either, mirroring
+`Components.Pages.UsersPage`'s own lack of pagination for Rellm's real `GetUsers` RPC.
 -}
 fetchFollowers : String -> String -> Task Http.Error (List Account)
 fetchFollowers instanceHost accountId =
@@ -251,5 +275,26 @@ fetchFollowing instanceHost accountId =
         , url = "https://" ++ instanceHost ++ "/api/v1/accounts/" ++ accountId ++ "/following?limit=40"
         , body = Http.emptyBody
         , resolver = jsonResolver (Decode.list accountDecoder) (\metadata _ -> Http.BadStatus metadata.statusCode)
+        , timeout = Just 10000
+        }
+
+
+{-| `GET /api/v2/search?type=accounts&q=...` -- Mastodon's own account search against `instanceHost`,
+unauthenticated (works on most instances for a plain text query; `resolve=true` would additionally
+try a remote webfinger lookup for an exact `user@host` query, not requested here since
+`Components.Pages.UsersPage`'s own People-page search is about discovering matching accounts by
+name, not resolving one already-known handle -- that's what `lookupAccount` is for). Backs
+`UsersPage`'s own unfiltered listing once a search is typed in, fanned out across every
+browsed/connected Mastodon instance the same way `Components.Pages.PostsPage.mastodonHostsToFetch`
+already does for post search.
+-}
+searchAccounts : String -> String -> Task Http.Error (List Account)
+searchAccounts instanceHost query =
+    Http.task
+        { method = "GET"
+        , headers = []
+        , url = "https://" ++ instanceHost ++ "/api/v2/search?type=accounts&limit=20&q=" ++ Url.percentEncode query
+        , body = Http.emptyBody
+        , resolver = jsonResolver (Decode.field "accounts" (Decode.list accountDecoder)) (\metadata _ -> Http.BadStatus metadata.statusCode)
         , timeout = Just 10000
         }

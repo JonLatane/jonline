@@ -8,6 +8,17 @@
   border-radius: 8px;
 }
 
+/* `Components.Pages.MastodonUserProfilePage`/`BlueskyUserProfilePage`'s "⇄ Mastodon"/"⇄ Bluesky"
+   label atop a federated profile, and `Components.Pages.MastodonPostPage`/`BlueskyPostPage`'s
+   identical label atop a single federated post -- de-emphasized (unlike `.federated-feed-service-label`'s
+   own 0.5, this one sits directly atop real content rather than inside an already-muted chip, so a
+   touch more visible). */
+.federated-service-label {
+  font-size: 0.75rem;
+  opacity: 0.6;
+  margin-bottom: 0.3rem;
+}
+
 .profile-header-row {
   display: flex;
   align-items: center;

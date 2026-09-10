@@ -75,7 +75,7 @@ update shared req msg model =
                 Resolver.Loaded user ->
                     let
                         ( listingModel, listingEffect ) =
-                            UsersPage.init shared (Just ( newResolver.targetHost, user, FOLLOWERS )) req.key req.url.path req.query
+                            UsersPage.init shared (Just ( newResolver.targetHost, user, FOLLOWERS )) Nothing req.key req.url.path req.query
                     in
                     ( Listing listingModel, Effect.batch [ Effect.map ResolverMsg resolverEffect, Effect.map ListingMsg listingEffect ] )
 

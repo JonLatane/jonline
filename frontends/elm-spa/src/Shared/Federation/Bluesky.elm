@@ -8,6 +8,7 @@ module Shared.Federation.Bluesky exposing
     , fetchFollows
     , fetchPost
     , fetchPosts
+    , searchActors
     , searchPosts
     , toPost
     )
@@ -313,5 +314,22 @@ fetchFollows accessToken handle =
         , url = "https://bsky.social/xrpc/app.bsky.graph.getFollows?actor=" ++ Url.percentEncode handle ++ "&limit=40"
         , body = Http.emptyBody
         , resolver = jsonResolver (Decode.field "follows" (Decode.list actorProfileDecoder)) (\metadata _ -> Http.BadStatus metadata.statusCode)
+        , timeout = Just 10000
+        }
+
+
+{-| `GET /xrpc/app.bsky.actor.searchActors` -- AT Proto's own global actor search (by handle or
+display name, network-wide, not scoped to the authenticating account's own follows). Backs
+`Components.Pages.UsersPage`'s own unfiltered listing once a search is typed in, same "any connected
+account's token works" reasoning `searchPosts`'s own doc already covers.
+-}
+searchActors : String -> String -> Task Http.Error (List ActorProfile)
+searchActors accessToken query =
+    Http.task
+        { method = "GET"
+        , headers = [ Http.header "Authorization" ("Bearer " ++ accessToken) ]
+        , url = "https://bsky.social/xrpc/app.bsky.actor.searchActors?q=" ++ Url.percentEncode query ++ "&limit=25"
+        , body = Http.emptyBody
+        , resolver = jsonResolver (Decode.field "actors" (Decode.list actorProfileDecoder)) (\metadata _ -> Http.BadStatus metadata.statusCode)
         , timeout = Just 10000
         }

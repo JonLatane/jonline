@@ -38,7 +38,7 @@ type alias Msg =
 
 init : Shared.Model -> Request.With Params -> ( Model, Effect Msg )
 init shared req =
-    UsersPage.init shared Nothing req.key req.url.path req.query
+    UsersPage.init shared Nothing Nothing req.key req.url.path req.query
 
 
 view : Shared.Model -> Request.With Params -> Model -> View Msg

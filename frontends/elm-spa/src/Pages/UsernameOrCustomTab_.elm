@@ -182,7 +182,7 @@ initEmbedded shared req tab =
                 |> Tuple.mapSecond (Effect.map PostsMsg)
 
         CustomNav.TargetTab PEOPLETAB ->
-            UsersPage.init shared Nothing req.key req.url.path req.query
+            UsersPage.init shared Nothing Nothing req.key req.url.path req.query
                 |> Tuple.mapFirst EmbeddedPeople
                 |> Tuple.mapSecond (Effect.map PeopleMsg)
 
