@@ -1076,6 +1076,7 @@
 }
 
 .event-instance-time-edit-input,
+.event-instance-time-edit-timezone-select,
 .event-instance-location-edit-input {
   font: inherit;
   padding: 0.15rem 0.4rem;

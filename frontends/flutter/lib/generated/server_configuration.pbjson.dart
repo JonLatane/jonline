@@ -18,12 +18,15 @@ const ClusterResource$json = {
   '1': 'ClusterResource',
   '2': [
     {'1': 'CLUSTER_RESOURCE_BROWSER', '2': 0},
+    {'1': 'CLUSTER_RESOURCE_FFMPEG', '2': 1},
+    {'1': 'CLUSTER_RESOURCE_IMAGEMAGICK', '2': 2},
   ],
 };
 
 /// Descriptor for `ClusterResource`. Decode as a `google.protobuf.EnumDescriptorProto`.
 final $typed_data.Uint8List clusterResourceDescriptor = $convert.base64Decode(
-    'Cg9DbHVzdGVyUmVzb3VyY2USHAoYQ0xVU1RFUl9SRVNPVVJDRV9CUk9XU0VSEAA=');
+    'Cg9DbHVzdGVyUmVzb3VyY2USHAoYQ0xVU1RFUl9SRVNPVVJDRV9CUk9XU0VSEAASGwoXQ0xVU1'
+    'RFUl9SRVNPVVJDRV9GRk1QRUcQARIgChxDTFVTVEVSX1JFU09VUkNFX0lNQUdFTUFHSUNLEAI=');
 
 @$core.Deprecated('Use authenticationFeatureDescriptor instead')
 const AuthenticationFeature$json = {
@@ -190,17 +193,47 @@ final $typed_data.Uint8List clusterResourcesDescriptor = $convert.base64Decode(
 const ClusterConductorState$json = {
   '1': 'ClusterConductorState',
   '2': [
-    {'1': 'browser_lock_holder', '3': 1, '4': 1, '5': 9, '9': 0, '10': 'browserLockHolder', '17': true},
-  ],
-  '8': [
-    {'1': '_browser_lock_holder'},
+    {'1': 'locks', '3': 1, '4': 3, '5': 11, '6': '.rellm.ClusterResourceLock', '10': 'locks'},
+    {'1': 'limits', '3': 2, '4': 3, '5': 11, '6': '.rellm.ClusterResourceLimit', '10': 'limits'},
   ],
 };
 
 /// Descriptor for `ClusterConductorState`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List clusterConductorStateDescriptor = $convert.base64Decode(
-    'ChVDbHVzdGVyQ29uZHVjdG9yU3RhdGUSMwoTYnJvd3Nlcl9sb2NrX2hvbGRlchgBIAEoCUgAUh'
-    'Ficm93c2VyTG9ja0hvbGRlcogBAUIWChRfYnJvd3Nlcl9sb2NrX2hvbGRlcg==');
+    'ChVDbHVzdGVyQ29uZHVjdG9yU3RhdGUSMAoFbG9ja3MYASADKAsyGi5yZWxsbS5DbHVzdGVyUm'
+    'Vzb3VyY2VMb2NrUgVsb2NrcxIzCgZsaW1pdHMYAiADKAsyGy5yZWxsbS5DbHVzdGVyUmVzb3Vy'
+    'Y2VMaW1pdFIGbGltaXRz');
+
+@$core.Deprecated('Use clusterResourceLockDescriptor instead')
+const ClusterResourceLock$json = {
+  '1': 'ClusterResourceLock',
+  '2': [
+    {'1': 'lock_holder_namespace_id', '3': 1, '4': 1, '5': 9, '10': 'lockHolderNamespaceId'},
+    {'1': 'resources', '3': 2, '4': 3, '5': 14, '6': '.rellm.ClusterResource', '10': 'resources'},
+    {'1': 'acquired_at', '3': 20, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'acquiredAt'},
+  ],
+};
+
+/// Descriptor for `ClusterResourceLock`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List clusterResourceLockDescriptor = $convert.base64Decode(
+    'ChNDbHVzdGVyUmVzb3VyY2VMb2NrEjcKGGxvY2tfaG9sZGVyX25hbWVzcGFjZV9pZBgBIAEoCV'
+    'IVbG9ja0hvbGRlck5hbWVzcGFjZUlkEjQKCXJlc291cmNlcxgCIAMoDjIWLnJlbGxtLkNsdXN0'
+    'ZXJSZXNvdXJjZVIJcmVzb3VyY2VzEjsKC2FjcXVpcmVkX2F0GBQgASgLMhouZ29vZ2xlLnByb3'
+    'RvYnVmLlRpbWVzdGFtcFIKYWNxdWlyZWRBdA==');
+
+@$core.Deprecated('Use clusterResourceLimitDescriptor instead')
+const ClusterResourceLimit$json = {
+  '1': 'ClusterResourceLimit',
+  '2': [
+    {'1': 'resource', '3': 1, '4': 3, '5': 14, '6': '.rellm.ClusterResource', '10': 'resource'},
+    {'1': 'limit', '3': 2, '4': 3, '5': 13, '10': 'limit'},
+  ],
+};
+
+/// Descriptor for `ClusterResourceLimit`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List clusterResourceLimitDescriptor = $convert.base64Decode(
+    'ChRDbHVzdGVyUmVzb3VyY2VMaW1pdBIyCghyZXNvdXJjZRgBIAMoDjIWLnJlbGxtLkNsdXN0ZX'
+    'JSZXNvdXJjZVIIcmVzb3VyY2USFAoFbGltaXQYAiADKA1SBWxpbWl0');
 
 @$core.Deprecated('Use lockClusterResourcesRequestDescriptor instead')
 const LockClusterResourcesRequest$json = {

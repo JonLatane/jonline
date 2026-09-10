@@ -224,11 +224,25 @@ init shared pageIsSecure targetHost navKey path query =
         ( fetchedModel, fetchEffect ) =
             case knownConnectedServer shared targetHost of
                 Just server ->
-                    ( { model0 | ownServerStatus = OwnServerNotNeeded, adminsStatus = AboutTab.LoadingAdmins, versionStatus = AboutTab.LoadingVersion }
-                    , Effect.batch [ fetchAdmins server, fetchVersion server ]
+                    let
+                        newModel : Model
+                        newModel =
+                            { model0 | ownServerStatus = OwnServerNotNeeded, adminsStatus = AboutTab.LoadingAdmins, versionStatus = AboutTab.LoadingVersion }
+
+                        ( clusterTabModel, clusterTabEffect ) =
+                            activateClusterTab shared newModel
+                    in
+                    ( { newModel | clusterTab = clusterTabModel }
+                    , Effect.batch [ fetchAdmins server, fetchVersion server, clusterTabEffect ]
                     )
 
                 Nothing ->
+                    -- Not connected yet -- `activateClusterTab` has to wait for
+                    -- `GotOwnServerResult`'s own success branch, same reasoning as
+                    -- `fetchAdmins`/`fetchVersion` not firing here either. Firing it right here
+                    -- instead (a deep link straight to `?tab=cluster` looks exactly like this
+                    -- branch on first load) raced ahead of the connection actually completing and
+                    -- failed with a `Grpc.NetworkError` every time -- see `ClusterTab`'s own doc.
                     ( model0
                     , RellmServers.connectToRellmServer pageIsSecure targetHost
                         |> Task.attempt GotOwnServerResult
@@ -281,12 +295,23 @@ updateInner shared msg model =
                 newModel : Model
                 newModel =
                     { model | activeTab = tab }
+
+                ( clusterTabModel, clusterTabEffect ) =
+                    activateClusterTab shared newModel
             in
-            ( newModel, pushTabUrl newModel )
+            ( { newModel | clusterTab = clusterTabModel }, Effect.batch [ pushTabUrl newModel, clusterTabEffect ] )
 
         GotOwnServerResult (Ok server) ->
-            ( { model | ownServerStatus = OwnServerLoaded server, adminsStatus = AboutTab.LoadingAdmins, versionStatus = AboutTab.LoadingVersion }
-            , Effect.batch [ fetchAdmins server, fetchVersion server ]
+            let
+                newModel : Model
+                newModel =
+                    { model | ownServerStatus = OwnServerLoaded server, adminsStatus = AboutTab.LoadingAdmins, versionStatus = AboutTab.LoadingVersion }
+
+                ( clusterTabModel, clusterTabEffect ) =
+                    activateClusterTab shared newModel
+            in
+            ( { newModel | clusterTab = clusterTabModel }
+            , Effect.batch [ fetchAdmins server, fetchVersion server, clusterTabEffect ]
             )
 
         GotOwnServerResult (Err err) ->
@@ -340,12 +365,18 @@ updateInner shared msg model =
                 |> Tuple.mapSecond (Effect.map ClusterTabMsg)
 
         SharedMsg subMsg ->
-            ( { model
-                | aboutTab = AboutTab.applySharedMsg subMsg model.aboutTab
-                , themeTab = ThemeTab.applySharedMsg subMsg model.themeTab
-              }
-            , Effect.fromShared subMsg
-            )
+            let
+                newModel : Model
+                newModel =
+                    { model
+                        | aboutTab = AboutTab.applySharedMsg subMsg model.aboutTab
+                        , themeTab = ThemeTab.applySharedMsg subMsg model.themeTab
+                    }
+
+                ( clusterTabModel, clusterTabEffect ) =
+                    activateClusterTab shared newModel
+            in
+            ( { newModel | clusterTab = clusterTabModel }, Effect.batch [ Effect.fromShared subMsg, clusterTabEffect ] )
 
 
 {-| `Shared.AccountsPanel`'s cached entry for `targetHost`, if it's both known _and_ actually
@@ -375,6 +406,26 @@ effectiveServer shared model =
 
                 _ ->
                     Nothing
+
+
+{-| Fires `ClusterTab.activated`'s authenticated fetch whenever `model.activeTab` is already
+`TabCluster` -- called everywhere this page's own connectivity state settles (`init`'s
+already-known-connected branch, `GotOwnServerResult`'s own-probe success, and `TabSelected`), never
+unconditionally at `init` itself. `ClusterTab.activated`'s own fetch resolves `model.targetHost`
+against `Shared.AccountsPanel`'s live connection state (see `ClusterTab`'s own doc); firing it
+before that connection has actually finished being established races ahead of it and fails with a
+`Grpc.NetworkError` -- exactly what happened when this used to fire unconditionally in `init`,
+breaking a fresh page load landing straight on `?tab=cluster` (though never a same-session click,
+since `effectiveServer` is already resolved by the time any tab is clickable at all).
+-}
+activateClusterTab : Shared.Model -> Model -> ( ClusterTab.Model, Effect Msg )
+activateClusterTab shared model =
+    if model.activeTab == TabCluster then
+        ClusterTab.update shared model.targetHost (effectiveServer shared model) ClusterTab.activated model.clusterTab
+            |> Tuple.mapSecond (Effect.map ClusterTabMsg)
+
+    else
+        ( model.clusterTab, Effect.none )
 
 
 isKnownServer : Shared.Model -> Model -> Bool
@@ -569,4 +620,4 @@ tabContent shared model server =
             Html.map CdnTabMsg (CdnTab.view server maybeAdminAccount model.cdnTab)
 
         TabCluster ->
-            Html.map ClusterTabMsg (ClusterTab.view server maybeAdminAccount model.clusterTab)
+            Html.map ClusterTabMsg (ClusterTab.view shared server maybeAdminAccount model.clusterTab)

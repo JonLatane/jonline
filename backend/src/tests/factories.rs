@@ -489,6 +489,9 @@ pub struct EventInstanceOpts {
     /// `None` (no location set), same as `create_event_instance` always inserted before this
     /// field existed.
     pub location: Option<serde_json::Value>,
+    /// An explicit IANA timezone (e.g. "America/New_York") -- defaults to `None`, same as
+    /// `location`.
+    pub timezone: Option<String>,
 }
 
 impl Default for EventInstanceOpts {
@@ -501,6 +504,7 @@ impl Default for EventInstanceOpts {
             ends_at: starts_at + std::time::Duration::from_secs(3600),
             title: Some("Test Post".to_string()),
             location: None,
+            timezone: None,
         }
     }
 }
@@ -538,6 +542,7 @@ pub fn create_event_instance(
             sync_source_id: None,
             sync_source_uid: None,
             sync_source_recurrence_anchor: None,
+            timezone: opts.timezone,
         })
         .returning(models::EVENT_INSTANCE_COLUMNS)
         .get_result::<models::EventInstance>(conn)

@@ -184,7 +184,8 @@
 
 .create-new-panel-title-input,
 .create-new-panel-link-input,
-.create-new-panel-date-input {
+.create-new-panel-date-input,
+.create-new-panel-timezone-select {
   background: var(--bg);
   color: var(--fg);
   border: 1px solid var(--border);

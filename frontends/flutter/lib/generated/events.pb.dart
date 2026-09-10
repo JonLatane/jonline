@@ -754,6 +754,7 @@ class EventInstance extends $pb.GeneratedMessage {
     EventAttendances? attendances,
     EventAttendance? currentUserAttendance,
     $core.Iterable<$10.SyncDestinationStatus>? syncDestinations,
+    $core.String? timezone,
   }) {
     final $result = create();
     if (eventId != null) {
@@ -789,6 +790,9 @@ class EventInstance extends $pb.GeneratedMessage {
     if (syncDestinations != null) {
       $result.syncDestinations.addAll(syncDestinations);
     }
+    if (timezone != null) {
+      $result.timezone = timezone;
+    }
     return $result;
   }
   EventInstance._() : super();
@@ -807,6 +811,7 @@ class EventInstance extends $pb.GeneratedMessage {
     ..aOM<EventAttendances>(10, _omitFieldNames ? '' : 'attendances', subBuilder: EventAttendances.create)
     ..aOM<EventAttendance>(11, _omitFieldNames ? '' : 'currentUserAttendance', subBuilder: EventAttendance.create)
     ..pc<$10.SyncDestinationStatus>(12, _omitFieldNames ? '' : 'syncDestinations', $pb.PbFieldType.PM, subBuilder: $10.SyncDestinationStatus.create)
+    ..aOS(13, _omitFieldNames ? '' : 'timezone')
     ..hasRequiredFields = false
   ;
 
@@ -952,6 +957,17 @@ class EventInstance extends $pb.GeneratedMessage {
   /// SyncDestinations this instance has been synced (cross-posted) to, and their status.
   @$pb.TagNumber(12)
   $core.List<$10.SyncDestinationStatus> get syncDestinations => $_getList(10);
+
+  /// A time zone for the event instance. Used when serializing it for,
+  /// e.g., Facebook or Instagram posts, or generating media.
+  @$pb.TagNumber(13)
+  $core.String get timezone => $_getSZ(11);
+  @$pb.TagNumber(13)
+  set timezone($core.String v) { $_setString(11, v); }
+  @$pb.TagNumber(13)
+  $core.bool hasTimezone() => $_has(11);
+  @$pb.TagNumber(13)
+  void clearTimezone() => clearField(13);
 }
 
 /// To be used for ticketing, RSVPs, etc.

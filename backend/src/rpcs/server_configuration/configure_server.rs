@@ -91,27 +91,35 @@ pub fn configure_server(
     }
 
     // `cluster_resources` is admin-visible but only *editable* with `EDIT_CLUSTER_SETTINGS` (see
-    // that permission's own doc), and `conductor_state` specifically is never settable via
+    // that permission's own doc). `conductor_state.locks` specifically is never settable via
     // `ConfigureServer` at all regardless of permission -- only `LockClusterResources`/
     // `FreeClusterResources` ever mutate it (in place, outside this function's own versioned
-    // insert). So this always overwrites whatever `to_db()` naively produced: without
-    // `EDIT_CLUSTER_SETTINGS`, the whole field is carried forward unchanged from the currently
-    // active config (ignoring the incoming request's copy of it entirely); with it, `namespace_id`/
-    // `conductor_host` come from the request (blank `cluster_shared_secret` preserving the
-    // existing one, same write-only treatment as `FacebookAuthConfig.app_secret` above), but
-    // `conductor_state` is still always carried forward from the active config.
+    // insert) -- but `conductor_state.limits` *is* editable here, same gating as the rest of
+    // `cluster_resources` (see `ClusterConductorState.limits`'s own doc). So this always
+    // overwrites whatever `to_db()` naively produced: without `EDIT_CLUSTER_SETTINGS`, the whole
+    // field is carried forward unchanged from the currently active config (ignoring the incoming
+    // request's copy of it entirely); with it, `namespace_id`/`conductor_host`/`limits` come from
+    // the request (blank `cluster_shared_secret` preserving the existing one, same write-only
+    // treatment as `FacebookAuthConfig.app_secret` above), but `locks` is still always carried
+    // forward from the active config.
     let existing_cluster_resources = get_server_configuration_model(conn)
         .ok()
         .and_then(|c| c.cluster_resources)
         .and_then(|v| serde_json::from_value::<protos::ClusterResources>(v).ok());
+    // `validate_exact_permission`, not `validate_permission` -- `EDIT_CLUSTER_SETTINGS` is
+    // deliberately admin-insufficient (see that permission's own doc); `validate_permission`
+    // would let any `ADMIN` through regardless, defeating the point.
     let can_edit_cluster_settings =
-        validate_permission(&Some(user), Permission::EditClusterSettings).is_ok();
+        validate_exact_permission(&Some(user), Permission::EditClusterSettings).is_ok();
     new_config.cluster_resources = if can_edit_cluster_settings {
         request.cluster_resources.as_ref().map(|incoming| {
             let existing_secret = existing_cluster_resources
                 .as_ref()
                 .map(|c| c.cluster_shared_secret.clone())
                 .unwrap_or_default();
+            let existing_conductor_state = existing_cluster_resources
+                .as_ref()
+                .and_then(|c| c.conductor_state.clone());
             serde_json::to_value(protos::ClusterResources {
                 namespace_id: incoming.namespace_id.clone(),
                 conductor_host: incoming.conductor_host.clone(),
@@ -120,7 +128,21 @@ pub fn configure_server(
                 } else {
                     incoming.cluster_shared_secret.clone()
                 },
-                conductor_state: existing_cluster_resources.and_then(|c| c.conductor_state),
+                conductor_state: Some(protos::ClusterConductorState {
+                    locks: existing_conductor_state
+                        .as_ref()
+                        .map(|s| s.locks.clone())
+                        .unwrap_or_default(),
+                    limits: incoming
+                        .conductor_state
+                        .as_ref()
+                        .map(|s| s.limits.clone())
+                        .unwrap_or_else(|| {
+                            existing_conductor_state
+                                .map(|s| s.limits)
+                                .unwrap_or_default()
+                        }),
+                }),
             })
             .unwrap()
         })

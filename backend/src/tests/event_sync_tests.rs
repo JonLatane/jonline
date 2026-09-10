@@ -85,6 +85,35 @@ fn single_vevent_creates_event_and_instance() {
     });
 }
 
+/// `DTSTART`'s `TZID` parameter (RFC 5545 §3.3.5) should populate `EventInstance.timezone`
+/// straight from the feed, without needing `logic::resolve_timezone`'s Nominatim geocoding or a
+/// hand-picked selector value at all.
+#[test]
+fn vevent_with_tzid_dtstart_populates_instance_timezone() {
+    let mut conn = test_conn();
+    conn.test_transaction::<_, tonic::Status, _>(|conn| {
+        let user = create_user(conn, "est_tzid_owner");
+        let source = create_sync_source_row(conn, &user, "http://example.invalid/cal.ics");
+
+        let start = (Utc::now() + Duration::days(1)).with_timezone(&chrono_tz::America::New_York);
+        let end = start + Duration::hours(1);
+        let ics = format!(
+            "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//test//\r\nBEGIN:VEVENT\r\nUID:tzid-1\r\nDTSTART;TZID=America/New_York:{}\r\nDTEND;TZID=America/New_York:{}\r\nSUMMARY:TZID Event\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+            start.format("%Y%m%dT%H%M%S"),
+            end.format("%Y%m%dT%H%M%S")
+        );
+
+        sync_source_text(&source, &ics, conn).expect("sync should succeed");
+
+        let event = synced_event(conn, source.id, "tzid-1").expect("event should have been created");
+        let instances = instances_for(conn, event.post_id);
+        assert_eq!(instances.len(), 1);
+        assert_eq!(instances[0].timezone.as_deref(), Some("America/New_York"));
+
+        Ok(())
+    });
+}
+
 /// Regression test for the 2026-09-04 duplicate-events incident: re-syncing the exact same feed
 /// twice in a row (e.g. two runs of the background job before anything upstream changes) must
 /// match every existing Event/EventInstance by `(sync_source_id, sync_source_uid,
@@ -178,6 +207,7 @@ fn duplicate_recurrence_anchor_is_rejected_by_db_unique_constraint() {
                 sync_source_id: existing_instance.sync_source_id,
                 sync_source_uid: existing_instance.sync_source_uid.clone(),
                 sync_source_recurrence_anchor: existing_instance.sync_source_recurrence_anchor,
+                timezone: existing_instance.timezone.clone(),
             })
             .execute(conn);
 

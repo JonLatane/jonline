@@ -243,6 +243,7 @@ impl ToProtoMarshalableEventInstance for MarshalableEventInstance {
                 ..Default::default()
             }),
             location,
+            timezone: event_instance.timezone,
             sync_source_instance_id: match (
                 event_instance.sync_source_uid,
                 event_instance.sync_source_recurrence_anchor,

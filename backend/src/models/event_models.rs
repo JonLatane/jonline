@@ -59,6 +59,11 @@ pub struct EventInstance {
     /// moved, since matching on the anchor (not the current `starts_at`) is what lets a moved
     /// occurrence still be found as "the same one" on the next sync instead of looking new.
     pub sync_source_recurrence_anchor: Option<SystemTime>,
+    /// An explicit IANA timezone (e.g. "America/New_York"), set by hand (`CreateNewPanel`/
+    /// `EventPage`'s timezone selector) or from an ICS Sync Source's own `DTSTART`'s `TZID` --
+    /// preferred over `logic::resolve_timezone`'s Nominatim-geocoded guess wherever both could
+    /// apply (see `sync_event_instance`).
+    pub timezone: Option<String>,
 }
 
 /// Explicit column list for `event_instances`, excluding:
@@ -82,6 +87,7 @@ pub const EVENT_INSTANCE_COLUMNS: (
     event_instances::sync_source_id,
     event_instances::sync_source_uid,
     event_instances::sync_source_recurrence_anchor,
+    event_instances::timezone,
 ) = (
     event_instances::event_id,
     event_instances::post_id,
@@ -95,6 +101,7 @@ pub const EVENT_INSTANCE_COLUMNS: (
     event_instances::sync_source_id,
     event_instances::sync_source_uid,
     event_instances::sync_source_recurrence_anchor,
+    event_instances::timezone,
 );
 
 #[derive(Debug, Insertable)]
@@ -109,6 +116,7 @@ pub struct NewEventInstance {
     pub sync_source_id: Option<i64>,
     pub sync_source_uid: Option<String>,
     pub sync_source_recurrence_anchor: Option<SystemTime>,
+    pub timezone: Option<String>,
 }
 
 #[derive(Debug, Queryable, Identifiable, AsChangeset, Clone)]

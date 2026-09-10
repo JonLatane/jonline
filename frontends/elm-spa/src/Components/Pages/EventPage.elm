@@ -68,6 +68,7 @@ import Proto.Rellm.Permission exposing (Permission(..))
 import Proto.Rellm.Visibility exposing (Visibility)
 import Shared
 import Shared.AccountsPanel as AccountsPanel
+import Shared.CreateNewPanel as CreateNewPanel
 import Shared.AccountsPanel.RellmAccounts as RellmAccounts exposing (RellmAccount)
 import Shared.AccountsPanel.RellmServers as RellmServers exposing (RellmServer)
 import Shared.Breadcrumbs as Breadcrumbs
@@ -222,6 +223,7 @@ type Msg
     | InstanceTimeEditClicked EventInstance
     | InstanceStartsAtChanged String
     | InstanceEndsAtChanged String
+    | InstanceTimezoneChanged String
     | InstanceTimeCancelClicked
     | InstanceTimeSaveClicked EventInstance
     | GotInstanceTimeSaveResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, Event ))
@@ -405,6 +407,12 @@ submitting an incomplete pair.
 type alias InstanceTimeEdit =
     { pendingStartsAt : Maybe Time.Posix
     , pendingEndsAt : Maybe Time.Posix
+
+    -- Defaults to the browser's own timezone (see `InstanceTimeEditClicked`), mirroring
+    -- `Shared.CreateNewPanel.Model.timezone`'s own "always has a sensible value, never blank"
+    -- convention -- unlike `pendingStartsAt`/`pendingEndsAt`, there's no "not yet picked" state
+    -- worth showing blank for.
+    , pendingTimezone : String
     , status : SubmitStatus
     }
 
@@ -804,6 +812,9 @@ update shared msg model =
                     Just
                         { pendingStartsAt = instance.startsAt |> Maybe.map Conversions.timestampToPosix
                         , pendingEndsAt = instance.endsAt |> Maybe.map Conversions.timestampToPosix
+                        , pendingTimezone =
+                            instance.timezone
+                                |> Maybe.withDefault shared.time.browserTimeZone.name
                         , status = Idle
                         }
               }
@@ -873,6 +884,14 @@ update shared msg model =
             , Effect.none
             )
 
+        InstanceTimezoneChanged tz ->
+            ( { model
+                | instanceTimeEdit =
+                    model.instanceTimeEdit |> Maybe.map (\edit -> { edit | pendingTimezone = tz })
+              }
+            , Effect.none
+            )
+
         InstanceTimeCancelClicked ->
             ( { model | instanceTimeEdit = Nothing }, Effect.none )
 
@@ -890,6 +909,7 @@ update shared msg model =
                                         [ { instance
                                             | startsAt = Just (Conversions.posixToTimestamp startsAt)
                                             , endsAt = Just (Conversions.posixToTimestamp endsAt)
+                                            , timezone = Just edit.pendingTimezone
                                           }
                                         ]
                                 }
@@ -1424,8 +1444,8 @@ applyUpdatedEvent now model updatedEvent =
 `startsAt`/`endsAt` than the last (`n = 1..count`, via `SharedTime.addRecurrence`
 in `zone` -- see that function's own doc for the DST guarantee this relies
 on). Every duplicate copies `instance`'s own `post` (its title/link/content/
-visibility override, if any) and `location` verbatim -- nothing about "add
-more like this one" should silently drop either. Copying `post` along also
+visibility override, if any), `location`, and `timezone` verbatim -- nothing
+about "add more like this one" should silently drop any of them. Copying `post` along also
 copies its own id (an `EventInstance`'s identity, post-migration -- see this
 module's own top-of-file doc), but that's harmless: `create_instance` on the
 backend ignores whatever `id`/`author` a submitted `post` carries and always
@@ -1455,6 +1475,7 @@ buildRecurringInstances zone count unit instance =
                         { defaultEventInstance
                             | post = instance.post
                             , location = instance.location
+                            , timezone = instance.timezone
                             , startsAt = Just (Conversions.posixToTimestamp (SharedTime.addRecurrence zone unit n baseStartsAt))
                             , endsAt = Just (Conversions.posixToTimestamp (SharedTime.addRecurrence zone unit n baseEndsAt))
                         }
@@ -2433,13 +2454,14 @@ instanceTimeView shared maybeAccount maybeEdit eventPost instance =
                 ]
 
 
-{-| The actual start/end `<input type="datetime-local">` pair + Save/Cancel
-controls -- mirrors `Shared.CreateNewPanel.dateField`'s own
-`formatDateTimeLocalInput`/`onInput` round-trip (see `Msg.InstanceStartsAtChanged`/
-`InstanceEndsAtChanged` for the parse-back half), reusing
-`postFieldEditActionsView`'s `.post-visibility-save`/`.post-visibility-cancel`/
-`.post-visibility-error` classes for the controls, same convention that
-function's own doc explains.
+{-| The actual start/end `<input type="datetime-local">` pair, a timezone
+`<select>` (`CreateNewPanel.allTimezoneNames`, same dataset/convention as
+`Shared.CreateNewPanel.timezoneField`), + Save/Cancel controls -- mirrors
+`Shared.CreateNewPanel.dateField`'s own `formatDateTimeLocalInput`/`onInput`
+round-trip (see `Msg.InstanceStartsAtChanged`/`InstanceEndsAtChanged` for the
+parse-back half), reusing `postFieldEditActionsView`'s
+`.post-visibility-save`/`.post-visibility-cancel`/`.post-visibility-error`
+classes for the controls, same convention that function's own doc explains.
 -}
 instanceTimeEditFormView : Time.Zone -> InstanceTimeEdit -> EventInstance -> Html Msg
 instanceTimeEditFormView zone edit instance =
@@ -2459,6 +2481,13 @@ instanceTimeEditFormView zone edit instance =
             , onInput InstanceEndsAtChanged
             ]
             []
+        , select [ class "event-instance-time-edit-timezone-select", onInput InstanceTimezoneChanged ]
+            (List.map
+                (\name ->
+                    option [ value name, selected (name == edit.pendingTimezone) ] [ text name ]
+                )
+                CreateNewPanel.allTimezoneNames
+            )
         , span [ class "event-instance-edit-actions" ]
             [ button
                 [ classes [ "post-visibility-save", "background-color-primary" ]

@@ -408,6 +408,11 @@ export interface EventInstance {
     | undefined;
   /** SyncDestinations this instance has been synced (cross-posted) to, and their status. */
   syncDestinations: SyncDestinationStatus[];
+  /**
+   * A time zone for the event instance. Used when serializing it for,
+   * e.g., Facebook or Instagram posts, or generating media.
+   */
+  timezone?: string | undefined;
 }
 
 /**
@@ -1373,6 +1378,7 @@ function createBaseEventInstance(): EventInstance {
     attendances: undefined,
     currentUserAttendance: undefined,
     syncDestinations: [],
+    timezone: undefined,
   };
 }
 
@@ -1410,6 +1416,9 @@ export const EventInstance: MessageFns<EventInstance> = {
     }
     for (const v of message.syncDestinations) {
       SyncDestinationStatus.encode(v!, writer.uint32(98).fork()).join();
+    }
+    if (message.timezone !== undefined) {
+      writer.uint32(106).string(message.timezone);
     }
     return writer;
   },
@@ -1509,6 +1518,14 @@ export const EventInstance: MessageFns<EventInstance> = {
           message.syncDestinations.push(SyncDestinationStatus.decode(reader, reader.uint32()));
           continue;
         }
+        case 13: {
+          if (tag !== 106) {
+            break;
+          }
+
+          message.timezone = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1537,6 +1554,7 @@ export const EventInstance: MessageFns<EventInstance> = {
       syncDestinations: globalThis.Array.isArray(object?.syncDestinations)
         ? object.syncDestinations.map((e: any) => SyncDestinationStatus.fromJSON(e))
         : [],
+      timezone: isSet(object.timezone) ? globalThis.String(object.timezone) : undefined,
     };
   },
 
@@ -1575,6 +1593,9 @@ export const EventInstance: MessageFns<EventInstance> = {
     if (message.syncDestinations?.length) {
       obj.syncDestinations = message.syncDestinations.map((e) => SyncDestinationStatus.toJSON(e));
     }
+    if (message.timezone !== undefined) {
+      obj.timezone = message.timezone;
+    }
     return obj;
   },
 
@@ -1603,6 +1624,7 @@ export const EventInstance: MessageFns<EventInstance> = {
         ? EventAttendance.fromPartial(object.currentUserAttendance)
         : undefined;
     message.syncDestinations = object.syncDestinations?.map((e) => SyncDestinationStatus.fromPartial(e)) || [];
+    message.timezone = object.timezone ?? undefined;
     return message;
   },
 };

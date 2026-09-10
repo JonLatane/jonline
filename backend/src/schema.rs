@@ -82,6 +82,7 @@ diesel::table! {
         sync_source_id -> Nullable<Int8>,
         sync_source_uid -> Nullable<Varchar>,
         sync_source_recurrence_anchor -> Nullable<Timestamp>,
+        timezone -> Nullable<Varchar>,
     }
 }
 

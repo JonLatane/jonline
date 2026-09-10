@@ -18,9 +18,13 @@ import 'package:protobuf/protobuf.dart' as $pb;
 /// [`FreeClusterResources`](#grpc-api-FreeClusterResources).
 class ClusterResource extends $pb.ProtobufEnum {
   static const ClusterResource CLUSTER_RESOURCE_BROWSER = ClusterResource._(0, _omitEnumNames ? '' : 'CLUSTER_RESOURCE_BROWSER');
+  static const ClusterResource CLUSTER_RESOURCE_FFMPEG = ClusterResource._(1, _omitEnumNames ? '' : 'CLUSTER_RESOURCE_FFMPEG');
+  static const ClusterResource CLUSTER_RESOURCE_IMAGEMAGICK = ClusterResource._(2, _omitEnumNames ? '' : 'CLUSTER_RESOURCE_IMAGEMAGICK');
 
   static const $core.List<ClusterResource> values = <ClusterResource> [
     CLUSTER_RESOURCE_BROWSER,
+    CLUSTER_RESOURCE_FFMPEG,
+    CLUSTER_RESOURCE_IMAGEMAGICK,
   ];
 
   static final $core.Map<$core.int, ClusterResource> _byValue = $pb.ProtobufEnum.initByValue(values);

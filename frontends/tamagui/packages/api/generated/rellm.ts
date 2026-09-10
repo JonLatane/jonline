@@ -1638,13 +1638,15 @@ export const RellmDefinition = {
     /**
      * Attempts to acquire one or more `ClusterResource` locks on behalf of `namespace_id`. *Not
      * part of the authenticated-user auth system* -- this is server-to-server, cluster-internal
-     * coordination, authorized instead by the `cluster-shared-secret` gRPC metadata header (see
-     * [`ClusterResources.cluster_shared_secret`](#rellm-ClusterResources)). Only meaningful when
-     * called against the cluster's conductor (`ClusterResources.conductor_host`) -- fails with
-     * `FAILED_PRECONDITION` if called against an instance that isn't configured as one, and with
-     * `UNAUTHENTICATED` if the header is missing or doesn't match. See
-     * [`LockClusterResourcesResponse`](#rellm-LockClusterResourcesResponse) for the polling
-     * contract this expects of callers.
+     * coordination, authorized *entirely* by the `cluster-shared-secret` gRPC metadata header
+     * matching this server's own stored
+     * [`ClusterResources.cluster_shared_secret`](#rellm-ClusterResources) -- knowing the secret is
+     * what makes a caller entitled to treat this server as the conductor, regardless of what this
+     * server's own `ClusterResources.namespace_id`/`conductor_host` happen to say. Fails with
+     * `FAILED_PRECONDITION` if this server has no `cluster_resources` configured at all (nothing to
+     * check the secret against), and with `UNAUTHENTICATED` if the header is missing or doesn't
+     * match. See [`LockClusterResourcesResponse`](#rellm-LockClusterResourcesResponse) for the
+     * polling contract this expects of callers.
      */
     lockClusterResources: {
       name: "LockClusterResources",
@@ -1656,8 +1658,12 @@ export const RellmDefinition = {
     },
     /**
      * Releases resources previously acquired via
-     * [`LockClusterResources`](#grpc-api-LockClusterResources). Same auth (and conductor-only
-     * requirement) as `LockClusterResources`. See
+     * [`LockClusterResources`](#grpc-api-LockClusterResources). *Publicly accessible **or**
+     * Authenticated* -- unlike `LockClusterResources`, this accepts *either* the
+     * `cluster-shared-secret` header (same as `LockClusterResources`) *or* normal per-user auth, in
+     * which case the caller needs `EDIT_CLUSTER_SETTINGS` (see that permission's own doc) and the
+     * header is ignored entirely -- this is what lets an admin free a stuck lock straight from the
+     * Cluster tab UI rather than needing shell access to the cluster's shared secret. See
      * [`FreeClusterResourcesRequest`](#rellm-FreeClusterResourcesRequest)'s own doc for its
      * no-op-if-not-held behavior.
      */
@@ -2030,13 +2036,15 @@ export interface RellmServiceImplementation<CallContextExt = {}> {
   /**
    * Attempts to acquire one or more `ClusterResource` locks on behalf of `namespace_id`. *Not
    * part of the authenticated-user auth system* -- this is server-to-server, cluster-internal
-   * coordination, authorized instead by the `cluster-shared-secret` gRPC metadata header (see
-   * [`ClusterResources.cluster_shared_secret`](#rellm-ClusterResources)). Only meaningful when
-   * called against the cluster's conductor (`ClusterResources.conductor_host`) -- fails with
-   * `FAILED_PRECONDITION` if called against an instance that isn't configured as one, and with
-   * `UNAUTHENTICATED` if the header is missing or doesn't match. See
-   * [`LockClusterResourcesResponse`](#rellm-LockClusterResourcesResponse) for the polling
-   * contract this expects of callers.
+   * coordination, authorized *entirely* by the `cluster-shared-secret` gRPC metadata header
+   * matching this server's own stored
+   * [`ClusterResources.cluster_shared_secret`](#rellm-ClusterResources) -- knowing the secret is
+   * what makes a caller entitled to treat this server as the conductor, regardless of what this
+   * server's own `ClusterResources.namespace_id`/`conductor_host` happen to say. Fails with
+   * `FAILED_PRECONDITION` if this server has no `cluster_resources` configured at all (nothing to
+   * check the secret against), and with `UNAUTHENTICATED` if the header is missing or doesn't
+   * match. See [`LockClusterResourcesResponse`](#rellm-LockClusterResourcesResponse) for the
+   * polling contract this expects of callers.
    */
   lockClusterResources(
     request: LockClusterResourcesRequest,
@@ -2044,8 +2052,12 @@ export interface RellmServiceImplementation<CallContextExt = {}> {
   ): Promise<DeepPartial<LockClusterResourcesResponse>>;
   /**
    * Releases resources previously acquired via
-   * [`LockClusterResources`](#grpc-api-LockClusterResources). Same auth (and conductor-only
-   * requirement) as `LockClusterResources`. See
+   * [`LockClusterResources`](#grpc-api-LockClusterResources). *Publicly accessible **or**
+   * Authenticated* -- unlike `LockClusterResources`, this accepts *either* the
+   * `cluster-shared-secret` header (same as `LockClusterResources`) *or* normal per-user auth, in
+   * which case the caller needs `EDIT_CLUSTER_SETTINGS` (see that permission's own doc) and the
+   * header is ignored entirely -- this is what lets an admin free a stuck lock straight from the
+   * Cluster tab UI rather than needing shell access to the cluster's shared secret. See
    * [`FreeClusterResourcesRequest`](#rellm-FreeClusterResourcesRequest)'s own doc for its
    * no-op-if-not-held behavior.
    */
@@ -2399,13 +2411,15 @@ export interface RellmClient<CallOptionsExt = {}> {
   /**
    * Attempts to acquire one or more `ClusterResource` locks on behalf of `namespace_id`. *Not
    * part of the authenticated-user auth system* -- this is server-to-server, cluster-internal
-   * coordination, authorized instead by the `cluster-shared-secret` gRPC metadata header (see
-   * [`ClusterResources.cluster_shared_secret`](#rellm-ClusterResources)). Only meaningful when
-   * called against the cluster's conductor (`ClusterResources.conductor_host`) -- fails with
-   * `FAILED_PRECONDITION` if called against an instance that isn't configured as one, and with
-   * `UNAUTHENTICATED` if the header is missing or doesn't match. See
-   * [`LockClusterResourcesResponse`](#rellm-LockClusterResourcesResponse) for the polling
-   * contract this expects of callers.
+   * coordination, authorized *entirely* by the `cluster-shared-secret` gRPC metadata header
+   * matching this server's own stored
+   * [`ClusterResources.cluster_shared_secret`](#rellm-ClusterResources) -- knowing the secret is
+   * what makes a caller entitled to treat this server as the conductor, regardless of what this
+   * server's own `ClusterResources.namespace_id`/`conductor_host` happen to say. Fails with
+   * `FAILED_PRECONDITION` if this server has no `cluster_resources` configured at all (nothing to
+   * check the secret against), and with `UNAUTHENTICATED` if the header is missing or doesn't
+   * match. See [`LockClusterResourcesResponse`](#rellm-LockClusterResourcesResponse) for the
+   * polling contract this expects of callers.
    */
   lockClusterResources(
     request: DeepPartial<LockClusterResourcesRequest>,
@@ -2413,8 +2427,12 @@ export interface RellmClient<CallOptionsExt = {}> {
   ): Promise<LockClusterResourcesResponse>;
   /**
    * Releases resources previously acquired via
-   * [`LockClusterResources`](#grpc-api-LockClusterResources). Same auth (and conductor-only
-   * requirement) as `LockClusterResources`. See
+   * [`LockClusterResources`](#grpc-api-LockClusterResources). *Publicly accessible **or**
+   * Authenticated* -- unlike `LockClusterResources`, this accepts *either* the
+   * `cluster-shared-secret` header (same as `LockClusterResources`) *or* normal per-user auth, in
+   * which case the caller needs `EDIT_CLUSTER_SETTINGS` (see that permission's own doc) and the
+   * header is ignored entirely -- this is what lets an admin free a stuck lock straight from the
+   * Cluster tab UI rather than needing shell access to the cluster's shared secret. See
    * [`FreeClusterResourcesRequest`](#rellm-FreeClusterResourcesRequest)'s own doc for its
    * no-op-if-not-held behavior.
    */
