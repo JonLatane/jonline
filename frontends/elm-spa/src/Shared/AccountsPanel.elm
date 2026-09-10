@@ -3327,69 +3327,6 @@ sendUpdate req msg model =
             , Cmd.none
             )
 
-        GotBlueskyProfileResult _ (Err _) ->
-            -- No avatar/name to show -- `blueskyAccountChip` already falls back gracefully for
-            -- `avatarUrl`/`displayName == Nothing`, so there's nothing more to do here.
-            ( model, Cmd.none )
-
-        GotBlueskyProfileResult handle (Ok profile) ->
-            let
-                newAccounts : List BlueskyAccount
-                newAccounts =
-                    List.map
-                        (\a ->
-                            if a.handle == handle then
-                                { a | avatarUrl = profile.avatarUrl, displayName = profile.displayName }
-
-                            else
-                                a
-                        )
-                        model.blueskyAccounts
-            in
-            ( { model | blueskyAccounts = newAccounts }, Ports.persistBlueskyAccounts (encodeBlueskyAccounts newAccounts) )
-
-        RemoveBlueskyAccountClicked handle ->
-            -- Same "fade first, actually remove once that finishes" deferral as
-            -- `RemoveServerClicked` -- see `serverAnimations`.
-            let
-                key : String
-                key =
-                    "bluesky:" ++ handle
-
-                currentState : UI.Flip.State Msg
-                currentState =
-                    Dict.get key model.serverAnimations |> Maybe.withDefault UI.Flip.restingState
-            in
-            ( { model | serverAnimations = Dict.insert key (UI.Flip.remove (FinishRemoveBlueskyAccount handle) currentState) model.serverAnimations }
-            , Cmd.none
-            )
-
-        FinishRemoveBlueskyAccount handle ->
-            let
-                newAccounts : List BlueskyAccount
-                newAccounts =
-                    List.filter (\a -> a.handle /= handle) model.blueskyAccounts
-            in
-            ( { model | blueskyAccounts = newAccounts, serverAnimations = Dict.remove ("bluesky:" ++ handle) model.serverAnimations }
-            , Ports.persistBlueskyAccounts (encodeBlueskyAccounts newAccounts)
-            )
-
-        ToggleBlueskyAccountEnabled handle ->
-            let
-                newAccounts : List BlueskyAccount
-                newAccounts =
-                    List.map
-                        (\a ->
-                            if a.handle == handle then
-                                { a | enabled = not a.enabled }
-
-                            else
-                                a
-                        )
-                        model.blueskyAccounts
-            in
-            ( { model | blueskyAccounts = newAccounts }, Ports.persistBlueskyAccounts (encodeBlueskyAccounts newAccounts) )
-
         BrowseMastodonInstanceInputChanged text ->
             ( { model | browseMastodonInstanceInput = text }, Cmd.none )
 

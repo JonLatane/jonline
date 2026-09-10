@@ -25,8 +25,6 @@ the calling page's own `Request`.
 
 import Browser.Navigation
 import Components.AIModelProviders as AIModelProviders
-import Components.Authors as Authors
-import Components.Markdown as Markdown
 import Components.PostReplies as PostReplies
 import Components.Posts as Posts
 import Components.ServerDependentView as ServerDependentView
@@ -36,10 +34,9 @@ import Dict exposing (Dict)
 import Effect exposing (Effect)
 import Gen.Route
 import Grpc
-import Html exposing (Html, a, button, div, option, p, select, span, text)
-import Html.Attributes exposing (class, disabled, href, rel, selected, target, value)
+import Html exposing (Html, button, div, option, p, select, span, text)
+import Html.Attributes exposing (class, disabled, selected, value)
 import Html.Events exposing (onClick, onInput)
-import Http
 import Proto.Rellm exposing (GetSyncDestinationsResponse, Post, SyncDestination)
 import Proto.Rellm.Moderation exposing (Moderation)
 import Proto.Rellm.Permission exposing (Permission(..))
@@ -50,8 +47,6 @@ import Shared.AccountsPanel as AccountsPanel
 import Shared.AccountsPanel.RellmAccounts as RellmAccounts exposing (RellmAccount)
 import Shared.AccountsPanel.RellmServers as RellmServers exposing (RellmServer)
 import Shared.Breadcrumbs as Breadcrumbs
-import Shared.Federation.Bluesky as Bluesky
-import Shared.Federation.Mastodon as Mastodon
 import Shared.MarkdownPanel as MarkdownPanel
 import Shared.MediaGeneratorPanel as MediaGeneratorPanel
 import Shared.MediaViewerPanel as MediaViewerPanel
@@ -179,9 +174,6 @@ type Msg
     | GotSyncDestinationsResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, GetSyncDestinationsResponse ))
     | Poll
     | SharedMsg Shared.Msg
-      -- A federated (Mastodon/Bluesky) post's own fetch settling -- see `init`'s own doc on why
-      -- that's an entirely separate path from `GotPost`'s real `GetPosts` RPC.
-    | GotFederatedPost (Result Http.Error Post)
 
 
 type PostStatus
@@ -266,27 +258,6 @@ init shared pageIsSecure rawPostId navKey =
       -- so there's no stale trail shown in the meantime.
     , Effect.batch [ fetchEffect, Effect.fromShared (Shared.BreadcrumbsMsg Breadcrumbs.Clear) ]
     )
-
-
-{-| Dispatches a federated post id (see `Posts.parseFederatedPostId`) to the right platform's own
-single-post fetch. `BlueskyPostId` arbitrarily uses whichever connected Bluesky account comes first
--- reading a public post doesn't need to be *that* account's own, any connected token works (see
-`Bluesky.fetchPost`'s own doc) -- and fails outright (a bare `Http.BadStatus 401`, landing on the
-same `PostFailed` state a real auth failure would) if none is connected at all.
--}
-federatedFetchTask : Shared.Model -> Posts.FederatedPostId -> Task.Task Http.Error Post
-federatedFetchTask shared federatedId =
-    case federatedId of
-        Posts.MastodonPostId { instanceHost, statusId } ->
-            Mastodon.fetchStatus instanceHost statusId
-
-        Posts.BlueskyPostId { uri } ->
-            case shared.accounts.blueskyAccounts of
-                account :: _ ->
-                    Bluesky.fetchPost account.accessToken uri
-
-                [] ->
-                    Task.fail (Http.BadStatus 401)
 
 
 subscriptions : Model -> Sub Msg
@@ -390,12 +361,6 @@ update shared msg model =
             )
 
         GotPost (Err _) ->
-            ( { model | postStatus = PostFailed }, Effect.none )
-
-        GotFederatedPost (Ok post) ->
-            ( { model | postStatus = PostLoaded post }, Effect.none )
-
-        GotFederatedPost (Err _) ->
             ( { model | postStatus = PostFailed }, Effect.none )
 
         GotSyncDestinationsResult (Ok ( maybeAccountsPanelMsg, response )) ->
@@ -857,76 +822,33 @@ accountsPanelEffect maybeAccountsPanelMsg =
 
 
 {-| Just the body content -- the calling page wraps this in `UI.layout`/its own title (via
-`titleFor`), same split as `Components.Pages.EventsPage.view`/etc. A federated post (see `init`'s own
-doc) skips `ServerDependentView.view`'s connect-gating entirely -- there's no Rellm server behind it
-to connect to -- and renders through `federatedPostView` instead of the real-post trio below.
+`titleFor`), same split as `Components.Pages.EventsPage.view`/etc.
 -}
 view : Shared.Model -> Model -> Html Msg
 view shared model =
-    case Posts.parseFederatedPostId model.postId model.targetHost of
-        Just _ ->
+    ServerDependentView.view
+        { hostname = model.targetHost
+        , servers = shared.accounts.servers
+        , accounts = shared.accounts.accounts
+        , connectStatus = model.connectStatus
+        , onConnectClicked = ConnectClicked
+        , onEnableClicked = EnableClicked
+        }
+        (\_ _ ->
             case model.postStatus of
                 LoadingPost ->
                     p [ class "post-loading" ] [ text "Loading…" ]
 
                 PostFailed ->
-                    p [ class "post-error" ] [ text "Couldn't load this post. Maybe it was deleted, or maybe it's private." ]
+                    p [ class "post-error" ] [ text ("Couldn't load Post " ++ model.postId ++ "@" ++ model.targetHost ++ ". Maybe it doesn't exist, or maybe you need to be logged in?") ]
 
                 PostLoaded post ->
-                    federatedPostView post
-
-        Nothing ->
-            ServerDependentView.view
-                { hostname = model.targetHost
-                , servers = shared.accounts.servers
-                , accounts = shared.accounts.accounts
-                , connectStatus = model.connectStatus
-                , onConnectClicked = ConnectClicked
-                , onEnableClicked = EnableClicked
-                }
-                (\_ _ ->
-                    case model.postStatus of
-                        LoadingPost ->
-                            p [ class "post-loading" ] [ text "Loading…" ]
-
-                        PostFailed ->
-                            p [ class "post-error" ] [ text ("Couldn't load Post " ++ model.postId ++ "@" ++ model.targetHost ++ ". Maybe it doesn't exist, or maybe you need to be logged in?") ]
-
-                        PostLoaded post ->
-                            div []
-                                [ postDetailView shared model post
-                                , postActionsView shared model post
-                                , repliesView shared model
-                                ]
-                )
-
-
-{-| A Mastodon/Bluesky post, read-only -- no reply/edit/delete/visibility/moderation/sync-destination
-affordances (none of that makes sense for a post Rellm doesn't own), and no replies tree (Rellm has
-no way to fetch a Mastodon/Bluesky post's own replies -- a "for now" gap, see `init`'s own doc). Just
-its author, content, and a link back to the original.
--}
-federatedPostView : Post -> Html Msg
-federatedPostView post =
-    div [ class "post-detail" ]
-        [ div [ class "post-author-link" ]
-            [ Authors.avatar (Authors.name post.author) (post.author |> Maybe.andThen .avatar |> Maybe.andThen .url)
-            , text (Authors.name post.author)
-            ]
-        , Markdown.view [ class "post-detail-content" ] (Maybe.withDefault "" post.content)
-        , case post.link of
-            Just link ->
-                a
-                    [ class "post-link"
-                    , href link
-                    , target "_blank"
-                    , rel "noopener noreferrer"
-                    ]
-                    [ text ("View original: " ++ Posts.stripLinkScheme link) ]
-
-            Nothing ->
-                text ""
-        ]
+                    div []
+                        [ postDetailView shared model post
+                        , postActionsView shared model post
+                        , repliesView shared model
+                        ]
+        )
 
 
 postDetailView : Shared.Model -> Model -> Post -> Html Msg
