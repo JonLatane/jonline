@@ -52,6 +52,7 @@ import Components.Pages.ServerInformationPage.CdnTab as CdnTab
 import Components.Pages.ServerInformationPage.ClusterTab as ClusterTab
 import Components.Pages.ServerInformationPage.Common as Common
 import Components.Pages.ServerInformationPage.FederationTab as FederationTab
+import Components.Pages.ServerInformationPage.IntegrationsTab as IntegrationsTab
 import Components.Pages.ServerInformationPage.SettingsTab as SettingsTab
 import Components.Pages.ServerInformationPage.ThemeTab as ThemeTab
 import Dict exposing (Dict)
@@ -91,6 +92,7 @@ type alias Model =
     , settingsTab : SettingsTab.Model
     , federationTab : FederationTab.Model
     , cdnTab : CdnTab.Model
+    , integrationsTab : IntegrationsTab.Model
     , clusterTab : ClusterTab.Model
     }
 
@@ -106,6 +108,7 @@ type Msg
     | SettingsTabMsg SettingsTab.Msg
     | FederationTabMsg FederationTab.Msg
     | CdnTabMsg CdnTab.Msg
+    | IntegrationsTabMsg IntegrationsTab.Msg
     | ClusterTabMsg ClusterTab.Msg
     | SharedMsg Shared.Msg
 
@@ -120,6 +123,7 @@ type Tab
     | TabSettings
     | TabFederation
     | TabCdn
+    | TabIntegrations
     | TabCluster
 
 
@@ -144,6 +148,9 @@ tabParam tab =
 
         TabCdn ->
             "cdn"
+
+        TabIntegrations ->
+            "integrations"
 
         TabCluster ->
             "cluster"
@@ -170,6 +177,9 @@ tabFromParam param =
 
         "cdn" ->
             Just TabCdn
+
+        "integrations" ->
+            Just TabIntegrations
 
         "cluster" ->
             Just TabCluster
@@ -218,6 +228,7 @@ init shared pageIsSecure targetHost navKey path query =
             , settingsTab = SettingsTab.init
             , federationTab = FederationTab.init
             , cdnTab = CdnTab.init
+            , integrationsTab = IntegrationsTab.init
             , clusterTab = ClusterTab.init
             }
 
@@ -358,6 +369,11 @@ updateInner shared msg model =
             CdnTab.update shared model.targetHost (effectiveServer shared model) subMsg model.cdnTab
                 |> Tuple.mapFirst (\subModel -> { model | cdnTab = subModel })
                 |> Tuple.mapSecond (Effect.map CdnTabMsg)
+
+        IntegrationsTabMsg subMsg ->
+            IntegrationsTab.update shared model.targetHost (effectiveServer shared model) subMsg model.integrationsTab
+                |> Tuple.mapFirst (\subModel -> { model | integrationsTab = subModel })
+                |> Tuple.mapSecond (Effect.map IntegrationsTabMsg)
 
         ClusterTabMsg subMsg ->
             ClusterTab.update shared model.targetHost subMsg model.clusterTab
@@ -570,7 +586,7 @@ tabBar shared model =
              , ( TabCdn, "CDN" )
              ]
                 ++ (if Common.adminAccountFor shared model.targetHost /= Nothing then
-                        [ ( TabCluster, "Cluster" ) ]
+                        [ ( TabIntegrations, "Integrations" ), ( TabCluster, "Cluster" ) ]
 
                     else
                         []
@@ -618,6 +634,9 @@ tabContent shared model server =
 
         TabCdn ->
             Html.map CdnTabMsg (CdnTab.view server maybeAdminAccount model.cdnTab)
+
+        TabIntegrations ->
+            Html.map IntegrationsTabMsg (IntegrationsTab.view server maybeAdminAccount model.integrationsTab)
 
         TabCluster ->
             Html.map ClusterTabMsg (ClusterTab.view shared server maybeAdminAccount model.clusterTab)

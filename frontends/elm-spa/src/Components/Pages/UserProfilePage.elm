@@ -30,12 +30,12 @@ but none of this module's profile-editing machinery.
 
 import Browser.Navigation
 import Components.AIModelProviders as AIModelProviders
-import Components.SyncSources as SyncSources
 import Components.Markdown as Markdown
 import Components.Pages.EventsPage as EventsPage
 import Components.Pages.PostsPage as PostsPage
 import Components.ServerDependentView as ServerDependentView
 import Components.SyncDestinations as SyncDestinations
+import Components.SyncSources as SyncSources
 import Components.Users as Users
 import Components.Users.FollowStatusAndButton as FollowStatusAndButton
 import Components.Users.ProfileHeading as ProfileHeading
@@ -49,17 +49,18 @@ import Html.Attributes exposing (checked, class, classList, disabled, href, plac
 import Html.Events exposing (onClick, onInput)
 import Http
 import Json.Decode as Decode
-import Set
 import Ports
+import Process
 import Proto.Google.Protobuf
-import Proto.Rellm exposing (AIModelProvider, AIModelProviderGrant, SyncSource, FederatedAccount, SyncDestination, User, defaultAIModelProvider, defaultDigitalOceanCredentials, defaultSyncSource, defaultGeminiCredentials, defaultMediaReference, defaultOpenAICredentials, defaultSyncDestination)
+import Proto.Rellm exposing (AIModelProvider, AIModelProviderGrant, ContactMethod, FederatedAccount, SyncDestination, SyncSource, User, defaultAIModelProvider, defaultDigitalOceanCredentials, defaultGeminiCredentials, defaultMediaReference, defaultOpenAICredentials, defaultSyncDestination, defaultSyncSource)
 import Proto.Rellm.AIModelProvider.Provider as AIModelProviderProvider
-import Proto.Rellm.SyncSource.Configuration as Configuration
-import Proto.Rellm.SyncDestination.Configuration as DestinationConfiguration
 import Proto.Rellm.Moderation exposing (Moderation(..))
 import Proto.Rellm.Permission exposing (Permission(..))
 import Proto.Rellm.PostContext exposing (PostContext(..))
-import Proto.Rellm.Visibility exposing (Visibility)
+import Proto.Rellm.SyncDestination.Configuration as DestinationConfiguration
+import Proto.Rellm.SyncSource.Configuration as Configuration
+import Proto.Rellm.Visibility exposing (Visibility(..))
+import Set
 import Shared
 import Shared.AccountsPanel as AccountsPanel
 import Shared.AccountsPanel.RellmAccounts as RellmAccounts exposing (RellmAccount)
@@ -86,6 +87,10 @@ type alias Model =
     , visibilityEdit : Maybe VisibilityEdit
     , moderationEdit : Maybe ModerationEdit
     , followModerationStatus : SubmitStatus
+    , contactMethodsExpanded : Bool
+    , phoneEdit : Maybe PhoneEdit
+    , emailEdit : Maybe EmailEdit
+    , phoneVerification : Maybe PhoneVerification
     , permissionsEdit : Maybe PermissionsEdit
     , permissionsExpanded : Bool
     , federatedProfilesEdit : Maybe FederatedProfilesEdit
@@ -147,6 +152,23 @@ type Msg
     | GotModerationSaveResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, User ))
     | FollowModerationToggled
     | GotFollowModerationSaveResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, User ))
+    | ContactMethodsExpandedToggled
+    | PhoneEditClicked
+    | PhoneInputChanged String
+    | PhoneCancelClicked
+    | PhoneSaveClicked
+    | GotPhoneSaveResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, User ))
+    | EmailEditClicked
+    | EmailInputChanged String
+    | EmailCancelClicked
+    | EmailSaveClicked
+    | GotEmailSaveResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, User ))
+    | StartPhoneVerificationClicked
+    | GotStartPhoneVerificationResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, ContactMethod ))
+    | PhoneVerificationCooldownElapsed
+    | PhoneVerificationCodeChanged String
+    | VerifyPhoneCodeClicked
+    | GotVerifyPhoneCodeResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, ContactMethod ))
     | PermissionsExpandedToggled
     | PermissionsEditClicked
     | PermissionRemoveClicked Permission
@@ -261,6 +283,43 @@ until `RealNameSaveClicked` succeeds.
 type alias RealNameEdit =
     { input : String
     , status : SubmitStatus
+    }
+
+
+{-| Live only while the Phone field (see `Model.phoneEdit`) is being edited -- mirrors
+`RealNameEdit` exactly. `input` holds just the raw phone number, with the `tel:` scheme stripped
+back off (see `contactMethodEditValue`) -- re-added on save (see `PhoneSaveClicked`).
+-}
+type alias PhoneEdit =
+    { input : String
+    , status : SubmitStatus
+    }
+
+
+{-| Live only while the Email field (see `Model.emailEdit`) is being edited -- mirrors `PhoneEdit`
+exactly, just for the `mailto:` scheme instead of `tel:`. Email verification is out of scope this
+iteration (only SMS/phone), so unlike `PhoneEdit` there's no corresponding `PhoneVerification`-style
+sibling type for this one.
+-}
+type alias EmailEdit =
+    { input : String
+    , status : SubmitStatus
+    }
+
+
+{-| Live once phone verification has been started (`StartPhoneVerificationClicked`) -- independent
+of `PhoneEdit`, since verification always targets whatever phone number is currently saved on the
+user, not any in-progress edit. `sendStatus` tracks the in-flight (or most recently failed)
+`StartContactMethodVerification` call; `code`/`verifyStatus` track the code-entry
+`VerifyContactMethod` call once at least one send has gone out; `cooldownActive` disables "Resend"
+for 60 seconds after each successful send, cleared by a `Process.sleep`-scheduled
+`PhoneVerificationCooldownElapsed`.
+-}
+type alias PhoneVerification =
+    { sendStatus : SubmitStatus
+    , code : String
+    , verifyStatus : SubmitStatus
+    , cooldownActive : Bool
     }
 
 
@@ -488,7 +547,7 @@ availableSyncSourceKinds maybeAccount =
     [ Ics, Rss, Atom ] |> List.filter (\kind -> hasSyncSourceKindPermission kind maybeAccount)
 
 
-{-| Whether `maybeAccount` holds *any* of the 3 SyncSource permissions (or `ADMIN`) -- gates
+{-| Whether `maybeAccount` holds _any_ of the 3 SyncSource permissions (or `ADMIN`) -- gates
 whether the "add a source" affordance is shown at all, mirroring `canUseSyncDestinations`'s same
 any-of-N-permissions gate for the "Sync Destinations" section.
 -}
@@ -791,7 +850,7 @@ parseModelNames input =
 
 
 {-| The "AI Providers" section's own state -- mirrors `SyncSourcesState`'s doc: neither
-the owned-providers list nor the granted-to-you list is fetched/held here -- both are *derived* at
+the owned-providers list nor the granted-to-you list is fetched/held here -- both are _derived_ at
 render time from the resolved `User.availableAiModels` (see `ownedAIModelProviders`/
 `grantedAIModelAccess`), since `AvailableAIModel`s are self-or-Admin gated the same way
 `sync_sources` is (see that field's own proto doc, and `AvailableAIModel`'s). `expandedGrants`/
@@ -858,7 +917,7 @@ ownedAIModelProviders user =
         |> Tuple.second
 
 
-{-| Access granted *to* this profile's own user, on any provider (their own or someone else's) --
+{-| Access granted _to_ this profile's own user, on any provider (their own or someone else's) --
 one `(provider, grant)` pair per distinct grant, de-duplicated from `user.availableAiModels` the
 same way `ownedAIModelProviders` de-duplicates owned providers (each grant's own `modelNames`/
 `tokensRemaining` already describes everything it covers, so there's no need to keep every
@@ -893,10 +952,14 @@ the calling page's own `Request.With Params`' `key`/`url.path`/`query` -- kept a
 (rather than threaded through some other way) so the embedded `PostsPage`/`EventsPage`
 copies (see `Model.posts`/`Model.events`) can be `init`ed later, once `resolver` actually
 resolves a `User` to filter them by -- mirrors `PostsPage.init`/`EventsPage.init`'s own
-`navKey`/`path`/`query` params exactly.
+`navKey`/`path`/`query` params exactly. `fragment` is the raw URL fragment (`req.url.fragment`),
+mirroring `EventsPage.init`'s own `fragment` param -- here just checked for an exact
+`"contact-methods"` match (unlike `EventsPage`'s `calendarPreviewKeyFromFragment` prefix parse) to
+seed `contactMethodsExpanded`, so a `#contact-methods` link opens straight to that section already
+expanded.
 -}
-init : Shared.Model -> Bool -> String -> Resolver.Lookup -> Browser.Navigation.Key -> String -> Dict String String -> ( Model, Effect Msg )
-init shared pageIsSecure targetHost lookup navKey path query =
+init : Shared.Model -> Bool -> String -> Resolver.Lookup -> Browser.Navigation.Key -> String -> Dict String String -> Maybe String -> ( Model, Effect Msg )
+init shared pageIsSecure targetHost lookup navKey path query fragment =
     let
         ( resolverModel, resolverEffect ) =
             Resolver.init shared targetHost lookup
@@ -912,6 +975,10 @@ init shared pageIsSecure targetHost lookup navKey path query =
             , visibilityEdit = Nothing
             , moderationEdit = Nothing
             , followModerationStatus = Idle
+            , contactMethodsExpanded = fragment == Just "contact-methods"
+            , phoneEdit = Nothing
+            , emailEdit = Nothing
+            , phoneVerification = Nothing
             , permissionsEdit = Nothing
             , permissionsExpanded = False
             , federatedProfilesEdit = Nothing
@@ -1558,6 +1625,208 @@ updateInner shared msg model =
 
         GotFollowModerationSaveResult (Err err) ->
             ( { model | followModerationStatus = SubmitFailed (AccountsPanel.grpcErrorToString err) }, Effect.none )
+
+        ContactMethodsExpandedToggled ->
+            ( { model | contactMethodsExpanded = not model.contactMethodsExpanded }, Effect.none )
+
+        PhoneEditClicked ->
+            case model.resolver.status of
+                Resolver.Loaded user ->
+                    ( { model | phoneEdit = Just { input = contactMethodEditValue "tel:" user.phone, status = Idle } }, Effect.none )
+
+                _ ->
+                    ( model, Effect.none )
+
+        PhoneInputChanged input ->
+            ( { model | phoneEdit = model.phoneEdit |> Maybe.map (\edit -> { edit | input = input }) }
+            , Effect.none
+            )
+
+        PhoneCancelClicked ->
+            ( { model | phoneEdit = Nothing }, Effect.none )
+
+        PhoneSaveClicked ->
+            case ( model.resolver.status, model.phoneEdit, serverAndAccount shared model ) of
+                ( Resolver.Loaded user, Just edit, Just ( server, account ) ) ->
+                    ( { model | phoneEdit = Just { edit | status = Submitting } }
+                    , Users.updateUser shared.accounts
+                        ( Just account.userId, server.frontendHost )
+                        user.id
+                        (\freshUser ->
+                            { freshUser
+                                | phone =
+                                    Just
+                                        { value = Just ("tel:" ++ edit.input)
+                                        , visibility = freshUser.phone |> Maybe.map .visibility |> Maybe.withDefault PRIVATE
+                                        , supportedByServer = False
+                                        , verifiedAt = Nothing
+                                        , verificationInProgress = Nothing
+                                        }
+                            }
+                        )
+                        |> Task.attempt GotPhoneSaveResult
+                        |> Effect.fromCmd
+                    )
+
+                _ ->
+                    ( model, Effect.none )
+
+        GotPhoneSaveResult (Ok ( maybeAccountsPanelMsg, updatedUser )) ->
+            ( { model | resolver = withResolvedUser updatedUser model.resolver, phoneEdit = Nothing }
+            , accountsPanelEffect maybeAccountsPanelMsg
+            )
+
+        GotPhoneSaveResult (Err err) ->
+            ( { model
+                | phoneEdit =
+                    model.phoneEdit |> Maybe.map (\edit -> { edit | status = SubmitFailed (AccountsPanel.grpcErrorToString err) })
+              }
+            , Effect.none
+            )
+
+        EmailEditClicked ->
+            case model.resolver.status of
+                Resolver.Loaded user ->
+                    ( { model | emailEdit = Just { input = contactMethodEditValue "mailto:" user.email, status = Idle } }, Effect.none )
+
+                _ ->
+                    ( model, Effect.none )
+
+        EmailInputChanged input ->
+            ( { model | emailEdit = model.emailEdit |> Maybe.map (\edit -> { edit | input = input }) }
+            , Effect.none
+            )
+
+        EmailCancelClicked ->
+            ( { model | emailEdit = Nothing }, Effect.none )
+
+        EmailSaveClicked ->
+            case ( model.resolver.status, model.emailEdit, serverAndAccount shared model ) of
+                ( Resolver.Loaded user, Just edit, Just ( server, account ) ) ->
+                    ( { model | emailEdit = Just { edit | status = Submitting } }
+                    , Users.updateUser shared.accounts
+                        ( Just account.userId, server.frontendHost )
+                        user.id
+                        (\freshUser ->
+                            { freshUser
+                                | email =
+                                    Just
+                                        { value = Just ("mailto:" ++ edit.input)
+                                        , visibility = freshUser.email |> Maybe.map .visibility |> Maybe.withDefault PRIVATE
+                                        , supportedByServer = False
+                                        , verifiedAt = Nothing
+                                        , verificationInProgress = Nothing
+                                        }
+                            }
+                        )
+                        |> Task.attempt GotEmailSaveResult
+                        |> Effect.fromCmd
+                    )
+
+                _ ->
+                    ( model, Effect.none )
+
+        GotEmailSaveResult (Ok ( maybeAccountsPanelMsg, updatedUser )) ->
+            ( { model | resolver = withResolvedUser updatedUser model.resolver, emailEdit = Nothing }
+            , accountsPanelEffect maybeAccountsPanelMsg
+            )
+
+        GotEmailSaveResult (Err err) ->
+            ( { model
+                | emailEdit =
+                    model.emailEdit |> Maybe.map (\edit -> { edit | status = SubmitFailed (AccountsPanel.grpcErrorToString err) })
+              }
+            , Effect.none
+            )
+
+        StartPhoneVerificationClicked ->
+            case ( model.resolver.status, serverAndAccount shared model ) of
+                ( Resolver.Loaded user, Just ( server, account ) ) ->
+                    case user.phone of
+                        Just contactMethod ->
+                            let
+                                pendingVerification : PhoneVerification
+                                pendingVerification =
+                                    model.phoneVerification
+                                        |> Maybe.map (\pv -> { pv | sendStatus = Submitting })
+                                        |> Maybe.withDefault { sendStatus = Submitting, code = "", verifyStatus = Idle, cooldownActive = False }
+                            in
+                            ( { model | phoneVerification = Just pendingVerification }
+                            , Users.startContactMethodVerification shared.accounts ( Just account.userId, server.frontendHost ) contactMethod
+                                |> Task.attempt GotStartPhoneVerificationResult
+                                |> Effect.fromCmd
+                            )
+
+                        Nothing ->
+                            ( model, Effect.none )
+
+                _ ->
+                    ( model, Effect.none )
+
+        GotStartPhoneVerificationResult (Ok ( maybeAccountsPanelMsg, updatedContactMethod )) ->
+            ( { model
+                | resolver = withResolvedUserPhone updatedContactMethod model.resolver
+                , phoneVerification =
+                    model.phoneVerification |> Maybe.map (\pv -> { pv | sendStatus = Idle, cooldownActive = True })
+              }
+            , Effect.batch
+                [ accountsPanelEffect maybeAccountsPanelMsg
+                , Process.sleep 60000 |> Task.perform (\_ -> PhoneVerificationCooldownElapsed) |> Effect.fromCmd
+                ]
+            )
+
+        GotStartPhoneVerificationResult (Err err) ->
+            ( { model
+                | phoneVerification =
+                    model.phoneVerification |> Maybe.map (\pv -> { pv | sendStatus = SubmitFailed (AccountsPanel.grpcErrorToString err) })
+              }
+            , Effect.none
+            )
+
+        PhoneVerificationCooldownElapsed ->
+            ( { model | phoneVerification = model.phoneVerification |> Maybe.map (\pv -> { pv | cooldownActive = False }) }
+            , Effect.none
+            )
+
+        PhoneVerificationCodeChanged code ->
+            ( { model | phoneVerification = model.phoneVerification |> Maybe.map (\pv -> { pv | code = code }) }
+            , Effect.none
+            )
+
+        VerifyPhoneCodeClicked ->
+            case ( model.resolver.status, model.phoneVerification, serverAndAccount shared model ) of
+                ( Resolver.Loaded user, Just pendingVerification, Just ( server, account ) ) ->
+                    case user.phone |> Maybe.andThen .value of
+                        Just phoneValue ->
+                            ( { model | phoneVerification = Just { pendingVerification | verifyStatus = Submitting } }
+                            , Users.verifyContactMethod shared.accounts
+                                ( Just account.userId, server.frontendHost )
+                                { value = phoneValue, code = pendingVerification.code }
+                                |> Task.attempt GotVerifyPhoneCodeResult
+                                |> Effect.fromCmd
+                            )
+
+                        Nothing ->
+                            ( model, Effect.none )
+
+                _ ->
+                    ( model, Effect.none )
+
+        GotVerifyPhoneCodeResult (Ok ( maybeAccountsPanelMsg, updatedContactMethod )) ->
+            ( { model
+                | resolver = withResolvedUserPhone updatedContactMethod model.resolver
+                , phoneVerification = Nothing
+              }
+            , accountsPanelEffect maybeAccountsPanelMsg
+            )
+
+        GotVerifyPhoneCodeResult (Err err) ->
+            ( { model
+                | phoneVerification =
+                    model.phoneVerification |> Maybe.map (\pv -> { pv | verifyStatus = SubmitFailed (AccountsPanel.grpcErrorToString err) })
+              }
+            , Effect.none
+            )
 
         PermissionsExpandedToggled ->
             ( { model | permissionsExpanded = not model.permissionsExpanded }, Effect.none )
@@ -3332,7 +3601,7 @@ facebookLinkErrorMessage err =
         raw
 
 
-{-| Whether the "Sync Destinations" section should be shown at all -- the viewer holding *any* of
+{-| Whether the "Sync Destinations" section should be shown at all -- the viewer holding _any_ of
 the 10 `SYNC_EVENTS_TO_*`/`SYNC_POSTS_TO_*` permission pairs (or `ADMIN`) is enough to show the
 section (each platform's own button within it applies its own, more specific gate -- see
 `hasSyncToFacebookPermission` and friends, plus `facebookAppConfigured` for Facebook/Instagram
@@ -3397,7 +3666,7 @@ hasSyncToThreadsPermission =
     hasSyncPermissionPair SYNCEVENTSTOTHREADS SYNCPOSTSTOTHREADS
 
 
-{-| Whether `host` has a Facebook App configured -- gates the Facebook *and* Instagram buttons
+{-| Whether `host` has a Facebook App configured -- gates the Facebook _and_ Instagram buttons
 specifically (both ride on the same Facebook App/popup, see `FacebookConnectPlatform`'s own doc),
 not Mastodon/Bluesky, which need no server-side app config at all to be usable.
 -}
@@ -3567,6 +3836,23 @@ withResolvedUser user resolver =
     { resolver | status = Resolver.Loaded user }
 
 
+{-| Merges a just-updated `phone` `ContactMethod` (as returned by
+`Users.startContactMethodVerification`/`Users.verifyContactMethod`, which only ever echo back the
+one `ContactMethod` they acted on, not a whole `User`) into `model.resolver`'s currently loaded
+`User` -- mirrors `withResolvedUser`, but reads the rest of the `User` back off `resolver.status`
+itself (a no-op if it's not `Loaded`, which shouldn't happen in practice since verification is only
+reachable once a `User` is loaded) rather than replacing it wholesale.
+-}
+withResolvedUserPhone : ContactMethod -> Resolver.Model -> Resolver.Model
+withResolvedUserPhone phone resolver =
+    case resolver.status of
+        Resolver.Loaded user ->
+            { resolver | status = Resolver.Loaded { user | phone = Just phone } }
+
+        _ ->
+            resolver
+
+
 {-| `AvatarSaveClicked`'s transform, passed to `Users.updateUser` the same way
 `RealNameSaveClicked`'s inline lambda is -- applied to a freshly re-fetched
 `User`, not `model.resolver`'s own possibly-stale one (see `Users.updateUser`'s
@@ -3715,6 +4001,7 @@ profileDetail shared model server maybeAccount user =
                         |> Maybe.withDefault []
                    )
             )
+        , contactMethodsSection canEdit (isOwnProfile maybeAccount user) model.contactMethodsExpanded model user
         , followModerationToggleView canEdit model.followModerationStatus user
         , profileCounts postsHref repliesHref followersHref followingHref friendsHref eventsHref user
         , bioSection canEdit user
@@ -4040,6 +4327,234 @@ followModerationToggleView canEdit status user =
         , profileSwitch (user.defaultFollowModeration == PENDING) (not canEdit || status == Submitting) FollowModerationToggled
         , editErrorView status
         ]
+
+
+{-| The "Contact Methods" section -- Phone/Email, each with a Verified/Not Verified badge (see
+`contactMethodVerifiedBadge`) and (for `canEdit` viewers) an Edit button, plus (phone only, and only
+for the profile's own owner) the SMS verification flow (see `phoneVerificationView`). Collapsed by
+default (`expanded`, `Model.contactMethodsExpanded`) behind `expandableProfileSection`'s own header,
+same as `permissionsSection`/`syncSourcesSection` -- except a `#contact-methods` link (see `init`'s
+own `fragment` handling) opens it pre-expanded. Hidden entirely for a non-`canEdit` viewer if there's
+nothing to show (mirrors `permissionsSection`'s own "hide if nothing to show and can't add anything"
+gate) -- a `User` this viewer can't see either contact method on simply won't have them populated at
+all (enforced server-side via each `ContactMethod`'s own `visibility`), so there'd be nothing here.
+-}
+contactMethodsSection : Bool -> Bool -> Bool -> Model -> User -> Html Msg
+contactMethodsSection canEdit isOwn expanded model user =
+    if user.phone == Nothing && user.email == Nothing && not canEdit then
+        text ""
+
+    else
+        expandableProfileSection "profile-contact-methods-section"
+            "Contact Methods"
+            expanded
+            ContactMethodsExpandedToggled
+            [ phoneView canEdit model.phoneEdit user
+            , if isOwn then
+                phoneVerificationView model.phoneVerification user.phone
+
+              else
+                text ""
+            , emailView canEdit model.emailEdit user
+            ]
+
+
+{-| The Phone line -- mirrors `realNameView` exactly (plain text plus an Edit button when
+`maybeEdit == Nothing`, an inline input/Save/Cancel form while editing), plus a Verified/Not Verified
+badge (`contactMethodVerifiedBadge`) next to the display value. Shown (with just the Edit button, no
+value) even when `user.phone` is unset, so `canEdit` viewers can add one -- `PhoneSaveClicked` is
+what actually writes it (see `update`).
+-}
+phoneView : Bool -> Maybe PhoneEdit -> User -> Html Msg
+phoneView canEdit maybeEdit user =
+    case maybeEdit of
+        Just edit ->
+            div [ class "profile-contact-method-edit" ]
+                [ span [ class "profile-contact-method-label" ] [ text "Phone" ]
+                , input
+                    [ class "profile-real-name-input"
+                    , value edit.input
+                    , onInput PhoneInputChanged
+                    , placeholder "+15555550100"
+                    ]
+                    []
+                , editSaveButton PhoneSaveClicked edit.status
+                , editCancelButton PhoneCancelClicked edit.status
+                , editErrorView edit.status
+                ]
+
+        Nothing ->
+            if user.phone == Nothing && not canEdit then
+                text ""
+
+            else
+                div [ class "profile-contact-method-display" ]
+                    ([ span [ class "profile-contact-method-label" ] [ text "Phone: " ]
+                     , span [ class "profile-contact-method-value" ] [ text (contactMethodDisplayValue "tel:" user.phone) ]
+                     ]
+                        ++ (user.phone |> Maybe.map (\cm -> [ contactMethodVerifiedBadge cm ]) |> Maybe.withDefault [])
+                        ++ (if canEdit then
+                                [ button [ class "profile-edit-button", onClick PhoneEditClicked ] [ text "Edit Phone" ] ]
+
+                            else
+                                []
+                           )
+                    )
+
+
+{-| The Email line -- mirrors `phoneView` exactly, just for the `mailto:` scheme instead of `tel:`.
+Email verification is out of scope this iteration, so (unlike `phoneView`) there's no corresponding
+verification affordance here -- only the Verified/Not Verified badge, reflecting whatever
+`verifiedAt` the server happens to report.
+-}
+emailView : Bool -> Maybe EmailEdit -> User -> Html Msg
+emailView canEdit maybeEdit user =
+    case maybeEdit of
+        Just edit ->
+            div [ class "profile-contact-method-edit" ]
+                [ span [ class "profile-contact-method-label" ] [ text "Email" ]
+                , input
+                    [ class "profile-real-name-input"
+                    , value edit.input
+                    , onInput EmailInputChanged
+                    , placeholder "you@example.com"
+                    ]
+                    []
+                , editSaveButton EmailSaveClicked edit.status
+                , editCancelButton EmailCancelClicked edit.status
+                , editErrorView edit.status
+                ]
+
+        Nothing ->
+            if user.email == Nothing && not canEdit then
+                text ""
+
+            else
+                div [ class "profile-contact-method-display" ]
+                    ([ span [ class "profile-contact-method-label" ] [ text "Email: " ]
+                     , span [ class "profile-contact-method-value" ] [ text (contactMethodDisplayValue "mailto:" user.email) ]
+                     ]
+                        ++ (user.email |> Maybe.map (\cm -> [ contactMethodVerifiedBadge cm ]) |> Maybe.withDefault [])
+                        ++ (if canEdit then
+                                [ button [ class "profile-edit-button", onClick EmailEditClicked ] [ text "Edit Email" ] ]
+
+                            else
+                                []
+                           )
+                    )
+
+
+{-| The Verified/Not Verified badge next to a displayed contact method -- plain Unicode glyphs (no
+icon font in this app), mirroring `Components.UserPicker`'s own "✓" and `Shared.MyMediaPanel`'s own
+"✕" usage.
+-}
+contactMethodVerifiedBadge : ContactMethod -> Html msg
+contactMethodVerifiedBadge contactMethod =
+    if contactMethod.verifiedAt /= Nothing then
+        span [ class "profile-contact-method-verified" ] [ text "✓ Verified" ]
+
+    else
+        span [ class "profile-contact-method-not-verified" ] [ text "✕ Not Verified" ]
+
+
+{-| `phoneView`/`emailView`'s display value -- `contactMethod.value` with its `tel:`/`mailto:`
+scheme stripped back off (`"—"` when unset), mirroring how `Components.Pages.ServerInformationPage.
+CdnTab` falls back to an em dash for an unset field.
+-}
+contactMethodDisplayValue : String -> Maybe ContactMethod -> String
+contactMethodDisplayValue prefix maybeContactMethod =
+    maybeContactMethod
+        |> Maybe.andThen .value
+        |> Maybe.map (stripContactMethodPrefix prefix)
+        |> Maybe.withDefault "—"
+
+
+{-| `PhoneEditClicked`/`EmailEditClicked`'s seed value for their edit input -- same as
+`contactMethodDisplayValue`, just defaulting to `""` (an editable blank) rather than `"—"` (a
+display-only placeholder) when unset.
+-}
+contactMethodEditValue : String -> Maybe ContactMethod -> String
+contactMethodEditValue prefix maybeContactMethod =
+    maybeContactMethod
+        |> Maybe.andThen .value
+        |> Maybe.map (stripContactMethodPrefix prefix)
+        |> Maybe.withDefault ""
+
+
+stripContactMethodPrefix : String -> String -> String
+stripContactMethodPrefix prefix rawValue =
+    if String.startsWith prefix rawValue then
+        String.dropLeft (String.length prefix) rawValue
+
+    else
+        rawValue
+
+
+{-| The phone-only SMS verification flow, shown under `phoneView` for the profile's own owner --
+gated on `ContactMethod.supportedByServer` (the server-computed "can this be verified right now"
+signal, reflecting Twilio's enabled state without exposing any config details to a non-admin viewer,
+who can't read `ServerConfiguration.twilioConfig` at all) and on not already being verified.
+`Nothing` (`model.phoneVerification`) shows a bare "Start Verification" button
+(`StartPhoneVerificationClicked`); `Just pv` shows a code-entry input plus Verify/Resend once at
+least one send has been attempted, with "Resend" disabled during `pv.cooldownActive`'s 60-second
+window (see `update`'s `GotStartPhoneVerificationResult`/`PhoneVerificationCooldownElapsed`).
+-}
+phoneVerificationView : Maybe PhoneVerification -> Maybe ContactMethod -> Html Msg
+phoneVerificationView maybePhoneVerification maybePhone =
+    let
+        canVerify : Bool
+        canVerify =
+            maybePhone
+                |> Maybe.map (\cm -> cm.supportedByServer && cm.verifiedAt == Nothing)
+                |> Maybe.withDefault False
+    in
+    if not canVerify then
+        text ""
+
+    else
+        case maybePhoneVerification of
+            Nothing ->
+                div [ class "profile-contact-method-verify" ]
+                    [ button [ class "profile-edit-button", onClick StartPhoneVerificationClicked ] [ text "Start Verification" ] ]
+
+            Just pv ->
+                div [ class "profile-contact-method-verify" ]
+                    [ if pv.sendStatus == Submitting then
+                        span [ class "profile-contact-method-verify-status" ] [ text "Sending code…" ]
+
+                      else
+                        div [ class "profile-contact-method-verify-code" ]
+                            [ input
+                                [ class "profile-real-name-input"
+                                , placeholder "Enter code"
+                                , value pv.code
+                                , onInput PhoneVerificationCodeChanged
+                                , disabled (pv.verifyStatus == Submitting)
+                                ]
+                                []
+                            , button
+                                [ class "profile-edit-save"
+                                , onClick VerifyPhoneCodeClicked
+                                , disabled (pv.verifyStatus == Submitting || String.isEmpty pv.code)
+                                ]
+                                [ text
+                                    (if pv.verifyStatus == Submitting then
+                                        "Verifying…"
+
+                                     else
+                                        "Verify"
+                                    )
+                                ]
+                            , button
+                                [ class "profile-edit-cancel"
+                                , onClick StartPhoneVerificationClicked
+                                , disabled pv.cooldownActive
+                                ]
+                                [ text "Resend" ]
+                            ]
+                    , editErrorView pv.sendStatus
+                    , editErrorView pv.verifyStatus
+                    ]
 
 
 {-| A checkbox styled as a toggle switch -- same `.switch`/`.slider` classes
@@ -4549,7 +5064,7 @@ Admin may manage anyone's) -- gates the whole section's edit/delete
 affordances (a caller with neither shouldn't even see this section, but this
 doesn't assume that's already been checked). The add row is shown only on the
 viewer's own profile (an Admin still can't create a source _for_ someone
-else, see `create_sync_source.rs`) *and* only if `maybeAccount` holds at
+else, see `create_sync_source.rs`) _and_ only if `maybeAccount` holds at
 least one of the 3 SyncSource permissions (or `ADMIN`) -- see
 `canUseSyncSources` -- mirroring `syncDestinationsSection`'s own
 `canUseSyncDestinations` gate, just as an addition on top of the existing
@@ -5193,8 +5708,8 @@ aiModelProviderAddRowView addForm =
         ]
 
 
-{-| "AI Model Access" -- the access *granted to* this profile's own user, on any provider (their
-own or someone else's), as opposed to `aiModelProvidersSection` (the providers *they themselves*
+{-| "AI Model Access" -- the access _granted to_ this profile's own user, on any provider (their
+own or someone else's), as opposed to `aiModelProvidersSection` (the providers _they themselves_
 own). Read-only: renders each `(AIModelProvider, AIModelProviderGrant)` pair (see
 `grantedAIModelAccess`) via the same `aiModelProviderGrantRowView` used under a provider's own row,
 just with `showProviderName = True` (there's no parent `AIModelProvider` here to already show it)

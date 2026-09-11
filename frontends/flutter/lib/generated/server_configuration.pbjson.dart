@@ -110,6 +110,20 @@ final $typed_data.Uint8List navigationTabDescriptor = $convert.base64Decode(
     'Cg1OYXZpZ2F0aW9uVGFiEgwKCEhPTUVfVEFCEAASDgoKRVZFTlRTX1RBQhAKEg0KCVBPU1RTX1'
     'RBQhALEg4KClBFT1BMRV9UQUIQDBINCglBQk9VVF9UQUIQDw==');
 
+@$core.Deprecated('Use verificationAPIDescriptor instead')
+const VerificationAPI$json = {
+  '1': 'VerificationAPI',
+  '2': [
+    {'1': 'VERIFICATION_API_TWILIO', '2': 0},
+    {'1': 'VERIFICATION_API_BIRD', '2': 1},
+  ],
+};
+
+/// Descriptor for `VerificationAPI`. Decode as a `google.protobuf.EnumDescriptorProto`.
+final $typed_data.Uint8List verificationAPIDescriptor = $convert.base64Decode(
+    'Cg9WZXJpZmljYXRpb25BUEkSGwoXVkVSSUZJQ0FUSU9OX0FQSV9UV0lMSU8QABIZChVWRVJJRk'
+    'lDQVRJT05fQVBJX0JJUkQQAQ==');
+
 @$core.Deprecated('Use serverConfigurationDescriptor instead')
 const ServerConfiguration$json = {
   '1': 'ServerConfiguration',
@@ -130,6 +144,10 @@ const ServerConfiguration$json = {
     {'1': 'private_user_strategy', '3': 100, '4': 1, '5': 14, '6': '.rellm.PrivateUserStrategy', '10': 'privateUserStrategy'},
     {'1': 'authentication_features', '3': 101, '4': 3, '5': 14, '6': '.rellm.AuthenticationFeature', '10': 'authenticationFeatures'},
     {'1': 'web_push_config', '3': 110, '4': 1, '5': 11, '6': '.rellm.WebPushConfig', '9': 5, '10': 'webPushConfig', '17': true},
+    {'1': 'preferred_verification_apis', '3': 120, '4': 3, '5': 14, '6': '.rellm.VerificationAPI', '10': 'preferredVerificationApis'},
+    {'1': 'available_verification_apis', '3': 121, '4': 3, '5': 14, '6': '.rellm.VerificationAPI', '10': 'availableVerificationApis'},
+    {'1': 'twilio_config', '3': 122, '4': 1, '5': 11, '6': '.rellm.TwilioConfig', '9': 6, '10': 'twilioConfig', '17': true},
+    {'1': 'bird_config', '3': 123, '4': 1, '5': 11, '6': '.rellm.BirdConfig', '9': 7, '10': 'birdConfig', '17': true},
   ],
   '8': [
     {'1': '_server_info'},
@@ -138,6 +156,8 @@ const ServerConfiguration$json = {
     {'1': '_external_cdn_config'},
     {'1': '_cluster_resources'},
     {'1': '_web_push_config'},
+    {'1': '_twilio_config'},
+    {'1': '_bird_config'},
   ],
 };
 
@@ -163,9 +183,15 @@ final $typed_data.Uint8List serverConfigurationDescriptor = $convert.base64Decod
     'JlbGxtLlByaXZhdGVVc2VyU3RyYXRlZ3lSE3ByaXZhdGVVc2VyU3RyYXRlZ3kSVQoXYXV0aGVu'
     'dGljYXRpb25fZmVhdHVyZXMYZSADKA4yHC5yZWxsbS5BdXRoZW50aWNhdGlvbkZlYXR1cmVSFm'
     'F1dGhlbnRpY2F0aW9uRmVhdHVyZXMSQQoPd2ViX3B1c2hfY29uZmlnGG4gASgLMhQucmVsbG0u'
-    'V2ViUHVzaENvbmZpZ0gFUg13ZWJQdXNoQ29uZmlniAEBQg4KDF9zZXJ2ZXJfaW5mb0ISChBfZm'
-    'VkZXJhdGlvbl9pbmZvQg4KDF9jdXN0b21fdGFic0IWChRfZXh0ZXJuYWxfY2RuX2NvbmZpZ0IU'
-    'ChJfY2x1c3Rlcl9yZXNvdXJjZXNCEgoQX3dlYl9wdXNoX2NvbmZpZw==');
+    'V2ViUHVzaENvbmZpZ0gFUg13ZWJQdXNoQ29uZmlniAEBElYKG3ByZWZlcnJlZF92ZXJpZmljYX'
+    'Rpb25fYXBpcxh4IAMoDjIWLnJlbGxtLlZlcmlmaWNhdGlvbkFQSVIZcHJlZmVycmVkVmVyaWZp'
+    'Y2F0aW9uQXBpcxJWChthdmFpbGFibGVfdmVyaWZpY2F0aW9uX2FwaXMYeSADKA4yFi5yZWxsbS'
+    '5WZXJpZmljYXRpb25BUElSGWF2YWlsYWJsZVZlcmlmaWNhdGlvbkFwaXMSPQoNdHdpbGlvX2Nv'
+    'bmZpZxh6IAEoCzITLnJlbGxtLlR3aWxpb0NvbmZpZ0gGUgx0d2lsaW9Db25maWeIAQESNwoLYm'
+    'lyZF9jb25maWcYeyABKAsyES5yZWxsbS5CaXJkQ29uZmlnSAdSCmJpcmRDb25maWeIAQFCDgoM'
+    'X3NlcnZlcl9pbmZvQhIKEF9mZWRlcmF0aW9uX2luZm9CDgoMX2N1c3RvbV90YWJzQhYKFF9leH'
+    'Rlcm5hbF9jZG5fY29uZmlnQhQKEl9jbHVzdGVyX3Jlc291cmNlc0ISChBfd2ViX3B1c2hfY29u'
+    'ZmlnQhAKDl90d2lsaW9fY29uZmlnQg4KDF9iaXJkX2NvbmZpZw==');
 
 @$core.Deprecated('Use clusterResourcesDescriptor instead')
 const ClusterResources$json = {
@@ -597,4 +623,39 @@ const WebPushConfig$json = {
 final $typed_data.Uint8List webPushConfigDescriptor = $convert.base64Decode(
     'Cg1XZWJQdXNoQ29uZmlnEigKEHB1YmxpY192YXBpZF9rZXkYASABKAlSDnB1YmxpY1ZhcGlkS2'
     'V5EioKEXByaXZhdGVfdmFwaWRfa2V5GAIgASgJUg9wcml2YXRlVmFwaWRLZXk=');
+
+@$core.Deprecated('Use twilioConfigDescriptor instead')
+const TwilioConfig$json = {
+  '1': 'TwilioConfig',
+  '2': [
+    {'1': 'twilio_enabled', '3': 1, '4': 1, '5': 8, '10': 'twilioEnabled'},
+    {'1': 'twilio_account_sid', '3': 3, '4': 1, '5': 9, '10': 'twilioAccountSid'},
+    {'1': 'twilio_api_key', '3': 2, '4': 1, '5': 9, '10': 'twilioApiKey'},
+    {'1': 'twilio_from_number', '3': 4, '4': 1, '5': 9, '10': 'twilioFromNumber'},
+  ],
+};
+
+/// Descriptor for `TwilioConfig`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List twilioConfigDescriptor = $convert.base64Decode(
+    'CgxUd2lsaW9Db25maWcSJQoOdHdpbGlvX2VuYWJsZWQYASABKAhSDXR3aWxpb0VuYWJsZWQSLA'
+    'oSdHdpbGlvX2FjY291bnRfc2lkGAMgASgJUhB0d2lsaW9BY2NvdW50U2lkEiQKDnR3aWxpb19h'
+    'cGlfa2V5GAIgASgJUgx0d2lsaW9BcGlLZXkSLAoSdHdpbGlvX2Zyb21fbnVtYmVyGAQgASgJUh'
+    'B0d2lsaW9Gcm9tTnVtYmVy');
+
+@$core.Deprecated('Use birdConfigDescriptor instead')
+const BirdConfig$json = {
+  '1': 'BirdConfig',
+  '2': [
+    {'1': 'bird_enabled', '3': 1, '4': 1, '5': 8, '10': 'birdEnabled'},
+    {'1': 'bird_access_key', '3': 2, '4': 1, '5': 9, '10': 'birdAccessKey'},
+    {'1': 'bird_from', '3': 3, '4': 1, '5': 9, '10': 'birdFrom'},
+    {'1': 'bird_region', '3': 4, '4': 1, '5': 9, '10': 'birdRegion'},
+  ],
+};
+
+/// Descriptor for `BirdConfig`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List birdConfigDescriptor = $convert.base64Decode(
+    'CgpCaXJkQ29uZmlnEiEKDGJpcmRfZW5hYmxlZBgBIAEoCFILYmlyZEVuYWJsZWQSJgoPYmlyZF'
+    '9hY2Nlc3Nfa2V5GAIgASgJUg1iaXJkQWNjZXNzS2V5EhsKCWJpcmRfZnJvbRgDIAEoCVIIYmly'
+    'ZEZyb20SHwoLYmlyZF9yZWdpb24YBCABKAlSCmJpcmRSZWdpb24=');
 

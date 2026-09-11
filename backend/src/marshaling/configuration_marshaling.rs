@@ -27,6 +27,21 @@ impl ToDbServerConfiguration for ServerConfiguration {
                 .web_push_config
                 .as_ref()
                 .map(|c| serde_json::to_value(c).unwrap()),
+            twilio_config: self
+                .twilio_config
+                .as_ref()
+                .map(|c| serde_json::to_value(c).unwrap()),
+            bird_config: self
+                .bird_config
+                .as_ref()
+                .map(|c| serde_json::to_value(c).unwrap()),
+            preferred_verification_apis: Some(crate::logic::verification_apis_to_json(
+                &self
+                    .preferred_verification_apis
+                    .iter()
+                    .filter_map(|a| VerificationApi::try_from(*a).ok())
+                    .collect::<Vec<_>>(),
+            )),
             custom_tabs: self
                 .custom_tabs
                 .as_ref()
@@ -98,6 +113,63 @@ impl ToProtoServerConfiguration for models::ServerConfiguration {
                 ..c
             });
         // .map(|c| serde_json::from_value(c).unwrap_or_else(|_| None));
+        // `TwilioConfig.twilio_api_key` (the Auth Token) is write-only -- never send the real value
+        // to a client, same reasoning (and same `configure_server` merge-on-blank counterpart) as
+        // `FacebookAuthConfig.app_secret` above.
+        let twilio_config: Option<TwilioConfig> = self
+            .twilio_config
+            .to_owned()
+            .map_or(Some(None), |c| serde_json::from_value(c).ok())
+            .flatten()
+            .map(|c| TwilioConfig {
+                twilio_api_key: String::new(),
+                ..c
+            });
+        // Same write-only treatment for `BirdConfig.bird_access_key`.
+        let bird_config: Option<BirdConfig> = self
+            .bird_config
+            .to_owned()
+            .map_or(Some(None), |c| serde_json::from_value(c).ok())
+            .flatten()
+            .map(|c| BirdConfig {
+                bird_access_key: String::new(),
+                ..c
+            });
+        // Not persisted anywhere yet -- see `NewServerConfiguration`'s doc and
+        // `preferred_verification_apis`'s own proto comment. `ConfigureServer` does persist this
+        // one (unlike the comment below used to say), stored the same way `Permission` lists are
+        // (see `contact_verification::json_to_verification_apis`).
+        let preferred_verification_apis: Vec<i32> = self
+            .preferred_verification_apis
+            .to_owned()
+            .map(|v| crate::logic::json_to_verification_apis(&v))
+            .unwrap_or_default()
+            .into_iter()
+            .map(|a| a as i32)
+            .collect();
+        // The public "is SMS verification available" signal -- serialized to *everyone*, unlike
+        // `twilio_config`/`bird_config`/`preferred_verification_apis` themselves (see
+        // `get_server_configuration`'s admin-only stripping). Mirrors
+        // `contact_verification::available_verification_apis`'s own preference-ordering logic, just
+        // computed straight off the just-deserialized configs here (this trait has no `conn` to
+        // call that function with).
+        let twilio_enabled = twilio_config.as_ref().is_some_and(|c| c.twilio_enabled);
+        let bird_enabled = bird_config.as_ref().is_some_and(|c| c.bird_enabled);
+        let is_available = |api: &VerificationApi| match api {
+            VerificationApi::Twilio => twilio_enabled,
+            VerificationApi::Bird => bird_enabled,
+        };
+        let mut available_verification_apis: Vec<i32> = preferred_verification_apis
+            .iter()
+            .filter_map(|a| VerificationApi::try_from(*a).ok())
+            .filter(|a| is_available(a))
+            .map(|a| a as i32)
+            .collect();
+        for api in [VerificationApi::Twilio, VerificationApi::Bird] {
+            if is_available(&api) && !available_verification_apis.contains(&(api as i32)) {
+                available_verification_apis.push(api as i32);
+            }
+        }
         let custom_tabs: Option<CustomNavigationTabSet> =
             self.custom_tabs.to_owned().and_then(deserialize_custom_tabs);
         // `cluster_shared_secret` is write-only -- never send the real value to a client (not even
@@ -138,6 +210,10 @@ impl ToProtoServerConfiguration for models::ServerConfiguration {
             external_cdn_config: external_cdn_config,
             cluster_resources: cluster_resources,
             web_push_config: web_push_config, // ..Default::default()
+            twilio_config: twilio_config,
+            bird_config: bird_config,
+            preferred_verification_apis: preferred_verification_apis,
+            available_verification_apis: available_verification_apis,
         }
     }
 }

@@ -309,11 +309,11 @@ export interface Membership {
 }
 
 /**
- * A contact method for a user. Models designed to support verification,
- * but verification RPCs are not yet implemented.
+ * A contact method for a user. Verified via `StartContactMethodVerification`/`VerifyContactMethod`
+ * -- SMS/Twilio only this iteration, see `TwilioConfig` in `server_configuration.proto`.
  */
 export interface ContactMethod {
-  /** Either a `mailto:` or `tel:` URL. */
+  /** Either a valid `mailto:` or valid `tel:` URL. */
   value?:
     | string
     | undefined;
@@ -321,14 +321,35 @@ export interface ContactMethod {
   visibility: Visibility;
   /**
    * Server-side flag indicating whether the server can verify
-   * (and otherwise interact via) the contact method.
+   * (and otherwise interact via) the contact method. Always computed server-side (never trusted
+   * from client input) off whether a verification provider is currently enabled for this contact
+   * method's scheme (`tel:`/`mailto:`).
    */
   supportedByServer: boolean;
   /**
+   * Time the contact method was verified.
    * Indicates the user has completed verification of the contact method.
    * Verification requires `supported_by_server` to be `true`.
    */
-  verified: boolean;
+  verifiedAt?: string | undefined;
+  verificationInProgress?: ContactMethodVerification | undefined;
+}
+
+export interface ContactMethodVerification {
+  /**
+   * Never serialized to gRPC by the backend. Only stored server-side; a client's own attempt to
+   * verify goes through `VerifyContactMethodRequest.code` instead, not this field.
+   */
+  verificationCode: string;
+  verificationStartedAt:
+    | string
+    | undefined;
+  /**
+   * Number of failed `VerifyContactMethod` attempts against `verification_code` since it was sent.
+   * Capped (see that RPC's own doc) to prevent brute-forcing the 6-digit code within its expiry
+   * window.
+   */
+  attempts: number;
 }
 
 /**
@@ -372,6 +393,17 @@ export interface GetUsersResponse {
   users: User[];
   /** Whether there are more pages of results. */
   hasNextPage: boolean;
+}
+
+/** Request for [`VerifyContactMethod`](#grpc-api-VerifyContactMethod). */
+export interface VerifyContactMethodRequest {
+  /**
+   * The `tel:` (or, in the future, `mailto:`) value being verified -- must match the current
+   * user's own stored `phone`/`email` value.
+   */
+  value: string;
+  /** The code the user was sent by `StartContactMethodVerification`. */
+  code: string;
 }
 
 function createBaseUser(): User {
@@ -1257,7 +1289,13 @@ export const Membership: MessageFns<Membership> = {
 };
 
 function createBaseContactMethod(): ContactMethod {
-  return { value: undefined, visibility: 0, supportedByServer: false, verified: false };
+  return {
+    value: undefined,
+    visibility: 0,
+    supportedByServer: false,
+    verifiedAt: undefined,
+    verificationInProgress: undefined,
+  };
 }
 
 export const ContactMethod: MessageFns<ContactMethod> = {
@@ -1271,8 +1309,11 @@ export const ContactMethod: MessageFns<ContactMethod> = {
     if (message.supportedByServer !== false) {
       writer.uint32(24).bool(message.supportedByServer);
     }
-    if (message.verified !== false) {
-      writer.uint32(32).bool(message.verified);
+    if (message.verifiedAt !== undefined) {
+      Timestamp.encode(toTimestamp(message.verifiedAt), writer.uint32(34).fork()).join();
+    }
+    if (message.verificationInProgress !== undefined) {
+      ContactMethodVerification.encode(message.verificationInProgress, writer.uint32(42).fork()).join();
     }
     return writer;
   },
@@ -1309,11 +1350,19 @@ export const ContactMethod: MessageFns<ContactMethod> = {
           continue;
         }
         case 4: {
-          if (tag !== 32) {
+          if (tag !== 34) {
             break;
           }
 
-          message.verified = reader.bool();
+          message.verifiedAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.verificationInProgress = ContactMethodVerification.decode(reader, reader.uint32());
           continue;
         }
       }
@@ -1330,7 +1379,10 @@ export const ContactMethod: MessageFns<ContactMethod> = {
       value: isSet(object.value) ? globalThis.String(object.value) : undefined,
       visibility: isSet(object.visibility) ? visibilityFromJSON(object.visibility) : 0,
       supportedByServer: isSet(object.supportedByServer) ? globalThis.Boolean(object.supportedByServer) : false,
-      verified: isSet(object.verified) ? globalThis.Boolean(object.verified) : false,
+      verifiedAt: isSet(object.verifiedAt) ? globalThis.String(object.verifiedAt) : undefined,
+      verificationInProgress: isSet(object.verificationInProgress)
+        ? ContactMethodVerification.fromJSON(object.verificationInProgress)
+        : undefined,
     };
   },
 
@@ -1345,8 +1397,11 @@ export const ContactMethod: MessageFns<ContactMethod> = {
     if (message.supportedByServer !== false) {
       obj.supportedByServer = message.supportedByServer;
     }
-    if (message.verified !== false) {
-      obj.verified = message.verified;
+    if (message.verifiedAt !== undefined) {
+      obj.verifiedAt = message.verifiedAt;
+    }
+    if (message.verificationInProgress !== undefined) {
+      obj.verificationInProgress = ContactMethodVerification.toJSON(message.verificationInProgress);
     }
     return obj;
   },
@@ -1359,7 +1414,105 @@ export const ContactMethod: MessageFns<ContactMethod> = {
     message.value = object.value ?? undefined;
     message.visibility = object.visibility ?? 0;
     message.supportedByServer = object.supportedByServer ?? false;
-    message.verified = object.verified ?? false;
+    message.verifiedAt = object.verifiedAt ?? undefined;
+    message.verificationInProgress =
+      (object.verificationInProgress !== undefined && object.verificationInProgress !== null)
+        ? ContactMethodVerification.fromPartial(object.verificationInProgress)
+        : undefined;
+    return message;
+  },
+};
+
+function createBaseContactMethodVerification(): ContactMethodVerification {
+  return { verificationCode: "", verificationStartedAt: undefined, attempts: 0 };
+}
+
+export const ContactMethodVerification: MessageFns<ContactMethodVerification> = {
+  encode(message: ContactMethodVerification, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.verificationCode !== "") {
+      writer.uint32(10).string(message.verificationCode);
+    }
+    if (message.verificationStartedAt !== undefined) {
+      Timestamp.encode(toTimestamp(message.verificationStartedAt), writer.uint32(18).fork()).join();
+    }
+    if (message.attempts !== 0) {
+      writer.uint32(24).int32(message.attempts);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ContactMethodVerification {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseContactMethodVerification();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.verificationCode = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.verificationStartedAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.attempts = reader.int32();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ContactMethodVerification {
+    return {
+      verificationCode: isSet(object.verificationCode) ? globalThis.String(object.verificationCode) : "",
+      verificationStartedAt: isSet(object.verificationStartedAt)
+        ? globalThis.String(object.verificationStartedAt)
+        : undefined,
+      attempts: isSet(object.attempts) ? globalThis.Number(object.attempts) : 0,
+    };
+  },
+
+  toJSON(message: ContactMethodVerification): unknown {
+    const obj: any = {};
+    if (message.verificationCode !== "") {
+      obj.verificationCode = message.verificationCode;
+    }
+    if (message.verificationStartedAt !== undefined) {
+      obj.verificationStartedAt = message.verificationStartedAt;
+    }
+    if (message.attempts !== 0) {
+      obj.attempts = Math.round(message.attempts);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ContactMethodVerification>, I>>(base?: I): ContactMethodVerification {
+    return ContactMethodVerification.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<ContactMethodVerification>, I>>(object: I): ContactMethodVerification {
+    const message = createBaseContactMethodVerification();
+    message.verificationCode = object.verificationCode ?? "";
+    message.verificationStartedAt = object.verificationStartedAt ?? undefined;
+    message.attempts = object.attempts ?? 0;
     return message;
   },
 };
@@ -1560,6 +1713,82 @@ export const GetUsersResponse: MessageFns<GetUsersResponse> = {
     const message = createBaseGetUsersResponse();
     message.users = object.users?.map((e) => User.fromPartial(e)) || [];
     message.hasNextPage = object.hasNextPage ?? false;
+    return message;
+  },
+};
+
+function createBaseVerifyContactMethodRequest(): VerifyContactMethodRequest {
+  return { value: "", code: "" };
+}
+
+export const VerifyContactMethodRequest: MessageFns<VerifyContactMethodRequest> = {
+  encode(message: VerifyContactMethodRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.value !== "") {
+      writer.uint32(10).string(message.value);
+    }
+    if (message.code !== "") {
+      writer.uint32(18).string(message.code);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): VerifyContactMethodRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseVerifyContactMethodRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.value = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.code = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): VerifyContactMethodRequest {
+    return {
+      value: isSet(object.value) ? globalThis.String(object.value) : "",
+      code: isSet(object.code) ? globalThis.String(object.code) : "",
+    };
+  },
+
+  toJSON(message: VerifyContactMethodRequest): unknown {
+    const obj: any = {};
+    if (message.value !== "") {
+      obj.value = message.value;
+    }
+    if (message.code !== "") {
+      obj.code = message.code;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<VerifyContactMethodRequest>, I>>(base?: I): VerifyContactMethodRequest {
+    return VerifyContactMethodRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<VerifyContactMethodRequest>, I>>(object: I): VerifyContactMethodRequest {
+    const message = createBaseVerifyContactMethodRequest();
+    message.value = object.value ?? "";
+    message.code = object.code ?? "";
     return message;
   },
 };

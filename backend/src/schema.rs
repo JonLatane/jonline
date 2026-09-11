@@ -330,6 +330,9 @@ diesel::table! {
         web_push_config -> Nullable<Jsonb>,
         custom_tabs -> Nullable<Jsonb>,
         cluster_resources -> Nullable<Jsonb>,
+        twilio_config -> Nullable<Jsonb>,
+        bird_config -> Nullable<Jsonb>,
+        preferred_verification_apis -> Nullable<Jsonb>,
     }
 }
 

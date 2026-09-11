@@ -40,6 +40,10 @@ class ServerConfiguration extends $pb.GeneratedMessage {
     PrivateUserStrategy? privateUserStrategy,
     $core.Iterable<AuthenticationFeature>? authenticationFeatures,
     WebPushConfig? webPushConfig,
+    $core.Iterable<VerificationAPI>? preferredVerificationApis,
+    $core.Iterable<VerificationAPI>? availableVerificationApis,
+    TwilioConfig? twilioConfig,
+    BirdConfig? birdConfig,
   }) {
     final $result = create();
     if (serverInfo != null) {
@@ -90,6 +94,18 @@ class ServerConfiguration extends $pb.GeneratedMessage {
     if (webPushConfig != null) {
       $result.webPushConfig = webPushConfig;
     }
+    if (preferredVerificationApis != null) {
+      $result.preferredVerificationApis.addAll(preferredVerificationApis);
+    }
+    if (availableVerificationApis != null) {
+      $result.availableVerificationApis.addAll(availableVerificationApis);
+    }
+    if (twilioConfig != null) {
+      $result.twilioConfig = twilioConfig;
+    }
+    if (birdConfig != null) {
+      $result.birdConfig = birdConfig;
+    }
     return $result;
   }
   ServerConfiguration._() : super();
@@ -113,6 +129,10 @@ class ServerConfiguration extends $pb.GeneratedMessage {
     ..e<PrivateUserStrategy>(100, _omitFieldNames ? '' : 'privateUserStrategy', $pb.PbFieldType.OE, defaultOrMaker: PrivateUserStrategy.ACCOUNT_IS_FROZEN, valueOf: PrivateUserStrategy.valueOf, enumValues: PrivateUserStrategy.values)
     ..pc<AuthenticationFeature>(101, _omitFieldNames ? '' : 'authenticationFeatures', $pb.PbFieldType.KE, valueOf: AuthenticationFeature.valueOf, enumValues: AuthenticationFeature.values, defaultEnumValue: AuthenticationFeature.AUTHENTICATION_FEATURE_UNKNOWN)
     ..aOM<WebPushConfig>(110, _omitFieldNames ? '' : 'webPushConfig', subBuilder: WebPushConfig.create)
+    ..pc<VerificationAPI>(120, _omitFieldNames ? '' : 'preferredVerificationApis', $pb.PbFieldType.KE, valueOf: VerificationAPI.valueOf, enumValues: VerificationAPI.values, defaultEnumValue: VerificationAPI.VERIFICATION_API_TWILIO)
+    ..pc<VerificationAPI>(121, _omitFieldNames ? '' : 'availableVerificationApis', $pb.PbFieldType.KE, valueOf: VerificationAPI.valueOf, enumValues: VerificationAPI.values, defaultEnumValue: VerificationAPI.VERIFICATION_API_TWILIO)
+    ..aOM<TwilioConfig>(122, _omitFieldNames ? '' : 'twilioConfig', subBuilder: TwilioConfig.create)
+    ..aOM<BirdConfig>(123, _omitFieldNames ? '' : 'birdConfig', subBuilder: BirdConfig.create)
     ..hasRequiredFields = false
   ;
 
@@ -325,6 +345,46 @@ class ServerConfiguration extends $pb.GeneratedMessage {
   void clearWebPushConfig() => clearField(110);
   @$pb.TagNumber(110)
   WebPushConfig ensureWebPushConfig() => $_ensure(15);
+
+  /// A server-preferred order of contact verification APIs.
+  /// Note: even if this is blank, if twilio_config is enabled, the server should try
+  /// to verify with Twilio. It's really only for the case of wanting to switch between multiple
+  /// SMS/Email providers.
+  /// Only serialized for admin users.
+  @$pb.TagNumber(120)
+  $core.List<VerificationAPI> get preferredVerificationApis => $_getList(16);
+
+  /// Derived from whether TwilioConfig.enabled is true, etc. Serialized to every caller (not
+  /// admin-only, unlike `preferred_verification_apis`/`twilio_config`) -- this is what a non-admin
+  /// client should check to decide whether to show verification UI at all, without exposing any
+  /// provider configuration.
+  @$pb.TagNumber(121)
+  $core.List<VerificationAPI> get availableVerificationApis => $_getList(17);
+
+  /// Twilio Config. Only serialized for admin users.
+  @$pb.TagNumber(122)
+  TwilioConfig get twilioConfig => $_getN(18);
+  @$pb.TagNumber(122)
+  set twilioConfig(TwilioConfig v) { setField(122, v); }
+  @$pb.TagNumber(122)
+  $core.bool hasTwilioConfig() => $_has(18);
+  @$pb.TagNumber(122)
+  void clearTwilioConfig() => clearField(122);
+  @$pb.TagNumber(122)
+  TwilioConfig ensureTwilioConfig() => $_ensure(18);
+
+  /// Bird (bird.com, formerly MessageBird) Config -- a cheaper Twilio alternative for SMS
+  /// verification. Only serialized for admin users.
+  @$pb.TagNumber(123)
+  BirdConfig get birdConfig => $_getN(19);
+  @$pb.TagNumber(123)
+  set birdConfig(BirdConfig v) { setField(123, v); }
+  @$pb.TagNumber(123)
+  $core.bool hasBirdConfig() => $_has(19);
+  @$pb.TagNumber(123)
+  void clearBirdConfig() => clearField(123);
+  @$pb.TagNumber(123)
+  BirdConfig ensureBirdConfig() => $_ensure(19);
 }
 
 ///  Coordinates a small piece of shared, cluster-wide state across multiple independent Rellm
@@ -2398,6 +2458,200 @@ class WebPushConfig extends $pb.GeneratedMessage {
   $core.bool hasPrivateVapidKey() => $_has(1);
   @$pb.TagNumber(2)
   void clearPrivateVapidKey() => clearField(2);
+}
+
+class TwilioConfig extends $pb.GeneratedMessage {
+  factory TwilioConfig({
+    $core.bool? twilioEnabled,
+    $core.String? twilioApiKey,
+    $core.String? twilioAccountSid,
+    $core.String? twilioFromNumber,
+  }) {
+    final $result = create();
+    if (twilioEnabled != null) {
+      $result.twilioEnabled = twilioEnabled;
+    }
+    if (twilioApiKey != null) {
+      $result.twilioApiKey = twilioApiKey;
+    }
+    if (twilioAccountSid != null) {
+      $result.twilioAccountSid = twilioAccountSid;
+    }
+    if (twilioFromNumber != null) {
+      $result.twilioFromNumber = twilioFromNumber;
+    }
+    return $result;
+  }
+  TwilioConfig._() : super();
+  factory TwilioConfig.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory TwilioConfig.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'TwilioConfig', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
+    ..aOB(1, _omitFieldNames ? '' : 'twilioEnabled')
+    ..aOS(2, _omitFieldNames ? '' : 'twilioApiKey')
+    ..aOS(3, _omitFieldNames ? '' : 'twilioAccountSid')
+    ..aOS(4, _omitFieldNames ? '' : 'twilioFromNumber')
+    ..hasRequiredFields = false
+  ;
+
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  TwilioConfig clone() => TwilioConfig()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  TwilioConfig copyWith(void Function(TwilioConfig) updates) => super.copyWith((message) => updates(message as TwilioConfig)) as TwilioConfig;
+
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static TwilioConfig create() => TwilioConfig._();
+  TwilioConfig createEmptyInstance() => create();
+  static $pb.PbList<TwilioConfig> createRepeated() => $pb.PbList<TwilioConfig>();
+  @$core.pragma('dart2js:noInline')
+  static TwilioConfig getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<TwilioConfig>(create);
+  static TwilioConfig? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.bool get twilioEnabled => $_getBF(0);
+  @$pb.TagNumber(1)
+  set twilioEnabled($core.bool v) { $_setBool(0, v); }
+  @$pb.TagNumber(1)
+  $core.bool hasTwilioEnabled() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearTwilioEnabled() => clearField(1);
+
+  /// The Twilio Auth Token. Never serialized once written.
+  @$pb.TagNumber(2)
+  $core.String get twilioApiKey => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set twilioApiKey($core.String v) { $_setString(1, v); }
+  @$pb.TagNumber(2)
+  $core.bool hasTwilioApiKey() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearTwilioApiKey() => clearField(2);
+
+  /// The Twilio Account SID. Public (among admins) -- freely serialized.
+  @$pb.TagNumber(3)
+  $core.String get twilioAccountSid => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set twilioAccountSid($core.String v) { $_setString(2, v); }
+  @$pb.TagNumber(3)
+  $core.bool hasTwilioAccountSid() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearTwilioAccountSid() => clearField(3);
+
+  /// The Twilio-provisioned sending number for outbound verification SMS. Not secret.
+  @$pb.TagNumber(4)
+  $core.String get twilioFromNumber => $_getSZ(3);
+  @$pb.TagNumber(4)
+  set twilioFromNumber($core.String v) { $_setString(3, v); }
+  @$pb.TagNumber(4)
+  $core.bool hasTwilioFromNumber() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearTwilioFromNumber() => clearField(4);
+}
+
+/// Bird (https://bird.com, formerly MessageBird) Config -- an alternative SMS verification
+/// provider to Twilio, with a simpler single-API-key auth model.
+class BirdConfig extends $pb.GeneratedMessage {
+  factory BirdConfig({
+    $core.bool? birdEnabled,
+    $core.String? birdAccessKey,
+    $core.String? birdFrom,
+    $core.String? birdRegion,
+  }) {
+    final $result = create();
+    if (birdEnabled != null) {
+      $result.birdEnabled = birdEnabled;
+    }
+    if (birdAccessKey != null) {
+      $result.birdAccessKey = birdAccessKey;
+    }
+    if (birdFrom != null) {
+      $result.birdFrom = birdFrom;
+    }
+    if (birdRegion != null) {
+      $result.birdRegion = birdRegion;
+    }
+    return $result;
+  }
+  BirdConfig._() : super();
+  factory BirdConfig.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory BirdConfig.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'BirdConfig', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
+    ..aOB(1, _omitFieldNames ? '' : 'birdEnabled')
+    ..aOS(2, _omitFieldNames ? '' : 'birdAccessKey')
+    ..aOS(3, _omitFieldNames ? '' : 'birdFrom')
+    ..aOS(4, _omitFieldNames ? '' : 'birdRegion')
+    ..hasRequiredFields = false
+  ;
+
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  BirdConfig clone() => BirdConfig()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  BirdConfig copyWith(void Function(BirdConfig) updates) => super.copyWith((message) => updates(message as BirdConfig)) as BirdConfig;
+
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static BirdConfig create() => BirdConfig._();
+  BirdConfig createEmptyInstance() => create();
+  static $pb.PbList<BirdConfig> createRepeated() => $pb.PbList<BirdConfig>();
+  @$core.pragma('dart2js:noInline')
+  static BirdConfig getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<BirdConfig>(create);
+  static BirdConfig? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.bool get birdEnabled => $_getBF(0);
+  @$pb.TagNumber(1)
+  set birdEnabled($core.bool v) { $_setBool(0, v); }
+  @$pb.TagNumber(1)
+  $core.bool hasBirdEnabled() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearBirdEnabled() => clearField(1);
+
+  /// The Bird workspace's API access key. Never serialized once written.
+  @$pb.TagNumber(2)
+  $core.String get birdAccessKey => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set birdAccessKey($core.String v) { $_setString(1, v); }
+  @$pb.TagNumber(2)
+  $core.bool hasBirdAccessKey() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearBirdAccessKey() => clearField(2);
+
+  /// The originator for outbound verification SMS -- an owned number, alphanumeric sender ID
+  /// (3-11 chars), or short code, as configured in the Bird workspace. Not secret.
+  @$pb.TagNumber(3)
+  $core.String get birdFrom => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set birdFrom($core.String v) { $_setString(2, v); }
+  @$pb.TagNumber(3)
+  $core.bool hasBirdFrom() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearBirdFrom() => clearField(3);
+
+  /// Which Bird API region to call ("us1" or "eu1", per Bird's own regional API hosts). Not
+  /// secret. Empty defaults to "us1".
+  @$pb.TagNumber(4)
+  $core.String get birdRegion => $_getSZ(3);
+  @$pb.TagNumber(4)
+  set birdRegion($core.String v) { $_setString(3, v); }
+  @$pb.TagNumber(4)
+  $core.bool hasBirdRegion() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearBirdRegion() => clearField(4);
 }
 
 

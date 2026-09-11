@@ -27,11 +27,13 @@
   
 - [users.proto](#users-proto)
     - [ContactMethod](#rellm-ContactMethod)
+    - [ContactMethodVerification](#rellm-ContactMethodVerification)
     - [Follow](#rellm-Follow)
     - [GetUsersRequest](#rellm-GetUsersRequest)
     - [GetUsersResponse](#rellm-GetUsersResponse)
     - [Membership](#rellm-Membership)
     - [User](#rellm-User)
+    - [VerifyContactMethodRequest](#rellm-VerifyContactMethodRequest)
   
     - [UserListingType](#rellm-UserListingType)
   
@@ -105,6 +107,7 @@
     - [EventListingType](#rellm-EventListingType)
   
 - [server_configuration.proto](#server_configuration-proto)
+    - [BirdConfig](#rellm-BirdConfig)
     - [ClusterConductorState](#rellm-ClusterConductorState)
     - [ClusterResourceLimit](#rellm-ClusterResourceLimit)
     - [ClusterResourceLock](#rellm-ClusterResourceLock)
@@ -124,6 +127,7 @@
     - [ServerConfiguration](#rellm-ServerConfiguration)
     - [ServerInfo](#rellm-ServerInfo)
     - [ServerLogo](#rellm-ServerLogo)
+    - [TwilioConfig](#rellm-TwilioConfig)
     - [WebPushConfig](#rellm-WebPushConfig)
   
     - [AuthenticationFeature](#rellm-AuthenticationFeature)
@@ -131,6 +135,7 @@
     - [ClusterResource](#rellm-ClusterResource)
     - [NavigationTab](#rellm-NavigationTab)
     - [PrivateUserStrategy](#rellm-PrivateUserStrategy)
+    - [VerificationAPI](#rellm-VerificationAPI)
     - [WebUserInterface](#rellm-WebUserInterface)
   
 - [federation.proto](#federation-proto)
@@ -1039,6 +1044,8 @@ discarded and a fresh keypair generated, so it&#39;s single-use per completed/fa
 | DeleteMedia | [Media](#rellm-Media) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes a media item by ID. *Authenticated.* Note that media may still be accessible for 12 hours after deletes are requested, as separate jobs clean it up from S3/MinIO. Deleting other users&#39; media requires `ADMIN` permissions. |
 | GetUsers | [GetUsersRequest](#rellm-GetUsersRequest) | [GetUsersResponse](#rellm-GetUsersResponse) | Gets Users. *Publicly accessible **or** Authenticated.* Unauthenticated calls only return Users of `GLOBAL_PUBLIC` visibility. |
 | UpdateUser | [User](#rellm-User) | [User](#rellm-User) | Update a user by ID. *Authenticated.* Updating other users requires `ADMIN` permissions. |
+| StartContactMethodVerification | [ContactMethod](#rellm-ContactMethod) | [ContactMethod](#rellm-ContactMethod) | Starts SMS verification of the current user&#39;s own phone ContactMethod. *Authenticated, self-only.* Requires the server to have Twilio configured and enabled. Generates a 6-digit code, sends it via Twilio SMS, and stores it (with a start time and attempt counter) on the phone ContactMethod. Only `tel:` values are supported this iteration -- `mailto:` returns `Unimplemented`. Rate-limited to one send per 60 seconds per user. |
+| VerifyContactMethod | [VerifyContactMethodRequest](#rellm-VerifyContactMethodRequest) | [ContactMethod](#rellm-ContactMethod) | Verifies a code sent by [`StartContactMethodVerification`](#grpc-api-StartContactMethodVerification). *Authenticated, self-only.* On match, sets `verified_at` and clears `verification_in_progress`. Codes expire after 10 minutes and allow at most 5 attempts before requiring a fresh [`StartContactMethodVerification`](#grpc-api-StartContactMethodVerification) call. |
 | DeleteUser | [User](#rellm-User) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes a user by ID. *Authenticated.* Deleting other users requires `ADMIN` permissions. |
 | SendMessage | [SendMessageRequest](#rellm-SendMessageRequest) | [Message](#rellm-Message) | Sends a Message to one or more recipients (creating/reusing their MessagingGroup). *Publicly accessible **or** Authenticated.* Like [`CreatePost`](#grpc-api-CreatePost)/[`CreateEvent`](#grpc-api-CreateEvent), authentication (if any) is via a standard `access_token`; unauthenticated calls are simply sent with no `sender`. |
 | GetMessages | [GetMessagesRequest](#rellm-GetMessagesRequest) | [GetMessagesResponse](#rellm-GetMessagesResponse) | Gets Messages. *Authenticated.* `PERSONAL_MESSAGES(_TEXT_SEARCH)` (and looking up a single Message/MessagingGroup) requires the `READ_PERSONAL_MESSAGES` permission and only returns Messages the current user sent or received. `ALL_SYSTEM_MESSAGES(_TEXT_SEARCH)` requires the `READ_ALL_SYSTEM_MESSAGES` permission and returns every Message on the server. |
@@ -1492,16 +1499,34 @@ and to Group non-members via [`non_member_permissions` in `Group`](#rellm-Group)
 <a name="rellm-ContactMethod"></a>
 
 ### ContactMethod
-A contact method for a user. Models designed to support verification,
-but verification RPCs are not yet implemented.
+A contact method for a user. Verified via `StartContactMethodVerification`/`VerifyContactMethod`
+-- SMS/Twilio only this iteration, see `TwilioConfig` in `server_configuration.proto`.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| value | [string](#string) | optional | Either a `mailto:` or `tel:` URL. |
+| value | [string](#string) | optional | Either a valid `mailto:` or valid `tel:` URL. |
 | visibility | [Visibility](#rellm-Visibility) |  | The visibility of the contact method. |
-| supported_by_server | [bool](#bool) |  | Server-side flag indicating whether the server can verify (and otherwise interact via) the contact method. |
-| verified | [bool](#bool) |  | Indicates the user has completed verification of the contact method. Verification requires `supported_by_server` to be `true`. |
+| supported_by_server | [bool](#bool) |  | Server-side flag indicating whether the server can verify (and otherwise interact via) the contact method. Always computed server-side (never trusted from client input) off whether a verification provider is currently enabled for this contact method&#39;s scheme (`tel:`/`mailto:`). |
+| verified_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | Time the contact method was verified. Indicates the user has completed verification of the contact method. Verification requires `supported_by_server` to be `true`. |
+| verification_in_progress | [ContactMethodVerification](#rellm-ContactMethodVerification) | optional |  |
+
+
+
+
+
+
+<a name="rellm-ContactMethodVerification"></a>
+
+### ContactMethodVerification
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| verification_code | [string](#string) |  | Never serialized to gRPC by the backend. Only stored server-side; a client&#39;s own attempt to verify goes through `VerifyContactMethodRequest.code` instead, not this field. |
+| verification_started_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| attempts | [int32](#int32) |  | Number of failed `VerifyContactMethod` attempts against `verification_code` since it was sent. Capped (see that RPC&#39;s own doc) to prevent brute-forcing the 6-digit code within its expiry window. |
 
 
 
@@ -1631,6 +1656,22 @@ Model for a Rellm user. This user may have [`Media`](#rellm-Media), [`Group`](#r
 | available_ai_models | [AvailableAIModel](#rellm-AvailableAIModel) | repeated | Every [`AIModelProvider`](#rellm-AIModelProvider) model the target user may currently call - their own providers&#39; models, plus any models granted to them on other users&#39; providers (see [`AvailableAIModel`](#rellm-AvailableAIModel)). Gated and populated the same way as `sync_sources` (target user themselves, or an Admin, across any [`GetUsers`](#grpc-api-GetUsers) listing type, plus [`Login`](#grpc-api-Login)/[`CreateAccount`](#grpc-api-CreateAccount)/[`GetCurrentUser`](#grpc-api-GetCurrentUser)). |
 | created_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the user was created. |
 | updated_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time the user was last updated. |
+
+
+
+
+
+
+<a name="rellm-VerifyContactMethodRequest"></a>
+
+### VerifyContactMethodRequest
+Request for [`VerifyContactMethod`](#grpc-api-VerifyContactMethod).
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| value | [string](#string) |  | The `tel:` (or, in the future, `mailto:`) value being verified -- must match the current user&#39;s own stored `phone`/`email` value. |
+| code | [string](#string) |  | The code the user was sent by `StartContactMethodVerification`. |
 
 
 
@@ -2882,6 +2923,25 @@ Events returned are ordered by start time unless otherwise specified (specifical
 
 
 
+<a name="rellm-BirdConfig"></a>
+
+### BirdConfig
+Bird (https://bird.com, formerly MessageBird) Config -- an alternative SMS verification
+provider to Twilio, with a simpler single-API-key auth model.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| bird_enabled | [bool](#bool) |  |  |
+| bird_access_key | [string](#string) |  | The Bird workspace&#39;s API access key. Never serialized once written. |
+| bird_from | [string](#string) |  | The originator for outbound verification SMS -- an owned number, alphanumeric sender ID (3-11 chars), or short code, as configured in the Bird workspace. Not secret. |
+| bird_region | [string](#string) |  | Which Bird API region to call (&#34;us1&#34; or &#34;eu1&#34;, per Bird&#39;s own regional API hosts). Not secret. Empty defaults to &#34;us1&#34;. |
+
+
+
+
+
+
 <a name="rellm-ClusterConductorState"></a>
 
 ### ClusterConductorState
@@ -3234,6 +3294,10 @@ Configuration for a Rellm server instance.
 | private_user_strategy | [PrivateUserStrategy](#rellm-PrivateUserStrategy) |  | Strategy when a user sets their visibility to `PRIVATE`. Defaults to `ACCOUNT_IS_FROZEN`. |
 | authentication_features | [AuthenticationFeature](#rellm-AuthenticationFeature) | repeated | (TODO) Allows admins to enable/disable creating accounts and logging in. Eventually, external auth too hopefully! |
 | web_push_config | [WebPushConfig](#rellm-WebPushConfig) | optional | Web Push (VAPID) configuration for the server. |
+| preferred_verification_apis | [VerificationAPI](#rellm-VerificationAPI) | repeated | A server-preferred order of contact verification APIs. Note: even if this is blank, if twilio_config is enabled, the server should try to verify with Twilio. It&#39;s really only for the case of wanting to switch between multiple SMS/Email providers. Only serialized for admin users. |
+| available_verification_apis | [VerificationAPI](#rellm-VerificationAPI) | repeated | Derived from whether TwilioConfig.enabled is true, etc. Serialized to every caller (not admin-only, unlike `preferred_verification_apis`/`twilio_config`) -- this is what a non-admin client should check to decide whether to show verification UI at all, without exposing any provider configuration. |
+| twilio_config | [TwilioConfig](#rellm-TwilioConfig) | optional | Twilio Config. Only serialized for admin users. |
+| bird_config | [BirdConfig](#rellm-BirdConfig) | optional | Bird (bird.com, formerly MessageBird) Config -- a cheaper Twilio alternative for SMS verification. Only serialized for admin users. |
 
 
 
@@ -3275,6 +3339,24 @@ Logo data for the server. Built atop Rellm [`Media` APIs](#rellm-Media).
 | squareMediaIdDark | [string](#string) | optional | The media ID for the square logo in dark mode. |
 | wideMediaId | [string](#string) | optional | The media ID for the wide logo. |
 | wideMediaIdDark | [string](#string) | optional | The media ID for the wide logo in dark mode. |
+
+
+
+
+
+
+<a name="rellm-TwilioConfig"></a>
+
+### TwilioConfig
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| twilio_enabled | [bool](#bool) |  |  |
+| twilio_account_sid | [string](#string) |  | The Twilio Account SID. Public (among admins) -- freely serialized. |
+| twilio_api_key | [string](#string) |  | The Twilio Auth Token. Never serialized once written. |
+| twilio_from_number | [string](#string) |  | The Twilio-provisioned sending number for outbound verification SMS. Not secret. |
 
 
 
@@ -3365,6 +3447,18 @@ Strategy when a user sets their visibility to `PRIVATE`.
 | ACCOUNT_IS_FROZEN | 0 | `PRIVATE` Users can&#39;t see other Users (only `PUBLIC_GLOBAL` Visilibity Users/Posts/Events). Other users can&#39;t see them. |
 | LIMITED_CREEPINESS | 1 | Users can see other users they follow, but only `PUBLIC_GLOBAL` Visilibity Posts/Events. Other users can&#39;t see them. |
 | LET_ME_CREEP_ON_PPL | 2 | Users can see other users they follow, including their `PUBLIC_SERVER` Posts/Events. Other users can&#39;t see them. |
+
+
+
+<a name="rellm-VerificationAPI"></a>
+
+### VerificationAPI
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| VERIFICATION_API_TWILIO | 0 |  |
+| VERIFICATION_API_BIRD | 1 |  |
 
 
 

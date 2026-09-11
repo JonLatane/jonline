@@ -877,6 +877,19 @@ service Rellm {
   // Update a user by ID. *Authenticated.*
   // Updating other users requires `ADMIN` permissions.
   rpc UpdateUser(User) returns (User) {}
+
+  // Starts SMS verification of the current user's own phone ContactMethod. *Authenticated,
+  // self-only.* Requires the server to have Twilio configured and enabled. Generates a 6-digit
+  // code, sends it via Twilio SMS, and stores it (with a start time and attempt counter) on the
+  // phone ContactMethod. Only `tel:` values are supported this iteration -- `mailto:` returns
+  // `Unimplemented`. Rate-limited to one send per 60 seconds per user.
+  rpc StartContactMethodVerification(ContactMethod) returns (ContactMethod) {}
+  // Verifies a code sent by [`StartContactMethodVerification`](#grpc-api-StartContactMethodVerification). *Authenticated, self-only.*
+  // On match, sets `verified_at` and clears `verification_in_progress`. Codes expire after 10
+  // minutes and allow at most 5 attempts before requiring a fresh
+  // [`StartContactMethodVerification`](#grpc-api-StartContactMethodVerification) call.
+  rpc VerifyContactMethod(VerifyContactMethodRequest) returns (ContactMethod) {}
+
   // Deletes a user by ID. *Authenticated.*
   // Deleting other users requires `ADMIN` permissions.
   rpc DeleteUser(User) returns (google.protobuf.Empty) {}

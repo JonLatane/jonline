@@ -130,5 +130,20 @@ class NavigationTab extends $pb.ProtobufEnum {
   const NavigationTab._($core.int v, $core.String n) : super(v, n);
 }
 
+class VerificationAPI extends $pb.ProtobufEnum {
+  static const VerificationAPI VERIFICATION_API_TWILIO = VerificationAPI._(0, _omitEnumNames ? '' : 'VERIFICATION_API_TWILIO');
+  static const VerificationAPI VERIFICATION_API_BIRD = VerificationAPI._(1, _omitEnumNames ? '' : 'VERIFICATION_API_BIRD');
+
+  static const $core.List<VerificationAPI> values = <VerificationAPI> [
+    VERIFICATION_API_TWILIO,
+    VERIFICATION_API_BIRD,
+  ];
+
+  static final $core.Map<$core.int, VerificationAPI> _byValue = $pb.ProtobufEnum.initByValue(values);
+  static VerificationAPI? valueOf($core.int value) => _byValue[value];
+
+  const VerificationAPI._($core.int v, $core.String n) : super(v, n);
+}
+
 
 const _omitEnumNames = $core.bool.fromEnvironment('protobuf.omit_enum_names');

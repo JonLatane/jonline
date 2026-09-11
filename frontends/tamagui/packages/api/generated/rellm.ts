@@ -75,7 +75,15 @@ import {
   SyncDestination,
   SyncSource,
 } from "./sync";
-import { Follow, GetUsersRequest, GetUsersResponse, Membership, User } from "./users";
+import {
+  ContactMethod,
+  Follow,
+  GetUsersRequest,
+  GetUsersResponse,
+  Membership,
+  User,
+  VerifyContactMethodRequest,
+} from "./users";
 
 export const protobufPackage = "rellm";
 
@@ -1027,6 +1035,35 @@ export const RellmDefinition = {
       options: {},
     },
     /**
+     * Starts SMS verification of the current user's own phone ContactMethod. *Authenticated,
+     * self-only.* Requires the server to have Twilio configured and enabled. Generates a 6-digit
+     * code, sends it via Twilio SMS, and stores it (with a start time and attempt counter) on the
+     * phone ContactMethod. Only `tel:` values are supported this iteration -- `mailto:` returns
+     * `Unimplemented`. Rate-limited to one send per 60 seconds per user.
+     */
+    startContactMethodVerification: {
+      name: "StartContactMethodVerification",
+      requestType: ContactMethod,
+      requestStream: false,
+      responseType: ContactMethod,
+      responseStream: false,
+      options: {},
+    },
+    /**
+     * Verifies a code sent by [`StartContactMethodVerification`](#grpc-api-StartContactMethodVerification). *Authenticated, self-only.*
+     * On match, sets `verified_at` and clears `verification_in_progress`. Codes expire after 10
+     * minutes and allow at most 5 attempts before requiring a fresh
+     * [`StartContactMethodVerification`](#grpc-api-StartContactMethodVerification) call.
+     */
+    verifyContactMethod: {
+      name: "VerifyContactMethod",
+      requestType: VerifyContactMethodRequest,
+      requestStream: false,
+      responseType: ContactMethod,
+      responseStream: false,
+      options: {},
+    },
+    /**
      * Deletes a user by ID. *Authenticated.*
      * Deleting other users requires `ADMIN` permissions.
      */
@@ -1784,6 +1821,27 @@ export interface RellmServiceImplementation<CallContextExt = {}> {
    */
   updateUser(request: User, context: CallContext & CallContextExt): Promise<DeepPartial<User>>;
   /**
+   * Starts SMS verification of the current user's own phone ContactMethod. *Authenticated,
+   * self-only.* Requires the server to have Twilio configured and enabled. Generates a 6-digit
+   * code, sends it via Twilio SMS, and stores it (with a start time and attempt counter) on the
+   * phone ContactMethod. Only `tel:` values are supported this iteration -- `mailto:` returns
+   * `Unimplemented`. Rate-limited to one send per 60 seconds per user.
+   */
+  startContactMethodVerification(
+    request: ContactMethod,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<ContactMethod>>;
+  /**
+   * Verifies a code sent by [`StartContactMethodVerification`](#grpc-api-StartContactMethodVerification). *Authenticated, self-only.*
+   * On match, sets `verified_at` and clears `verification_in_progress`. Codes expire after 10
+   * minutes and allow at most 5 attempts before requiring a fresh
+   * [`StartContactMethodVerification`](#grpc-api-StartContactMethodVerification) call.
+   */
+  verifyContactMethod(
+    request: VerifyContactMethodRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<ContactMethod>>;
+  /**
    * Deletes a user by ID. *Authenticated.*
    * Deleting other users requires `ADMIN` permissions.
    */
@@ -2165,6 +2223,27 @@ export interface RellmClient<CallOptionsExt = {}> {
    * Updating other users requires `ADMIN` permissions.
    */
   updateUser(request: DeepPartial<User>, options?: CallOptions & CallOptionsExt): Promise<User>;
+  /**
+   * Starts SMS verification of the current user's own phone ContactMethod. *Authenticated,
+   * self-only.* Requires the server to have Twilio configured and enabled. Generates a 6-digit
+   * code, sends it via Twilio SMS, and stores it (with a start time and attempt counter) on the
+   * phone ContactMethod. Only `tel:` values are supported this iteration -- `mailto:` returns
+   * `Unimplemented`. Rate-limited to one send per 60 seconds per user.
+   */
+  startContactMethodVerification(
+    request: DeepPartial<ContactMethod>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<ContactMethod>;
+  /**
+   * Verifies a code sent by [`StartContactMethodVerification`](#grpc-api-StartContactMethodVerification). *Authenticated, self-only.*
+   * On match, sets `verified_at` and clears `verification_in_progress`. Codes expire after 10
+   * minutes and allow at most 5 attempts before requiring a fresh
+   * [`StartContactMethodVerification`](#grpc-api-StartContactMethodVerification) call.
+   */
+  verifyContactMethod(
+    request: DeepPartial<VerifyContactMethodRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<ContactMethod>;
   /**
    * Deletes a user by ID. *Authenticated.*
    * Deleting other users requires `ADMIN` permissions.

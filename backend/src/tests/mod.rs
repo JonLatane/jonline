@@ -2,6 +2,7 @@ pub mod factories;
 
 mod bluesky_sync_tests;
 mod configure_server_tests;
+mod contact_method_verification_tests;
 mod create_post_tests;
 mod delete_event_attendance_tests;
 mod delete_event_tests;

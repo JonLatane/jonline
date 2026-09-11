@@ -767,14 +767,15 @@ class Membership extends $pb.GeneratedMessage {
   $12.Timestamp ensureUpdatedAt() => $_ensure(6);
 }
 
-/// A contact method for a user. Models designed to support verification,
-/// but verification RPCs are not yet implemented.
+/// A contact method for a user. Verified via `StartContactMethodVerification`/`VerifyContactMethod`
+/// -- SMS/Twilio only this iteration, see `TwilioConfig` in `server_configuration.proto`.
 class ContactMethod extends $pb.GeneratedMessage {
   factory ContactMethod({
     $core.String? value,
     $13.Visibility? visibility,
     $core.bool? supportedByServer,
-    $core.bool? verified,
+    $12.Timestamp? verifiedAt,
+    ContactMethodVerification? verificationInProgress,
   }) {
     final $result = create();
     if (value != null) {
@@ -786,8 +787,11 @@ class ContactMethod extends $pb.GeneratedMessage {
     if (supportedByServer != null) {
       $result.supportedByServer = supportedByServer;
     }
-    if (verified != null) {
-      $result.verified = verified;
+    if (verifiedAt != null) {
+      $result.verifiedAt = verifiedAt;
+    }
+    if (verificationInProgress != null) {
+      $result.verificationInProgress = verificationInProgress;
     }
     return $result;
   }
@@ -799,7 +803,8 @@ class ContactMethod extends $pb.GeneratedMessage {
     ..aOS(1, _omitFieldNames ? '' : 'value')
     ..e<$13.Visibility>(2, _omitFieldNames ? '' : 'visibility', $pb.PbFieldType.OE, defaultOrMaker: $13.Visibility.VISIBILITY_UNKNOWN, valueOf: $13.Visibility.valueOf, enumValues: $13.Visibility.values)
     ..aOB(3, _omitFieldNames ? '' : 'supportedByServer')
-    ..aOB(4, _omitFieldNames ? '' : 'verified')
+    ..aOM<$12.Timestamp>(4, _omitFieldNames ? '' : 'verifiedAt', subBuilder: $12.Timestamp.create)
+    ..aOM<ContactMethodVerification>(5, _omitFieldNames ? '' : 'verificationInProgress', subBuilder: ContactMethodVerification.create)
     ..hasRequiredFields = false
   ;
 
@@ -824,7 +829,7 @@ class ContactMethod extends $pb.GeneratedMessage {
   static ContactMethod getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<ContactMethod>(create);
   static ContactMethod? _defaultInstance;
 
-  /// Either a `mailto:` or `tel:` URL.
+  /// Either a valid `mailto:` or valid `tel:` URL.
   @$pb.TagNumber(1)
   $core.String get value => $_getSZ(0);
   @$pb.TagNumber(1)
@@ -845,7 +850,9 @@ class ContactMethod extends $pb.GeneratedMessage {
   void clearVisibility() => clearField(2);
 
   /// Server-side flag indicating whether the server can verify
-  /// (and otherwise interact via) the contact method.
+  /// (and otherwise interact via) the contact method. Always computed server-side (never trusted
+  /// from client input) off whether a verification provider is currently enabled for this contact
+  /// method's scheme (`tel:`/`mailto:`).
   @$pb.TagNumber(3)
   $core.bool get supportedByServer => $_getBF(2);
   @$pb.TagNumber(3)
@@ -855,16 +862,115 @@ class ContactMethod extends $pb.GeneratedMessage {
   @$pb.TagNumber(3)
   void clearSupportedByServer() => clearField(3);
 
+  /// Time the contact method was verified.
   /// Indicates the user has completed verification of the contact method.
   /// Verification requires `supported_by_server` to be `true`.
   @$pb.TagNumber(4)
-  $core.bool get verified => $_getBF(3);
+  $12.Timestamp get verifiedAt => $_getN(3);
   @$pb.TagNumber(4)
-  set verified($core.bool v) { $_setBool(3, v); }
+  set verifiedAt($12.Timestamp v) { setField(4, v); }
   @$pb.TagNumber(4)
-  $core.bool hasVerified() => $_has(3);
+  $core.bool hasVerifiedAt() => $_has(3);
   @$pb.TagNumber(4)
-  void clearVerified() => clearField(4);
+  void clearVerifiedAt() => clearField(4);
+  @$pb.TagNumber(4)
+  $12.Timestamp ensureVerifiedAt() => $_ensure(3);
+
+  @$pb.TagNumber(5)
+  ContactMethodVerification get verificationInProgress => $_getN(4);
+  @$pb.TagNumber(5)
+  set verificationInProgress(ContactMethodVerification v) { setField(5, v); }
+  @$pb.TagNumber(5)
+  $core.bool hasVerificationInProgress() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearVerificationInProgress() => clearField(5);
+  @$pb.TagNumber(5)
+  ContactMethodVerification ensureVerificationInProgress() => $_ensure(4);
+}
+
+class ContactMethodVerification extends $pb.GeneratedMessage {
+  factory ContactMethodVerification({
+    $core.String? verificationCode,
+    $12.Timestamp? verificationStartedAt,
+    $core.int? attempts,
+  }) {
+    final $result = create();
+    if (verificationCode != null) {
+      $result.verificationCode = verificationCode;
+    }
+    if (verificationStartedAt != null) {
+      $result.verificationStartedAt = verificationStartedAt;
+    }
+    if (attempts != null) {
+      $result.attempts = attempts;
+    }
+    return $result;
+  }
+  ContactMethodVerification._() : super();
+  factory ContactMethodVerification.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory ContactMethodVerification.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ContactMethodVerification', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'verificationCode')
+    ..aOM<$12.Timestamp>(2, _omitFieldNames ? '' : 'verificationStartedAt', subBuilder: $12.Timestamp.create)
+    ..a<$core.int>(3, _omitFieldNames ? '' : 'attempts', $pb.PbFieldType.O3)
+    ..hasRequiredFields = false
+  ;
+
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  ContactMethodVerification clone() => ContactMethodVerification()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  ContactMethodVerification copyWith(void Function(ContactMethodVerification) updates) => super.copyWith((message) => updates(message as ContactMethodVerification)) as ContactMethodVerification;
+
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static ContactMethodVerification create() => ContactMethodVerification._();
+  ContactMethodVerification createEmptyInstance() => create();
+  static $pb.PbList<ContactMethodVerification> createRepeated() => $pb.PbList<ContactMethodVerification>();
+  @$core.pragma('dart2js:noInline')
+  static ContactMethodVerification getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<ContactMethodVerification>(create);
+  static ContactMethodVerification? _defaultInstance;
+
+  /// Never serialized to gRPC by the backend. Only stored server-side; a client's own attempt to
+  /// verify goes through `VerifyContactMethodRequest.code` instead, not this field.
+  @$pb.TagNumber(1)
+  $core.String get verificationCode => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set verificationCode($core.String v) { $_setString(0, v); }
+  @$pb.TagNumber(1)
+  $core.bool hasVerificationCode() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearVerificationCode() => clearField(1);
+
+  @$pb.TagNumber(2)
+  $12.Timestamp get verificationStartedAt => $_getN(1);
+  @$pb.TagNumber(2)
+  set verificationStartedAt($12.Timestamp v) { setField(2, v); }
+  @$pb.TagNumber(2)
+  $core.bool hasVerificationStartedAt() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearVerificationStartedAt() => clearField(2);
+  @$pb.TagNumber(2)
+  $12.Timestamp ensureVerificationStartedAt() => $_ensure(1);
+
+  /// Number of failed `VerifyContactMethod` attempts against `verification_code` since it was sent.
+  /// Capped (see that RPC's own doc) to prevent brute-forcing the 6-digit code within its expiry
+  /// window.
+  @$pb.TagNumber(3)
+  $core.int get attempts => $_getIZ(2);
+  @$pb.TagNumber(3)
+  set attempts($core.int v) { $_setSignedInt32(2, v); }
+  @$pb.TagNumber(3)
+  $core.bool hasAttempts() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearAttempts() => clearField(3);
 }
 
 ///  Request to get one or more users by a variety of parameters.
@@ -1047,6 +1153,74 @@ class GetUsersResponse extends $pb.GeneratedMessage {
   $core.bool hasHasNextPage() => $_has(1);
   @$pb.TagNumber(2)
   void clearHasNextPage() => clearField(2);
+}
+
+/// Request for [`VerifyContactMethod`](#grpc-api-VerifyContactMethod).
+class VerifyContactMethodRequest extends $pb.GeneratedMessage {
+  factory VerifyContactMethodRequest({
+    $core.String? value,
+    $core.String? code,
+  }) {
+    final $result = create();
+    if (value != null) {
+      $result.value = value;
+    }
+    if (code != null) {
+      $result.code = code;
+    }
+    return $result;
+  }
+  VerifyContactMethodRequest._() : super();
+  factory VerifyContactMethodRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory VerifyContactMethodRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'VerifyContactMethodRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'value')
+    ..aOS(2, _omitFieldNames ? '' : 'code')
+    ..hasRequiredFields = false
+  ;
+
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  VerifyContactMethodRequest clone() => VerifyContactMethodRequest()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  VerifyContactMethodRequest copyWith(void Function(VerifyContactMethodRequest) updates) => super.copyWith((message) => updates(message as VerifyContactMethodRequest)) as VerifyContactMethodRequest;
+
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static VerifyContactMethodRequest create() => VerifyContactMethodRequest._();
+  VerifyContactMethodRequest createEmptyInstance() => create();
+  static $pb.PbList<VerifyContactMethodRequest> createRepeated() => $pb.PbList<VerifyContactMethodRequest>();
+  @$core.pragma('dart2js:noInline')
+  static VerifyContactMethodRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<VerifyContactMethodRequest>(create);
+  static VerifyContactMethodRequest? _defaultInstance;
+
+  /// The `tel:` (or, in the future, `mailto:`) value being verified -- must match the current
+  /// user's own stored `phone`/`email` value.
+  @$pb.TagNumber(1)
+  $core.String get value => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set value($core.String v) { $_setString(0, v); }
+  @$pb.TagNumber(1)
+  $core.bool hasValue() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearValue() => clearField(1);
+
+  /// The code the user was sent by `StartContactMethodVerification`.
+  @$pb.TagNumber(2)
+  $core.String get code => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set code($core.String v) { $_setString(1, v); }
+  @$pb.TagNumber(2)
+  $core.bool hasCode() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearCode() => clearField(2);
 }
 
 

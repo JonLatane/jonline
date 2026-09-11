@@ -83,6 +83,25 @@ message ServerConfiguration {
 
   // Web Push (VAPID) configuration for the server.
   optional WebPushConfig web_push_config = 110;
+
+  // A server-preferred order of contact verification APIs. 
+  // Note: even if this is blank, if twilio_config is enabled, the server should try
+  // to verify with Twilio. It's really only for the case of wanting to switch between multiple
+  // SMS/Email providers.
+  // Only serialized for admin users.
+  repeated VerificationAPI preferred_verification_apis = 120;
+  // Derived from whether TwilioConfig.enabled is true, etc. Serialized to every caller (not
+  // admin-only, unlike `preferred_verification_apis`/`twilio_config`) -- this is what a non-admin
+  // client should check to decide whether to show verification UI at all, without exposing any
+  // provider configuration.
+  repeated VerificationAPI available_verification_apis = 121;
+
+  // Twilio Config. Only serialized for admin users.
+  optional TwilioConfig twilio_config = 122;
+
+  // Bird (bird.com, formerly MessageBird) Config -- a cheaper Twilio alternative for SMS
+  // verification. Only serialized for admin users.
+  optional BirdConfig bird_config = 123;
 }
 
 // Coordinates a small piece of shared, cluster-wide state across multiple independent Rellm
@@ -576,4 +595,33 @@ message WebPushConfig {
   // Private VAPID key for the server. *Never serialized to the client.*
   // Admins: Edit this in the database's JSONB column directly.
   string private_vapid_key = 2;
+}
+
+enum VerificationAPI {
+  VERIFICATION_API_TWILIO = 0;
+  VERIFICATION_API_BIRD = 1;
+}
+
+message TwilioConfig {
+  bool twilio_enabled = 1;
+  // The Twilio Account SID. Public (among admins) -- freely serialized.
+  string twilio_account_sid = 3;
+  // The Twilio Auth Token. Never serialized once written.
+  string twilio_api_key = 2;
+  // The Twilio-provisioned sending number for outbound verification SMS. Not secret.
+  string twilio_from_number = 4;
+}
+
+// Bird (https://bird.com, formerly MessageBird) Config -- an alternative SMS verification
+// provider to Twilio, with a simpler single-API-key auth model.
+message BirdConfig {
+  bool bird_enabled = 1;
+  // The Bird workspace's API access key. Never serialized once written.
+  string bird_access_key = 2;
+  // The originator for outbound verification SMS -- an owned number, alphanumeric sender ID
+  // (3-11 chars), or short code, as configured in the Bird workspace. Not secret.
+  string bird_from = 3;
+  // Which Bird API region to call ("us1" or "eu1", per Bird's own regional API hosts). Not
+  // secret. Empty defaults to "us1".
+  string bird_region = 4;
 }

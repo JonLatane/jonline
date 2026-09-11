@@ -132,6 +132,22 @@ pub fn update_user_profile(
         .expect("failed to update test user")
 }
 
+/// Sets `user`'s `phone` column directly to `contact_method` (serialized JSONB) -- bypasses
+/// `update_user`'s own `apply_contact_method_update` logic entirely, so specs can seed exact
+/// `verification_in_progress`/`verified_at` states (e.g. an already-expired or already-max-attempts
+/// verification) that `UpdateUser` itself would never produce.
+pub fn set_user_phone(
+    conn: &mut PgPooledConnection,
+    user: &models::User,
+    contact_method: &ContactMethod,
+) -> models::User {
+    diesel::update(users::table.filter(users::id.eq(user.id)))
+        .set(users::phone.eq(serde_json::to_value(contact_method).unwrap()))
+        .returning(models::USER_COLUMNS)
+        .get_result::<models::User>(conn)
+        .expect("failed to set test user phone")
+}
+
 /// `create_user`'s default permission set (`ViewPosts`/`CreatePosts`/`ViewGroups`/`FollowUsers`)
 /// doesn't include `PublishPosts{Locally,Globally}` - specs exercising CreatePost/UpdatePost's
 /// visibility handling grant those explicitly via this.
@@ -838,6 +854,96 @@ pub fn configure_x_twitter_app_and_frontend_host(
             ..Default::default()
         })
         .unwrap(),
+    );
+    insert_into(server_configurations::table)
+        .values(&new_config)
+        .execute(conn)
+        .expect("failed to create test server configuration");
+}
+
+/// Inserts an active `server_configurations` row with `twilio_config` set -- lets specs exercise
+/// `logic::contact_verification::{server_twilio_config, twilio_available}` (and RPCs/logic that
+/// call them, like `update_user`'s `supported_by_server` computation and
+/// `start_contact_method_verification`) without going through `ConfigureServer`'s own merge logic.
+/// Mirrors `configure_x_twitter_app`.
+pub fn configure_twilio(
+    conn: &mut PgPooledConnection,
+    enabled: bool,
+    account_sid: &str,
+    auth_token: &str,
+    from_number: &str,
+) {
+    let mut new_config = models::default_server_configuration();
+    new_config.twilio_config = Some(
+        serde_json::to_value(TwilioConfig {
+            twilio_enabled: enabled,
+            twilio_account_sid: account_sid.to_string(),
+            twilio_api_key: auth_token.to_string(),
+            twilio_from_number: from_number.to_string(),
+        })
+        .unwrap(),
+    );
+    insert_into(server_configurations::table)
+        .values(&new_config)
+        .execute(conn)
+        .expect("failed to create test server configuration");
+}
+
+/// Mirrors `configure_twilio`, but sets `bird_config` instead -- for specs exercising Bird as a
+/// verification provider (or the two providers' fallback ordering together).
+pub fn configure_bird(
+    conn: &mut PgPooledConnection,
+    enabled: bool,
+    access_key: &str,
+    from: &str,
+    region: &str,
+) {
+    let mut new_config = models::default_server_configuration();
+    new_config.bird_config = Some(
+        serde_json::to_value(BirdConfig {
+            bird_enabled: enabled,
+            bird_access_key: access_key.to_string(),
+            bird_from: from.to_string(),
+            bird_region: region.to_string(),
+        })
+        .unwrap(),
+    );
+    insert_into(server_configurations::table)
+        .values(&new_config)
+        .execute(conn)
+        .expect("failed to create test server configuration");
+}
+
+/// Like `configure_twilio`/`configure_bird`, but sets both providers at once plus
+/// `preferred_verification_apis` -- for specs exercising `contact_verification`'s
+/// preference-ordering/fallback logic between the two.
+pub fn configure_verification_providers(
+    conn: &mut PgPooledConnection,
+    twilio: Option<(&str, &str, &str)>,
+    bird: Option<(&str, &str, &str)>,
+    preferred: Vec<VerificationApi>,
+) {
+    let mut new_config = models::default_server_configuration();
+    new_config.twilio_config = twilio.map(|(sid, token, from)| {
+        serde_json::to_value(TwilioConfig {
+            twilio_enabled: true,
+            twilio_account_sid: sid.to_string(),
+            twilio_api_key: token.to_string(),
+            twilio_from_number: from.to_string(),
+        })
+        .unwrap()
+    });
+    new_config.bird_config = bird.map(|(key, from, region)| {
+        serde_json::to_value(BirdConfig {
+            bird_enabled: true,
+            bird_access_key: key.to_string(),
+            bird_from: from.to_string(),
+            bird_region: region.to_string(),
+        })
+        .unwrap()
+    });
+    new_config.preferred_verification_apis = Some(
+        crate::logic::verification_apis_to_json(&preferred),
     );
     insert_into(server_configurations::table)
         .values(&new_config)

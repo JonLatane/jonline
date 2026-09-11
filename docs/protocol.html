@@ -144,6 +144,9 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
             <p><a href="#rellm-ContactMethod">ContactMethod</a></p>
           </li>
           <li>
+            <p><a href="#rellm-ContactMethodVerification">ContactMethodVerification</a></p>
+          </li>
+          <li>
             <p><a href="#rellm-Follow">Follow</a></p>
           </li>
           <li>
@@ -157,6 +160,9 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
           </li>
           <li>
             <p><a href="#rellm-User">User</a></p>
+          </li>
+          <li>
+            <p><a href="#rellm-VerifyContactMethodRequest">VerifyContactMethodRequest</a></p>
           </li>
           <li>
             <p><a href="#rellm-UserListingType">UserListingType</a></p>
@@ -347,6 +353,9 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
         <p><a href="#server_configuration-proto">server_configuration.proto</a></p>
         <ul>
           <li>
+            <p><a href="#rellm-BirdConfig">BirdConfig</a></p>
+          </li>
+          <li>
             <p><a href="#rellm-ClusterConductorState">ClusterConductorState</a></p>
           </li>
           <li>
@@ -404,6 +413,9 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
             <p><a href="#rellm-ServerLogo">ServerLogo</a></p>
           </li>
           <li>
+            <p><a href="#rellm-TwilioConfig">TwilioConfig</a></p>
+          </li>
+          <li>
             <p><a href="#rellm-WebPushConfig">WebPushConfig</a></p>
           </li>
           <li>
@@ -420,6 +432,9 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
           </li>
           <li>
             <p><a href="#rellm-PrivateUserStrategy">PrivateUserStrategy</a></p>
+          </li>
+          <li>
+            <p><a href="#rellm-VerificationAPI">VerificationAPI</a></p>
           </li>
           <li>
             <p><a href="#rellm-WebUserInterface">WebUserInterface</a></p>
@@ -1576,6 +1591,18 @@ directory</a> is (<code>{name}</code> denotes a
           <td><a href="#rellm-User">User</a></td>
           <td><a href="#rellm-User">User</a></td>
           <td>Update a user by ID. <em>Authenticated.</em> Updating other users requires <code>ADMIN</code> permissions.</td>
+        </tr>
+        <tr>
+          <td>StartContactMethodVerification</td>
+          <td><a href="#rellm-ContactMethod">ContactMethod</a></td>
+          <td><a href="#rellm-ContactMethod">ContactMethod</a></td>
+          <td>Starts SMS verification of the current user's own phone ContactMethod. <em>Authenticated, self-only.</em> Requires the server to have Twilio configured and enabled. Generates a 6-digit code, sends it via Twilio SMS, and stores it (with a start time and attempt counter) on the phone ContactMethod. Only <code>tel:</code> values are supported this iteration -- <code>mailto:</code> returns <code>Unimplemented</code>. Rate-limited to one send per 60 seconds per user.</td>
+        </tr>
+        <tr>
+          <td>VerifyContactMethod</td>
+          <td><a href="#rellm-VerifyContactMethodRequest">VerifyContactMethodRequest</a></td>
+          <td><a href="#rellm-ContactMethod">ContactMethod</a></td>
+          <td>Verifies a code sent by <a href="#grpc-api-StartContactMethodVerification"><code>StartContactMethodVerification</code></a>. <em>Authenticated, self-only.</em> On match, sets <code>verified_at</code> and clears <code>verification_in_progress</code>. Codes expire after 10 minutes and allow at most 5 attempts before requiring a fresh <a href="#grpc-api-StartContactMethodVerification"><code>StartContactMethodVerification</code></a> call.</td>
         </tr>
         <tr>
           <td>DeleteUser</td>
@@ -2797,8 +2824,8 @@ directory</a> is (<code>{name}</code> denotes a
     <p><a name="rellm-ContactMethod"></a></p>
     <h3 id="contactmethod"><a class="anchor" aria-hidden="true" tabindex="-1" href="#contactmethod"><span class="octicon octicon-link"></span></a>ContactMethod</h3>
     <p>
-      A contact method for a user. Models designed to support verification,
-      but verification RPCs are not yet implemented.
+      A contact method for a user. Verified via <code>StartContactMethodVerification</code>/<code>VerifyContactMethod</code>
+      -- SMS/Twilio only this iteration, see <code>TwilioConfig</code> in <code>server_configuration.proto</code>.
     </p>
     <table>
       <thead>
@@ -2814,7 +2841,7 @@ directory</a> is (<code>{name}</code> denotes a
           <td>value</td>
           <td><a href="#string">string</a></td>
           <td>optional</td>
-          <td>Either a <code>mailto:</code> or <code>tel:</code> URL.</td>
+          <td>Either a valid <code>mailto:</code> or valid <code>tel:</code> URL.</td>
         </tr>
         <tr>
           <td>visibility</td>
@@ -2826,13 +2853,51 @@ directory</a> is (<code>{name}</code> denotes a
           <td>supported_by_server</td>
           <td><a href="#bool">bool</a></td>
           <td></td>
-          <td>Server-side flag indicating whether the server can verify (and otherwise interact via) the contact method.</td>
+          <td>Server-side flag indicating whether the server can verify (and otherwise interact via) the contact method. Always computed server-side (never trusted from client input) off whether a verification provider is currently enabled for this contact method's scheme (<code>tel:</code>/<code>mailto:</code>).</td>
         </tr>
         <tr>
-          <td>verified</td>
-          <td><a href="#bool">bool</a></td>
+          <td>verified_at</td>
+          <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
+          <td>optional</td>
+          <td>Time the contact method was verified. Indicates the user has completed verification of the contact method. Verification requires <code>supported_by_server</code> to be <code>true</code>.</td>
+        </tr>
+        <tr>
+          <td>verification_in_progress</td>
+          <td><a href="#rellm-ContactMethodVerification">ContactMethodVerification</a></td>
+          <td>optional</td>
           <td></td>
-          <td>Indicates the user has completed verification of the contact method. Verification requires <code>supported_by_server</code> to be <code>true</code>.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="rellm-ContactMethodVerification"></a></p>
+    <h3 id="contactmethodverification"><a class="anchor" aria-hidden="true" tabindex="-1" href="#contactmethodverification"><span class="octicon octicon-link"></span></a>ContactMethodVerification</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>verification_code</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>Never serialized to gRPC by the backend. Only stored server-side; a client's own attempt to verify goes through <code>VerifyContactMethodRequest.code</code> instead, not this field.</td>
+        </tr>
+        <tr>
+          <td>verification_started_at</td>
+          <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>attempts</td>
+          <td><a href="#int32">int32</a></td>
+          <td></td>
+          <td>Number of failed <code>VerifyContactMethod</code> attempts against <code>verification_code</code> since it was sent. Capped (see that RPC's own doc) to prevent brute-forcing the 6-digit code within its expiry window.</td>
         </tr>
       </tbody>
     </table>
@@ -3223,6 +3288,33 @@ directory</a> is (<code>{name}</code> denotes a
           <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
           <td>optional</td>
           <td>The time the user was last updated.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="rellm-VerifyContactMethodRequest"></a></p>
+    <h3 id="verifycontactmethodrequest"><a class="anchor" aria-hidden="true" tabindex="-1" href="#verifycontactmethodrequest"><span class="octicon octicon-link"></span></a>VerifyContactMethodRequest</h3>
+    <p>Request for <a href="#grpc-api-VerifyContactMethod"><code>VerifyContactMethod</code></a>.</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>value</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>The <code>tel:</code> (or, in the future, <code>mailto:</code>) value being verified -- must match the current user's own stored <code>phone</code>/<code>email</code> value.</td>
+        </tr>
+        <tr>
+          <td>code</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>The code the user was sent by <code>StartContactMethodVerification</code>.</td>
         </tr>
       </tbody>
     </table>
@@ -5861,6 +5953,48 @@ directory</a> is (<code>{name}</code> denotes a
     <p><a name="server_configuration-proto"></a></p>
     <p align="right"><a href="#top">Top</a></p>
     <h2 id="server_configurationproto"><a class="anchor" aria-hidden="true" tabindex="-1" href="#server_configurationproto"><span class="octicon octicon-link"></span></a>server_configuration.proto</h2>
+    <p><a name="rellm-BirdConfig"></a></p>
+    <h3 id="birdconfig"><a class="anchor" aria-hidden="true" tabindex="-1" href="#birdconfig"><span class="octicon octicon-link"></span></a>BirdConfig</h3>
+    <p>
+      Bird (<a href="https://bird.com/">https://bird.com</a>, formerly MessageBird) Config -- an alternative SMS verification
+      provider to Twilio, with a simpler single-API-key auth model.
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>bird_enabled</td>
+          <td><a href="#bool">bool</a></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>bird_access_key</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>The Bird workspace's API access key. Never serialized once written.</td>
+        </tr>
+        <tr>
+          <td>bird_from</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>The originator for outbound verification SMS -- an owned number, alphanumeric sender ID (3-11 chars), or short code, as configured in the Bird workspace. Not secret.</td>
+        </tr>
+        <tr>
+          <td>bird_region</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>Which Bird API region to call ("us1" or "eu1", per Bird's own regional API hosts). Not secret. Empty defaults to "us1".</td>
+        </tr>
+      </tbody>
+    </table>
     <p><a name="rellm-ClusterConductorState"></a></p>
     <h3 id="clusterconductorstate"><a class="anchor" aria-hidden="true" tabindex="-1" href="#clusterconductorstate"><span class="octicon octicon-link"></span></a>ClusterConductorState</h3>
     <p>
@@ -6649,6 +6783,30 @@ directory</a> is (<code>{name}</code> denotes a
           <td>optional</td>
           <td>Web Push (VAPID) configuration for the server.</td>
         </tr>
+        <tr>
+          <td>preferred_verification_apis</td>
+          <td><a href="#rellm-VerificationAPI">VerificationAPI</a></td>
+          <td>repeated</td>
+          <td>A server-preferred order of contact verification APIs. Note: even if this is blank, if twilio_config is enabled, the server should try to verify with Twilio. It's really only for the case of wanting to switch between multiple SMS/Email providers. Only serialized for admin users.</td>
+        </tr>
+        <tr>
+          <td>available_verification_apis</td>
+          <td><a href="#rellm-VerificationAPI">VerificationAPI</a></td>
+          <td>repeated</td>
+          <td>Derived from whether TwilioConfig.enabled is true, etc. Serialized to every caller (not admin-only, unlike <code>preferred_verification_apis</code>/<code>twilio_config</code>) -- this is what a non-admin client should check to decide whether to show verification UI at all, without exposing any provider configuration.</td>
+        </tr>
+        <tr>
+          <td>twilio_config</td>
+          <td><a href="#rellm-TwilioConfig">TwilioConfig</a></td>
+          <td>optional</td>
+          <td>Twilio Config. Only serialized for admin users.</td>
+        </tr>
+        <tr>
+          <td>bird_config</td>
+          <td><a href="#rellm-BirdConfig">BirdConfig</a></td>
+          <td>optional</td>
+          <td>Bird (bird.com, formerly MessageBird) Config -- a cheaper Twilio alternative for SMS verification. Only serialized for admin users.</td>
+        </tr>
       </tbody>
     </table>
     <p><a name="rellm-ServerInfo"></a></p>
@@ -6756,6 +6914,44 @@ directory</a> is (<code>{name}</code> denotes a
           <td><a href="#string">string</a></td>
           <td>optional</td>
           <td>The media ID for the wide logo in dark mode.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="rellm-TwilioConfig"></a></p>
+    <h3 id="twilioconfig"><a class="anchor" aria-hidden="true" tabindex="-1" href="#twilioconfig"><span class="octicon octicon-link"></span></a>TwilioConfig</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>twilio_enabled</td>
+          <td><a href="#bool">bool</a></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>twilio_account_sid</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>The Twilio Account SID. Public (among admins) -- freely serialized.</td>
+        </tr>
+        <tr>
+          <td>twilio_api_key</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>The Twilio Auth Token. Never serialized once written.</td>
+        </tr>
+        <tr>
+          <td>twilio_from_number</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>The Twilio-provisioned sending number for outbound verification SMS. Not secret.</td>
         </tr>
       </tbody>
     </table>
@@ -6942,6 +7138,29 @@ directory</a> is (<code>{name}</code> denotes a
           <td>LET_ME_CREEP_ON_PPL</td>
           <td>2</td>
           <td>Users can see other users they follow, including their <code>PUBLIC_SERVER</code> Posts/Events. Other users can't see them.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="rellm-VerificationAPI"></a></p>
+    <h3 id="verificationapi"><a class="anchor" aria-hidden="true" tabindex="-1" href="#verificationapi"><span class="octicon octicon-link"></span></a>VerificationAPI</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Number</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>VERIFICATION_API_TWILIO</td>
+          <td>0</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>VERIFICATION_API_BIRD</td>
+          <td>1</td>
+          <td></td>
         </tr>
       </tbody>
     </table>

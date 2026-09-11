@@ -207,7 +207,7 @@ initEmbedded shared req tab =
                 ( username, targetHost ) =
                     Users.parseUserRouteId shared.accounts.mainFrontendHost tab.path
             in
-            UserProfilePage.init shared (RellmServers.isSecure req) targetHost (Resolver.ByUsername username) req.key req.url.path req.query
+            UserProfilePage.init shared (RellmServers.isSecure req) targetHost (Resolver.ByUsername username) req.key req.url.path req.query req.url.fragment
                 |> Tuple.mapFirst EmbeddedProfile
                 |> Tuple.mapSecond (Effect.map EmbeddedProfileMsg)
 
@@ -245,7 +245,7 @@ initProfile shared req =
                 )
 
             else
-                UserProfilePage.init shared (RellmServers.isSecure req) targetHost (Resolver.ByUsername username) req.key req.url.path req.query
+                UserProfilePage.init shared (RellmServers.isSecure req) targetHost (Resolver.ByUsername username) req.key req.url.path req.query req.url.fragment
                     |> Tuple.mapFirst Profile
                     |> Tuple.mapSecond (Effect.map ProfileMsg)
 

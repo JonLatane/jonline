@@ -248,6 +248,20 @@ impl Rellm for RellmService {
         authenticated_rpc!(self, rpcs::update_user, request)
     }
 
+    async fn start_contact_method_verification(
+        &self,
+        request: Request<ContactMethod>,
+    ) -> Result<Response<ContactMethod>, Status> {
+        authenticated_rpc!(self, rpcs::start_contact_method_verification, request)
+    }
+
+    async fn verify_contact_method(
+        &self,
+        request: Request<VerifyContactMethodRequest>,
+    ) -> Result<Response<ContactMethod>, Status> {
+        authenticated_rpc!(self, rpcs::verify_contact_method, request)
+    }
+
     async fn delete_user(&self, request: Request<User>) -> Result<Response<()>, Status> {
         authenticated_bucket_rpc!(self, rpcs::delete_user, request)
     }

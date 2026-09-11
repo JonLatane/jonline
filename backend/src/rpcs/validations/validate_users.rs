@@ -11,8 +11,8 @@ pub fn validate_user(user: &User) -> Result<(), Status> {
         Some(e) => validate_email(&e.value)?,
         None => {}
     }
-    match user.email.to_owned() {
-        Some(e) => validate_phone(&e.value)?,
+    match user.phone.to_owned() {
+        Some(p) => validate_phone(&p.value)?,
         None => {}
     }
     user.avatar

@@ -28,11 +28,13 @@ module Components.Users exposing
     , permissionFromText
     , permissionText
     , profileHref
+    , startContactMethodVerification
     , startsWithReservedShortUrlCharacter
     , titleName
     , updateFollow
     , updateUser
     , userCard
+    , verifyContactMethod
     , userCardAvatar
     , userIdHref
     , usernameHref
@@ -54,7 +56,7 @@ import Grpc
 import Html exposing (Html, a, div, img, text)
 import Html.Attributes exposing (alt, attribute, href, src)
 import Proto.Google.Protobuf
-import Proto.Rellm exposing (Author, FederatedAccount, Follow, GetUsersResponse, User, defaultGetUsersRequest)
+import Proto.Rellm exposing (Author, ContactMethod, FederatedAccount, Follow, GetUsersResponse, User, VerifyContactMethodRequest, defaultGetUsersRequest)
 import Proto.Rellm.Rellm as Rellm
 import Proto.Rellm.Moderation exposing (Moderation(..))
 import Proto.Rellm.Permission exposing (Permission(..))
@@ -214,6 +216,50 @@ updateUser accountsPanelModel maybeAccountServer userId updateFn =
                             Nothing ->
                                 Task.fail Grpc.NetworkError
                     )
+        )
+
+
+{-| Starts SMS verification of the current account's own phone
+`ContactMethod` (self-only, per `backend/src/rpcs/users/start_contact_method_verification.rs`).
+Unlike `updateUser`, this is a direct request/response RPC -- no
+reload-then-write dance needed since the request just echoes the
+`ContactMethod` being verified.
+-}
+startContactMethodVerification :
+    AccountsPanel.Model
+    -> AccountsPanel.MaybeAccountServer
+    -> ContactMethod
+    -> Task Grpc.Error ( Maybe AccountsPanel.Msg, ContactMethod )
+startContactMethodVerification accountsPanelModel maybeAccountServer contactMethod =
+    performWithAccountServer
+        accountsPanelModel
+        maybeAccountServer
+        (\server token ->
+            Grpc.new Rellm.startContactMethodVerification contactMethod
+                |> Grpc.setHost (RellmServers.rellmServerUrl server)
+                |> withAccessToken (Just token)
+                |> Grpc.toTask
+        )
+
+
+{-| Verifies a code sent by `startContactMethodVerification` against the
+current account's own phone `ContactMethod` (self-only). Direct
+request/response RPC, same shape as `startContactMethodVerification`.
+-}
+verifyContactMethod :
+    AccountsPanel.Model
+    -> AccountsPanel.MaybeAccountServer
+    -> VerifyContactMethodRequest
+    -> Task Grpc.Error ( Maybe AccountsPanel.Msg, ContactMethod )
+verifyContactMethod accountsPanelModel maybeAccountServer request =
+    performWithAccountServer
+        accountsPanelModel
+        maybeAccountServer
+        (\server token ->
+            Grpc.new Rellm.verifyContactMethod request
+                |> Grpc.setHost (RellmServers.rellmServerUrl server)
+                |> withAccessToken (Just token)
+                |> Grpc.toTask
         )
 
 

@@ -279,6 +279,47 @@
   align-items: center;
 }
 
+/* Components/Pages/UserProfilePage.elm's `contactMethodsSection`/`phoneView`/`emailView`/
+   `phoneVerificationView` -- the Contact Methods section's Phone/Email rows (display + edit) and
+   the phone-only SMS verification flow underneath the Phone row. */
+.profile-contact-method-display,
+.profile-contact-method-edit,
+.profile-contact-method-verify-code {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0.3rem 0;
+}
+
+.profile-contact-method-label {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.profile-contact-method-value {
+  word-break: break-word;
+}
+
+.profile-contact-method-verified {
+  color: var(--success, #2e7d32);
+  font-size: 0.85rem;
+}
+
+.profile-contact-method-not-verified {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.profile-contact-method-verify {
+  margin: 0.3rem 0 0.6rem;
+}
+
+.profile-contact-method-verify-status {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
 .profile-permissions-view,
 .profile-permissions-edit {
   display: flex;
