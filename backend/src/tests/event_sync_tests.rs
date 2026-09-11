@@ -114,6 +114,49 @@ fn vevent_with_tzid_dtstart_populates_instance_timezone() {
     });
 }
 
+/// Deploying this feature doesn't retroactively touch instances a `SyncSource` already synced
+/// under the old (pre-`timezone`-column) code -- they simply have `timezone = NULL` until
+/// something re-syncs them. This proves that happens automatically, with no backfill script
+/// needed: `reconcile_instances`' change-detection compares `timezone` alongside
+/// `starts_at`/`ends_at`/`location`, so the very next scheduled sync after deploy updates a
+/// stale `NULL` row from the feed's own `TZID` even though nothing else about the occurrence
+/// changed.
+#[test]
+fn resyncing_backfills_a_timezone_that_was_null_before_this_feature_shipped() {
+    let mut conn = test_conn();
+    conn.test_transaction::<_, tonic::Status, _>(|conn| {
+        let user = create_user(conn, "est_backfill_owner");
+        let source = create_sync_source_row(conn, &user, "http://example.invalid/cal.ics");
+
+        let start = (Utc::now() + Duration::days(1)).with_timezone(&chrono_tz::America::New_York);
+        let end = start + Duration::hours(1);
+        let ics = format!(
+            "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//test//\r\nBEGIN:VEVENT\r\nUID:backfill-1\r\nDTSTART;TZID=America/New_York:{}\r\nDTEND;TZID=America/New_York:{}\r\nSUMMARY:Backfill Event\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+            start.format("%Y%m%dT%H%M%S"),
+            end.format("%Y%m%dT%H%M%S")
+        );
+
+        sync_source_text(&source, &ics, conn).expect("first sync should succeed");
+        let event = synced_event(conn, source.id, "backfill-1").expect("event should exist");
+
+        // Simulate a pre-deploy row by nulling out the timezone this first sync just set -- what
+        // an instance synced by the old code would actually look like.
+        diesel::update(event_instances::table.filter(event_instances::event_id.eq(event.post_id)))
+            .set(event_instances::timezone.eq(None::<String>))
+            .execute(conn)
+            .unwrap();
+        assert_eq!(instances_for(conn, event.post_id)[0].timezone, None);
+
+        sync_source_text(&source, &ics, conn).expect("resync should succeed");
+
+        let instances = instances_for(conn, event.post_id);
+        assert_eq!(instances.len(), 1, "resync must update the existing instance in place, not duplicate it");
+        assert_eq!(instances[0].timezone.as_deref(), Some("America/New_York"));
+
+        Ok(())
+    });
+}
+
 /// Regression test for the 2026-09-04 duplicate-events incident: re-syncing the exact same feed
 /// twice in a row (e.g. two runs of the background job before anything upstream changes) must
 /// match every existing Event/EventInstance by `(sync_source_id, sync_source_uid,
