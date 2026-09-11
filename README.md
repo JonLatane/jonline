@@ -306,6 +306,7 @@ Rellm, as a Rust BE, is *blazing fast* compared to any Rails BE. And being writt
 Rellm's Elm FE is similarly blazing fast, and Elm as a language allows intuitive, reliable web UIs in a way that nothing else out there really does (maybe Gleam). It similarly offers Mastodon/Bluesky interoperability at a level that, well, would be *painful or impossible* to implement without the safety of Elm, no matter how many humans or AI agents you throw at the problem.
 
 - Rellm supports Events as a first-class type. Others don't.
+- Rellm supports a unique Messaging model that means (with the [Stalwart integration](deploys/email/README.md) set up) the user at `jonline.io/jon` can be emailed at `jon@jonline.io`; and, that user has it set up, they can receive VAPID (web push) notifications of said emails and messages from other users.
 - Rellm servers offer admins a huge amount of configurability that can effectively make it a site and CRM for your business's run/bike/trivia clubs, your band/chorus/dance groups's site, and more, with custom color schemes, custom tab layouts, pseudonyms for posts and events (like "twaddles" or "shows"), and much more.
 - Rellm's UI and APIs are designed to let users browse federated User Profiles, Groups, Posts and Events with ease in a way not supported in other "fediverse" apps.
 - Rellm servers serve up multiple UIs as well as their own protocol docs, making it easy to grab an arbitrary agent and point it at Rellm.
