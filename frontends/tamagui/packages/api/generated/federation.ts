@@ -28,7 +28,7 @@ export interface FederationInfo {
     | undefined;
   /**
    * X (Twitter) authentication configuration for the server. If set, allows users to create X (Twitter) SyncDestinations
-   * for their Posts and EventInstances -- an admin registers one X Developer App here, and every
+   * for their Posts and EventInstances - an admin registers one X Developer App here, and every
    * user on the server connects their own X account through it via OAuth, the same relationship
    * `facebook_auth_config` has to individual Facebook Pages. Until set, [`XTwitterAccount`](#rellm-XTwitterAccount)
    * SyncDestinations always fail with `x_twitter_app_not_configured`.
@@ -39,12 +39,12 @@ export interface FederationInfo {
   /**
    * Mastodon instances this server has a registered OAuth app on, letting users connect/read their
    * own account on that instance. Unlike Facebook/X, Mastodon has no single central platform to
-   * register an app against -- every instance is its own separate OAuth authority, so an admin has
+   * register an app against - every instance is its own separate OAuth authority, so an admin has
    * to register an app on each instance individually before users on it can connect. If a user's
    * instance isn't listed here, clients should surface a "not configured" alert rather than
    * attempting to open an OAuth popup with no app to authorize against. (A client could instead
    * dynamically self-register a throwaway app with the instance directly, via Mastodon's own
-   * `POST /api/v1/apps`, and skip this entirely -- Mastodon itself supports that. But that's a
+   * `POST /api/v1/apps`, and skip this entirely - Mastodon itself supports that. But that's a
    * client-side choice the Rellm protocol doesn't get involved in either way: this field only
    * covers the admin-pre-registered path, which is what lets an app ID be shown/reused consistently
    * across every client on this server rather than each one self-registering its own.)
@@ -106,7 +106,7 @@ export interface MastodonServer {
   /** The Mastodon instance's hostname, e.g. "mastodon.social". */
   domain: string;
   /**
-   * The registered app's Client ID for this instance. Safe to serialize to clients -- used
+   * The registered app's Client ID for this instance. Safe to serialize to clients - used
    * directly to build the instance's `/oauth/authorize` URL, the same way `FacebookAuthConfig.app_id`/
    * `XTwitterAuthConfig.client_id` are.
    */
@@ -119,7 +119,7 @@ export interface MastodonServer {
   appSecret: string;
   /**
    * Indicates to UI clients that they should browse the indicated instance's public timeline by
-   * default (added to it with no OAuth/account needed at all -- see this message's own doc on the
+   * default (added to it with no OAuth/account needed at all - see this message's own doc on the
    * difference between browsing and connecting).
    */
   configuredByDefault?:
@@ -128,7 +128,7 @@ export interface MastodonServer {
   /**
    * Indicates to UI clients that they should pin the indicated instance by default (showing its
    * Posts alongside the "main" server). Currently has the same effect as `configured_by_default`
-   * -- as of this writing, clients have no "added but not shown" state for a browsed instance the
+   * - as of this writing, clients have no "added but not shown" state for a browsed instance the
    * way `FederatedServer.pinned_by_default`'s `Server.enabled` does, so there's nothing for this
    * to mean *in addition to* `configured_by_default`. Kept as its own field for symmetry with
    * `FederatedServer`, and in case that changes.

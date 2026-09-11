@@ -185,10 +185,13 @@ const ContactMethod$json = {
     {'1': 'value', '3': 1, '4': 1, '5': 9, '9': 0, '10': 'value', '17': true},
     {'1': 'visibility', '3': 2, '4': 1, '5': 14, '6': '.rellm.Visibility', '10': 'visibility'},
     {'1': 'supported_by_server', '3': 3, '4': 1, '5': 8, '10': 'supportedByServer'},
-    {'1': 'verified', '3': 4, '4': 1, '5': 8, '10': 'verified'},
+    {'1': 'verified_at', '3': 4, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '9': 1, '10': 'verifiedAt', '17': true},
+    {'1': 'verification_in_progress', '3': 5, '4': 1, '5': 11, '6': '.rellm.ContactMethodVerification', '9': 2, '10': 'verificationInProgress', '17': true},
   ],
   '8': [
     {'1': '_value'},
+    {'1': '_verified_at'},
+    {'1': '_verification_in_progress'},
   ],
 };
 
@@ -196,8 +199,28 @@ const ContactMethod$json = {
 final $typed_data.Uint8List contactMethodDescriptor = $convert.base64Decode(
     'Cg1Db250YWN0TWV0aG9kEhkKBXZhbHVlGAEgASgJSABSBXZhbHVliAEBEjEKCnZpc2liaWxpdH'
     'kYAiABKA4yES5yZWxsbS5WaXNpYmlsaXR5Ugp2aXNpYmlsaXR5Ei4KE3N1cHBvcnRlZF9ieV9z'
-    'ZXJ2ZXIYAyABKAhSEXN1cHBvcnRlZEJ5U2VydmVyEhoKCHZlcmlmaWVkGAQgASgIUgh2ZXJpZm'
-    'llZEIICgZfdmFsdWU=');
+    'ZXJ2ZXIYAyABKAhSEXN1cHBvcnRlZEJ5U2VydmVyEkAKC3ZlcmlmaWVkX2F0GAQgASgLMhouZ2'
+    '9vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEgBUgp2ZXJpZmllZEF0iAEBEl8KGHZlcmlmaWNhdGlv'
+    'bl9pbl9wcm9ncmVzcxgFIAEoCzIgLnJlbGxtLkNvbnRhY3RNZXRob2RWZXJpZmljYXRpb25IAl'
+    'IWdmVyaWZpY2F0aW9uSW5Qcm9ncmVzc4gBAUIICgZfdmFsdWVCDgoMX3ZlcmlmaWVkX2F0QhsK'
+    'GV92ZXJpZmljYXRpb25faW5fcHJvZ3Jlc3M=');
+
+@$core.Deprecated('Use contactMethodVerificationDescriptor instead')
+const ContactMethodVerification$json = {
+  '1': 'ContactMethodVerification',
+  '2': [
+    {'1': 'verification_code', '3': 1, '4': 1, '5': 9, '10': 'verificationCode'},
+    {'1': 'verification_started_at', '3': 2, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'verificationStartedAt'},
+    {'1': 'attempts', '3': 3, '4': 1, '5': 5, '10': 'attempts'},
+  ],
+};
+
+/// Descriptor for `ContactMethodVerification`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List contactMethodVerificationDescriptor = $convert.base64Decode(
+    'ChlDb250YWN0TWV0aG9kVmVyaWZpY2F0aW9uEisKEXZlcmlmaWNhdGlvbl9jb2RlGAEgASgJUh'
+    'B2ZXJpZmljYXRpb25Db2RlElIKF3ZlcmlmaWNhdGlvbl9zdGFydGVkX2F0GAIgASgLMhouZ29v'
+    'Z2xlLnByb3RvYnVmLlRpbWVzdGFtcFIVdmVyaWZpY2F0aW9uU3RhcnRlZEF0EhoKCGF0dGVtcH'
+    'RzGAMgASgFUghhdHRlbXB0cw==');
 
 @$core.Deprecated('Use getUsersRequestDescriptor instead')
 const GetUsersRequest$json = {
@@ -238,4 +261,18 @@ const GetUsersResponse$json = {
 final $typed_data.Uint8List getUsersResponseDescriptor = $convert.base64Decode(
     'ChBHZXRVc2Vyc1Jlc3BvbnNlEiEKBXVzZXJzGAEgAygLMgsucmVsbG0uVXNlclIFdXNlcnMSIg'
     'oNaGFzX25leHRfcGFnZRgCIAEoCFILaGFzTmV4dFBhZ2U=');
+
+@$core.Deprecated('Use verifyContactMethodRequestDescriptor instead')
+const VerifyContactMethodRequest$json = {
+  '1': 'VerifyContactMethodRequest',
+  '2': [
+    {'1': 'value', '3': 1, '4': 1, '5': 9, '10': 'value'},
+    {'1': 'code', '3': 2, '4': 1, '5': 9, '10': 'code'},
+  ],
+};
+
+/// Descriptor for `VerifyContactMethodRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List verifyContactMethodRequestDescriptor = $convert.base64Decode(
+    'ChpWZXJpZnlDb250YWN0TWV0aG9kUmVxdWVzdBIUCgV2YWx1ZRgBIAEoCVIFdmFsdWUSEgoEY2'
+    '9kZRgCIAEoCVIEY29kZQ==');
 

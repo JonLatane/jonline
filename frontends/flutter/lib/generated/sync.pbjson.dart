@@ -249,6 +249,8 @@ const SyncSource$json = {
     {'1': 'event_instance_count', '3': 8, '4': 1, '5': 4, '10': 'eventInstanceCount'},
     {'1': 'post_count', '3': 10, '4': 1, '5': 4, '10': 'postCount'},
     {'1': 'ics_subscription_url', '3': 9, '4': 1, '5': 9, '9': 0, '10': 'icsSubscriptionUrl'},
+    {'1': 'rss_subscription_url', '3': 11, '4': 1, '5': 9, '9': 0, '10': 'rssSubscriptionUrl'},
+    {'1': 'atom_subscription_url', '3': 12, '4': 1, '5': 9, '9': 0, '10': 'atomSubscriptionUrl'},
   ],
   '8': [
     {'1': 'configuration'},
@@ -267,8 +269,10 @@ final $typed_data.Uint8List syncSourceDescriptor = $convert.base64Decode(
     'RvYnVmLlRpbWVzdGFtcEgCUgxsYXN0U3luY2VkQXSIAQESHwoLZXZlbnRfY291bnQYByABKARS'
     'CmV2ZW50Q291bnQSMAoUZXZlbnRfaW5zdGFuY2VfY291bnQYCCABKARSEmV2ZW50SW5zdGFuY2'
     'VDb3VudBIdCgpwb3N0X2NvdW50GAogASgEUglwb3N0Q291bnQSMgoUaWNzX3N1YnNjcmlwdGlv'
-    'bl91cmwYCSABKAlIAFISaWNzU3Vic2NyaXB0aW9uVXJsQg8KDWNvbmZpZ3VyYXRpb25CDQoLX3'
-    'VwZGF0ZWRfYXRCEQoPX2xhc3Rfc3luY2VkX2F0');
+    'bl91cmwYCSABKAlIAFISaWNzU3Vic2NyaXB0aW9uVXJsEjIKFHJzc19zdWJzY3JpcHRpb25fdX'
+    'JsGAsgASgJSABSEnJzc1N1YnNjcmlwdGlvblVybBI0ChVhdG9tX3N1YnNjcmlwdGlvbl91cmwY'
+    'DCABKAlIAFITYXRvbVN1YnNjcmlwdGlvblVybEIPCg1jb25maWd1cmF0aW9uQg0KC191cGRhdG'
+    'VkX2F0QhEKD19sYXN0X3N5bmNlZF9hdA==');
 
 @$core.Deprecated('Use getSyncSourcesResponseDescriptor instead')
 const GetSyncSourcesResponse$json = {

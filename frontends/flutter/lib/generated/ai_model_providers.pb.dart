@@ -20,13 +20,13 @@ import 'google/protobuf/timestamp.pb.dart' as $12;
 
 export 'ai_model_providers.pbenum.dart';
 
-/// One specific model a user may call right now, and how -- via an [`AIModelProvider`](#rellm-AIModelProvider)
+/// One specific model a user may call right now, and how - via an [`AIModelProvider`](#rellm-AIModelProvider)
 /// they own outright (`grant` unset), or via an [`AIModelProviderGrant`](#rellm-AIModelProviderGrant) someone else
-/// granted them (`grant` set). Only ever defined relative to a user -- see
+/// granted them (`grant` set). Only ever defined relative to a user - see
 /// [`User.available_ai_models`](#rellm-User)/[`GetAIModelProvidersResponse.available_ai_models`](#rellm-GetAIModelProvidersResponse).
 /// One `AvailableAIModel` exists per (provider, model) pair: an owner gets one row per model their
 /// provider supports (see the server's own model catalog per provider type); a grantee gets one row
-/// per model their grant actually covers -- expanded from `AIModelProviderGrant.model_names`, or
+/// per model their grant actually covers - expanded from `AIModelProviderGrant.model_names`, or
 /// every model the provider supports if that list is empty.
 class AvailableAIModel extends $pb.GeneratedMessage {
   factory AvailableAIModel({
@@ -93,7 +93,7 @@ class AvailableAIModel extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   void clearModelName() => clearField(1);
 
-  /// What this model can actually do -- from the server's own hardcoded catalog for
+  /// What this model can actually do - from the server's own hardcoded catalog for
   /// `provider.provider`'s variant (see [`AIModelCapability`](#rellm-AIModelCapability)), not
   /// anything reported by the provider's API itself. Feature gating keys off this rather than
   /// `model_name` directly, so e.g. [`GenerateMedia`](#grpc-api-GenerateMedia) (which needs
@@ -104,7 +104,7 @@ class AvailableAIModel extends $pb.GeneratedMessage {
   $core.List<AIModelCapability> get capabilities => $_getList(1);
 
   /// The grant that allows this access, when the current user isn't `provider.owner` themselves.
-  /// Unset when the current user owns `provider` outright (full, ungated access -- no grant needed).
+  /// Unset when the current user owns `provider` outright (full, ungated access - no grant needed).
   @$pb.TagNumber(3)
   AIModelProviderGrant get grant => $_getN(2);
   @$pb.TagNumber(3)
@@ -117,7 +117,7 @@ class AvailableAIModel extends $pb.GeneratedMessage {
   AIModelProviderGrant ensureGrant() => $_ensure(2);
 
   /// The provider this model belongs to. Its own `grants` list is only populated when the current
-  /// user is `provider.owner` (or an Admin) -- see [`GetAIModelProviders`](#grpc-api-GetAIModelProviders)'s own doc; a
+  /// user is `provider.owner` (or an Admin) - see [`GetAIModelProviders`](#grpc-api-GetAIModelProviders)'s own doc; a
   /// mere grantee never sees who else has been granted access to a provider they don't own.
   @$pb.TagNumber(4)
   AIModelProvider get provider => $_getN(3);
@@ -138,9 +138,9 @@ enum GenerateMediaRequest_Target {
 }
 
 /// Request to generate (or edit) an image via one of the current user's
-/// [`AvailableAIModel`](#rellm-AvailableAIModel)s -- see [`GenerateMedia`](#grpc-api-GenerateMedia). The resulting
-/// image is stored as a new [`Media`](#rellm-Media) (`generated = true`) owned by the current user, and -- if
-/// `target` is set -- prepended as the *first* item in that Post's (or Event's own Post's) `media` list.
+/// [`AvailableAIModel`](#rellm-AvailableAIModel)s - see [`GenerateMedia`](#grpc-api-GenerateMedia). The resulting
+/// image is stored as a new [`Media`](#rellm-Media) (`generated = true`) owned by the current user, and - if
+/// `target` is set - prepended as the *first* item in that Post's (or Event's own Post's) `media` list.
 class GenerateMediaRequest extends $pb.GeneratedMessage {
   factory GenerateMediaRequest({
     AvailableAIModel? model,
@@ -210,9 +210,9 @@ class GenerateMediaRequest extends $pb.GeneratedMessage {
   GenerateMediaRequest_Target whichTarget() => _GenerateMediaRequest_TargetByTag[$_whichOneof(0)]!;
   void clearTarget() => clearField($_whichOneof(0));
 
-  /// Which of the current user's `AvailableAIModel`s to generate with -- `model.model_name` selects the actual
+  /// Which of the current user's `AvailableAIModel`s to generate with - `model.model_name` selects the actual
   /// model, `model.provider.id` identifies whose `AIModelProvider` (the current user's own, or one they've been
-  /// granted access to) to call it through. Only `model_name`/`provider.id` are read server-side -- any other field
+  /// granted access to) to call it through. Only `model_name`/`provider.id` are read server-side - any other field
   /// sent here (e.g. a spoofed `grant`) is ignored in favor of the caller's real access, re-derived from
   /// `provider.id` and the current user.
   @$pb.TagNumber(1)
@@ -228,7 +228,7 @@ class GenerateMediaRequest extends $pb.GeneratedMessage {
 
   /// The user-editable prompt describing what to generate, e.g. "Please generate a square headline poster for the
   /// following event." Combined server-side with `target`'s own formatted content (title/description/date-time
-  /// range/location -- the same formatting [`SyncDestination`](#rellm-SyncDestination)s use) before being sent to
+  /// range/location - the same formatting [`SyncDestination`](#rellm-SyncDestination)s use) before being sent to
   /// the model, so the user never has to paste that context in by hand.
   @$pb.TagNumber(2)
   $core.String get userPrompt => $_getSZ(1);
@@ -241,8 +241,8 @@ class GenerateMediaRequest extends $pb.GeneratedMessage {
 
   /// Existing [`Media`](#rellm-Media) to pass to the model alongside `user_prompt`, for image editing/
   /// reference-based generation (e.g. a target Post/Event's own current photos), in the order given here. Leave
-  /// empty for plain text-to-image generation instead -- `model` must have the matching capability either way
-  /// (`AI_MODEL_CAPABILITY_IMAGE_EDITING` here, `AI_MODEL_CAPABILITY_IMAGE_GENERATION` if empty -- see
+  /// empty for plain text-to-image generation instead - `model` must have the matching capability either way
+  /// (`AI_MODEL_CAPABILITY_IMAGE_EDITING` here, `AI_MODEL_CAPABILITY_IMAGE_GENERATION` if empty - see
   /// [`AIModelCapability`](#rellm-AIModelCapability)'s own doc). Every id must be owned by the current user (or
   /// the current user must be an Admin).
   @$pb.TagNumber(3)
@@ -258,7 +258,7 @@ class GenerateMediaRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(5)
   void clearPostId() => clearField(5);
 
-  /// Attach to (and use the content of) this EventInstance's parent Event's own Post -- named by
+  /// Attach to (and use the content of) this EventInstance's parent Event's own Post - named by
   /// EventInstance, not Event, since that's what a viewer is actually looking at (and what gives
   /// the generated prompt its date/time/location context, the same way
   /// [`SyncEventInstance`](#grpc-api-SyncEventInstance) does). Caller must be the Event's own
@@ -285,13 +285,13 @@ enum AIModelProvider_Provider {
 ///  key), which its owner can grant other users of this server metered, budgeted access to. Mirrors
 ///  [`SyncDestination`](#rellm-SyncDestination)/[`SyncSource`](#rellm-SyncSource) (also user-owned integrations
 ///  with an [`Author`](#rellm-Author) `owner` and a `oneof` naming which external system is configured), but where
-///  those push/pull content, an AIModelProvider is metered *access* to a third-party LLM API -- shared out to
+///  those push/pull content, an AIModelProvider is metered *access* to a third-party LLM API - shared out to
 ///  other users via [`AIModelProviderGrant`](#rellm-AIModelProviderGrant)s rather than posted-to/subscribed-from.
 ///
 ///  Providers are managed via [`GetAIModelProviders`](#grpc-api-GetAIModelProviders),
 ///  [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider) (requires `CREATE_AI_MODEL_PROVIDERS`, or Admin),
 ///  [`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider) (owner, or Admin for any user's), and
-///  [`DeleteAIModelProvider`](#grpc-api-DeleteAIModelProvider) (owner, or Admin) -- the same self-or-Admin shape as
+///  [`DeleteAIModelProvider`](#grpc-api-DeleteAIModelProvider) (owner, or Admin) - the same self-or-Admin shape as
 ///  [`SyncDestination`](#rellm-SyncDestination)'s RPCs. Access to a provider is granted/revoked to other users via
 ///  [`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider)/[`RevokeAIModelProvider`](#grpc-api-RevokeAIModelProvider) which,
 ///  unlike every other RPC pair here, are **owner-only with no Admin override**: an Admin can manage the provider
@@ -300,7 +300,7 @@ enum AIModelProvider_Provider {
 ///
 ///  [`GeminiCredentials`](#rellm-GeminiCredentials)/[`OpenAICredentials`](#rellm-OpenAICredentials)/
 ///  [`DigitalOceanCredentials`](#rellm-DigitalOceanCredentials) all have a working connection flow (Gemini's
-///  Interactions API, OpenAI's Images API, DigitalOcean's Serverless Inference API -- the last of which is also
+///  Interactions API, OpenAI's Images API, DigitalOcean's Serverless Inference API - the last of which is also
 ///  OpenAI-Images-API-shaped, just a different base URL/key and generation-only, no editing endpoint);
 ///  [`AnthropicCredentials`](#rellm-AnthropicCredentials) is defined for forward compatibility but is not yet
 ///  accepted by [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider) (Anthropic doesn't offer image generation).
@@ -410,7 +410,7 @@ class AIModelProvider extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   void clearId() => clearField(1);
 
-  /// The user information for the owner of this AIModelProvider -- the only user (besides Admins) who may
+  /// The user information for the owner of this AIModelProvider - the only user (besides Admins) who may
   /// rename it or change its credentials/provider, and the *only* user (not even Admins) who may grant/revoke other
   /// users' access to it.
   @$pb.TagNumber(2)
@@ -425,7 +425,7 @@ class AIModelProvider extends $pb.GeneratedMessage {
   $15.Author ensureOwner() => $_ensure(1);
 
   /// A display name for the provider, chosen by its owner (e.g. "My Gemini Key", "Team OpenAI Account"). Purely
-  /// cosmetic -- has no effect on behavior.
+  /// cosmetic - has no effect on behavior.
   @$pb.TagNumber(3)
   $core.String get name => $_getSZ(2);
   @$pb.TagNumber(3)
@@ -461,7 +461,7 @@ class AIModelProvider extends $pb.GeneratedMessage {
   @$pb.TagNumber(5)
   OpenAICredentials ensureOpenaiCredentials() => $_ensure(4);
 
-  /// An [Anthropic API](https://docs.anthropic.com) connection. *Not yet creatable* -- Anthropic doesn't offer an image generation API.
+  /// An [Anthropic API](https://docs.anthropic.com) connection. *Not yet creatable* - Anthropic doesn't offer an image generation API.
   @$pb.TagNumber(6)
   AnthropicCredentials get anthropicCredentials => $_getN(5);
   @$pb.TagNumber(6)
@@ -474,7 +474,7 @@ class AIModelProvider extends $pb.GeneratedMessage {
   AnthropicCredentials ensureAnthropicCredentials() => $_ensure(5);
 
   /// A [DigitalOcean Gradient AI Platform](https://docs.digitalocean.com/products/gradient-ai-platform/) /
-  /// Serverless Inference connection, used for image generation (no editing -- DigitalOcean's
+  /// Serverless Inference connection, used for image generation (no editing - DigitalOcean's
   /// [Serverless Inference API](https://docs.digitalocean.com/products/gradient-ai-platform/reference/api/serverless-inference/)
   /// has no `/v1/images/edits`-equivalent endpoint) via its OpenAI-Images-API-shaped
   /// `/v1/images/generations` endpoint (GPT Image and Stable Diffusion models, re-hosted under DigitalOcean's own
@@ -524,7 +524,7 @@ class AIModelProvider extends $pb.GeneratedMessage {
 /// A grant of metered access to someone else's [`AIModelProvider`](#rellm-AIModelProvider), created/reset via
 /// [`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider) and removed via
 /// [`RevokeAIModelProvider`](#grpc-api-RevokeAIModelProvider). Upserted on the unique
-/// `(ai_model_provider_id, ai_model_grantee)` pair -- calling [`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider)
+/// `(ai_model_provider_id, ai_model_grantee)` pair - calling [`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider)
 /// again for a user who already has a grant *resets* `tokens_remaining` to the newly-requested amount, it does not
 /// add to it.
 class AIModelProviderGrant extends $pb.GeneratedMessage {
@@ -639,11 +639,11 @@ class AIModelProviderGrant extends $pb.GeneratedMessage {
   void clearTokensRemaining() => clearField(4);
 
   /// How far a single [`GenerateMedia`](#grpc-api-GenerateMedia) call's actual token usage overshot `tokens_remaining`
-  /// the moment it hit 0 -- effectively a "negative `tokens_remaining`" (which, being `uint64`, can't represent a
+  /// the moment it hit 0 - effectively a "negative `tokens_remaining`" (which, being `uint64`, can't represent a
   /// negative value directly), recorded here instead as a positive debt for the owner's own visibility. E.g. a
   /// grantee with 30 tokens left whose next call actually costs 45 ends up with `tokens_remaining = 0` and
   /// `overage = 15`. Always 0 immediately after a fresh [`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider) call
-  /// (any prior debt is cleared, not carried forward) -- see that RPC's own doc.
+  /// (any prior debt is cleared, not carried forward) - see that RPC's own doc.
   @$pb.TagNumber(5)
   $fixnum.Int64 get overage => $_getI64(4);
   @$pb.TagNumber(5)
@@ -725,7 +725,7 @@ class GetAIModelProvidersResponse extends $pb.GeneratedMessage {
   static GetAIModelProvidersResponse getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<GetAIModelProvidersResponse>(create);
   static GetAIModelProvidersResponse? _defaultInstance;
 
-  /// The requested user's own AIModelProviders (those they own) -- exactly the distinct `provider`s
+  /// The requested user's own AIModelProviders (those they own) - exactly the distinct `provider`s
   /// in `available_ai_models` whose `owner` is the requested user, each with its own `grants`
   /// populated (who else can use it). A convenience duplicate of data already in
   /// `available_ai_models`, so callers managing a user's own providers (rename/rekey/delete/grant/
@@ -733,7 +733,7 @@ class GetAIModelProvidersResponse extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   $core.List<AIModelProvider> get providers => $_getList(0);
 
-  /// Every model the requested user may currently call -- their own providers' models, plus any
+  /// Every model the requested user may currently call - their own providers' models, plus any
   /// models granted to them on other users' providers. See [`AvailableAIModel`](#rellm-AvailableAIModel)'s own doc.
   @$pb.TagNumber(2)
   $core.List<AvailableAIModel> get availableAiModels => $_getList(1);
@@ -794,7 +794,7 @@ class DeleteAIModelProviderRequest extends $pb.GeneratedMessage {
 }
 
 /// Request to grant (or reset) another user's metered access to one of the current user's
-/// [`AIModelProvider`](#rellm-AIModelProvider)s. *Authenticated, owner-only -- no Admin override.*
+/// [`AIModelProvider`](#rellm-AIModelProvider)s. *Authenticated, owner-only - no Admin override.*
 class GrantAIModelProviderRequest extends $pb.GeneratedMessage {
   factory GrantAIModelProviderRequest({
     $core.String? userId,
@@ -882,7 +882,7 @@ class GrantAIModelProviderRequest extends $pb.GeneratedMessage {
   void clearTokens() => clearField(3);
 
   /// The models the grantee is allowed to use, mirroring [`AIModelProviderGrant.model_names`](#rellm-AIModelProviderGrant)
-  /// -- if empty, allows access to any model the provider supports. Also replaced (not merged)
+  /// - if empty, allows access to any model the provider supports. Also replaced (not merged)
   /// on a repeat call, same as `tokens`.
   @$pb.TagNumber(4)
   $core.List<$core.String> get modelNames => $_getList(3);
@@ -890,7 +890,7 @@ class GrantAIModelProviderRequest extends $pb.GeneratedMessage {
 
 /// Request to revoke another user's access to one of the current user's
 /// [`AIModelProvider`](#rellm-AIModelProvider)s, the reverse of
-/// [`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider). *Authenticated, owner-only -- no Admin override.*
+/// [`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider). *Authenticated, owner-only - no Admin override.*
 class RevokeAIModelProviderRequest extends $pb.GeneratedMessage {
   factory RevokeAIModelProviderRequest({
     $core.String? userId,
@@ -957,11 +957,11 @@ class RevokeAIModelProviderRequest extends $pb.GeneratedMessage {
   void clearAiModelProviderId() => clearField(2);
 }
 
-/// Credentials for a [Google Gemini API](https://ai.google.dev/gemini-api) connection -- the only
+/// Credentials for a [Google Gemini API](https://ai.google.dev/gemini-api) connection - the only
 /// [`AIModelProvider.provider`](#rellm-AIModelProvider) variant currently accepted by
 /// [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider)/[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider).
 /// Used for image generation/editing via Gemini's [Interactions API](https://ai.google.dev/gemini-api/docs/image-generation),
-/// e.g. to generate/edit Event posters from an Event's own content -- see [`GenerateMedia`](#grpc-api-GenerateMedia).
+/// e.g. to generate/edit Event posters from an Event's own content - see [`GenerateMedia`](#grpc-api-GenerateMedia).
 class GeminiCredentials extends $pb.GeneratedMessage {
   factory GeminiCredentials({
     $core.String? geminiApiKey,
@@ -1019,7 +1019,7 @@ class GeminiCredentials extends $pb.GeneratedMessage {
 /// Credentials for an [OpenAI API](https://platform.openai.com/docs/api-reference) connection, accepted by
 /// [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider)/[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider).
 /// Used for image generation/editing via OpenAI's [Images API](https://platform.openai.com/docs/guides/image-generation)
-/// (the GPT Image model family) -- same use case as [`GeminiCredentials`](#rellm-GeminiCredentials), see
+/// (the GPT Image model family) - same use case as [`GeminiCredentials`](#rellm-GeminiCredentials), see
 /// [`GenerateMedia`](#grpc-api-GenerateMedia).
 class OpenAICredentials extends $pb.GeneratedMessage {
   factory OpenAICredentials({
@@ -1077,7 +1077,7 @@ class OpenAICredentials extends $pb.GeneratedMessage {
 /// Credentials for a [DigitalOcean Gradient AI Platform](https://docs.digitalocean.com/products/gradient-ai-platform/) /
 /// Serverless Inference connection, accepted by
 /// [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider)/[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider).
-/// Used for image *generation only* (no editing -- see `AIModelProvider.provider`'s own doc on this variant) via its
+/// Used for image *generation only* (no editing - see `AIModelProvider.provider`'s own doc on this variant) via its
 /// [Serverless Inference API](https://docs.digitalocean.com/products/gradient-ai-platform/reference/api/serverless-inference/)
 /// `/v1/images/generations` endpoint, OpenAI-Images-API-shaped and re-hosting GPT Image and Stable Diffusion models --
 /// see [`GenerateMedia`](#grpc-api-GenerateMedia).
@@ -1134,7 +1134,7 @@ class DigitalOceanCredentials extends $pb.GeneratedMessage {
   void clearDigitaloceanApiKey() => clearField(1);
 }
 
-/// Credentials for an [Anthropic API](https://docs.anthropic.com) connection. *Not yet creatable* -- defined for
+/// Credentials for an [Anthropic API](https://docs.anthropic.com) connection. *Not yet creatable* - defined for
 /// forward compatibility only.
 class AnthropicCredentials extends $pb.GeneratedMessage {
   factory AnthropicCredentials({

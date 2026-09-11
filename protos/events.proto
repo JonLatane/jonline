@@ -45,7 +45,7 @@ message GetEventsRequest {
   EventListingType listing_type = 10;
   // Search text for full-text search.
   optional string search_text = 11;
-  // Loads multiple events by their event instances' Post IDs -- returns one
+  // Loads multiple events by their event instances' Post IDs - returns one
   // Event per matching EventInstance (see GetEventsResponse's own doc), not
   // the requested EventInstance's whole parent Event's full instance list.
   repeated string event_instance_post_ids = 12;
@@ -121,16 +121,15 @@ message GetEventsResponse {
 // (Eventually, Rellm Events should also support ticketing.)
 message Event {
   // The Post containing the underlying data for the event (title, content, moderation, visibility, etc.). Its [`PostContext`](#rellm-PostContext) should be `EVENT`.
-  // An `Event`'s ID *is* its `post.id` -- there is no separate surrogate ID.
+  // An `Event`'s ID *is* its `post.id` - there is no separate surrogate ID.
   Post post = 2;
   // Event configuration like whether to allow (anonymous) RSVPs, etc.
   EventInfo info = 3;
   // A list of instances for the Event. *Events will only include all instances if the request is for a single event.*
   repeated EventInstance instances = 4;
 
-  // If the event was synced from a source (meaning only its media should not be editable),
-  // this is the source it was synced from.
-  optional SyncSource sync_source = 5;
+  reserved 5;
+  reserved "sync_source"; // Moved to `post.sync_source` - see posts.proto's `Post.sync_source`.
 }
 
 // Syncs (cross-posts) a single EventInstance to one SyncDestination.
@@ -141,7 +140,7 @@ message SyncEventInstanceRequest {
   string sync_destination_id = 2;
 }
 
-// Removes a single EventInstance's sync (cross-post) to one SyncDestination -- the reverse of [`SyncEventInstance`](#grpc-api-SyncEventInstance).
+// Removes a single EventInstance's sync (cross-post) to one SyncDestination - the reverse of [`SyncEventInstance`](#grpc-api-SyncEventInstance).
 // Does not delete the post already made on the destination (e.g. the Facebook Page post), only the local sync record.
 message DeleteEventInstanceSyncDestinationRequest {
   // The EventInstance to un-sync.
@@ -176,7 +175,7 @@ message EventInstance {
   // ID of the parent [`Event`](#rellm-Event) (i.e. the parent `Event.post.id`).
   string event_id = 2;
   // Optional [`Post`](#rellm-Post) containing alternate title/link/description for this particular instance. Its [`PostContext`](#rellm-PostContext) should be `EVENT_INSTANCE`.
-  // An `EventInstance`'s ID *is* its `post.id` -- there is no separate surrogate ID.
+  // An `EventInstance`'s ID *is* its `post.id` - there is no separate surrogate ID.
   Post post = 3;
   // Additional configuration for this instance of this [`EventInstance`](#rellm-EventInstance) beyond the [`EventInfo`](#rellm-EventInfo) in its parent [`Event`](#rellm-Event).
   EventInstanceInfo info = 4;
@@ -186,8 +185,8 @@ message EventInstance {
   google.protobuf.Timestamp ends_at = 6;
   // The location of the event.
   optional Location location = 7;
-  // The "iCal ID" (or external ID) of this instance, if its [`Event`](#rellm-Event) was synced from a [`SyncSource`](#rellm-SyncSource).
-  optional string sync_source_instance_id = 8;
+  reserved 8;
+  reserved "sync_source_instance_id"; // Moved to `post.sync_source` - see posts.proto's `Post.sync_source`.
   // The time since this event "disappeared" from the sync source.
   // It is up to the owner whether this means it should be deleted.
   optional google.protobuf.Timestamp sync_missing_since = 9;

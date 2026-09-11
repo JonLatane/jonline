@@ -27,7 +27,7 @@ export const protobufPackage = "rellm";
  */
 export enum ClusterResource {
   /**
-   * CLUSTER_RESOURCE_BROWSER - The ability to launch a headless Chrome/Brave browser -- see `ClusterResources`'s own doc for
+   * CLUSTER_RESOURCE_BROWSER - The ability to launch a headless Chrome/Brave browser - see `ClusterResources`'s own doc for
    * why more than one running at once across a cluster's instances can be a problem.
    */
   CLUSTER_RESOURCE_BROWSER = 0,
@@ -320,6 +320,39 @@ export function navigationTabToJSON(object: NavigationTab): string {
   }
 }
 
+export enum VerificationAPI {
+  VERIFICATION_API_TWILIO = 0,
+  VERIFICATION_API_BIRD = 1,
+  UNRECOGNIZED = -1,
+}
+
+export function verificationAPIFromJSON(object: any): VerificationAPI {
+  switch (object) {
+    case 0:
+    case "VERIFICATION_API_TWILIO":
+      return VerificationAPI.VERIFICATION_API_TWILIO;
+    case 1:
+    case "VERIFICATION_API_BIRD":
+      return VerificationAPI.VERIFICATION_API_BIRD;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return VerificationAPI.UNRECOGNIZED;
+  }
+}
+
+export function verificationAPIToJSON(object: VerificationAPI): string {
+  switch (object) {
+    case VerificationAPI.VERIFICATION_API_TWILIO:
+      return "VERIFICATION_API_TWILIO";
+    case VerificationAPI.VERIFICATION_API_BIRD:
+      return "VERIFICATION_API_BIRD";
+    case VerificationAPI.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
 /** Configuration for a Rellm server instance. */
 export interface ServerConfiguration {
   /** The name, description, logo, color scheme, etc. of the server. */
@@ -408,7 +441,7 @@ export interface ServerConfiguration {
     | ExternalCDNConfig
     | undefined;
   /**
-   * Cluster-internal coordination state -- see `ClusterResources`'s own doc. Visible to any
+   * Cluster-internal coordination state - see `ClusterResources`'s own doc. Visible to any
    * logged-in admin (unlike most fields here, this describes infrastructure topology rather than
    * anything end users need, so it's stripped entirely from
    * [`GetServerConfiguration`](#grpc-api-GetServerConfiguration) for non-admins/anonymous
@@ -426,7 +459,33 @@ export interface ServerConfiguration {
    */
   authenticationFeatures: AuthenticationFeature[];
   /** Web Push (VAPID) configuration for the server. */
-  webPushConfig?: WebPushConfig | undefined;
+  webPushConfig?:
+    | WebPushConfig
+    | undefined;
+  /**
+   * A server-preferred order of contact verification APIs.
+   * Note: even if this is blank, if twilio_config is enabled, the server should try
+   * to verify with Twilio. It's really only for the case of wanting to switch between multiple
+   * SMS/Email providers.
+   * Only serialized for admin users.
+   */
+  preferredVerificationApis: VerificationAPI[];
+  /**
+   * Derived from whether TwilioConfig.enabled is true, etc. Serialized to every caller (not
+   * admin-only, unlike `preferred_verification_apis`/`twilio_config`) -- this is what a non-admin
+   * client should check to decide whether to show verification UI at all, without exposing any
+   * provider configuration.
+   */
+  availableVerificationApis: VerificationAPI[];
+  /** Twilio Config. Only serialized for admin users. */
+  twilioConfig?:
+    | TwilioConfig
+    | undefined;
+  /**
+   * Bird (bird.com, formerly MessageBird) Config -- a cheaper Twilio alternative for SMS
+   * verification. Only serialized for admin users.
+   */
+  birdConfig?: BirdConfig | undefined;
 }
 
 /**
@@ -440,45 +499,45 @@ export interface ServerConfiguration {
  * `conductor_host`) and brokers locks via
  * [`LockClusterResources`](#grpc-api-LockClusterResources)/
  * [`FreeClusterResources`](#grpc-api-FreeClusterResources); every instance in the cluster --
- * including the conductor itself -- sets its own `ClusterResources` pointing at whichever host
+ * including the conductor itself - sets its own `ClusterResources` pointing at whichever host
  * that is.
  *
  * See `ServerConfiguration.cluster_resources`'s own doc for who can see/edit this.
  */
 export interface ClusterResources {
   /**
-   * Identifies this instance to the conductor -- e.g. its Kubernetes namespace. Passed as
+   * Identifies this instance to the conductor - e.g. its Kubernetes namespace. Passed as
    * `LockClusterResourcesRequest.namespace_id`/`FreeClusterResourcesRequest.namespace_id` so the
    * conductor knows who's asking, and echoed back as `ClusterResourceLock.lock_holder_namespace_id`
-   * while this instance holds a lock. By convention (not enforced -- see `cluster_shared_secret`'s
+   * while this instance holds a lock. By convention (not enforced - see `cluster_shared_secret`'s
    * own doc), the conductor sets its own `namespace_id` equal to its own `conductor_host`; clients
    * (e.g. the Elm `ClusterTab`) use that convention purely for display, to tell "this instance is
    * the conductor" from "some other instance is."
    */
   namespaceId: string;
   /**
-   * DNS hostname of whichever instance in the cluster is the "conductor" -- the single instance
+   * DNS hostname of whichever instance in the cluster is the "conductor" - the single instance
    * that actually brokers [`LockClusterResources`](#grpc-api-LockClusterResources)/
    * [`FreeClusterResources`](#grpc-api-FreeClusterResources) calls for every other instance
-   * (including, by convention, itself -- see `conductor_state`). Every instance in the cluster
+   * (including, by convention, itself - see `conductor_state`). Every instance in the cluster
    * points this at the same host.
    *
    * Note: callers should resolve this the same way any other cross-server Rellm call does --
    * via [`GET {conductor_host}/backend_host`](#http-based-client-host-negotiation-for-external-cdns-get-backend_host)
-   * first, falling back to `conductor_host` itself -- rather than connecting to it directly, in
+   * first, falling back to `conductor_host` itself - rather than connecting to it directly, in
    * case the conductor sits behind an [`ExternalCDNConfig`](#rellm-ExternalCDNConfig).
    */
   conductorHost: string;
   /**
    * Shared secret proving a `LockClusterResources`/`FreeClusterResources` caller is a legitimate
    * member of this cluster, passed as the `cluster-shared-secret` gRPC metadata header (not a
-   * request field -- there's no per-user auth involved in these calls at all, just this secret).
-   * The receiving server checks it against its own stored `cluster_shared_secret` -- that's the
+   * request field - there's no per-user auth involved in these calls at all, just this secret).
+   * The receiving server checks it against its own stored `cluster_shared_secret` - that's the
    * *entire* authorization check: knowing the secret is what makes a caller entitled to treat that
    * server as the conductor, regardless of what that server's own `namespace_id`/`conductor_host`
    * happen to say (see `namespace_id`'s own doc on that being a display-only convention). Write-only, like
    * [`FacebookAuthConfig.app_secret`](#rellm-FacebookAuthConfig)/
-   * [`WebPushConfig.private_vapid_key`](#rellm-WebPushConfig) -- `GetServerConfiguration` never
+   * [`WebPushConfig.private_vapid_key`](#rellm-WebPushConfig) - `GetServerConfiguration` never
    * sends the real value back to *any* client (not even an admin), and an empty incoming value on
    * `ConfigureServer` means "leave the stored secret alone," not "clear it." Should never be
    * transmitted over a non-TLS connection.
@@ -490,7 +549,7 @@ export interface ClusterResources {
    * in a correctly configured cluster, that's the one instance every participant points
    * `conductor_host` at (see that field's own doc), but nothing server-side enforces that; every
    * other instance simply never gets asked to hold this state. Reflects the database directly, updated in place by
-   * `LockClusterResources`/`FreeClusterResources` -- unlike the rest of `ServerConfiguration`,
+   * `LockClusterResources`/`FreeClusterResources` - unlike the rest of `ServerConfiguration`,
    * [`ConfigureServer`](#grpc-api-ConfigureServer) never lets a caller change this, and it isn't
    * versioned the way other `ConfigureServer` changes are.
    */
@@ -498,10 +557,10 @@ export interface ClusterResources {
 }
 
 /**
- * The conductor's live view of currently-held locks -- one `ClusterResourceLock` per distinct
- * holder (a given namespace can appear at most once here -- `LockClusterResources` never grants a
+ * The conductor's live view of currently-held locks - one `ClusterResourceLock` per distinct
+ * holder (a given namespace can appear at most once here - `LockClusterResources` never grants a
  * `ClusterResource` it's already granted that same `namespace_id`, and folds any additional
- * resources into that namespace's existing entry rather than creating a second one -- see that
+ * resources into that namespace's existing entry rather than creating a second one - see that
  * RPC's own doc). With a `limits` entry above `1` (see `ClusterResourceLimit`'s own doc), more than
  * one distinct namespace can hold the *same* `ClusterResource` at once, so there can be more
  * entries here than there are `ClusterResource` values.
@@ -515,10 +574,10 @@ export interface ClusterConductorState {
    */
   locks: ClusterResourceLock[];
   /**
-   * How many distinct namespaces may concurrently hold each `ClusterResource`'s lock -- e.g. only
+   * How many distinct namespaces may concurrently hold each `ClusterResource`'s lock - e.g. only
    * one headless browser at a time, but a handful of `ffmpeg`/ImageMagick conversions in parallel
    * across the cluster, since those are far lighter-weight. Any `ClusterResource` not present here
-   * -- including on a cluster that's never had `ConfigureServer` touch `limits` at all -- defaults
+   * - including on a cluster that's never had `ConfigureServer` touch `limits` at all - defaults
    * to `1` (see `ClusterTab.elm`'s matching client-side default, shown/edited there as "Browser
    * Instance Limit"/"FFMPEG Process Limit"/"ImageMagick Process Limit"). These are changed by
    * `ConfigureServer` (gated on `EDIT_CLUSTER_SETTINGS`, like the rest of `cluster_resources`) and
@@ -529,9 +588,9 @@ export interface ClusterConductorState {
 
 /**
  * One namespace's currently-held lock on one or more `ClusterResource`s, and when it acquired
- * them -- shown in `ClusterTab`'s Elm UI so an admin can tell a genuinely stuck lock (acquired
+ * them - shown in `ClusterTab`'s Elm UI so an admin can tell a genuinely stuck lock (acquired
  * long ago, its holder's job surely long dead) from one just in normal, brief use, and reach for
- * `free_all_cluster_resources` (a `bin/` admin tool -- see its own doc) accordingly.
+ * `free_all_cluster_resources` (a `bin/` admin tool - see its own doc) accordingly.
  */
 export interface ClusterResourceLock {
   /** The `namespace_id` (see `ClusterResources.namespace_id`) holding this lock. */
@@ -543,7 +602,7 @@ export interface ClusterResourceLock {
 }
 
 /**
- * One `ClusterResource`'s configured concurrency limit -- a single `resource`/`limit` pairing per
+ * One `ClusterResource`'s configured concurrency limit - a single `resource`/`limit` pairing per
  * message (both fields are singleton lists in practice; see `ClusterConductorState.limits`'s own
  * doc for why a `ClusterResource` missing from every `ClusterResourceLimit` here defaults to `1`
  * rather than `0`).
@@ -558,7 +617,7 @@ export interface ClusterResourceLimit {
 export interface LockClusterResourcesRequest {
   /** This instance's own `ClusterResources.namespace_id`. */
   namespaceId: string;
-  /** Which resources to lock -- see the `ClusterResource` enum for what exists. */
+  /** Which resources to lock - see the `ClusterResource` enum for what exists. */
   resources: ClusterResource[];
 }
 
@@ -566,7 +625,7 @@ export interface LockClusterResourcesRequest {
 export interface LockClusterResourcesResponse {
   /**
    * Whether every requested resource was successfully locked for `namespace_id`. `false` means
-   * none were locked (never a partial grant) -- at least one of them is already held, by
+   * none were locked (never a partial grant) - at least one of them is already held, by
    * namespaces other than this one, by as many distinct holders as its configured
    * `ClusterResourceLimit` allows (see that message's own doc); see `holder`. There's no
    * server-side wait/queueing: a caller that gets `false` should back off and call
@@ -583,12 +642,12 @@ export interface LockClusterResourcesResponse {
 /**
  * Releases resources this `namespace_id` previously locked via
  * [`LockClusterResources`](#grpc-api-LockClusterResources). A no-op (not an error) for any
- * resource `namespace_id` doesn't currently hold -- e.g. safe to call unconditionally during
+ * resource `namespace_id` doesn't currently hold - e.g. safe to call unconditionally during
  * cleanup even if the matching lock attempt itself failed or was never confirmed.
  */
 export interface FreeClusterResourcesRequest {
   /**
-   * This instance's own `ClusterResources.namespace_id` -- must match whichever `namespace_id`
+   * This instance's own `ClusterResources.namespace_id` - must match whichever `namespace_id`
    * is recorded as the current holder for a resource to actually be released.
    */
   namespaceId: string;
@@ -860,7 +919,7 @@ export interface CustomNavigationTabSet {
   /**
    * Overrides the default tab set (`EVENTS_TAB`, `POSTS_TAB`, `PEOPLE_TAB`, `ABOUT_TAB`) entirely.
    * Note: existing `/events`, `/posts`, `/people`, and `/about` paths are reserved for their
-   * matching predefined tab -- see [`CustomNavigationTab`](#rellm-CustomNavigationTab).path's own doc.
+   * matching predefined tab - see [`CustomNavigationTab`](#rellm-CustomNavigationTab).path's own doc.
    * `/` itself is overridden via `home` above instead.
    */
   tabs: CustomNavigationTab[];
@@ -874,7 +933,7 @@ export interface CustomNavigationTabSet {
 export interface CustomHomePage {
   /**
    * What `/` renders. Only `HOME_TAB` (the default, combined Events+Posts feed), `EVENTS_TAB`,
-   * or `POSTS_TAB` are valid here -- never `PEOPLE_TAB`/`ABOUT_TAB`.
+   * or `POSTS_TAB` are valid here - never `PEOPLE_TAB`/`ABOUT_TAB`.
    */
   tab?:
     | NavigationTab
@@ -898,8 +957,8 @@ export interface CustomHomePage {
    */
   showEventsStrip: boolean;
   /**
-   * Whenever an Events strip is shown above other content -- `show_events_strip` is set, or
-   * `target` is unset/`HOME_TAB` (whose strip is always shown) -- whether it defaults to its
+   * Whenever an Events strip is shown above other content - `show_events_strip` is set, or
+   * `target` is unset/`HOME_TAB` (whose strip is always shown) - whether it defaults to its
    * row/list layout instead of a calendar. Unset defaults to the calendar layout.
    */
   defaultEventsStripToRow: boolean;
@@ -911,7 +970,7 @@ export interface CustomHomePage {
   defaultEventsStripCalendarDisplayMode: CalendarDisplayMode;
 }
 
-/** Either one of the app's predefined tabs, a Post, or a user profile -- reachable at `path`. */
+/** Either one of the app's predefined tabs, a Post, or a user profile - reachable at `path`. */
 export interface CustomNavigationTab {
   /** Links to one of the app's predefined tabs/pages. */
   tab?:
@@ -922,7 +981,7 @@ export interface CustomNavigationTab {
     | string
     | undefined;
   /**
-   * Indicates the custom tab is for an actual user profile -- `path` is that user's username.
+   * Indicates the custom tab is for an actual user profile - `path` is that user's username.
    * Ultimately this isn't very "custom" in terms of the URL scheme, just it being a navigation tab.
    */
   isProfile?:
@@ -945,7 +1004,7 @@ export interface CustomNavigationTab {
    * or `weddings` for a Post about wedding offerings. Must be distinct across every entry in
    * `CustomNavigationTabSet.tabs`. Note: `events`, `posts`, `people`, and `about` are reserved --
    * each may only be used to (redundantly) point back at its own matching predefined tab, never
-   * remapped to a different tab or a Post. `/` itself is never reachable this way -- it's
+   * remapped to a different tab or a Post. `/` itself is never reachable this way - it's
    * overridden via `CustomNavigationTabSet.home` instead.
    */
   path: string;
@@ -984,6 +1043,36 @@ export interface WebPushConfig {
   privateVapidKey: string;
 }
 
+export interface TwilioConfig {
+  twilioEnabled: boolean;
+  /** The Twilio Account SID. Public (among admins) -- freely serialized. */
+  twilioAccountSid: string;
+  /** The Twilio Auth Token. Never serialized once written. */
+  twilioApiKey: string;
+  /** The Twilio-provisioned sending number for outbound verification SMS. Not secret. */
+  twilioFromNumber: string;
+}
+
+/**
+ * Bird (https://bird.com, formerly MessageBird) Config -- an alternative SMS verification
+ * provider to Twilio, with a simpler single-API-key auth model.
+ */
+export interface BirdConfig {
+  birdEnabled: boolean;
+  /** The Bird workspace's API access key. Never serialized once written. */
+  birdAccessKey: string;
+  /**
+   * The originator for outbound verification SMS -- an owned number, alphanumeric sender ID
+   * (3-11 chars), or short code, as configured in the Bird workspace. Not secret.
+   */
+  birdFrom: string;
+  /**
+   * Which Bird API region to call ("us1" or "eu1", per Bird's own regional API hosts). Not
+   * secret. Empty defaults to "us1".
+   */
+  birdRegion: string;
+}
+
 function createBaseServerConfiguration(): ServerConfiguration {
   return {
     serverInfo: undefined,
@@ -1002,6 +1091,10 @@ function createBaseServerConfiguration(): ServerConfiguration {
     privateUserStrategy: 0,
     authenticationFeatures: [],
     webPushConfig: undefined,
+    preferredVerificationApis: [],
+    availableVerificationApis: [],
+    twilioConfig: undefined,
+    birdConfig: undefined,
   };
 }
 
@@ -1062,6 +1155,22 @@ export const ServerConfiguration: MessageFns<ServerConfiguration> = {
     writer.join();
     if (message.webPushConfig !== undefined) {
       WebPushConfig.encode(message.webPushConfig, writer.uint32(882).fork()).join();
+    }
+    writer.uint32(962).fork();
+    for (const v of message.preferredVerificationApis) {
+      writer.int32(v);
+    }
+    writer.join();
+    writer.uint32(970).fork();
+    for (const v of message.availableVerificationApis) {
+      writer.int32(v);
+    }
+    writer.join();
+    if (message.twilioConfig !== undefined) {
+      TwilioConfig.encode(message.twilioConfig, writer.uint32(978).fork()).join();
+    }
+    if (message.birdConfig !== undefined) {
+      BirdConfig.encode(message.birdConfig, writer.uint32(986).fork()).join();
     }
     return writer;
   },
@@ -1241,6 +1350,58 @@ export const ServerConfiguration: MessageFns<ServerConfiguration> = {
           message.webPushConfig = WebPushConfig.decode(reader, reader.uint32());
           continue;
         }
+        case 120: {
+          if (tag === 960) {
+            message.preferredVerificationApis.push(reader.int32() as any);
+
+            continue;
+          }
+
+          if (tag === 962) {
+            const end2 = reader.uint32() + reader.pos;
+            while (reader.pos < end2) {
+              message.preferredVerificationApis.push(reader.int32() as any);
+            }
+
+            continue;
+          }
+
+          break;
+        }
+        case 121: {
+          if (tag === 968) {
+            message.availableVerificationApis.push(reader.int32() as any);
+
+            continue;
+          }
+
+          if (tag === 970) {
+            const end2 = reader.uint32() + reader.pos;
+            while (reader.pos < end2) {
+              message.availableVerificationApis.push(reader.int32() as any);
+            }
+
+            continue;
+          }
+
+          break;
+        }
+        case 122: {
+          if (tag !== 978) {
+            break;
+          }
+
+          message.twilioConfig = TwilioConfig.decode(reader, reader.uint32());
+          continue;
+        }
+        case 123: {
+          if (tag !== 986) {
+            break;
+          }
+
+          message.birdConfig = BirdConfig.decode(reader, reader.uint32());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1280,6 +1441,14 @@ export const ServerConfiguration: MessageFns<ServerConfiguration> = {
         ? object.authenticationFeatures.map((e: any) => authenticationFeatureFromJSON(e))
         : [],
       webPushConfig: isSet(object.webPushConfig) ? WebPushConfig.fromJSON(object.webPushConfig) : undefined,
+      preferredVerificationApis: globalThis.Array.isArray(object?.preferredVerificationApis)
+        ? object.preferredVerificationApis.map((e: any) => verificationAPIFromJSON(e))
+        : [],
+      availableVerificationApis: globalThis.Array.isArray(object?.availableVerificationApis)
+        ? object.availableVerificationApis.map((e: any) => verificationAPIFromJSON(e))
+        : [],
+      twilioConfig: isSet(object.twilioConfig) ? TwilioConfig.fromJSON(object.twilioConfig) : undefined,
+      birdConfig: isSet(object.birdConfig) ? BirdConfig.fromJSON(object.birdConfig) : undefined,
     };
   },
 
@@ -1333,6 +1502,18 @@ export const ServerConfiguration: MessageFns<ServerConfiguration> = {
     if (message.webPushConfig !== undefined) {
       obj.webPushConfig = WebPushConfig.toJSON(message.webPushConfig);
     }
+    if (message.preferredVerificationApis?.length) {
+      obj.preferredVerificationApis = message.preferredVerificationApis.map((e) => verificationAPIToJSON(e));
+    }
+    if (message.availableVerificationApis?.length) {
+      obj.availableVerificationApis = message.availableVerificationApis.map((e) => verificationAPIToJSON(e));
+    }
+    if (message.twilioConfig !== undefined) {
+      obj.twilioConfig = TwilioConfig.toJSON(message.twilioConfig);
+    }
+    if (message.birdConfig !== undefined) {
+      obj.birdConfig = BirdConfig.toJSON(message.birdConfig);
+    }
     return obj;
   },
 
@@ -1378,6 +1559,14 @@ export const ServerConfiguration: MessageFns<ServerConfiguration> = {
     message.authenticationFeatures = object.authenticationFeatures?.map((e) => e) || [];
     message.webPushConfig = (object.webPushConfig !== undefined && object.webPushConfig !== null)
       ? WebPushConfig.fromPartial(object.webPushConfig)
+      : undefined;
+    message.preferredVerificationApis = object.preferredVerificationApis?.map((e) => e) || [];
+    message.availableVerificationApis = object.availableVerificationApis?.map((e) => e) || [];
+    message.twilioConfig = (object.twilioConfig !== undefined && object.twilioConfig !== null)
+      ? TwilioConfig.fromPartial(object.twilioConfig)
+      : undefined;
+    message.birdConfig = (object.birdConfig !== undefined && object.birdConfig !== null)
+      ? BirdConfig.fromPartial(object.birdConfig)
       : undefined;
     return message;
   },
@@ -3662,6 +3851,222 @@ export const WebPushConfig: MessageFns<WebPushConfig> = {
     const message = createBaseWebPushConfig();
     message.publicVapidKey = object.publicVapidKey ?? "";
     message.privateVapidKey = object.privateVapidKey ?? "";
+    return message;
+  },
+};
+
+function createBaseTwilioConfig(): TwilioConfig {
+  return { twilioEnabled: false, twilioAccountSid: "", twilioApiKey: "", twilioFromNumber: "" };
+}
+
+export const TwilioConfig: MessageFns<TwilioConfig> = {
+  encode(message: TwilioConfig, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.twilioEnabled !== false) {
+      writer.uint32(8).bool(message.twilioEnabled);
+    }
+    if (message.twilioAccountSid !== "") {
+      writer.uint32(26).string(message.twilioAccountSid);
+    }
+    if (message.twilioApiKey !== "") {
+      writer.uint32(18).string(message.twilioApiKey);
+    }
+    if (message.twilioFromNumber !== "") {
+      writer.uint32(34).string(message.twilioFromNumber);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): TwilioConfig {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseTwilioConfig();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.twilioEnabled = reader.bool();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.twilioAccountSid = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.twilioApiKey = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.twilioFromNumber = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): TwilioConfig {
+    return {
+      twilioEnabled: isSet(object.twilioEnabled) ? globalThis.Boolean(object.twilioEnabled) : false,
+      twilioAccountSid: isSet(object.twilioAccountSid) ? globalThis.String(object.twilioAccountSid) : "",
+      twilioApiKey: isSet(object.twilioApiKey) ? globalThis.String(object.twilioApiKey) : "",
+      twilioFromNumber: isSet(object.twilioFromNumber) ? globalThis.String(object.twilioFromNumber) : "",
+    };
+  },
+
+  toJSON(message: TwilioConfig): unknown {
+    const obj: any = {};
+    if (message.twilioEnabled !== false) {
+      obj.twilioEnabled = message.twilioEnabled;
+    }
+    if (message.twilioAccountSid !== "") {
+      obj.twilioAccountSid = message.twilioAccountSid;
+    }
+    if (message.twilioApiKey !== "") {
+      obj.twilioApiKey = message.twilioApiKey;
+    }
+    if (message.twilioFromNumber !== "") {
+      obj.twilioFromNumber = message.twilioFromNumber;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<TwilioConfig>, I>>(base?: I): TwilioConfig {
+    return TwilioConfig.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<TwilioConfig>, I>>(object: I): TwilioConfig {
+    const message = createBaseTwilioConfig();
+    message.twilioEnabled = object.twilioEnabled ?? false;
+    message.twilioAccountSid = object.twilioAccountSid ?? "";
+    message.twilioApiKey = object.twilioApiKey ?? "";
+    message.twilioFromNumber = object.twilioFromNumber ?? "";
+    return message;
+  },
+};
+
+function createBaseBirdConfig(): BirdConfig {
+  return { birdEnabled: false, birdAccessKey: "", birdFrom: "", birdRegion: "" };
+}
+
+export const BirdConfig: MessageFns<BirdConfig> = {
+  encode(message: BirdConfig, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.birdEnabled !== false) {
+      writer.uint32(8).bool(message.birdEnabled);
+    }
+    if (message.birdAccessKey !== "") {
+      writer.uint32(18).string(message.birdAccessKey);
+    }
+    if (message.birdFrom !== "") {
+      writer.uint32(26).string(message.birdFrom);
+    }
+    if (message.birdRegion !== "") {
+      writer.uint32(34).string(message.birdRegion);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): BirdConfig {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseBirdConfig();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.birdEnabled = reader.bool();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.birdAccessKey = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.birdFrom = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.birdRegion = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): BirdConfig {
+    return {
+      birdEnabled: isSet(object.birdEnabled) ? globalThis.Boolean(object.birdEnabled) : false,
+      birdAccessKey: isSet(object.birdAccessKey) ? globalThis.String(object.birdAccessKey) : "",
+      birdFrom: isSet(object.birdFrom) ? globalThis.String(object.birdFrom) : "",
+      birdRegion: isSet(object.birdRegion) ? globalThis.String(object.birdRegion) : "",
+    };
+  },
+
+  toJSON(message: BirdConfig): unknown {
+    const obj: any = {};
+    if (message.birdEnabled !== false) {
+      obj.birdEnabled = message.birdEnabled;
+    }
+    if (message.birdAccessKey !== "") {
+      obj.birdAccessKey = message.birdAccessKey;
+    }
+    if (message.birdFrom !== "") {
+      obj.birdFrom = message.birdFrom;
+    }
+    if (message.birdRegion !== "") {
+      obj.birdRegion = message.birdRegion;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<BirdConfig>, I>>(base?: I): BirdConfig {
+    return BirdConfig.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<BirdConfig>, I>>(object: I): BirdConfig {
+    const message = createBaseBirdConfig();
+    message.birdEnabled = object.birdEnabled ?? false;
+    message.birdAccessKey = object.birdAccessKey ?? "";
+    message.birdFrom = object.birdFrom ?? "";
+    message.birdRegion = object.birdRegion ?? "";
     return message;
   },
 };

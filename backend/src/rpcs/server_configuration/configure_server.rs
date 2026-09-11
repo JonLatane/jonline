@@ -90,6 +90,58 @@ pub fn configure_server(
         );
     }
 
+    // `TwilioConfig.twilio_api_key` (the Auth Token) is write-only -- `to_proto` always blanks it
+    // before it reaches a client (see `ToProtoServerConfiguration`), so an empty incoming value
+    // means "leave whatever's already stored alone," not "clear it." Setting `twilio_config` to
+    // `None` entirely is the only way to actually clear a previously-stored config.
+    // `twilio_enabled`/`twilio_account_sid`/`twilio_from_number` pass through freely, no
+    // scrubbing needed.
+    if let Some(incoming_twilio_config) = request
+        .twilio_config
+        .as_ref()
+        .filter(|c| c.twilio_api_key.is_empty())
+    {
+        let existing_api_key = get_server_configuration_model(conn)
+            .ok()
+            .and_then(|c| c.twilio_config)
+            .and_then(|c| serde_json::from_value::<protos::TwilioConfig>(c).ok())
+            .map(|c| c.twilio_api_key)
+            .unwrap_or_default();
+        new_config.twilio_config = Some(
+            serde_json::to_value(protos::TwilioConfig {
+                twilio_enabled: incoming_twilio_config.twilio_enabled,
+                twilio_account_sid: incoming_twilio_config.twilio_account_sid.clone(),
+                twilio_api_key: existing_api_key,
+                twilio_from_number: incoming_twilio_config.twilio_from_number.clone(),
+            })
+            .unwrap(),
+        );
+    }
+
+    // Same merge-on-blank treatment as `twilio_config` above, for `BirdConfig.bird_access_key`.
+    // `bird_enabled`/`bird_from`/`bird_region` pass through freely, no scrubbing needed.
+    if let Some(incoming_bird_config) = request
+        .bird_config
+        .as_ref()
+        .filter(|c| c.bird_access_key.is_empty())
+    {
+        let existing_access_key = get_server_configuration_model(conn)
+            .ok()
+            .and_then(|c| c.bird_config)
+            .and_then(|c| serde_json::from_value::<protos::BirdConfig>(c).ok())
+            .map(|c| c.bird_access_key)
+            .unwrap_or_default();
+        new_config.bird_config = Some(
+            serde_json::to_value(protos::BirdConfig {
+                bird_enabled: incoming_bird_config.bird_enabled,
+                bird_access_key: existing_access_key,
+                bird_from: incoming_bird_config.bird_from.clone(),
+                bird_region: incoming_bird_config.bird_region.clone(),
+            })
+            .unwrap(),
+        );
+    }
+
     // `cluster_resources` is admin-visible but only *editable* with `EDIT_CLUSTER_SETTINGS` (see
     // that permission's own doc). `conductor_state.locks` specifically is never settable via
     // `ConfigureServer` at all regardless of permission -- only `LockClusterResources`/

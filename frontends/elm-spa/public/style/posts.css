@@ -38,6 +38,21 @@
   text-overflow: ellipsis;
 }
 
+/* The static "Recent Posts"/"Recent Replies"/"Posts" heading an embedding page renders itself
+   (`Pages.Home_.heading`/`Components.Pages.UserProfilePage.postsHeading`) alongside
+   `PostsPage.exportButtonView`, placed here rather than by `PostsPage.view` itself since these
+   two callers pass `showSearchRow = False` -- see that function's own doc. `justify-content:
+   space-between` keeps the button pinned to the row's right edge with nothing else in the row;
+   `flex-wrap: wrap` (mirroring `.filter-controls-row`'s own) lets the button drop to its own
+   line below the heading on a narrow enough screen rather than the two fighting over space. */
+.posts-embedded-heading-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+}
+
 /* The "Recent Posts"/"Posts Before <date>" tabs (see
    Components/Pages/PostsPage.elm's `recentPostsTabsView`), replacing the
    standalone Posts page's old static heading, and the search box (see
@@ -52,6 +67,78 @@
    Posts-specific. */
 .posts-search-context {
   flex-shrink: 0;
+}
+
+/* `PostsPage.exportButtonView`'s popover -- mirrors `events.css`'s
+   `.events-export-popover*` rules exactly, just offering two links/copy buttons (RSS and Atom)
+   instead of one (ICS), via `.posts-export-popover-links` (stacked) and
+   `.posts-export-popover-copy-row` (the two "Copy X Link" buttons side by side). Reuses
+   `ui/popover.css`'s generic `.popover-anchor`/`.popover-toggle`/`.popover`/`.popover-backdrop`
+   directly, same as `.events-export`. */
+.posts-export-popover {
+  width: max(16rem, 100%);
+  max-width: 22rem;
+}
+
+.posts-export-popover p {
+  font-size: 0.8rem;
+  padding: 0;
+  margin: 4px;
+}
+
+.posts-export-popover-heading {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.posts-export-popover-links {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin-bottom: 0.4rem;
+}
+
+.posts-export-popover-link {
+  overflow-wrap: break-word;
+  font-size: 0.85rem;
+}
+
+.posts-export-popover-copy-row {
+  display: flex;
+  gap: 0.4rem;
+}
+
+/* Each button always takes exactly half the row (`flex: 1 1 50%`, `min-width: 0` so it can
+   still shrink below its content's natural width) and a shared `min-height` sized for two
+   wrapped lines -- without these, the two buttons auto-size to their own text ("Copy RSS Link"
+   vs. "Copied!" are different lengths), so clicking one visibly resizes/reflows both instead of
+   just swapping its label in place. `min-height` (not `height`) is what keeps both buttons the
+   same height in the common one-line case while still growing gracefully if either label wraps
+   to a second line -- fixed-size icon (`.posts-export-popover-copy-icon`, `flex-shrink: 0`) on
+   the left, wrappable label (`.posts-export-popover-copy-label`) to its right, `align-items:
+   center` keeping the icon vertically centered against however many lines the label wraps to. */
+.posts-export-popover-copy {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  flex: 1 1 50%;
+  min-width: 0;
+  min-height: 2.6rem;
+  padding: 0.3rem 0.8rem;
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.posts-export-popover-copy-icon {
+  flex-shrink: 0;
+  transform: translate(0, -1.5px) scale(2);
+}
+
+.posts-export-popover-copy-label {
+  font-size: 0.75rem;
+  text-align: left;
 }
 
 .posts-empty {

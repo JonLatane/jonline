@@ -32,7 +32,7 @@ fn exchange_code_for_token_returns_the_token_pair() {
         "test-client-secret",
         "test-code",
         "test-verifier",
-        "https://example.com/facebook-callback.html",
+        "https://example.com/oauth-callback.html",
     )
     .expect("code exchange should succeed");
     assert_eq!(access_token, "x-access-token");
@@ -50,7 +50,7 @@ fn exchange_code_for_token_fails_for_an_invalid_code() {
         "test-client-secret",
         "bad-code",
         "test-verifier",
-        "https://example.com/facebook-callback.html",
+        "https://example.com/oauth-callback.html",
     )
     .unwrap_err();
     assert_eq!(err.code(), Code::FailedPrecondition);

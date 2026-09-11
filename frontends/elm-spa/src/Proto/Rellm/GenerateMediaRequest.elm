@@ -18,7 +18,7 @@ import Proto.Rellm.Internals_
 
 
 {-|  What, if anything, the generated image should be attached to (as the *first* item in its `media` list) once
- generated, and whose content gets folded into `user_prompt` as context -- see this message's own doc. Leave
+ generated, and whose content gets folded into `user_prompt` as context - see this message's own doc. Leave
  unset to just generate/store the image in the current user's own Media (as `MyMediaPanel` shows), without
  attaching it to anything.
 
@@ -32,7 +32,7 @@ import Proto.Rellm.Internals_
 
 ### EventInstanceId
 
- Attach to (and use the content of) this EventInstance's parent Event's own Post -- named by
+ Attach to (and use the content of) this EventInstance's parent Event's own Post - named by
  EventInstance, not Event, since that's what a viewer is actually looking at (and what gives
  the generated prompt its date/time/location context, the same way
  [`SyncEventInstance`](#grpc-api-SyncEventInstance) does). Caller must be the Event's own

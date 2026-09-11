@@ -173,7 +173,7 @@ pub fn create_post(
             log::info!("Post created! PostID:{:?}", post.id);
             let author = models::get_author(user.id, conn)?;
             Ok(MarshalablePost(post, Some(author), None, None, vec![])
-                .to_proto(Some(&media_lookup), None))
+                .to_proto(Some(&media_lookup), None, None))
         }
         Err(e) => {
             log::error!("Error creating post! {:?}", e);

@@ -1,6 +1,14 @@
 mod update_user;
 pub use update_user::update_user;
 
+mod start_contact_method_verification;
+pub use start_contact_method_verification::{
+    start_contact_method_verification, start_contact_method_verification_at,
+};
+
+mod verify_contact_method;
+pub use verify_contact_method::verify_contact_method;
+
 mod delete_user;
 pub use delete_user::delete_user;
 

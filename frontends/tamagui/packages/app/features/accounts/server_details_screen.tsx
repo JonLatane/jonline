@@ -49,6 +49,8 @@ const configurableUserPermissions = [
   Permission.PUBLISH_EVENTS_LOCALLY,
   Permission.PUBLISH_EVENTS_GLOBALLY,
   Permission.SYNC_EVENTS_FROM_ICS,
+  Permission.SYNC_POSTS_FROM_RSS,
+  Permission.SYNC_POSTS_FROM_ATOM,
 ];
 
 export function BaseServerDetailsScreen(specificServer?: string) {

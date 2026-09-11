@@ -20,7 +20,7 @@ To run it, add a dependency via `elm install` on [`elm-protocol-buffers`](https:
 ### Tab
 
  What `/` renders. Only `HOME_TAB` (the default, combined Events+Posts feed), `EVENTS_TAB`,
- or `POSTS_TAB` are valid here -- never `PEOPLE_TAB`/`ABOUT_TAB`.
+ or `POSTS_TAB` are valid here - never `PEOPLE_TAB`/`ABOUT_TAB`.
 
 
 ### PostId

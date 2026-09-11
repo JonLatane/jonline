@@ -73,7 +73,7 @@ init shared req =
                 |> Tuple.mapSecond (Effect.map BlueskyUserMsg)
 
         Nothing ->
-            UserProfilePage.init shared (RellmServers.isSecure req) targetHost (Resolver.ById userId) req.key req.url.path req.query
+            UserProfilePage.init shared (RellmServers.isSecure req) targetHost (Resolver.ById userId) req.key req.url.path req.query req.url.fragment
                 |> Tuple.mapFirst RellmUser
                 |> Tuple.mapSecond (Effect.map RellmUserMsg)
 

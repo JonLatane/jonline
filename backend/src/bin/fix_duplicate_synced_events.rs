@@ -59,8 +59,12 @@ pub fn main() {
     log::info!("Repaired {} Event(s)' persisted UID key.", renamed);
 
     log::info!("Step 2: finding and collapsing duplicate synced Events...");
+    // `sync_source_id` moved from `events` to `posts` (2026-09-11-000000_move_sync_source_to_posts,
+    // after this tool was written) -- join through the Event's own Post to find it.
     let synced_events: Vec<Event> = events::table
-        .filter(events::sync_source_id.is_not_null())
+        .inner_join(posts::table.on(posts::id.eq(events::post_id)))
+        .filter(posts::sync_source_id.is_not_null())
+        .select(events::all_columns)
         .load(&mut conn)
         .expect("Failed to load synced Events");
 
@@ -138,22 +142,27 @@ fn collapse_duplicate_event(
     duplicate_event_id: i64,
     stats: &mut Stats,
 ) -> Result<(), DieselError> {
-    let keeper_instances: Vec<EventInstance> = event_instances::table
-        .select(EVENT_INSTANCE_COLUMNS)
+    // `sync_source_recurrence_anchor` moved from `event_instances` to `posts`
+    // (2026-09-11-000000_move_sync_source_to_posts, after this tool was written) -- join through
+    // each instance's own Post to find it.
+    let keeper_instances: Vec<(EventInstance, Option<std::time::SystemTime>)> = event_instances::table
+        .inner_join(posts::table.on(posts::id.eq(event_instances::post_id)))
+        .select((EVENT_INSTANCE_COLUMNS, posts::sync_source_recurrence_anchor))
         .filter(event_instances::event_id.eq(keeper_event_id))
         .load(conn)?;
     let mut keeper_by_anchor: HashMap<std::time::SystemTime, i64> = keeper_instances
         .into_iter()
-        .filter_map(|i| i.sync_source_recurrence_anchor.map(|anchor| (anchor, i.post_id)))
+        .filter_map(|(i, anchor)| anchor.map(|anchor| (anchor, i.post_id)))
         .collect();
 
-    let duplicate_instances: Vec<EventInstance> = event_instances::table
-        .select(EVENT_INSTANCE_COLUMNS)
+    let duplicate_instances: Vec<(EventInstance, Option<std::time::SystemTime>)> = event_instances::table
+        .inner_join(posts::table.on(posts::id.eq(event_instances::post_id)))
+        .select((EVENT_INSTANCE_COLUMNS, posts::sync_source_recurrence_anchor))
         .filter(event_instances::event_id.eq(duplicate_event_id))
         .load(conn)?;
 
-    for duplicate_instance in duplicate_instances {
-        let Some(anchor) = duplicate_instance.sync_source_recurrence_anchor else {
+    for (duplicate_instance, anchor) in duplicate_instances {
+        let Some(anchor) = anchor else {
             continue;
         };
         match keeper_by_anchor.get(&anchor) {

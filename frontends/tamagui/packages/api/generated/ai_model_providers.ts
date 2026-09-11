@@ -12,11 +12,11 @@ import { Timestamp } from "./google/protobuf/timestamp";
 export const protobufPackage = "rellm";
 
 /**
- * What an [`AvailableAIModel`](#rellm-AvailableAIModel) can actually do -- drives feature gating
+ * What an [`AvailableAIModel`](#rellm-AvailableAIModel) can actually do - drives feature gating
  * (e.g. [`GenerateMedia`](#grpc-api-GenerateMedia)'s "Generate Media…" buttons/panel only offer
  * models carrying `AI_MODEL_CAPABILITY_IMAGE_EDITING`/`AI_MODEL_CAPABILITY_IMAGE_GENERATION`)
  * without the gated feature needing its own hardcoded list of model names to check against. A
- * model may carry more than one -- e.g. an image-editing model can also usually do plain
+ * model may carry more than one - e.g. an image-editing model can also usually do plain
  * text-to-image generation.
  */
 export enum AIModelCapability {
@@ -25,7 +25,7 @@ export enum AIModelCapability {
   /** AI_MODEL_CAPABILITY_TEXT_GENERATION - The model can generate new text from a prompt. */
   AI_MODEL_CAPABILITY_TEXT_GENERATION = 1,
   /**
-   * AI_MODEL_CAPABILITY_IMAGE_GENERATION - The model can generate a new image from a text prompt alone -- what
+   * AI_MODEL_CAPABILITY_IMAGE_GENERATION - The model can generate a new image from a text prompt alone - what
    * [`GenerateMedia`](#grpc-api-GenerateMedia) requires when `GenerateMediaRequest.media_ids` is
    * empty (no reference images to edit with).
    */
@@ -34,7 +34,7 @@ export enum AIModelCapability {
    * AI_MODEL_CAPABILITY_IMAGE_EDITING - The model can edit an existing image, given a text prompt and one or more reference images --
    * what [`GenerateMedia`](#grpc-api-GenerateMedia) requires instead, whenever
    * `GenerateMediaRequest.media_ids` is non-empty. Not every model with
-   * `AI_MODEL_CAPABILITY_IMAGE_GENERATION` also has this -- some (e.g. the cheaper/faster
+   * `AI_MODEL_CAPABILITY_IMAGE_GENERATION` also has this - some (e.g. the cheaper/faster
    * `gemini-3.1-flash-lite-image` tier) only support plain generation.
    */
   AI_MODEL_CAPABILITY_IMAGE_EDITING = 3,
@@ -79,20 +79,20 @@ export function aIModelCapabilityToJSON(object: AIModelCapability): string {
 }
 
 /**
- * One specific model a user may call right now, and how -- via an [`AIModelProvider`](#rellm-AIModelProvider)
+ * One specific model a user may call right now, and how - via an [`AIModelProvider`](#rellm-AIModelProvider)
  * they own outright (`grant` unset), or via an [`AIModelProviderGrant`](#rellm-AIModelProviderGrant) someone else
- * granted them (`grant` set). Only ever defined relative to a user -- see
+ * granted them (`grant` set). Only ever defined relative to a user - see
  * [`User.available_ai_models`](#rellm-User)/[`GetAIModelProvidersResponse.available_ai_models`](#rellm-GetAIModelProvidersResponse).
  * One `AvailableAIModel` exists per (provider, model) pair: an owner gets one row per model their
  * provider supports (see the server's own model catalog per provider type); a grantee gets one row
- * per model their grant actually covers -- expanded from `AIModelProviderGrant.model_names`, or
+ * per model their grant actually covers - expanded from `AIModelProviderGrant.model_names`, or
  * every model the provider supports if that list is empty.
  */
 export interface AvailableAIModel {
   /** The exact model name to use when calling the provider (e.g. `"gemini-3.1-flash-image"`). */
   modelName: string;
   /**
-   * What this model can actually do -- from the server's own hardcoded catalog for
+   * What this model can actually do - from the server's own hardcoded catalog for
    * `provider.provider`'s variant (see [`AIModelCapability`](#rellm-AIModelCapability)), not
    * anything reported by the provider's API itself. Feature gating keys off this rather than
    * `model_name` directly, so e.g. [`GenerateMedia`](#grpc-api-GenerateMedia) (which needs
@@ -103,14 +103,14 @@ export interface AvailableAIModel {
   capabilities: AIModelCapability[];
   /**
    * The grant that allows this access, when the current user isn't `provider.owner` themselves.
-   * Unset when the current user owns `provider` outright (full, ungated access -- no grant needed).
+   * Unset when the current user owns `provider` outright (full, ungated access - no grant needed).
    */
   grant?:
     | AIModelProviderGrant
     | undefined;
   /**
    * The provider this model belongs to. Its own `grants` list is only populated when the current
-   * user is `provider.owner` (or an Admin) -- see [`GetAIModelProviders`](#grpc-api-GetAIModelProviders)'s own doc; a
+   * user is `provider.owner` (or an Admin) - see [`GetAIModelProviders`](#grpc-api-GetAIModelProviders)'s own doc; a
    * mere grantee never sees who else has been granted access to a provider they don't own.
    */
   provider: AIModelProvider | undefined;
@@ -118,15 +118,15 @@ export interface AvailableAIModel {
 
 /**
  * Request to generate (or edit) an image via one of the current user's
- * [`AvailableAIModel`](#rellm-AvailableAIModel)s -- see [`GenerateMedia`](#grpc-api-GenerateMedia). The resulting
- * image is stored as a new [`Media`](#rellm-Media) (`generated = true`) owned by the current user, and -- if
- * `target` is set -- prepended as the *first* item in that Post's (or Event's own Post's) `media` list.
+ * [`AvailableAIModel`](#rellm-AvailableAIModel)s - see [`GenerateMedia`](#grpc-api-GenerateMedia). The resulting
+ * image is stored as a new [`Media`](#rellm-Media) (`generated = true`) owned by the current user, and - if
+ * `target` is set - prepended as the *first* item in that Post's (or Event's own Post's) `media` list.
  */
 export interface GenerateMediaRequest {
   /**
-   * Which of the current user's `AvailableAIModel`s to generate with -- `model.model_name` selects the actual
+   * Which of the current user's `AvailableAIModel`s to generate with - `model.model_name` selects the actual
    * model, `model.provider.id` identifies whose `AIModelProvider` (the current user's own, or one they've been
-   * granted access to) to call it through. Only `model_name`/`provider.id` are read server-side -- any other field
+   * granted access to) to call it through. Only `model_name`/`provider.id` are read server-side - any other field
    * sent here (e.g. a spoofed `grant`) is ignored in favor of the caller's real access, re-derived from
    * `provider.id` and the current user.
    */
@@ -136,15 +136,15 @@ export interface GenerateMediaRequest {
   /**
    * The user-editable prompt describing what to generate, e.g. "Please generate a square headline poster for the
    * following event." Combined server-side with `target`'s own formatted content (title/description/date-time
-   * range/location -- the same formatting [`SyncDestination`](#rellm-SyncDestination)s use) before being sent to
+   * range/location - the same formatting [`SyncDestination`](#rellm-SyncDestination)s use) before being sent to
    * the model, so the user never has to paste that context in by hand.
    */
   userPrompt: string;
   /**
    * Existing [`Media`](#rellm-Media) to pass to the model alongside `user_prompt`, for image editing/
    * reference-based generation (e.g. a target Post/Event's own current photos), in the order given here. Leave
-   * empty for plain text-to-image generation instead -- `model` must have the matching capability either way
-   * (`AI_MODEL_CAPABILITY_IMAGE_EDITING` here, `AI_MODEL_CAPABILITY_IMAGE_GENERATION` if empty -- see
+   * empty for plain text-to-image generation instead - `model` must have the matching capability either way
+   * (`AI_MODEL_CAPABILITY_IMAGE_EDITING` here, `AI_MODEL_CAPABILITY_IMAGE_GENERATION` if empty - see
    * [`AIModelCapability`](#rellm-AIModelCapability)'s own doc). Every id must be owned by the current user (or
    * the current user must be an Admin).
    */
@@ -154,7 +154,7 @@ export interface GenerateMediaRequest {
     | string
     | undefined;
   /**
-   * Attach to (and use the content of) this EventInstance's parent Event's own Post -- named by
+   * Attach to (and use the content of) this EventInstance's parent Event's own Post - named by
    * EventInstance, not Event, since that's what a viewer is actually looking at (and what gives
    * the generated prompt its date/time/location context, the same way
    * [`SyncEventInstance`](#grpc-api-SyncEventInstance) does). Caller must be the Event's own
@@ -168,13 +168,13 @@ export interface GenerateMediaRequest {
  * key), which its owner can grant other users of this server metered, budgeted access to. Mirrors
  * [`SyncDestination`](#rellm-SyncDestination)/[`SyncSource`](#rellm-SyncSource) (also user-owned integrations
  * with an [`Author`](#rellm-Author) `owner` and a `oneof` naming which external system is configured), but where
- * those push/pull content, an AIModelProvider is metered *access* to a third-party LLM API -- shared out to
+ * those push/pull content, an AIModelProvider is metered *access* to a third-party LLM API - shared out to
  * other users via [`AIModelProviderGrant`](#rellm-AIModelProviderGrant)s rather than posted-to/subscribed-from.
  *
  * Providers are managed via [`GetAIModelProviders`](#grpc-api-GetAIModelProviders),
  * [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider) (requires `CREATE_AI_MODEL_PROVIDERS`, or Admin),
  * [`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider) (owner, or Admin for any user's), and
- * [`DeleteAIModelProvider`](#grpc-api-DeleteAIModelProvider) (owner, or Admin) -- the same self-or-Admin shape as
+ * [`DeleteAIModelProvider`](#grpc-api-DeleteAIModelProvider) (owner, or Admin) - the same self-or-Admin shape as
  * [`SyncDestination`](#rellm-SyncDestination)'s RPCs. Access to a provider is granted/revoked to other users via
  * [`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider)/[`RevokeAIModelProvider`](#grpc-api-RevokeAIModelProvider) which,
  * unlike every other RPC pair here, are **owner-only with no Admin override**: an Admin can manage the provider
@@ -183,7 +183,7 @@ export interface GenerateMediaRequest {
  *
  * [`GeminiCredentials`](#rellm-GeminiCredentials)/[`OpenAICredentials`](#rellm-OpenAICredentials)/
  * [`DigitalOceanCredentials`](#rellm-DigitalOceanCredentials) all have a working connection flow (Gemini's
- * Interactions API, OpenAI's Images API, DigitalOcean's Serverless Inference API -- the last of which is also
+ * Interactions API, OpenAI's Images API, DigitalOcean's Serverless Inference API - the last of which is also
  * OpenAI-Images-API-shaped, just a different base URL/key and generation-only, no editing endpoint);
  * [`AnthropicCredentials`](#rellm-AnthropicCredentials) is defined for forward compatibility but is not yet
  * accepted by [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider) (Anthropic doesn't offer image generation).
@@ -192,7 +192,7 @@ export interface AIModelProvider {
   /** Unique ID for the AIModelProvider. */
   id: string;
   /**
-   * The user information for the owner of this AIModelProvider -- the only user (besides Admins) who may
+   * The user information for the owner of this AIModelProvider - the only user (besides Admins) who may
    * rename it or change its credentials/provider, and the *only* user (not even Admins) who may grant/revoke other
    * users' access to it.
    */
@@ -201,7 +201,7 @@ export interface AIModelProvider {
     | undefined;
   /**
    * A display name for the provider, chosen by its owner (e.g. "My Gemini Key", "Team OpenAI Account"). Purely
-   * cosmetic -- has no effect on behavior.
+   * cosmetic - has no effect on behavior.
    */
   name: string;
   /**
@@ -218,13 +218,13 @@ export interface AIModelProvider {
   openaiCredentials?:
     | OpenAICredentials
     | undefined;
-  /** An [Anthropic API](https://docs.anthropic.com) connection. *Not yet creatable* -- Anthropic doesn't offer an image generation API. */
+  /** An [Anthropic API](https://docs.anthropic.com) connection. *Not yet creatable* - Anthropic doesn't offer an image generation API. */
   anthropicCredentials?:
     | AnthropicCredentials
     | undefined;
   /**
    * A [DigitalOcean Gradient AI Platform](https://docs.digitalocean.com/products/gradient-ai-platform/) /
-   * Serverless Inference connection, used for image generation (no editing -- DigitalOcean's
+   * Serverless Inference connection, used for image generation (no editing - DigitalOcean's
    * [Serverless Inference API](https://docs.digitalocean.com/products/gradient-ai-platform/reference/api/serverless-inference/)
    * has no `/v1/images/edits`-equivalent endpoint) via its OpenAI-Images-API-shaped
    * `/v1/images/generations` endpoint (GPT Image and Stable Diffusion models, re-hosted under DigitalOcean's own
@@ -251,7 +251,7 @@ export interface AIModelProvider {
  * A grant of metered access to someone else's [`AIModelProvider`](#rellm-AIModelProvider), created/reset via
  * [`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider) and removed via
  * [`RevokeAIModelProvider`](#grpc-api-RevokeAIModelProvider). Upserted on the unique
- * `(ai_model_provider_id, ai_model_grantee)` pair -- calling [`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider)
+ * `(ai_model_provider_id, ai_model_grantee)` pair - calling [`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider)
  * again for a user who already has a grant *resets* `tokens_remaining` to the newly-requested amount, it does not
  * add to it.
  */
@@ -277,11 +277,11 @@ export interface AIModelProviderGrant {
   tokensRemaining: number;
   /**
    * How far a single [`GenerateMedia`](#grpc-api-GenerateMedia) call's actual token usage overshot `tokens_remaining`
-   * the moment it hit 0 -- effectively a "negative `tokens_remaining`" (which, being `uint64`, can't represent a
+   * the moment it hit 0 - effectively a "negative `tokens_remaining`" (which, being `uint64`, can't represent a
    * negative value directly), recorded here instead as a positive debt for the owner's own visibility. E.g. a
    * grantee with 30 tokens left whose next call actually costs 45 ends up with `tokens_remaining = 0` and
    * `overage = 15`. Always 0 immediately after a fresh [`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider) call
-   * (any prior debt is cleared, not carried forward) -- see that RPC's own doc.
+   * (any prior debt is cleared, not carried forward) - see that RPC's own doc.
    */
   overage: number;
   /** The time the grant was first created. */
@@ -298,7 +298,7 @@ export interface AIModelProviderGrant {
 /** Response to a request for a user's [`AIModelProvider`](#rellm-AIModelProvider)s. */
 export interface GetAIModelProvidersResponse {
   /**
-   * The requested user's own AIModelProviders (those they own) -- exactly the distinct `provider`s
+   * The requested user's own AIModelProviders (those they own) - exactly the distinct `provider`s
    * in `available_ai_models` whose `owner` is the requested user, each with its own `grants`
    * populated (who else can use it). A convenience duplicate of data already in
    * `available_ai_models`, so callers managing a user's own providers (rename/rekey/delete/grant/
@@ -306,7 +306,7 @@ export interface GetAIModelProvidersResponse {
    */
   providers: AIModelProvider[];
   /**
-   * Every model the requested user may currently call -- their own providers' models, plus any
+   * Every model the requested user may currently call - their own providers' models, plus any
    * models granted to them on other users' providers. See [`AvailableAIModel`](#rellm-AvailableAIModel)'s own doc.
    */
   availableAiModels: AvailableAIModel[];
@@ -320,7 +320,7 @@ export interface DeleteAIModelProviderRequest {
 
 /**
  * Request to grant (or reset) another user's metered access to one of the current user's
- * [`AIModelProvider`](#rellm-AIModelProvider)s. *Authenticated, owner-only -- no Admin override.*
+ * [`AIModelProvider`](#rellm-AIModelProvider)s. *Authenticated, owner-only - no Admin override.*
  */
 export interface GrantAIModelProviderRequest {
   /** The user to grant access to. */
@@ -334,7 +334,7 @@ export interface GrantAIModelProviderRequest {
   tokens: number;
   /**
    * The models the grantee is allowed to use, mirroring [`AIModelProviderGrant.model_names`](#rellm-AIModelProviderGrant)
-   * -- if empty, allows access to any model the provider supports. Also replaced (not merged)
+   * - if empty, allows access to any model the provider supports. Also replaced (not merged)
    * on a repeat call, same as `tokens`.
    */
   modelNames: string[];
@@ -343,7 +343,7 @@ export interface GrantAIModelProviderRequest {
 /**
  * Request to revoke another user's access to one of the current user's
  * [`AIModelProvider`](#rellm-AIModelProvider)s, the reverse of
- * [`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider). *Authenticated, owner-only -- no Admin override.*
+ * [`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider). *Authenticated, owner-only - no Admin override.*
  */
 export interface RevokeAIModelProviderRequest {
   /** The user whose access should be revoked. */
@@ -353,11 +353,11 @@ export interface RevokeAIModelProviderRequest {
 }
 
 /**
- * Credentials for a [Google Gemini API](https://ai.google.dev/gemini-api) connection -- the only
+ * Credentials for a [Google Gemini API](https://ai.google.dev/gemini-api) connection - the only
  * [`AIModelProvider.provider`](#rellm-AIModelProvider) variant currently accepted by
  * [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider)/[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider).
  * Used for image generation/editing via Gemini's [Interactions API](https://ai.google.dev/gemini-api/docs/image-generation),
- * e.g. to generate/edit Event posters from an Event's own content -- see [`GenerateMedia`](#grpc-api-GenerateMedia).
+ * e.g. to generate/edit Event posters from an Event's own content - see [`GenerateMedia`](#grpc-api-GenerateMedia).
  */
 export interface GeminiCredentials {
   /**
@@ -373,7 +373,7 @@ export interface GeminiCredentials {
  * Credentials for an [OpenAI API](https://platform.openai.com/docs/api-reference) connection, accepted by
  * [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider)/[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider).
  * Used for image generation/editing via OpenAI's [Images API](https://platform.openai.com/docs/guides/image-generation)
- * (the GPT Image model family) -- same use case as [`GeminiCredentials`](#rellm-GeminiCredentials), see
+ * (the GPT Image model family) - same use case as [`GeminiCredentials`](#rellm-GeminiCredentials), see
  * [`GenerateMedia`](#grpc-api-GenerateMedia).
  */
 export interface OpenAICredentials {
@@ -389,7 +389,7 @@ export interface OpenAICredentials {
  * Credentials for a [DigitalOcean Gradient AI Platform](https://docs.digitalocean.com/products/gradient-ai-platform/) /
  * Serverless Inference connection, accepted by
  * [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider)/[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider).
- * Used for image *generation only* (no editing -- see `AIModelProvider.provider`'s own doc on this variant) via its
+ * Used for image *generation only* (no editing - see `AIModelProvider.provider`'s own doc on this variant) via its
  * [Serverless Inference API](https://docs.digitalocean.com/products/gradient-ai-platform/reference/api/serverless-inference/)
  * `/v1/images/generations` endpoint, OpenAI-Images-API-shaped and re-hosting GPT Image and Stable Diffusion models --
  * see [`GenerateMedia`](#grpc-api-GenerateMedia).
@@ -404,7 +404,7 @@ export interface DigitalOceanCredentials {
 }
 
 /**
- * Credentials for an [Anthropic API](https://docs.anthropic.com) connection. *Not yet creatable* -- defined for
+ * Credentials for an [Anthropic API](https://docs.anthropic.com) connection. *Not yet creatable* - defined for
  * forward compatibility only.
  */
 export interface AnthropicCredentials {

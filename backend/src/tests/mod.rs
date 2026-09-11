@@ -2,6 +2,7 @@ pub mod factories;
 
 mod bluesky_sync_tests;
 mod configure_server_tests;
+mod contact_method_verification_tests;
 mod create_post_tests;
 mod delete_event_attendance_tests;
 mod delete_event_tests;
@@ -14,6 +15,7 @@ mod event_instance_rpc_tests;
 mod sync_source_rpc_tests;
 mod event_sync_tests;
 mod facebook_sync_tests;
+mod feed_sync_tests;
 mod geocoding_tests;
 mod get_event_attendances_parity_tests;
 mod get_events_tests;

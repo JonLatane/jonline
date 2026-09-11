@@ -108,7 +108,7 @@ export interface Message {
     | string
     | undefined;
   /**
-   * Whether/when *this response's viewer* has read the message -- unset means unread. Always
+   * Whether/when *this response's viewer* has read the message - unset means unread. Always
    * reflects the currently-authenticated caller's own read status (via [`MarkMessagesRead`](#grpc-api-MarkMessagesRead)), even
    * when browsing `ALL_SYSTEM_MESSAGES(_TEXT_SEARCH)` as an admin: it's a personal "have I seen
    * this" marker, not tied to whichever user this response happens to be showing `messaging_group`
@@ -122,9 +122,9 @@ export interface Message {
 }
 
 /**
- * Records that a user has read a particular Message -- one row (conceptually; see the composite
+ * Records that a user has read a particular Message - one row (conceptually; see the composite
  * `message_id`/`user_id` key on the backing table) per (Message, user) that's ever been marked
- * read. Only ever surfaced back to the user it belongs to, as `Message.current_user_read` -- there's
+ * read. Only ever surfaced back to the user it belongs to, as `Message.current_user_read` - there's
  * no RPC to see *other* users' read status on a Message.
  */
 export interface MessageRead {
@@ -132,7 +132,7 @@ export interface MessageRead {
   userId: string;
   /**
    * When the message was marked read. Always set on a [`MessageRead`](#rellm-MessageRead) returned from [`MarkMessagesRead`](#grpc-api-MarkMessagesRead)
-   * -- including a `{ unread: true }` call, where it's simply the time of that unmark request, not
+   * - including a `{ unread: true }` call, where it's simply the time of that unmark request, not
    * a meaningful "last read" timestamp (there's no longer a row for it to come from at that point).
    */
   readAt: string | undefined;
@@ -140,26 +140,26 @@ export interface MessageRead {
 
 /**
  * Marks (or unmarks) one or more Messages as read by the calling user, e.g. every message in a
- * thread once it's been opened. *Authenticated* -- read status is inherently personal, so there's
+ * thread once it's been opened. *Authenticated* - read status is inherently personal, so there's
  * no anonymous variant the way [`SendMessage`](#grpc-api-SendMessage) has one.
  */
 export interface MarkMessagesReadRequest {
   /**
    * If `false` (the default), the request is to mark the messages as read. If `true`, marks them
-   * (back) as unread instead -- e.g. an explicit "mark unread" action on an already-read message.
+   * (back) as unread instead - e.g. an explicit "mark unread" action on an already-read message.
    */
   unread: boolean;
   /**
    * The Messages to mark read/unread. The caller must have the same access to each of them
    * [`GetMessages`](#grpc-api-GetMessages) would require (sender, a `messaging_group` member, a Bcc recipient, or an admin)
-   * -- see [`MarkMessagesRead`](#grpc-api-MarkMessagesRead)'s own RPC doc comment. A message id the caller doesn't have access to
+   * - see [`MarkMessagesRead`](#grpc-api-MarkMessagesRead)'s own RPC doc comment. A message id the caller doesn't have access to
    * fails the whole request (see that RPC's own doc on atomicity) rather than silently skipping it.
    */
   messageIds: string[];
 }
 
 /**
- * Response to a [`MarkMessagesReadRequest`](#rellm-MarkMessagesReadRequest) -- one [`MessageRead`](#rellm-MessageRead) per `message_ids` entry, in the
+ * Response to a [`MarkMessagesReadRequest`](#rellm-MarkMessagesReadRequest) - one [`MessageRead`](#rellm-MessageRead) per `message_ids` entry, in the
  * same order, each reflecting that message's own read/unread result (see `MarkMessagesReadRequest.unread`).
  */
 export interface MarkMessagesReadResponse {
@@ -242,7 +242,7 @@ export interface GetMessagesResponse {
 /**
  * A browser's Web Push subscription (see https://developer.mozilla.org/en-US/docs/Web/API/Push_API),
  * registered so the server can push new-Message notifications to it even while the browser tab is
- * closed. Only ever surfaced back to the user who registered it -- there's no RPC to list other
+ * closed. Only ever surfaced back to the user who registered it - there's no RPC to list other
  * users' subscriptions.
  */
 export interface PushSubscription {

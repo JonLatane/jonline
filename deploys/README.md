@@ -20,7 +20,7 @@ Rather than requiring Helm, Ansible, Terraform, or other orchestration layers, R
 
 * Clone this repo.
 * `cd deploys && NAMESPACE=rellm make create_backend_data create_internal_backend([^_]) to create backing Postgres and MinIO/S3 instances and your BE instance. (You actually don't have to `cd deploys` because the main `Makefile` has some passthroughs!)
-    * `NAMESPACE` is required (no default) -- this deploys Postgres, MinIO and Rellm to whichever namespace you name, e.g. `NAMESPACE=mynamespace make create_backend_data create_internal_backend([^_]).
+    * `NAMESPACE` is required (no default) - this deploys Postgres, MinIO and Rellm to whichever namespace you name, e.g. `NAMESPACE=mynamespace make create_backend_data create_internal_backend([^_]).
     * For "production-ready" performance you can (and should) skip the `create_backend_data` part and instead configure external, managed Postgres and/or MinIO/S3 servers.
 
 See [the Cert-Manager integration README](./generated_certs/README.md) for more info on generating certs. At a high level, for a K8s deploy, `generated_certs/Makefile` will simply generate Cert-Manager K8s YAML to `deploys/generated_certs/k8s/cert-manager.\[digitalocean\].\[my-domain.com\].generated.yaml`. Applying that YAML (also doable through the `Makefile`) sets up K8s/Cert-Manager to auto-generate the certs for your Rellm instance in its namespace where it will look for them.
@@ -68,7 +68,7 @@ Next, from the repo root, to create Postgres, Minio and two load-balanced Rellm 
 # The create_external_backend Make target, specifically, will create the Joline service as a K8s LoadBalancer.
 # Of course, it costs nothing to use Minikube.
 # To deploy for use with a different ingress (say, a shared nginx, or Rellm's pending internal LB), use create_internal_backend or deploy_be_internal_insecure_create to deploy it as a K8s ClusterIP instead.
-# NAMESPACE is required (no default) -- pick whichever namespace you want this deployed to.
+# NAMESPACE is required (no default) - pick whichever namespace you want this deployed to.
 NAMESPACE=rellm make create_backend_data create_external_backend
 ```
 
@@ -207,7 +207,7 @@ As mentioned in [Deploying to namespaces other than `rellm`](#deploying-to-names
 Note that multiple *external* deployments will each have a Kubernetes LoadBalancer. On many providers, this is relatively expensive (an external IP, $12/mo on DigitalOcean). Other Makefile targets include `create_internal_backend` and `deploy_be_internal_insecure_create` (the latter of which will specifically ignore K8s-stored TLS certificates, to save CPU time by not encrypting interal services).
 
 ### Rellm Ingress: sharing one LoadBalancer across many domains (recommended)
-[`deploys/ingress/`](./ingress/README.md) sets up a single, shared [Traefik](https://traefik.io) ingress that lets any number of Rellm instances -- each still in its own namespace, each with its own domain, Postgres, MinIO and Cert-Manager certs -- share **one** external IP/LoadBalancer instead of one each. Each backend keeps terminating its own TLS exactly as it does today (`create_internal_backend`/`update_internal_backend`); the ingress only reads the plaintext SNI hostname from the TLS handshake to route the still-encrypted bytes to the right namespace, so no certs need to move, be duplicated, or change hands.
+[`deploys/ingress/`](./ingress/README.md) sets up a single, shared [Traefik](https://traefik.io) ingress that lets any number of Rellm instances - each still in its own namespace, each with its own domain, Postgres, MinIO and Cert-Manager certs - share **one** external IP/LoadBalancer instead of one each. Each backend keeps terminating its own TLS exactly as it does today (`create_internal_backend`/`update_internal_backend`); the ingress only reads the plaintext SNI hostname from the TLS handshake to route the still-encrypted bytes to the right namespace, so no certs need to move, be duplicated, or change hands.
 
 ```bash
 # Once per cluster:
@@ -229,7 +229,7 @@ This is what [`deploys/ingress/`](./ingress/README.md) sets up.
 ![System with multiple Kubernetes LoadBalancers](https://github.com/JonLatane/rellm/blob/main/docs/architecture/Traefik_Kubernetes_Deployment.svg)
 
 ## Upgrading your deployed PostgreSQL
-The Postgres image tag lives in `k8s/k8s-postgres-$(K8S_PROVIDER).yaml`. For a **minor** version bump (e.g. `17.5` → `17.6`), just edit the tag and run `NAMESPACE=rellm make update_backend_postgres`. For a **major** version bump (e.g. `14` → `17`), the on-disk data format changes, so don't just `update_backend_postgres` -- use:
+The Postgres image tag lives in `k8s/k8s-postgres-$(K8S_PROVIDER).yaml`. For a **minor** version bump (e.g. `17.5` → `17.6`), just edit the tag and run `NAMESPACE=rellm make update_backend_postgres`. For a **major** version bump (e.g. `14` → `17`), the on-disk data format changes, so don't just `update_backend_postgres` - use:
 
 ```bash
 NAMESPACE=my_namespace make upgrade_backend_postgres

@@ -103,11 +103,13 @@ enum Permission {
   // Allow the user to create/update [`SyncSource`](#rellm-SyncSource)s (iCal subscriptions) that
   // synchronize [`Event`](#rellm-Event)s in.
   SYNC_EVENTS_FROM_ICS = 700;
+  // Allow the user to create/update [`SyncSource`](#rellm-SyncSource)s (RSS subscriptions) that
+  // synchronize [`Post`](#rellm-Post)s in.
+  SYNC_POSTS_FROM_RSS = 701;
+  // Allow the user to create/update [`SyncSource`](#rellm-SyncSource)s (Atom subscriptions) that
+  // synchronize [`Post`](#rellm-Post)s in.
+  SYNC_POSTS_FROM_ATOM = 702;
 
-  // Sync permissions -- each gates creating/updating [`SyncDestination`](#rellm-SyncDestination)s of that platform, and
-  // syncing that content type to them (see `sync.proto`). A generous reserved block (`1000`+)
-  // since this is the most likely area to keep growing as new platforms are added.
-  //
   // Allow the user to create/update [`SyncDestination`](#rellm-SyncDestination)s that cross-post EventInstances to a
   // connected Facebook Page, and to sync EventInstances to them.
   SYNC_EVENTS_TO_FACEBOOK = 1000;
@@ -163,11 +165,11 @@ enum Permission {
 
   // Allow the user to edit [`ServerConfiguration.cluster_resources`](#rellm-ClusterResources) via
   // [`ConfigureServer`](#grpc-api-ConfigureServer). `cluster_resources` is otherwise visible
-  // (read-only) to any `ADMIN` -- this permission gates *editing* it specifically, on top of
+  // (read-only) to any `ADMIN` - this permission gates *editing* it specifically, on top of
   // `ADMIN`, since misconfiguring it (wrong `conductor_host`/`cluster_shared_secret`) affects
   // cluster-mates this admin may not operate. Kept separate from `ADMIN` the same way
   // `VIEW_PRIVATE_CONTACT_METHODS` is, and deliberately *not* grantable via
-  // [`UpdateUser`](#grpc-api-UpdateUser) like other permissions -- only settable directly in the
+  // [`UpdateUser`](#grpc-api-UpdateUser) like other permissions - only settable directly in the
   // database (e.g. via the `set_permission` binary), so granting it is always a deliberate
   // operator action, never a side effect of a normal admin-managing-admins flow.
   EDIT_CLUSTER_SETTINGS = 10002;

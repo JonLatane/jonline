@@ -6,7 +6,7 @@ use crate::marshaling::*;
 use crate::models;
 use crate::protos::*;
 use crate::rpcs::validate_permission;
-use crate::schema::{event_instances, events, sync_sources};
+use crate::schema::{posts, sync_sources};
 
 pub fn delete_sync_source(
     request: DeleteSyncSourceRequest,
@@ -23,42 +23,33 @@ pub fn delete_sync_source(
         validate_permission(&Some(current_user), Permission::Admin)?;
     }
 
+    // Every kind of synced Post -- an Event's own Post, an EventInstance's own Post, or (once
+    // RSS/Atom SyncSources exist) a plain synced Post -- carries `sync_source_id` directly now
+    // (see migration 2026-09-11-000000_move_sync_source_to_posts), so this single
+    // delete/detach on `posts` handles all of them uniformly instead of needing a separate pass
+    // per content type.
     if request.delete_synced_events {
-        diesel::delete(events::table.filter(events::sync_source_id.eq(existing.id)))
+        diesel::delete(posts::table.filter(posts::sync_source_id.eq(existing.id)))
             .execute(conn)
             .map_err(|e| {
                 log::error!(
-                    "Failed to delete events synced from source {}: {:?}",
+                    "Failed to delete posts synced from source {}: {:?}",
                     existing.id,
                     e
                 );
                 Status::new(Code::Internal, "failed_to_delete_synced_events")
             })?;
     } else {
-        diesel::update(events::table.filter(events::sync_source_id.eq(existing.id)))
-            .set(events::sync_source_id.eq(None::<i64>))
-            .execute(conn)
-            .map_err(|e| {
-                log::error!(
-                    "Failed to detach events synced from source {}: {:?}",
-                    existing.id,
-                    e
-                );
-                Status::new(Code::Internal, "failed_to_detach_synced_events")
-            })?;
-
-        // Must also detach event_instances' own (denormalized) sync_source_id -- it FK-references
-        // sync_sources and would otherwise block deleting the row below.
-        diesel::update(event_instances::table.filter(event_instances::sync_source_id.eq(existing.id)))
+        diesel::update(posts::table.filter(posts::sync_source_id.eq(existing.id)))
             .set((
-                event_instances::sync_source_id.eq(None::<i64>),
-                event_instances::sync_source_uid.eq(None::<String>),
-                event_instances::sync_source_recurrence_anchor.eq(None::<std::time::SystemTime>),
+                posts::sync_source_id.eq(None::<i64>),
+                posts::sync_source_uid.eq(None::<String>),
+                posts::sync_source_recurrence_anchor.eq(None::<std::time::SystemTime>),
             ))
             .execute(conn)
             .map_err(|e| {
                 log::error!(
-                    "Failed to detach event instances synced from source {}: {:?}",
+                    "Failed to detach posts synced from source {}: {:?}",
                     existing.id,
                     e
                 );

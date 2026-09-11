@@ -212,6 +212,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "atom_syndication"
+version = "0.12.10"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d48d93a31c932d58b9fd68664a904ae5b74bea37f06c5f68d5bec92f0cdd106d"
+dependencies = [
+ "chrono",
+ "derive_builder",
+ "diligent-date-parser",
+ "quick-xml 0.41.0",
+]
+
+[[package]]
 name = "atomic"
 version = "0.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -276,7 +288,7 @@ dependencies = [
  "attohttpc",
  "home",
  "log",
- "quick-xml",
+ "quick-xml 0.38.4",
  "rust-ini",
  "serde",
  "thiserror 2.0.20",
@@ -1249,6 +1261,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "diligent-date-parser"
+version = "0.1.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c8ede7d79366f419921e2e2f67889c12125726692a313bffb474bd5f37a581e9"
+dependencies = [
+ "chrono",
+]
+
+[[package]]
 name = "displaydoc"
 version = "0.2.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1461,6 +1482,23 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1e6853b52649d4ac5c0bd02320cddc5ba956bdb407c4b75a2c6b75bf51500f8c"
 dependencies = [
  "simd-adler32",
+]
+
+[[package]]
+name = "feed-rs"
+version = "2.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "369995dae0733f1fe5ab0e3f345f6503a5f384179df5d8da333702031a131cf9"
+dependencies = [
+ "chrono",
+ "mediatype",
+ "quick-xml 0.41.0",
+ "regex",
+ "serde",
+ "serde_json",
+ "siphasher",
+ "url",
+ "uuid",
 ]
 
 [[package]]
@@ -2668,6 +2706,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7ebb8d8732c6a6df3d8f032a82911cfc747e00efb95cc46e8d0acd5b5b88570c"
 
 [[package]]
+name = "mediatype"
+version = "0.21.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "120fa187be19d9962f0926633453784691731018a2bf936ddb4e29101b79c4a7"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "memchr"
 version = "2.8.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3476,6 +3523,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "quick-xml"
+version = "0.41.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e660451e55124f798a69a5af3f49ccfbefbd41910eefd25caf2393e1f3473ec1"
+dependencies = [
+ "encoding_rs",
+ "memchr",
+]
+
+[[package]]
 name = "quote"
 version = "1.0.47"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3647,6 +3704,7 @@ version = "0.5.553"
 dependencies = [
  "anyhow",
  "async-compression",
+ "atom_syndication",
  "aws-creds",
  "base64 0.23.1",
  "bcrypt",
@@ -3660,6 +3718,7 @@ dependencies = [
  "diesel_migrations",
  "dotenvy",
  "env_logger",
+ "feed-rs",
  "futures",
  "headless_chrome",
  "http 1.5.0",
@@ -3685,6 +3744,7 @@ dependencies = [
  "rocket-cache-response",
  "rocket_async_compression",
  "rrule",
+ "rss",
  "rust-s3",
  "rustls 0.23.43",
  "serde",
@@ -3947,6 +4007,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "rss"
+version = "2.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5fdc977a288e79bfacb4faeaba370da8aef9893ac38b68ae1df6a30d4224a2f9"
+dependencies = [
+ "atom_syndication",
+ "derive_builder",
+ "quick-xml 0.41.0",
+]
+
+[[package]]
 name = "rtree_rs"
 version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3986,7 +4057,7 @@ dependencies = [
  "md5",
  "minidom",
  "percent-encoding",
- "quick-xml",
+ "quick-xml 0.38.4",
  "reqwest 0.12.28",
  "serde",
  "serde_derive",
@@ -5364,6 +5435,7 @@ dependencies = [
  "idna",
  "percent-encoding",
  "serde",
+ "serde_derive",
 ]
 
 [[package]]

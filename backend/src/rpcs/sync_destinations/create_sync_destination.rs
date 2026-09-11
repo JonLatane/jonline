@@ -24,8 +24,9 @@ pub fn create_sync_destination(
     // `update_sync_destination`/`delete_sync_destination`) but never create one on their behalf.
     //
     // Gated per-platform (`SyncEventsTo*`/`SyncPostsTo*`, whichever pair matches the platform of
-    // `request.configuration`, or Admin) rather than the broader `SYNC_EVENTS_FROM_ICS` (used by
-    // `SyncSource`) since posting to a third-party account is a more sensitive grant than
+    // `request.configuration`, or Admin) rather than the broader `SYNC_EVENTS_FROM_ICS`/
+    // `SYNC_POSTS_FROM_RSS`/`SYNC_POSTS_FROM_ATOM` (used by `SyncSource`) since posting to a
+    // third-party account is a more sensitive grant than
     // pulling events in from one. Checked *before* validating the configuration's completeness
     // below, matching this RPC's original (Facebook-only) behavior of always checking permission
     // first; an unspecified/`None` configuration falls back to requiring the Facebook pair, same

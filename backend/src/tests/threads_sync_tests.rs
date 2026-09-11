@@ -29,7 +29,7 @@ fn exchange_code_for_token_returns_the_access_token_and_user_id() {
         "test-app-id",
         "test-app-secret",
         "test-code",
-        "https://example.com/facebook-callback.html",
+        "https://example.com/oauth-callback.html",
     )
     .expect("code exchange should succeed");
     assert_eq!(access_token, "short-lived-threads-token");
@@ -45,7 +45,7 @@ fn exchange_code_for_token_fails_for_an_invalid_code() {
         "test-app-id",
         "test-app-secret",
         "bad-code",
-        "https://example.com/facebook-callback.html",
+        "https://example.com/oauth-callback.html",
     )
     .unwrap_err();
     assert_eq!(err.code(), Code::FailedPrecondition);

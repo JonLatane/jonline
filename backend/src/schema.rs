@@ -79,9 +79,6 @@ diesel::table! {
         search_text -> TsVector,
         user_id -> Nullable<Int8>,
         sync_missing_since -> Nullable<Timestamp>,
-        sync_source_id -> Nullable<Int8>,
-        sync_source_uid -> Nullable<Varchar>,
-        sync_source_recurrence_anchor -> Nullable<Timestamp>,
         timezone -> Nullable<Varchar>,
     }
 }
@@ -92,7 +89,6 @@ diesel::table! {
         info -> Jsonb,
         created_at -> Timestamp,
         updated_at -> Nullable<Timestamp>,
-        sync_source_id -> Nullable<Int8>,
     }
 }
 
@@ -296,6 +292,9 @@ diesel::table! {
         search_text -> TsVector,
         sort_published_at -> Timestamp,
         post_media_layout -> PostMediaLayout,
+        sync_source_id -> Nullable<Int8>,
+        sync_source_uid -> Nullable<Varchar>,
+        sync_source_recurrence_anchor -> Nullable<Timestamp>,
     }
 }
 
@@ -331,6 +330,9 @@ diesel::table! {
         web_push_config -> Nullable<Jsonb>,
         custom_tabs -> Nullable<Jsonb>,
         cluster_resources -> Nullable<Jsonb>,
+        twilio_config -> Nullable<Jsonb>,
+        bird_config -> Nullable<Jsonb>,
+        preferred_verification_apis -> Nullable<Jsonb>,
     }
 }
 
@@ -438,9 +440,7 @@ diesel::joinable!(event_instance_sync_destinations -> event_instances (event_ins
 diesel::joinable!(event_instance_sync_destinations -> sync_destinations (sync_destination_id));
 diesel::joinable!(event_instances -> events (event_id));
 diesel::joinable!(event_instances -> posts (post_id));
-diesel::joinable!(event_instances -> sync_sources (sync_source_id));
 diesel::joinable!(events -> posts (post_id));
-diesel::joinable!(events -> sync_sources (sync_source_id));
 diesel::joinable!(federated_accounts -> federated_servers (federated_server_id));
 diesel::joinable!(federated_accounts -> users (user_id));
 diesel::joinable!(federated_profiles -> federated_users (federated_user_id));
@@ -459,6 +459,7 @@ diesel::joinable!(messages -> messaging_groups (messaging_group_id));
 diesel::joinable!(messages -> users (from_user_id));
 diesel::joinable!(post_sync_destinations -> posts (post_id));
 diesel::joinable!(post_sync_destinations -> sync_destinations (sync_destination_id));
+diesel::joinable!(posts -> sync_sources (sync_source_id));
 diesel::joinable!(posts -> users (user_id));
 diesel::joinable!(push_subscriptions -> users (user_id));
 diesel::joinable!(sync_destinations -> users (user_id));

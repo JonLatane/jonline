@@ -1,9 +1,113 @@
+use std::collections::HashMap;
 use std::time::SystemTime;
 
 use super::{ToDbId, ToProtoAuthor, ToProtoId, ToProtoTime};
 use crate::db_connection::PgPooledConnection;
 use crate::models;
 use crate::protos::*;
+
+pub type SyncSourceLookup = HashMap<i64, MarshalableSyncSource>;
+
+/// Loads every `SyncSource` in `sync_source_ids` (deduplicated by the caller's `HashMap`), for
+/// batch-attaching `Post.sync_source` across a whole page of results in one query instead of one
+/// per Post -- mirrors `load_post_sync_lookup`/`load_event_instance_sync_lookup` for
+/// `SyncDestination`s.
+pub fn load_sync_source_lookup(
+    sync_source_ids: Vec<i64>,
+    conn: &mut PgPooledConnection,
+) -> Option<SyncSourceLookup> {
+    Some(
+        models::get_sync_sources_by_ids(sync_source_ids, conn)
+            .into_iter()
+            .map(|(source, owner)| (source.id, MarshalableSyncSource(source, owner)))
+            .collect::<SyncSourceLookup>(),
+    )
+}
+
+pub trait FindSyncSource {
+    fn find_sync_source(&self, id: i64) -> Option<&MarshalableSyncSource>;
+}
+
+impl FindSyncSource for Option<&SyncSourceLookup> {
+    fn find_sync_source(&self, id: i64) -> Option<&MarshalableSyncSource> {
+        self.map(|lookup| lookup.get(&id)).flatten()
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct MarshalableSyncSource(pub models::SyncSource, pub models::Author);
+
+pub trait ToProtoMarshalableSyncSource {
+    fn to_proto(&self) -> SyncSource;
+}
+
+impl ToProtoMarshalableSyncSource for MarshalableSyncSource {
+    fn to_proto(&self) -> SyncSource {
+        let source = &self.0;
+        let owner = &self.1;
+        SyncSource {
+            id: source.id.to_proto_id(),
+            owner: Some(owner.to_proto(None)),
+            sync_interval_seconds: source.sync_interval_seconds as u64,
+            created_at: Some(source.created_at.to_proto()),
+            updated_at: source.updated_at.map(|t| t.to_proto()),
+            last_synced_at: source.last_synced_at.map(|t| t.to_proto()),
+            event_count: source.event_count as u64,
+            event_instance_count: source.event_instance_count as u64,
+            post_count: source.post_count as u64,
+            configuration: source_configuration_to_proto(&source.configuration),
+        }
+    }
+}
+
+/// `configuration` JSONB shape today: one of `{"ics_subscription_url": "https://..."}`,
+/// `{"rss_subscription_url": "https://..."}`, or `{"atom_subscription_url": "https://..."}` --
+/// mirrors the proto `oneof`'s 3 variants (an ICS URL syncs Events/EventInstances;
+/// RSS/Atom sync plain Posts -- see `logic::sync_sources::feed_sync`).
+pub fn source_configuration_to_proto(
+    configuration: &serde_json::Value,
+) -> Option<sync_source::Configuration> {
+    if let Some(url) = configuration.get("ics_subscription_url").and_then(|v| v.as_str()) {
+        return Some(sync_source::Configuration::IcsSubscriptionUrl(url.to_string()));
+    }
+    if let Some(url) = configuration.get("rss_subscription_url").and_then(|v| v.as_str()) {
+        return Some(sync_source::Configuration::RssSubscriptionUrl(url.to_string()));
+    }
+    if let Some(url) = configuration.get("atom_subscription_url").and_then(|v| v.as_str()) {
+        return Some(sync_source::Configuration::AtomSubscriptionUrl(url.to_string()));
+    }
+    None
+}
+
+pub fn source_configuration_to_json(
+    configuration: &Option<sync_source::Configuration>,
+) -> serde_json::Value {
+    match configuration {
+        Some(sync_source::Configuration::IcsSubscriptionUrl(url)) => {
+            serde_json::json!({ "ics_subscription_url": url })
+        }
+        Some(sync_source::Configuration::RssSubscriptionUrl(url)) => {
+            serde_json::json!({ "rss_subscription_url": url })
+        }
+        Some(sync_source::Configuration::AtomSubscriptionUrl(url)) => {
+            serde_json::json!({ "atom_subscription_url": url })
+        }
+        None => serde_json::json!({}),
+    }
+}
+
+/// Which permission gates creating/updating a `SyncSource` with this `configuration` -- one of
+/// `SyncEventsFromIcs`/`SyncPostsFromRss`/`SyncPostsFromAtom` (see `permissions.proto`), matching
+/// whichever `oneof` variant is set. Falls back to `SyncEventsFromIcs` for `None` (mirrors
+/// `source_configuration_to_json`'s own `None` fallback, and matches `create_sync_source`'s
+/// existing behavior before RSS/Atom sources existed).
+pub fn required_sync_source_permission(configuration: &Option<sync_source::Configuration>) -> Permission {
+    match configuration {
+        Some(sync_source::Configuration::RssSubscriptionUrl(_)) => Permission::SyncPostsFromRss,
+        Some(sync_source::Configuration::AtomSubscriptionUrl(_)) => Permission::SyncPostsFromAtom,
+        _ => Permission::SyncEventsFromIcs,
+    }
+}
 
 #[derive(Debug, Clone)]
 pub struct MarshalableSyncDestination(pub models::SyncDestination, pub models::Author);

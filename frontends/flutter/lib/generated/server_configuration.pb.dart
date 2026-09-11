@@ -40,6 +40,10 @@ class ServerConfiguration extends $pb.GeneratedMessage {
     PrivateUserStrategy? privateUserStrategy,
     $core.Iterable<AuthenticationFeature>? authenticationFeatures,
     WebPushConfig? webPushConfig,
+    $core.Iterable<VerificationAPI>? preferredVerificationApis,
+    $core.Iterable<VerificationAPI>? availableVerificationApis,
+    TwilioConfig? twilioConfig,
+    BirdConfig? birdConfig,
   }) {
     final $result = create();
     if (serverInfo != null) {
@@ -90,6 +94,18 @@ class ServerConfiguration extends $pb.GeneratedMessage {
     if (webPushConfig != null) {
       $result.webPushConfig = webPushConfig;
     }
+    if (preferredVerificationApis != null) {
+      $result.preferredVerificationApis.addAll(preferredVerificationApis);
+    }
+    if (availableVerificationApis != null) {
+      $result.availableVerificationApis.addAll(availableVerificationApis);
+    }
+    if (twilioConfig != null) {
+      $result.twilioConfig = twilioConfig;
+    }
+    if (birdConfig != null) {
+      $result.birdConfig = birdConfig;
+    }
     return $result;
   }
   ServerConfiguration._() : super();
@@ -113,6 +129,10 @@ class ServerConfiguration extends $pb.GeneratedMessage {
     ..e<PrivateUserStrategy>(100, _omitFieldNames ? '' : 'privateUserStrategy', $pb.PbFieldType.OE, defaultOrMaker: PrivateUserStrategy.ACCOUNT_IS_FROZEN, valueOf: PrivateUserStrategy.valueOf, enumValues: PrivateUserStrategy.values)
     ..pc<AuthenticationFeature>(101, _omitFieldNames ? '' : 'authenticationFeatures', $pb.PbFieldType.KE, valueOf: AuthenticationFeature.valueOf, enumValues: AuthenticationFeature.values, defaultEnumValue: AuthenticationFeature.AUTHENTICATION_FEATURE_UNKNOWN)
     ..aOM<WebPushConfig>(110, _omitFieldNames ? '' : 'webPushConfig', subBuilder: WebPushConfig.create)
+    ..pc<VerificationAPI>(120, _omitFieldNames ? '' : 'preferredVerificationApis', $pb.PbFieldType.KE, valueOf: VerificationAPI.valueOf, enumValues: VerificationAPI.values, defaultEnumValue: VerificationAPI.VERIFICATION_API_TWILIO)
+    ..pc<VerificationAPI>(121, _omitFieldNames ? '' : 'availableVerificationApis', $pb.PbFieldType.KE, valueOf: VerificationAPI.valueOf, enumValues: VerificationAPI.values, defaultEnumValue: VerificationAPI.VERIFICATION_API_TWILIO)
+    ..aOM<TwilioConfig>(122, _omitFieldNames ? '' : 'twilioConfig', subBuilder: TwilioConfig.create)
+    ..aOM<BirdConfig>(123, _omitFieldNames ? '' : 'birdConfig', subBuilder: BirdConfig.create)
     ..hasRequiredFields = false
   ;
 
@@ -282,7 +302,7 @@ class ServerConfiguration extends $pb.GeneratedMessage {
   @$pb.TagNumber(90)
   ExternalCDNConfig ensureExternalCdnConfig() => $_ensure(11);
 
-  /// Cluster-internal coordination state -- see `ClusterResources`'s own doc. Visible to any
+  /// Cluster-internal coordination state - see `ClusterResources`'s own doc. Visible to any
   /// logged-in admin (unlike most fields here, this describes infrastructure topology rather than
   /// anything end users need, so it's stripped entirely from
   /// [`GetServerConfiguration`](#grpc-api-GetServerConfiguration) for non-admins/anonymous
@@ -325,6 +345,46 @@ class ServerConfiguration extends $pb.GeneratedMessage {
   void clearWebPushConfig() => clearField(110);
   @$pb.TagNumber(110)
   WebPushConfig ensureWebPushConfig() => $_ensure(15);
+
+  /// A server-preferred order of contact verification APIs.
+  /// Note: even if this is blank, if twilio_config is enabled, the server should try
+  /// to verify with Twilio. It's really only for the case of wanting to switch between multiple
+  /// SMS/Email providers.
+  /// Only serialized for admin users.
+  @$pb.TagNumber(120)
+  $core.List<VerificationAPI> get preferredVerificationApis => $_getList(16);
+
+  /// Derived from whether TwilioConfig.enabled is true, etc. Serialized to every caller (not
+  /// admin-only, unlike `preferred_verification_apis`/`twilio_config`) -- this is what a non-admin
+  /// client should check to decide whether to show verification UI at all, without exposing any
+  /// provider configuration.
+  @$pb.TagNumber(121)
+  $core.List<VerificationAPI> get availableVerificationApis => $_getList(17);
+
+  /// Twilio Config. Only serialized for admin users.
+  @$pb.TagNumber(122)
+  TwilioConfig get twilioConfig => $_getN(18);
+  @$pb.TagNumber(122)
+  set twilioConfig(TwilioConfig v) { setField(122, v); }
+  @$pb.TagNumber(122)
+  $core.bool hasTwilioConfig() => $_has(18);
+  @$pb.TagNumber(122)
+  void clearTwilioConfig() => clearField(122);
+  @$pb.TagNumber(122)
+  TwilioConfig ensureTwilioConfig() => $_ensure(18);
+
+  /// Bird (bird.com, formerly MessageBird) Config -- a cheaper Twilio alternative for SMS
+  /// verification. Only serialized for admin users.
+  @$pb.TagNumber(123)
+  BirdConfig get birdConfig => $_getN(19);
+  @$pb.TagNumber(123)
+  set birdConfig(BirdConfig v) { setField(123, v); }
+  @$pb.TagNumber(123)
+  $core.bool hasBirdConfig() => $_has(19);
+  @$pb.TagNumber(123)
+  void clearBirdConfig() => clearField(123);
+  @$pb.TagNumber(123)
+  BirdConfig ensureBirdConfig() => $_ensure(19);
 }
 
 ///  Coordinates a small piece of shared, cluster-wide state across multiple independent Rellm
@@ -337,7 +397,7 @@ class ServerConfiguration extends $pb.GeneratedMessage {
 ///  `conductor_host`) and brokers locks via
 ///  [`LockClusterResources`](#grpc-api-LockClusterResources)/
 ///  [`FreeClusterResources`](#grpc-api-FreeClusterResources); every instance in the cluster --
-///  including the conductor itself -- sets its own `ClusterResources` pointing at whichever host
+///  including the conductor itself - sets its own `ClusterResources` pointing at whichever host
 ///  that is.
 ///
 ///  See `ServerConfiguration.cluster_resources`'s own doc for who can see/edit this.
@@ -396,10 +456,10 @@ class ClusterResources extends $pb.GeneratedMessage {
   static ClusterResources getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<ClusterResources>(create);
   static ClusterResources? _defaultInstance;
 
-  /// Identifies this instance to the conductor -- e.g. its Kubernetes namespace. Passed as
+  /// Identifies this instance to the conductor - e.g. its Kubernetes namespace. Passed as
   /// `LockClusterResourcesRequest.namespace_id`/`FreeClusterResourcesRequest.namespace_id` so the
   /// conductor knows who's asking, and echoed back as `ClusterResourceLock.lock_holder_namespace_id`
-  /// while this instance holds a lock. By convention (not enforced -- see `cluster_shared_secret`'s
+  /// while this instance holds a lock. By convention (not enforced - see `cluster_shared_secret`'s
   /// own doc), the conductor sets its own `namespace_id` equal to its own `conductor_host`; clients
   /// (e.g. the Elm `ClusterTab`) use that convention purely for display, to tell "this instance is
   /// the conductor" from "some other instance is."
@@ -412,15 +472,15 @@ class ClusterResources extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   void clearNamespaceId() => clearField(1);
 
-  ///  DNS hostname of whichever instance in the cluster is the "conductor" -- the single instance
+  ///  DNS hostname of whichever instance in the cluster is the "conductor" - the single instance
   ///  that actually brokers [`LockClusterResources`](#grpc-api-LockClusterResources)/
   ///  [`FreeClusterResources`](#grpc-api-FreeClusterResources) calls for every other instance
-  ///  (including, by convention, itself -- see `conductor_state`). Every instance in the cluster
+  ///  (including, by convention, itself - see `conductor_state`). Every instance in the cluster
   ///  points this at the same host.
   ///
   ///  Note: callers should resolve this the same way any other cross-server Rellm call does --
   ///  via [`GET {conductor_host}/backend_host`](#http-based-client-host-negotiation-for-external-cdns-get-backend_host)
-  ///  first, falling back to `conductor_host` itself -- rather than connecting to it directly, in
+  ///  first, falling back to `conductor_host` itself - rather than connecting to it directly, in
   ///  case the conductor sits behind an [`ExternalCDNConfig`](#rellm-ExternalCDNConfig).
   @$pb.TagNumber(2)
   $core.String get conductorHost => $_getSZ(1);
@@ -433,13 +493,13 @@ class ClusterResources extends $pb.GeneratedMessage {
 
   /// Shared secret proving a `LockClusterResources`/`FreeClusterResources` caller is a legitimate
   /// member of this cluster, passed as the `cluster-shared-secret` gRPC metadata header (not a
-  /// request field -- there's no per-user auth involved in these calls at all, just this secret).
-  /// The receiving server checks it against its own stored `cluster_shared_secret` -- that's the
+  /// request field - there's no per-user auth involved in these calls at all, just this secret).
+  /// The receiving server checks it against its own stored `cluster_shared_secret` - that's the
   /// *entire* authorization check: knowing the secret is what makes a caller entitled to treat that
   /// server as the conductor, regardless of what that server's own `namespace_id`/`conductor_host`
   /// happen to say (see `namespace_id`'s own doc on that being a display-only convention). Write-only, like
   /// [`FacebookAuthConfig.app_secret`](#rellm-FacebookAuthConfig)/
-  /// [`WebPushConfig.private_vapid_key`](#rellm-WebPushConfig) -- `GetServerConfiguration` never
+  /// [`WebPushConfig.private_vapid_key`](#rellm-WebPushConfig) - `GetServerConfiguration` never
   /// sends the real value back to *any* client (not even an admin), and an empty incoming value on
   /// `ConfigureServer` means "leave the stored secret alone," not "clear it." Should never be
   /// transmitted over a non-TLS connection.
@@ -457,7 +517,7 @@ class ClusterResources extends $pb.GeneratedMessage {
   /// in a correctly configured cluster, that's the one instance every participant points
   /// `conductor_host` at (see that field's own doc), but nothing server-side enforces that; every
   /// other instance simply never gets asked to hold this state. Reflects the database directly, updated in place by
-  /// `LockClusterResources`/`FreeClusterResources` -- unlike the rest of `ServerConfiguration`,
+  /// `LockClusterResources`/`FreeClusterResources` - unlike the rest of `ServerConfiguration`,
   /// [`ConfigureServer`](#grpc-api-ConfigureServer) never lets a caller change this, and it isn't
   /// versioned the way other `ConfigureServer` changes are.
   @$pb.TagNumber(4)
@@ -472,10 +532,10 @@ class ClusterResources extends $pb.GeneratedMessage {
   ClusterConductorState ensureConductorState() => $_ensure(3);
 }
 
-/// The conductor's live view of currently-held locks -- one `ClusterResourceLock` per distinct
-/// holder (a given namespace can appear at most once here -- `LockClusterResources` never grants a
+/// The conductor's live view of currently-held locks - one `ClusterResourceLock` per distinct
+/// holder (a given namespace can appear at most once here - `LockClusterResources` never grants a
 /// `ClusterResource` it's already granted that same `namespace_id`, and folds any additional
-/// resources into that namespace's existing entry rather than creating a second one -- see that
+/// resources into that namespace's existing entry rather than creating a second one - see that
 /// RPC's own doc). With a `limits` entry above `1` (see `ClusterResourceLimit`'s own doc), more than
 /// one distinct namespace can hold the *same* `ClusterResource` at once, so there can be more
 /// entries here than there are `ClusterResource` values.
@@ -531,10 +591,10 @@ class ClusterConductorState extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   $core.List<ClusterResourceLock> get locks => $_getList(0);
 
-  /// How many distinct namespaces may concurrently hold each `ClusterResource`'s lock -- e.g. only
+  /// How many distinct namespaces may concurrently hold each `ClusterResource`'s lock - e.g. only
   /// one headless browser at a time, but a handful of `ffmpeg`/ImageMagick conversions in parallel
   /// across the cluster, since those are far lighter-weight. Any `ClusterResource` not present here
-  /// -- including on a cluster that's never had `ConfigureServer` touch `limits` at all -- defaults
+  /// - including on a cluster that's never had `ConfigureServer` touch `limits` at all - defaults
   /// to `1` (see `ClusterTab.elm`'s matching client-side default, shown/edited there as "Browser
   /// Instance Limit"/"FFMPEG Process Limit"/"ImageMagick Process Limit"). These are changed by
   /// `ConfigureServer` (gated on `EDIT_CLUSTER_SETTINGS`, like the rest of `cluster_resources`) and
@@ -544,9 +604,9 @@ class ClusterConductorState extends $pb.GeneratedMessage {
 }
 
 /// One namespace's currently-held lock on one or more `ClusterResource`s, and when it acquired
-/// them -- shown in `ClusterTab`'s Elm UI so an admin can tell a genuinely stuck lock (acquired
+/// them - shown in `ClusterTab`'s Elm UI so an admin can tell a genuinely stuck lock (acquired
 /// long ago, its holder's job surely long dead) from one just in normal, brief use, and reach for
-/// `free_all_cluster_resources` (a `bin/` admin tool -- see its own doc) accordingly.
+/// `free_all_cluster_resources` (a `bin/` admin tool - see its own doc) accordingly.
 class ClusterResourceLock extends $pb.GeneratedMessage {
   factory ClusterResourceLock({
     $core.String? lockHolderNamespaceId,
@@ -624,7 +684,7 @@ class ClusterResourceLock extends $pb.GeneratedMessage {
   $12.Timestamp ensureAcquiredAt() => $_ensure(2);
 }
 
-/// One `ClusterResource`'s configured concurrency limit -- a single `resource`/`limit` pairing per
+/// One `ClusterResource`'s configured concurrency limit - a single `resource`/`limit` pairing per
 /// message (both fields are singleton lists in practice; see `ClusterConductorState.limits`'s own
 /// doc for why a `ClusterResource` missing from every `ClusterResourceLimit` here defaults to `1`
 /// rather than `0`).
@@ -737,7 +797,7 @@ class LockClusterResourcesRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   void clearNamespaceId() => clearField(1);
 
-  /// Which resources to lock -- see the `ClusterResource` enum for what exists.
+  /// Which resources to lock - see the `ClusterResource` enum for what exists.
   @$pb.TagNumber(2)
   $core.List<ClusterResource> get resources => $_getList(1);
 }
@@ -789,7 +849,7 @@ class LockClusterResourcesResponse extends $pb.GeneratedMessage {
   static LockClusterResourcesResponse? _defaultInstance;
 
   /// Whether every requested resource was successfully locked for `namespace_id`. `false` means
-  /// none were locked (never a partial grant) -- at least one of them is already held, by
+  /// none were locked (never a partial grant) - at least one of them is already held, by
   /// namespaces other than this one, by as many distinct holders as its configured
   /// `ClusterResourceLimit` allows (see that message's own doc); see `holder`. There's no
   /// server-side wait/queueing: a caller that gets `false` should back off and call
@@ -817,7 +877,7 @@ class LockClusterResourcesResponse extends $pb.GeneratedMessage {
 
 /// Releases resources this `namespace_id` previously locked via
 /// [`LockClusterResources`](#grpc-api-LockClusterResources). A no-op (not an error) for any
-/// resource `namespace_id` doesn't currently hold -- e.g. safe to call unconditionally during
+/// resource `namespace_id` doesn't currently hold - e.g. safe to call unconditionally during
 /// cleanup even if the matching lock attempt itself failed or was never confirmed.
 class FreeClusterResourcesRequest extends $pb.GeneratedMessage {
   factory FreeClusterResourcesRequest({
@@ -864,7 +924,7 @@ class FreeClusterResourcesRequest extends $pb.GeneratedMessage {
   static FreeClusterResourcesRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<FreeClusterResourcesRequest>(create);
   static FreeClusterResourcesRequest? _defaultInstance;
 
-  /// This instance's own `ClusterResources.namespace_id` -- must match whichever `namespace_id`
+  /// This instance's own `ClusterResources.namespace_id` - must match whichever `namespace_id`
   /// is recorded as the current holder for a resource to actually be released.
   @$pb.TagNumber(1)
   $core.String get namespaceId => $_getSZ(0);
@@ -1885,7 +1945,7 @@ class CustomNavigationTabSet extends $pb.GeneratedMessage {
 
   /// Overrides the default tab set (`EVENTS_TAB`, `POSTS_TAB`, `PEOPLE_TAB`, `ABOUT_TAB`) entirely.
   /// Note: existing `/events`, `/posts`, `/people`, and `/about` paths are reserved for their
-  /// matching predefined tab -- see [`CustomNavigationTab`](#rellm-CustomNavigationTab).path's own doc.
+  /// matching predefined tab - see [`CustomNavigationTab`](#rellm-CustomNavigationTab).path's own doc.
   /// `/` itself is overridden via `home` above instead.
   @$pb.TagNumber(2)
   $core.List<CustomNavigationTab> get tabs => $_getList(1);
@@ -1975,7 +2035,7 @@ class CustomHomePage extends $pb.GeneratedMessage {
   void clearTarget() => clearField($_whichOneof(0));
 
   /// What `/` renders. Only `HOME_TAB` (the default, combined Events+Posts feed), `EVENTS_TAB`,
-  /// or `POSTS_TAB` are valid here -- never `PEOPLE_TAB`/`ABOUT_TAB`.
+  /// or `POSTS_TAB` are valid here - never `PEOPLE_TAB`/`ABOUT_TAB`.
   @$pb.TagNumber(1)
   NavigationTab get tab => $_getN(0);
   @$pb.TagNumber(1)
@@ -2015,8 +2075,8 @@ class CustomHomePage extends $pb.GeneratedMessage {
   @$pb.TagNumber(4)
   void clearShowEventsStrip() => clearField(4);
 
-  /// Whenever an Events strip is shown above other content -- `show_events_strip` is set, or
-  /// `target` is unset/`HOME_TAB` (whose strip is always shown) -- whether it defaults to its
+  /// Whenever an Events strip is shown above other content - `show_events_strip` is set, or
+  /// `target` is unset/`HOME_TAB` (whose strip is always shown) - whether it defaults to its
   /// row/list layout instead of a calendar. Unset defaults to the calendar layout.
   @$pb.TagNumber(5)
   $core.bool get defaultEventsStripToRow => $_getBF(4);
@@ -2053,7 +2113,7 @@ enum CustomNavigationTab_Icon {
   notSet
 }
 
-/// Either one of the app's predefined tabs, a Post, or a user profile -- reachable at `path`.
+/// Either one of the app's predefined tabs, a Post, or a user profile - reachable at `path`.
 class CustomNavigationTab extends $pb.GeneratedMessage {
   factory CustomNavigationTab({
     NavigationTab? tab,
@@ -2163,7 +2223,7 @@ class CustomNavigationTab extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   void clearPostId() => clearField(2);
 
-  /// Indicates the custom tab is for an actual user profile -- `path` is that user's username.
+  /// Indicates the custom tab is for an actual user profile - `path` is that user's username.
   /// Ultimately this isn't very "custom" in terms of the URL scheme, just it being a navigation tab.
   @$pb.TagNumber(3)
   $core.bool get isProfile => $_getBF(2);
@@ -2208,7 +2268,7 @@ class CustomNavigationTab extends $pb.GeneratedMessage {
   /// or `weddings` for a Post about wedding offerings. Must be distinct across every entry in
   /// `CustomNavigationTabSet.tabs`. Note: `events`, `posts`, `people`, and `about` are reserved --
   /// each may only be used to (redundantly) point back at its own matching predefined tab, never
-  /// remapped to a different tab or a Post. `/` itself is never reachable this way -- it's
+  /// remapped to a different tab or a Post. `/` itself is never reachable this way - it's
   /// overridden via `CustomNavigationTabSet.home` instead.
   @$pb.TagNumber(13)
   $core.String get path => $_getSZ(6);
@@ -2398,6 +2458,200 @@ class WebPushConfig extends $pb.GeneratedMessage {
   $core.bool hasPrivateVapidKey() => $_has(1);
   @$pb.TagNumber(2)
   void clearPrivateVapidKey() => clearField(2);
+}
+
+class TwilioConfig extends $pb.GeneratedMessage {
+  factory TwilioConfig({
+    $core.bool? twilioEnabled,
+    $core.String? twilioApiKey,
+    $core.String? twilioAccountSid,
+    $core.String? twilioFromNumber,
+  }) {
+    final $result = create();
+    if (twilioEnabled != null) {
+      $result.twilioEnabled = twilioEnabled;
+    }
+    if (twilioApiKey != null) {
+      $result.twilioApiKey = twilioApiKey;
+    }
+    if (twilioAccountSid != null) {
+      $result.twilioAccountSid = twilioAccountSid;
+    }
+    if (twilioFromNumber != null) {
+      $result.twilioFromNumber = twilioFromNumber;
+    }
+    return $result;
+  }
+  TwilioConfig._() : super();
+  factory TwilioConfig.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory TwilioConfig.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'TwilioConfig', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
+    ..aOB(1, _omitFieldNames ? '' : 'twilioEnabled')
+    ..aOS(2, _omitFieldNames ? '' : 'twilioApiKey')
+    ..aOS(3, _omitFieldNames ? '' : 'twilioAccountSid')
+    ..aOS(4, _omitFieldNames ? '' : 'twilioFromNumber')
+    ..hasRequiredFields = false
+  ;
+
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  TwilioConfig clone() => TwilioConfig()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  TwilioConfig copyWith(void Function(TwilioConfig) updates) => super.copyWith((message) => updates(message as TwilioConfig)) as TwilioConfig;
+
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static TwilioConfig create() => TwilioConfig._();
+  TwilioConfig createEmptyInstance() => create();
+  static $pb.PbList<TwilioConfig> createRepeated() => $pb.PbList<TwilioConfig>();
+  @$core.pragma('dart2js:noInline')
+  static TwilioConfig getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<TwilioConfig>(create);
+  static TwilioConfig? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.bool get twilioEnabled => $_getBF(0);
+  @$pb.TagNumber(1)
+  set twilioEnabled($core.bool v) { $_setBool(0, v); }
+  @$pb.TagNumber(1)
+  $core.bool hasTwilioEnabled() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearTwilioEnabled() => clearField(1);
+
+  /// The Twilio Auth Token. Never serialized once written.
+  @$pb.TagNumber(2)
+  $core.String get twilioApiKey => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set twilioApiKey($core.String v) { $_setString(1, v); }
+  @$pb.TagNumber(2)
+  $core.bool hasTwilioApiKey() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearTwilioApiKey() => clearField(2);
+
+  /// The Twilio Account SID. Public (among admins) -- freely serialized.
+  @$pb.TagNumber(3)
+  $core.String get twilioAccountSid => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set twilioAccountSid($core.String v) { $_setString(2, v); }
+  @$pb.TagNumber(3)
+  $core.bool hasTwilioAccountSid() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearTwilioAccountSid() => clearField(3);
+
+  /// The Twilio-provisioned sending number for outbound verification SMS. Not secret.
+  @$pb.TagNumber(4)
+  $core.String get twilioFromNumber => $_getSZ(3);
+  @$pb.TagNumber(4)
+  set twilioFromNumber($core.String v) { $_setString(3, v); }
+  @$pb.TagNumber(4)
+  $core.bool hasTwilioFromNumber() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearTwilioFromNumber() => clearField(4);
+}
+
+/// Bird (https://bird.com, formerly MessageBird) Config -- an alternative SMS verification
+/// provider to Twilio, with a simpler single-API-key auth model.
+class BirdConfig extends $pb.GeneratedMessage {
+  factory BirdConfig({
+    $core.bool? birdEnabled,
+    $core.String? birdAccessKey,
+    $core.String? birdFrom,
+    $core.String? birdRegion,
+  }) {
+    final $result = create();
+    if (birdEnabled != null) {
+      $result.birdEnabled = birdEnabled;
+    }
+    if (birdAccessKey != null) {
+      $result.birdAccessKey = birdAccessKey;
+    }
+    if (birdFrom != null) {
+      $result.birdFrom = birdFrom;
+    }
+    if (birdRegion != null) {
+      $result.birdRegion = birdRegion;
+    }
+    return $result;
+  }
+  BirdConfig._() : super();
+  factory BirdConfig.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory BirdConfig.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'BirdConfig', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
+    ..aOB(1, _omitFieldNames ? '' : 'birdEnabled')
+    ..aOS(2, _omitFieldNames ? '' : 'birdAccessKey')
+    ..aOS(3, _omitFieldNames ? '' : 'birdFrom')
+    ..aOS(4, _omitFieldNames ? '' : 'birdRegion')
+    ..hasRequiredFields = false
+  ;
+
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  BirdConfig clone() => BirdConfig()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  BirdConfig copyWith(void Function(BirdConfig) updates) => super.copyWith((message) => updates(message as BirdConfig)) as BirdConfig;
+
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static BirdConfig create() => BirdConfig._();
+  BirdConfig createEmptyInstance() => create();
+  static $pb.PbList<BirdConfig> createRepeated() => $pb.PbList<BirdConfig>();
+  @$core.pragma('dart2js:noInline')
+  static BirdConfig getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<BirdConfig>(create);
+  static BirdConfig? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.bool get birdEnabled => $_getBF(0);
+  @$pb.TagNumber(1)
+  set birdEnabled($core.bool v) { $_setBool(0, v); }
+  @$pb.TagNumber(1)
+  $core.bool hasBirdEnabled() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearBirdEnabled() => clearField(1);
+
+  /// The Bird workspace's API access key. Never serialized once written.
+  @$pb.TagNumber(2)
+  $core.String get birdAccessKey => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set birdAccessKey($core.String v) { $_setString(1, v); }
+  @$pb.TagNumber(2)
+  $core.bool hasBirdAccessKey() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearBirdAccessKey() => clearField(2);
+
+  /// The originator for outbound verification SMS -- an owned number, alphanumeric sender ID
+  /// (3-11 chars), or short code, as configured in the Bird workspace. Not secret.
+  @$pb.TagNumber(3)
+  $core.String get birdFrom => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set birdFrom($core.String v) { $_setString(2, v); }
+  @$pb.TagNumber(3)
+  $core.bool hasBirdFrom() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearBirdFrom() => clearField(3);
+
+  /// Which Bird API region to call ("us1" or "eu1", per Bird's own regional API hosts). Not
+  /// secret. Empty defaults to "us1".
+  @$pb.TagNumber(4)
+  $core.String get birdRegion => $_getSZ(3);
+  @$pb.TagNumber(4)
+  set birdRegion($core.String v) { $_setString(3, v); }
+  @$pb.TagNumber(4)
+  $core.bool hasBirdRegion() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearBirdRegion() => clearField(4);
 }
 
 

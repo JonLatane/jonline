@@ -83,18 +83,18 @@ message User {
   // Populated by [`GetUsers`](#grpc-api-GetUsers)' single-user lookups (by username or by user_id) when the
   // viewer is the target user themselves (and holds `SYNC_EVENTS_TO_FACEBOOK` or
   // `SYNC_POSTS_TO_FACEBOOK`) or an Admin, and by [`Login`](#grpc-api-Login)/[`CreateAccount`](#grpc-api-CreateAccount)/[`GetCurrentUser`](#grpc-api-GetCurrentUser)
-  // (always a self-view) -- always empty otherwise, including via every other [`GetUsers`](#grpc-api-GetUsers)
+  // (always a self-view) - always empty otherwise, including via every other [`GetUsers`](#grpc-api-GetUsers)
   // listing type.
   repeated SyncDestination sync_destinations = 82;
   // The target user's own [`SyncSource`](#rellm-SyncSource)s. Unlike `sync_destinations`, also populated for
   // the target user themselves *or an Admin* across every [`GetUsers`](#grpc-api-GetUsers) listing type (not just
-  // single-user lookups) -- e.g. an Admin's `EVERYONE` listing gets every returned user's sources
+  // single-user lookups) - e.g. an Admin's `EVERYONE` listing gets every returned user's sources
   // filled in, batch-loaded in one query rather than per-user. Also populated by
   // [`Login`](#grpc-api-Login)/[`CreateAccount`](#grpc-api-CreateAccount)/[`GetCurrentUser`](#grpc-api-GetCurrentUser) (always a self-view). Always empty for
   // any other viewer.
   repeated SyncSource sync_sources = 83;
 
-  // Every [`AIModelProvider`](#rellm-AIModelProvider) model the target user may currently call -- their own
+  // Every [`AIModelProvider`](#rellm-AIModelProvider) model the target user may currently call - their own
   // providers' models, plus any models granted to them on other users' providers (see
   // [`AvailableAIModel`](#rellm-AvailableAIModel)). Gated and populated the same way as `sync_sources`
   // (target user themselves, or an Admin, across any [`GetUsers`](#grpc-api-GetUsers) listing type, plus
@@ -142,19 +142,35 @@ message Membership {
   optional google.protobuf.Timestamp updated_at = 7;
 }
 
-// A contact method for a user. Models designed to support verification,
-// but verification RPCs are not yet implemented.
+// A contact method for a user. Verified via `StartContactMethodVerification`/`VerifyContactMethod`
+// -- SMS/Twilio only this iteration, see `TwilioConfig` in `server_configuration.proto`.
 message ContactMethod {
-  // Either a `mailto:` or `tel:` URL.
+  // Either a valid `mailto:` or valid `tel:` URL.
   optional string value = 1;
   // The visibility of the contact method.
   Visibility visibility = 2;
-  // Server-side flag indicating whether the server can verify 
-  // (and otherwise interact via) the contact method.
+  // Server-side flag indicating whether the server can verify
+  // (and otherwise interact via) the contact method. Always computed server-side (never trusted
+  // from client input) off whether a verification provider is currently enabled for this contact
+  // method's scheme (`tel:`/`mailto:`).
   bool supported_by_server = 3;
+  // Time the contact method was verified.
   // Indicates the user has completed verification of the contact method.
   // Verification requires `supported_by_server` to be `true`.
-  bool verified = 4;
+  optional google.protobuf.Timestamp verified_at = 4;
+  optional ContactMethodVerification verification_in_progress = 5;
+
+}
+
+message ContactMethodVerification {
+  // Never serialized to gRPC by the backend. Only stored server-side; a client's own attempt to
+  // verify goes through `VerifyContactMethodRequest.code` instead, not this field.
+  string verification_code = 1;
+  google.protobuf.Timestamp verification_started_at = 2;
+  // Number of failed `VerifyContactMethod` attempts against `verification_code` since it was sent.
+  // Capped (see that RPC's own doc) to prevent brute-forcing the 6-digit code within its expiry
+  // window.
+  int32 attempts = 3;
 }
 
 // Request to get one or more users by a variety of parameters.
@@ -219,4 +235,13 @@ message GetUsersResponse {
   repeated User users = 1;
   // Whether there are more pages of results.
   bool has_next_page = 2;
+}
+
+// Request for [`VerifyContactMethod`](#grpc-api-VerifyContactMethod).
+message VerifyContactMethodRequest {
+  // The `tel:` (or, in the future, `mailto:`) value being verified -- must match the current
+  // user's own stored `phone`/`email` value.
+  string value = 1;
+  // The code the user was sent by `StartContactMethodVerification`.
+  string code = 2;
 }

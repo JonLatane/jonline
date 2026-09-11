@@ -38,13 +38,13 @@ To run it, add a dependency via `elm install` on [`elm-protocol-buffers`](https:
 
 ### AnthropicCredentials
 
- An [Anthropic API](https://docs.anthropic.com) connection. *Not yet creatable* -- Anthropic doesn't offer an image generation API.
+ An [Anthropic API](https://docs.anthropic.com) connection. *Not yet creatable* - Anthropic doesn't offer an image generation API.
 
 
 ### DigitaloceanCredentials
 
  A [DigitalOcean Gradient AI Platform](https://docs.digitalocean.com/products/gradient-ai-platform/) /
- Serverless Inference connection, used for image generation (no editing -- DigitalOcean's
+ Serverless Inference connection, used for image generation (no editing - DigitalOcean's
  [Serverless Inference API](https://docs.digitalocean.com/products/gradient-ai-platform/reference/api/serverless-inference/)
  has no `/v1/images/edits`-equivalent endpoint) via its OpenAI-Images-API-shaped
  `/v1/images/generations` endpoint (GPT Image and Stable Diffusion models, re-hosted under DigitalOcean's own

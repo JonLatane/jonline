@@ -2402,8 +2402,8 @@ moderationView maybeAccount maybeEdit event post =
 
 
 {-| Whether `instance`'s own start/end time and location are safe to edit by
-hand at all -- an instance synced in from an ICS feed (`instance.syncSourceInstanceId
-/= Nothing`, set by `logic::event_sync::reconcile_instances` when it creates
+hand at all -- an instance synced in from an ICS feed (`instance.post.syncSource
+/= Nothing`, set by `logic::sync_sources::event_sync::reconcile_instances` when it creates
 an instance from a feed occurrence) has its `starts_at`/`ends_at`/`location`
 silently overwritten back to the feed's own values on every subsequent sync
 run (see that function's own `existing_instance.starts_at != starts_at_db ||
@@ -2411,8 +2411,8 @@ run (see that function's own `existing_instance.starts_at != starts_at_db ||
 `editable`/`Events.hasIcsSyncSource` already guards title/link/content
 against, just decided per-instance rather than per-`Event`: an `Event` with a
 sync source can still have manually-added instances (via "Add More", which
-never sets `syncSourceInstanceId`) safely alongside feed-sourced ones,
-so this checks `instance` itself rather than reusing `eventDetailView`'s
+never sets its instance `Post`'s `syncSource`) safely alongside feed-sourced
+ones, so this checks `instance` itself rather than reusing `eventDetailView`'s
 `editable`. Also gates `addMoreView`'s own button (see its own doc) -- "Add
 More" duplicates `instance`'s own `post`/`location` (see `buildRecurringInstances`),
 which reads as "add more dates like this synced one" in a way that doesn't
@@ -2421,7 +2421,7 @@ hand.
 -}
 instanceEditable : EventInstance -> Bool
 instanceEditable instance =
-    instance.syncSourceInstanceId == Nothing
+    (instance.post |> Maybe.andThen .syncSource) == Nothing
 
 
 {-| The currently-viewed `EventInstance`'s own start/end time row (see

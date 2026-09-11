@@ -14,7 +14,6 @@ pub struct Event {
     pub info: serde_json::Value,
     pub created_at: SystemTime,
     pub updated_at: Option<SystemTime>,
-    pub sync_source_id: Option<i64>,
 }
 
 #[derive(Debug, Insertable)]
@@ -22,7 +21,6 @@ pub struct Event {
 pub struct NewEvent {
     pub post_id: i64,
     pub info: serde_json::Value,
-    pub sync_source_id: Option<i64>,
 }
 
 #[derive(Debug, Queryable, Identifiable, Associations, AsChangeset, Clone)]
@@ -43,22 +41,6 @@ pub struct EventInstance {
     /// upstream response can't permanently orphan the Post backing the instance's comment
     /// thread/media.
     pub sync_missing_since: Option<SystemTime>,
-    /// Denormalized from the parent `Event.sync_source_id` (see migration 2026-09-05) -- lets a
-    /// duplicate occurrence be rejected by a hard DB unique constraint on `(sync_source_id,
-    /// sync_source_uid, sync_source_recurrence_anchor)` rather than relying solely on
-    /// application-level matching (see `logic::sync_sources::event_sync`'s module doc comment for
-    /// why that matters).
-    pub sync_source_id: Option<i64>,
-    /// The bare iCal `UID` for this occurrence's series, so "does a sibling instance already
-    /// exist for this series" is a plain indexed lookup instead of the old (pre-2026-09-05)
-    /// `events.info->>'sync_source_uid'` JSON-key scan.
-    pub sync_source_uid: Option<String>,
-    /// This occurrence's stable identity within its series: its own `starts_at` for a plain
-    /// `RRULE` expansion, or its *original* scheduled time (iCal's `RECURRENCE-ID`) for one
-    /// that's since been rescheduled/edited -- deliberately different from `starts_at` once
-    /// moved, since matching on the anchor (not the current `starts_at`) is what lets a moved
-    /// occurrence still be found as "the same one" on the next sync instead of looking new.
-    pub sync_source_recurrence_anchor: Option<SystemTime>,
     /// An explicit IANA timezone (e.g. "America/New_York"), set by hand (`CreateNewPanel`/
     /// `EventPage`'s timezone selector) or from an ICS Sync Source's own `DTSTART`'s `TZID` --
     /// preferred over `logic::resolve_timezone`'s Nominatim-geocoded guess wherever both could
@@ -84,9 +66,6 @@ pub const EVENT_INSTANCE_COLUMNS: (
     event_instances::created_at,
     event_instances::updated_at,
     event_instances::sync_missing_since,
-    event_instances::sync_source_id,
-    event_instances::sync_source_uid,
-    event_instances::sync_source_recurrence_anchor,
     event_instances::timezone,
 ) = (
     event_instances::event_id,
@@ -98,9 +77,6 @@ pub const EVENT_INSTANCE_COLUMNS: (
     event_instances::created_at,
     event_instances::updated_at,
     event_instances::sync_missing_since,
-    event_instances::sync_source_id,
-    event_instances::sync_source_uid,
-    event_instances::sync_source_recurrence_anchor,
     event_instances::timezone,
 );
 
@@ -113,9 +89,6 @@ pub struct NewEventInstance {
     pub starts_at: SystemTime,
     pub ends_at: SystemTime,
     pub location: Option<serde_json::Value>,
-    pub sync_source_id: Option<i64>,
-    pub sync_source_uid: Option<String>,
-    pub sync_source_recurrence_anchor: Option<SystemTime>,
     pub timezone: Option<String>,
 }
 

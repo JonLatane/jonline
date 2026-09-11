@@ -495,11 +495,15 @@ jobs:
       # image's command, and minio/minio needs `server /data` to actually serve (bare `docker
       # run minio/minio` just prints usage and exits), so it's started by hand here instead --
       # mirrors `backend/Makefile`'s `local_minio_create` target.
+      #
+      # Pulled from quay.io, not Docker Hub -- MinIO pulled `minio/minio` from Docker Hub
+      # entirely (the repository now 404s), so `docker run minio/minio` fails CI with
+      # "pull access denied ... repository does not exist" regardless of tag/auth.
       - name: Start MinIO
         run: |
           docker run -d -p 9000:9000 --name rellm-test-minio \
             -e "MINIO_ROOT_USER=${MINIO_ACCESS_KEY}" -e "MINIO_ROOT_PASSWORD=${MINIO_SECRET_KEY}" \
-            minio/minio server /data
+            quay.io/minio/minio server /data
           for i in $(seq 1 30); do
             if curl -sf "${MINIO_ENDPOINT}/minio/health/live" >/dev/null; then
               echo "MinIO is up"

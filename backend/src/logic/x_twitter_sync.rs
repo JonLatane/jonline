@@ -74,7 +74,7 @@ pub fn server_x_twitter_app_credentials(
 }
 
 /// Derives the X OAuth popup's `redirect_uri` -- identical derivation to
-/// `threads_sync::threads_redirect_uri` (reusing the same `facebook-callback.html` page, which
+/// `threads_sync::threads_redirect_uri` (reusing the same `oauth-callback.html` page, which
 /// just reads `code` off the query string -- see that function's own doc for the full rationale,
 /// including the "non-root-mounted frontend" gap this shares).
 pub fn x_twitter_redirect_uri(conn: &mut PgPooledConnection) -> Result<String, Status> {
@@ -85,7 +85,7 @@ pub fn x_twitter_redirect_uri(conn: &mut PgPooledConnection) -> Result<String, S
         .ok_or_else(|| {
             Status::new(Code::FailedPrecondition, "x_twitter_redirect_uri_not_configured")
         })?;
-    Ok(format!("https://{frontend_host}/facebook-callback.html"))
+    Ok(format!("https://{frontend_host}/oauth-callback.html"))
 }
 
 struct TokenResponse {

@@ -147,19 +147,18 @@ const Event$json = {
     {'1': 'post', '3': 2, '4': 1, '5': 11, '6': '.rellm.Post', '10': 'post'},
     {'1': 'info', '3': 3, '4': 1, '5': 11, '6': '.rellm.EventInfo', '10': 'info'},
     {'1': 'instances', '3': 4, '4': 3, '5': 11, '6': '.rellm.EventInstance', '10': 'instances'},
-    {'1': 'sync_source', '3': 5, '4': 1, '5': 11, '6': '.rellm.SyncSource', '9': 0, '10': 'syncSource', '17': true},
   ],
-  '8': [
-    {'1': '_sync_source'},
+  '9': [
+    {'1': 5, '2': 6},
   ],
+  '10': ['sync_source'],
 };
 
 /// Descriptor for `Event`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List eventDescriptor = $convert.base64Decode(
     'CgVFdmVudBIfCgRwb3N0GAIgASgLMgsucmVsbG0uUG9zdFIEcG9zdBIkCgRpbmZvGAMgASgLMh'
     'AucmVsbG0uRXZlbnRJbmZvUgRpbmZvEjIKCWluc3RhbmNlcxgEIAMoCzIULnJlbGxtLkV2ZW50'
-    'SW5zdGFuY2VSCWluc3RhbmNlcxI3CgtzeW5jX3NvdXJjZRgFIAEoCzIRLnJlbGxtLlN5bmNTb3'
-    'VyY2VIAFIKc3luY1NvdXJjZYgBAUIOCgxfc3luY19zb3VyY2U=');
+    'SW5zdGFuY2VSCWluc3RhbmNlc0oECAUQBlILc3luY19zb3VyY2U=');
 
 @$core.Deprecated('Use syncEventInstanceRequestDescriptor instead')
 const SyncEventInstanceRequest$json = {
@@ -231,21 +230,23 @@ const EventInstance$json = {
     {'1': 'starts_at', '3': 5, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'startsAt'},
     {'1': 'ends_at', '3': 6, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'endsAt'},
     {'1': 'location', '3': 7, '4': 1, '5': 11, '6': '.rellm.Location', '9': 0, '10': 'location', '17': true},
-    {'1': 'sync_source_instance_id', '3': 8, '4': 1, '5': 9, '9': 1, '10': 'syncSourceInstanceId', '17': true},
-    {'1': 'sync_missing_since', '3': 9, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '9': 2, '10': 'syncMissingSince', '17': true},
-    {'1': 'attendances', '3': 10, '4': 1, '5': 11, '6': '.rellm.EventAttendances', '9': 3, '10': 'attendances', '17': true},
-    {'1': 'current_user_attendance', '3': 11, '4': 1, '5': 11, '6': '.rellm.EventAttendance', '9': 4, '10': 'currentUserAttendance', '17': true},
+    {'1': 'sync_missing_since', '3': 9, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '9': 1, '10': 'syncMissingSince', '17': true},
+    {'1': 'attendances', '3': 10, '4': 1, '5': 11, '6': '.rellm.EventAttendances', '9': 2, '10': 'attendances', '17': true},
+    {'1': 'current_user_attendance', '3': 11, '4': 1, '5': 11, '6': '.rellm.EventAttendance', '9': 3, '10': 'currentUserAttendance', '17': true},
     {'1': 'sync_destinations', '3': 12, '4': 3, '5': 11, '6': '.rellm.SyncDestinationStatus', '10': 'syncDestinations'},
-    {'1': 'timezone', '3': 13, '4': 1, '5': 9, '9': 5, '10': 'timezone', '17': true},
+    {'1': 'timezone', '3': 13, '4': 1, '5': 9, '9': 4, '10': 'timezone', '17': true},
   ],
   '8': [
     {'1': '_location'},
-    {'1': '_sync_source_instance_id'},
     {'1': '_sync_missing_since'},
     {'1': '_attendances'},
     {'1': '_current_user_attendance'},
     {'1': '_timezone'},
   ],
+  '9': [
+    {'1': 8, '2': 9},
+  ],
+  '10': ['sync_source_instance_id'],
 };
 
 /// Descriptor for `EventInstance`. Decode as a `google.protobuf.DescriptorProto`.
@@ -255,16 +256,15 @@ final $typed_data.Uint8List eventInstanceDescriptor = $convert.base64Decode(
     'SW5mb1IEaW5mbxI3CglzdGFydHNfYXQYBSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW'
     '1wUghzdGFydHNBdBIzCgdlbmRzX2F0GAYgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFt'
     'cFIGZW5kc0F0EjAKCGxvY2F0aW9uGAcgASgLMg8ucmVsbG0uTG9jYXRpb25IAFIIbG9jYXRpb2'
-    '6IAQESOgoXc3luY19zb3VyY2VfaW5zdGFuY2VfaWQYCCABKAlIAVIUc3luY1NvdXJjZUluc3Rh'
-    'bmNlSWSIAQESTQoSc3luY19taXNzaW5nX3NpbmNlGAkgASgLMhouZ29vZ2xlLnByb3RvYnVmLl'
-    'RpbWVzdGFtcEgCUhBzeW5jTWlzc2luZ1NpbmNliAEBEj4KC2F0dGVuZGFuY2VzGAogASgLMhcu'
-    'cmVsbG0uRXZlbnRBdHRlbmRhbmNlc0gDUgthdHRlbmRhbmNlc4gBARJTChdjdXJyZW50X3VzZX'
-    'JfYXR0ZW5kYW5jZRgLIAEoCzIWLnJlbGxtLkV2ZW50QXR0ZW5kYW5jZUgEUhVjdXJyZW50VXNl'
-    'ckF0dGVuZGFuY2WIAQESSQoRc3luY19kZXN0aW5hdGlvbnMYDCADKAsyHC5yZWxsbS5TeW5jRG'
-    'VzdGluYXRpb25TdGF0dXNSEHN5bmNEZXN0aW5hdGlvbnMSHwoIdGltZXpvbmUYDSABKAlIBVII'
-    'dGltZXpvbmWIAQFCCwoJX2xvY2F0aW9uQhoKGF9zeW5jX3NvdXJjZV9pbnN0YW5jZV9pZEIVCh'
-    'Nfc3luY19taXNzaW5nX3NpbmNlQg4KDF9hdHRlbmRhbmNlc0IaChhfY3VycmVudF91c2VyX2F0'
-    'dGVuZGFuY2VCCwoJX3RpbWV6b25l');
+    '6IAQESTQoSc3luY19taXNzaW5nX3NpbmNlGAkgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVz'
+    'dGFtcEgBUhBzeW5jTWlzc2luZ1NpbmNliAEBEj4KC2F0dGVuZGFuY2VzGAogASgLMhcucmVsbG'
+    '0uRXZlbnRBdHRlbmRhbmNlc0gCUgthdHRlbmRhbmNlc4gBARJTChdjdXJyZW50X3VzZXJfYXR0'
+    'ZW5kYW5jZRgLIAEoCzIWLnJlbGxtLkV2ZW50QXR0ZW5kYW5jZUgDUhVjdXJyZW50VXNlckF0dG'
+    'VuZGFuY2WIAQESSQoRc3luY19kZXN0aW5hdGlvbnMYDCADKAsyHC5yZWxsbS5TeW5jRGVzdGlu'
+    'YXRpb25TdGF0dXNSEHN5bmNEZXN0aW5hdGlvbnMSHwoIdGltZXpvbmUYDSABKAlIBFIIdGltZX'
+    'pvbmWIAQFCCwoJX2xvY2F0aW9uQhUKE19zeW5jX21pc3Npbmdfc2luY2VCDgoMX2F0dGVuZGFu'
+    'Y2VzQhoKGF9jdXJyZW50X3VzZXJfYXR0ZW5kYW5jZUILCglfdGltZXpvbmVKBAgIEAlSF3N5bm'
+    'Nfc291cmNlX2luc3RhbmNlX2lk');
 
 @$core.Deprecated('Use eventInstanceInfoDescriptor instead')
 const EventInstanceInfo$json = {

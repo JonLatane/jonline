@@ -8,6 +8,7 @@ use diesel::*;
 use tonic::{Code, Status};
 
 use crate::db_connection::PgPooledConnection;
+use crate::logic::verification_available;
 use crate::marshaling::*;
 use crate::models;
 use crate::protos::*;
@@ -15,6 +16,53 @@ use crate::rpcs;
 use crate::schema::users;
 
 use crate::rpcs::validations::*;
+
+/// Applies a client-supplied `ContactMethod` (`request.phone`/`.email`) onto the currently-stored
+/// JSONB value, folding in the fields the server always computes/protects itself. Guards against
+/// a plain `UpdateUser` call spoofing a verified contact method: `value`/`visibility` are the
+/// *only* fields ever taken from client input -- `verified_at`/`verification_in_progress` are
+/// always carried forward from the currently-stored copy, UNLESS `value` actually changed (or is
+/// newly set), in which case editing invalidates any prior verification and both are reset to
+/// `None` (correct behavior, not just a safety guard -- otherwise brute-forcing `UpdateUser` to
+/// fake a verified status would work). `supported_by_server` is always recomputed here via
+/// `is_supported`, never trusted from client input or carried over stale from a prior write (e.g.
+/// if Twilio gets disabled server-side after a number was marked supported).
+///
+/// `incoming: None` (the client's request omits this contact method entirely) clears the stored
+/// value, same as every other plain field `update_user` copies over unconditionally -- callers
+/// (e.g. `UserProfilePage.elm`) always resend the user's current phone/email on every save, so an
+/// absent value here means the user genuinely has none.
+fn apply_contact_method_update(
+    existing: Option<serde_json::Value>,
+    incoming: Option<&ContactMethod>,
+    is_supported: impl Fn(&str) -> bool,
+) -> Option<serde_json::Value> {
+    let incoming = incoming?;
+    let existing_cm: Option<ContactMethod> =
+        existing.and_then(|v| serde_json::from_value(v).ok());
+    let value_changed = existing_cm.as_ref().and_then(|cm| cm.value.clone()) != incoming.value;
+    let (verified_at, verification_in_progress) = if value_changed {
+        (None, None)
+    } else {
+        (
+            existing_cm.as_ref().and_then(|cm| cm.verified_at.clone()),
+            existing_cm
+                .as_ref()
+                .and_then(|cm| cm.verification_in_progress.clone()),
+        )
+    };
+    let supported_by_server = incoming.value.as_deref().is_some_and(&is_supported);
+    Some(
+        serde_json::to_value(ContactMethod {
+            value: incoming.value.clone(),
+            visibility: incoming.visibility,
+            supported_by_server,
+            verified_at,
+            verification_in_progress,
+        })
+        .unwrap(),
+    )
+}
 
 pub fn update_user(
     request: User,
@@ -75,6 +123,23 @@ pub fn update_user(
                 existing_user.visibility = request.visibility.to_string_visibility();
                 existing_user.default_follow_moderation =
                     request.default_follow_moderation.to_string_moderation();
+
+                // `tel:` values are verifiable via SMS iff some provider (Twilio and/or Bird) is
+                // currently enabled server-side; `mailto:` has no verification provider this
+                // iteration (always unsupported). See `apply_contact_method_update`'s own doc for
+                // why `supported_by_server` is always recomputed here rather than trusted from the
+                // request.
+                let verification_enabled = verification_available(conn);
+                existing_user.phone = apply_contact_method_update(
+                    existing_user.phone.to_owned(),
+                    request.phone.as_ref(),
+                    |value| value.starts_with("tel:") && verification_enabled,
+                );
+                existing_user.email = apply_contact_method_update(
+                    existing_user.email.to_owned(),
+                    request.email.as_ref(),
+                    |_value| false,
+                );
             }
             if admin {
                 // `EDIT_CLUSTER_SETTINGS` is deliberately never settable via `UpdateUser` -- see

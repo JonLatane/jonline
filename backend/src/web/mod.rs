@@ -47,5 +47,11 @@ pub use external_cdn::*;
 pub mod ical_subscription;
 pub use ical_subscription::*;
 
+pub mod rss_subscription;
+pub use rss_subscription::*;
+
+pub mod atom_subscription;
+pub use atom_subscription::*;
+
 pub mod email;
 pub use email::*;

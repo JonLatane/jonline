@@ -311,6 +311,7 @@ class Post extends $pb.GeneratedMessage {
     $12.Timestamp? lastActivityAt,
     $fixnum.Int64? unauthenticatedStarCount,
     $core.Iterable<$10.SyncDestinationStatus>? syncDestinations,
+    $10.SyncSource? syncSource,
   }) {
     final $result = create();
     if (id != null) {
@@ -388,6 +389,9 @@ class Post extends $pb.GeneratedMessage {
     if (syncDestinations != null) {
       $result.syncDestinations.addAll(syncDestinations);
     }
+    if (syncSource != null) {
+      $result.syncSource = syncSource;
+    }
     return $result;
   }
   Post._() : super();
@@ -420,6 +424,7 @@ class Post extends $pb.GeneratedMessage {
     ..aOM<$12.Timestamp>(23, _omitFieldNames ? '' : 'lastActivityAt', subBuilder: $12.Timestamp.create)
     ..aInt64(24, _omitFieldNames ? '' : 'unauthenticatedStarCount')
     ..pc<$10.SyncDestinationStatus>(25, _omitFieldNames ? '' : 'syncDestinations', $pb.PbFieldType.PM, subBuilder: $10.SyncDestinationStatus.create)
+    ..aOM<$10.SyncSource>(26, _omitFieldNames ? '' : 'syncSource', subBuilder: $10.SyncSource.create)
     ..hasRequiredFields = false
   ;
 
@@ -693,6 +698,20 @@ class Post extends $pb.GeneratedMessage {
   /// SyncDestinations this post has been synced (cross-posted) to, and their status.
   @$pb.TagNumber(25)
   $core.List<$10.SyncDestinationStatus> get syncDestinations => $_getList(24);
+
+  /// If the Post was created/is kept in sync from a [`SyncSource`](#rellm-SyncSource) (an ICS
+  /// Event/EventInstance, or an RSS/Atom feed item), this is the source it was synced from.
+  /// Only its media should be considered editable for such a Post.
+  @$pb.TagNumber(26)
+  $10.SyncSource get syncSource => $_getN(25);
+  @$pb.TagNumber(26)
+  set syncSource($10.SyncSource v) { setField(26, v); }
+  @$pb.TagNumber(26)
+  $core.bool hasSyncSource() => $_has(25);
+  @$pb.TagNumber(26)
+  void clearSyncSource() => clearField(26);
+  @$pb.TagNumber(26)
+  $10.SyncSource ensureSyncSource() => $_ensure(25);
 }
 
 /// Syncs (cross-posts) a single Post to one SyncDestination.
@@ -762,7 +781,7 @@ class SyncPostRequest extends $pb.GeneratedMessage {
   void clearSyncDestinationId() => clearField(2);
 }
 
-/// Removes a single Post's sync (cross-post) to one SyncDestination -- the reverse of [`SyncPost`](#grpc-api-SyncPost).
+/// Removes a single Post's sync (cross-post) to one SyncDestination - the reverse of [`SyncPost`](#grpc-api-SyncPost).
 /// Does not delete the post already made on the destination (e.g. the Facebook Page post), only the local sync record.
 class DeletePostSyncDestinationRequest extends $pb.GeneratedMessage {
   factory DeletePostSyncDestinationRequest({

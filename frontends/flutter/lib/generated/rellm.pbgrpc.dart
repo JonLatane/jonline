@@ -76,6 +76,14 @@ class RellmClient extends $grpc.Client {
       '/rellm.Rellm/UpdateUser',
       ($4.User value) => value.writeToBuffer(),
       ($core.List<$core.int> value) => $4.User.fromBuffer(value));
+  static final _$startContactMethodVerification = $grpc.ClientMethod<$4.ContactMethod, $4.ContactMethod>(
+      '/rellm.Rellm/StartContactMethodVerification',
+      ($4.ContactMethod value) => value.writeToBuffer(),
+      ($core.List<$core.int> value) => $4.ContactMethod.fromBuffer(value));
+  static final _$verifyContactMethod = $grpc.ClientMethod<$4.VerifyContactMethodRequest, $4.ContactMethod>(
+      '/rellm.Rellm/VerifyContactMethod',
+      ($4.VerifyContactMethodRequest value) => value.writeToBuffer(),
+      ($core.List<$core.int> value) => $4.ContactMethod.fromBuffer(value));
   static final _$deleteUser = $grpc.ClientMethod<$4.User, $0.Empty>(
       '/rellm.Rellm/DeleteUser',
       ($4.User value) => value.writeToBuffer(),
@@ -385,6 +393,14 @@ class RellmClient extends $grpc.Client {
 
   $grpc.ResponseFuture<$4.User> updateUser($4.User request, {$grpc.CallOptions? options}) {
     return $createUnaryCall(_$updateUser, request, options: options);
+  }
+
+  $grpc.ResponseFuture<$4.ContactMethod> startContactMethodVerification($4.ContactMethod request, {$grpc.CallOptions? options}) {
+    return $createUnaryCall(_$startContactMethodVerification, request, options: options);
+  }
+
+  $grpc.ResponseFuture<$4.ContactMethod> verifyContactMethod($4.VerifyContactMethodRequest request, {$grpc.CallOptions? options}) {
+    return $createUnaryCall(_$verifyContactMethod, request, options: options);
   }
 
   $grpc.ResponseFuture<$0.Empty> deleteUser($4.User request, {$grpc.CallOptions? options}) {
@@ -730,6 +746,20 @@ abstract class RellmServiceBase extends $grpc.Service {
         false,
         ($core.List<$core.int> value) => $4.User.fromBuffer(value),
         ($4.User value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$4.ContactMethod, $4.ContactMethod>(
+        'StartContactMethodVerification',
+        startContactMethodVerification_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) => $4.ContactMethod.fromBuffer(value),
+        ($4.ContactMethod value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$4.VerifyContactMethodRequest, $4.ContactMethod>(
+        'VerifyContactMethod',
+        verifyContactMethod_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) => $4.VerifyContactMethodRequest.fromBuffer(value),
+        ($4.ContactMethod value) => value.writeToBuffer()));
     $addMethod($grpc.ServiceMethod<$4.User, $0.Empty>(
         'DeleteUser',
         deleteUser_Pre,
@@ -1231,6 +1261,14 @@ abstract class RellmServiceBase extends $grpc.Service {
     return updateUser(call, await request);
   }
 
+  $async.Future<$4.ContactMethod> startContactMethodVerification_Pre($grpc.ServiceCall call, $async.Future<$4.ContactMethod> request) async {
+    return startContactMethodVerification(call, await request);
+  }
+
+  $async.Future<$4.ContactMethod> verifyContactMethod_Pre($grpc.ServiceCall call, $async.Future<$4.VerifyContactMethodRequest> request) async {
+    return verifyContactMethod(call, await request);
+  }
+
   $async.Future<$0.Empty> deleteUser_Pre($grpc.ServiceCall call, $async.Future<$4.User> request) async {
     return deleteUser(call, await request);
   }
@@ -1502,6 +1540,8 @@ abstract class RellmServiceBase extends $grpc.Service {
   $async.Future<$0.Empty> deleteMedia($grpc.ServiceCall call, $5.Media request);
   $async.Future<$4.GetUsersResponse> getUsers($grpc.ServiceCall call, $4.GetUsersRequest request);
   $async.Future<$4.User> updateUser($grpc.ServiceCall call, $4.User request);
+  $async.Future<$4.ContactMethod> startContactMethodVerification($grpc.ServiceCall call, $4.ContactMethod request);
+  $async.Future<$4.ContactMethod> verifyContactMethod($grpc.ServiceCall call, $4.VerifyContactMethodRequest request);
   $async.Future<$0.Empty> deleteUser($grpc.ServiceCall call, $4.User request);
   $async.Future<$6.Message> sendMessage($grpc.ServiceCall call, $6.SendMessageRequest request);
   $async.Future<$6.GetMessagesResponse> getMessages($grpc.ServiceCall call, $6.GetMessagesRequest request);

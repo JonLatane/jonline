@@ -21,7 +21,7 @@ lazy_static! {
         elm_root_dist,
         elm_root_vendor,
         elm_root_markdown_js,
-        elm_root_facebook_callback,
+        elm_root_oauth_callback,
         elm_root_service_worker,
     ];
 }
@@ -126,21 +126,21 @@ async fn elm_root_markdown_js(_gate: ElmSpaAtRoot) -> CacheResponse<Result<Named
     CacheResponse::public(result, 60)
 }
 
-/// The Facebook OAuth popup's `redirect_uri` target (see `public/index.html`'s
-/// `facebookLoginPopup` port and `public/facebook-callback.html`) -- computed client-side as
-/// `window.location.origin + rellmBasePath + "/facebook-callback.html"`, so when Elm is served
-/// at root (`rellmBasePath == ""`) this needs its own root-mounted route the same reason
-/// `elm_root_markdown_js`/etc do: without one, `/facebook-callback.html` falls through to
+/// The OAuth popup's `redirect_uri` target for every provider (Facebook/Threads/X Twitter/Mastodon --
+/// see `public/index.html`'s `facebookLoginPopup` port and `public/oauth-callback.html`) -- computed
+/// client-side as `window.location.origin + rellmBasePath + "/oauth-callback.html"`, so when Elm is
+/// served at root (`rellmBasePath == ""`) this needs its own root-mounted route the same reason
+/// `elm_root_markdown_js`/etc do: without one, `/oauth-callback.html` falls through to
 /// `spa_file_or_username_or_custom_tab`'s catch-all and gets misinterpreted as a username lookup. (Under
 /// `/elm`, `elm_file`'s own asset fallback already serves it -- no separate route needed there.)
-#[rocket::get("/facebook-callback.html")]
-async fn elm_root_facebook_callback(_gate: ElmSpaAtRoot) -> CacheResponse<Result<NamedFile, Status>> {
-    let result = elm_asset(Path::new("facebook-callback.html")).await;
+#[rocket::get("/oauth-callback.html")]
+async fn elm_root_oauth_callback(_gate: ElmSpaAtRoot) -> CacheResponse<Result<NamedFile, Status>> {
+    let result = elm_asset(Path::new("oauth-callback.html")).await;
     CacheResponse::public(result, 60)
 }
 
 /// The service worker script `index.html` registers for Web Push (see `Ports.subscribeToPush`'s
-/// own doc comment) -- same reasoning as `elm_root_facebook_callback` just above: when Elm is
+/// own doc comment) -- same reasoning as `elm_root_oauth_callback` just above: when Elm is
 /// served at root, `rellmBasePath == ""`, so the browser fetches this at the literal root
 /// `/service-worker.js`, which would otherwise fall through to `spa_file_or_username_or_custom_tab`'s
 /// catch-all and get served `index.html` -- the wrong content (and MIME type: browsers refuse to

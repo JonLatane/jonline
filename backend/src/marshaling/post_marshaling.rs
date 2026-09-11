@@ -7,8 +7,9 @@ use tonic::Code;
 use tonic::Status;
 
 use super::{
-    load_media_lookup, MediaLookup, ToI32Moderation, ToI32Visibility, ToLink, ToProtoAuthor,
-    ToProtoId, ToProtoMediaReference, ToProtoSyncDestinationStatus, ToProtoTime,
+    load_media_lookup, load_sync_source_lookup, FindSyncSource, MediaLookup, SyncSourceLookup,
+    ToI32Moderation, ToI32Visibility, ToLink, ToProtoAuthor, ToProtoId, ToProtoMarshalableSyncSource,
+    ToProtoMediaReference, ToProtoSyncDestinationStatus, ToProtoTime,
 };
 use crate::db_connection::PgPooledConnection;
 use crate::models;
@@ -75,17 +76,39 @@ pub fn convert_posts(data: &Vec<MarshalablePost>, conn: &mut PgPooledConnection)
         .collect();
     let sync_lookup = load_post_sync_lookup(post_ids, conn);
 
+    let sync_source_ids: Vec<i64> = data
+        .iter()
+        .flat_map(|post| {
+            let mut ids: Vec<i64> = post.0.sync_source_id.into_iter().collect();
+            ids.extend(post.4.iter().filter_map(|reply| reply.0.sync_source_id));
+            ids
+        })
+        .collect();
+    let sync_source_lookup = load_sync_source_lookup(sync_source_ids, conn);
+
     data.iter()
-        .map(|marshalable_post| marshalable_post.to_proto(lookup.as_ref(), Some(&sync_lookup)))
+        .map(|marshalable_post| {
+            marshalable_post.to_proto(lookup.as_ref(), Some(&sync_lookup), sync_source_lookup.as_ref())
+        })
         .collect()
 }
 
 pub trait ToProtoMarshalablePost {
-    fn to_proto(&self, media_lookup: Option<&MediaLookup>, sync_lookup: Option<&PostSyncLookup>) -> Post;
+    fn to_proto(
+        &self,
+        media_lookup: Option<&MediaLookup>,
+        sync_lookup: Option<&PostSyncLookup>,
+        sync_source_lookup: Option<&SyncSourceLookup>,
+    ) -> Post;
 }
 
 impl ToProtoMarshalablePost for MarshalablePost {
-    fn to_proto(&self, media_lookup: Option<&MediaLookup>, sync_lookup: Option<&PostSyncLookup>) -> Post {
+    fn to_proto(
+        &self,
+        media_lookup: Option<&MediaLookup>,
+        sync_lookup: Option<&PostSyncLookup>,
+        sync_source_lookup: Option<&SyncSourceLookup>,
+    ) -> Post {
         let post = &self.0;
         let author = &self.1;
         let group_post = &self.2;
@@ -133,7 +156,7 @@ impl ToProtoMarshalablePost for MarshalablePost {
 
             replies: replies
                 .iter()
-                .map(|r| r.to_proto(media_lookup, sync_lookup))
+                .map(|r| r.to_proto(media_lookup, sync_lookup, sync_source_lookup))
                 .collect_vec(),
 
             created_at: Some(post.created_at.to_proto()),
@@ -145,6 +168,11 @@ impl ToProtoMarshalablePost for MarshalablePost {
                 .and_then(|lookup| lookup.get(&post.id))
                 .map(|rows| rows.iter().map(|row| row.to_proto()).collect())
                 .unwrap_or_default(),
+
+            sync_source: post
+                .sync_source_id
+                .and_then(|id| sync_source_lookup.find_sync_source(id))
+                .map(|source| source.to_proto()),
         }
     }
 }

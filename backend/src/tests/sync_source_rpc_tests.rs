@@ -11,7 +11,7 @@ use crate::marshaling::*;
 use crate::models;
 use crate::protos::*;
 use crate::rpcs::{create_sync_source, delete_sync_source, get_sync_sources, update_sync_source};
-use crate::schema::{events, sync_sources};
+use crate::schema::{events, posts, sync_sources};
 use crate::tests::factories::*;
 
 fn ics_source_request(url: &str) -> SyncSource {
@@ -23,7 +23,26 @@ fn ics_source_request(url: &str) -> SyncSource {
     }
 }
 
+fn rss_source_request(url: &str) -> SyncSource {
+    SyncSource {
+        configuration: Some(sync_source::Configuration::RssSubscriptionUrl(
+            url.to_string(),
+        )),
+        ..Default::default()
+    }
+}
+
+fn atom_source_request(url: &str) -> SyncSource {
+    SyncSource {
+        configuration: Some(sync_source::Configuration::AtomSubscriptionUrl(
+            url.to_string(),
+        )),
+        ..Default::default()
+    }
+}
+
 const EMPTY_ICS: &str = "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//test//\r\nEND:VCALENDAR\r\n";
+const EMPTY_RSS: &str = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><rss version=\"2.0\"><channel><title>Test</title><link>http://example.invalid/</link><description>Test</description></channel></rss>";
 
 #[test]
 fn create_requires_sync_events_from_ics_permission() {
@@ -44,8 +63,69 @@ fn create_requires_sync_events_from_ics_permission() {
     });
 }
 
+/// Mirrors `create_requires_sync_events_from_ics_permission`: an RSS source is gated on
+/// `SYNC_POSTS_FROM_RSS`, a separate permission from ICS's -- see
+/// `required_sync_source_permission`.
 #[test]
-fn create_requires_ics_subscription_url() {
+fn create_requires_sync_posts_from_rss_permission() {
+    let mut conn = test_conn();
+    conn.test_transaction::<_, tonic::Status, _>(|conn| {
+        let user = create_user(conn, "esrt_create_rss_noperm");
+        // Holding the *ICS* permission alone must not be enough for an RSS source.
+        let user = grant_permissions(conn, &user, vec![Permission::SyncEventsFromIcs]);
+
+        let err = create_sync_source(
+            rss_source_request("http://example.invalid/feed.rss"),
+            &user,
+            conn,
+        )
+        .unwrap_err();
+        assert_eq!(err.code(), Code::InvalidArgument);
+        assert_eq!(err.message(), "permission_SYNC_POSTS_FROM_RSS_required");
+
+        Ok(())
+    });
+}
+
+/// Mirrors the above for Atom's own, separate `SYNC_POSTS_FROM_ATOM` permission.
+#[test]
+fn create_requires_sync_posts_from_atom_permission() {
+    let mut conn = test_conn();
+    conn.test_transaction::<_, tonic::Status, _>(|conn| {
+        let user = create_user(conn, "esrt_create_atom_noperm");
+        let user = grant_permissions(conn, &user, vec![Permission::SyncPostsFromRss]);
+
+        let err = create_sync_source(
+            atom_source_request("http://example.invalid/feed.atom"),
+            &user,
+            conn,
+        )
+        .unwrap_err();
+        assert_eq!(err.code(), Code::InvalidArgument);
+        assert_eq!(err.message(), "permission_SYNC_POSTS_FROM_ATOM_required");
+
+        Ok(())
+    });
+}
+
+#[test]
+fn create_rss_source_succeeds_with_only_sync_posts_from_rss_permission() {
+    let mut conn = test_conn();
+    conn.test_transaction::<_, tonic::Status, _>(|conn| {
+        let user = create_user(conn, "esrt_create_rss_ok");
+        let user = grant_permissions(conn, &user, vec![Permission::SyncPostsFromRss]);
+        let url = serve_feed(EMPTY_RSS);
+
+        let created = create_sync_source(rss_source_request(&url), &user, conn)
+            .expect("create with only the RSS permission should succeed for an RSS source");
+        assert_eq!(created.owner.unwrap().user_id, user.id.to_proto_id());
+
+        Ok(())
+    });
+}
+
+#[test]
+fn create_requires_a_subscription_url() {
     let mut conn = test_conn();
     conn.test_transaction::<_, tonic::Status, _>(|conn| {
         let user = create_user(conn, "esrt_create_nourl");
@@ -53,7 +133,7 @@ fn create_requires_ics_subscription_url() {
 
         let err = create_sync_source(SyncSource::default(), &user, conn).unwrap_err();
         assert_eq!(err.code(), Code::InvalidArgument);
-        assert_eq!(err.message(), "ics_subscription_url_required");
+        assert_eq!(err.message(), "subscription_url_required");
 
         Ok(())
     });
@@ -215,6 +295,35 @@ fn update_requires_sync_events_from_ics_permission_even_for_the_owner() {
     });
 }
 
+/// An update with no `configuration` of its own (just bumping `sync_interval_seconds`, say) is
+/// gated on whatever type the *existing* source already is -- not always ICS -- see
+/// `update_sync_source`'s own `effective_configuration`.
+#[test]
+fn update_of_an_rss_source_requires_sync_posts_from_rss_permission_not_ics() {
+    let mut conn = test_conn();
+    conn.test_transaction::<_, tonic::Status, _>(|conn| {
+        let owner = create_user(conn, "esrt_update_rss_noperm");
+        let source = create_feed_sync_source_row(conn, &owner, "http://example.invalid/feed.rss");
+        // Holding only the ICS permission must not be enough to update an RSS source.
+        let owner = grant_permissions(conn, &owner, vec![Permission::SyncEventsFromIcs]);
+
+        let err = update_sync_source(
+            SyncSource {
+                id: source.id.to_proto_id(),
+                sync_interval_seconds: 900,
+                ..Default::default()
+            },
+            &owner,
+            conn,
+        )
+        .unwrap_err();
+        assert_eq!(err.code(), Code::InvalidArgument);
+        assert_eq!(err.message(), "permission_SYNC_POSTS_FROM_RSS_required");
+
+        Ok(())
+    });
+}
+
 #[test]
 fn update_rejects_non_owner_non_admin() {
     let mut conn = test_conn();
@@ -334,7 +443,8 @@ fn delete_without_delete_synced_events_detaches_but_keeps_events() {
         let created = create_sync_source(ics_source_request(&url), &owner, conn).expect("create should succeed");
 
         let event_id_before: i64 = events::table
-            .filter(events::sync_source_id.eq(created.id.to_db_id().unwrap()))
+            .inner_join(posts::table.on(posts::id.eq(events::post_id)))
+            .filter(posts::sync_source_id.eq(created.id.to_db_id().unwrap()))
             .select(events::post_id)
             .first(conn)
             .unwrap();
@@ -353,7 +463,12 @@ fn delete_without_delete_synced_events_detaches_but_keeps_events() {
             .filter(events::post_id.eq(event_id_before))
             .first(conn)
             .expect("event should still exist after a non-destructive delete");
-        assert_eq!(event_after.sync_source_id, None, "event should be detached from the deleted source");
+        let post_after: models::Post = posts::table
+            .select(models::POST_COLUMNS)
+            .filter(posts::id.eq(event_after.post_id))
+            .first(conn)
+            .unwrap();
+        assert_eq!(post_after.sync_source_id, None, "event's post should be detached from the deleted source");
 
         let remaining_sources: i64 = sync_sources::table
             .filter(sync_sources::id.eq(created.id.to_db_id().unwrap()))
@@ -378,7 +493,8 @@ fn delete_with_delete_synced_events_removes_events_too() {
         let created = create_sync_source(ics_source_request(&url), &owner, conn).expect("create should succeed");
 
         let event_id_before: i64 = events::table
-            .filter(events::sync_source_id.eq(created.id.to_db_id().unwrap()))
+            .inner_join(posts::table.on(posts::id.eq(events::post_id)))
+            .filter(posts::sync_source_id.eq(created.id.to_db_id().unwrap()))
             .select(events::post_id)
             .first(conn)
             .unwrap();

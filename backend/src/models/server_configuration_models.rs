@@ -36,6 +36,12 @@ pub struct ServerConfiguration {
     pub custom_tabs: Option<serde_json::Value>,
 
     pub cluster_resources: Option<serde_json::Value>,
+
+    pub twilio_config: Option<serde_json::Value>,
+
+    pub bird_config: Option<serde_json::Value>,
+
+    pub preferred_verification_apis: Option<serde_json::Value>,
 }
 #[derive(Debug, Insertable)]
 #[diesel(table_name = server_configurations)]
@@ -55,6 +61,9 @@ pub struct NewServerConfiguration {
     pub web_push_config: Option<serde_json::Value>,
     pub custom_tabs: Option<serde_json::Value>,
     pub cluster_resources: Option<serde_json::Value>,
+    pub twilio_config: Option<serde_json::Value>,
+    pub bird_config: Option<serde_json::Value>,
+    pub preferred_verification_apis: Option<serde_json::Value>,
 }
 
 pub fn default_server_configuration() -> NewServerConfiguration {
@@ -176,6 +185,9 @@ Your media policy should describe who has ownership of uploaded media, anything 
         web_push_config: None,
         custom_tabs: None,
         cluster_resources: None,
+        twilio_config: None,
+        bird_config: None,
+        preferred_verification_apis: None,
         private_user_strategy: PrivateUserStrategy::AccountIsFrozen
             .as_str_name()
             .to_string(),

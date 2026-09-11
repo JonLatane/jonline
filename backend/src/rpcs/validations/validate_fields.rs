@@ -81,6 +81,10 @@ lazy_static! {
     // excluded: URL fragments never reach the server, so it can't collide with a username/custom
     // tab path here in the first place, and isn't used for short URLs.)
     static ref RESERVED_LEAD_CHAR_RE: Regex = Regex::new(r"^[-._~:/?\[\]@!$&'()*+,;%=]").unwrap();
+    // Twilio's own `To`/`From` params require E.164 (`+` followed by digits, no spaces/dashes/
+    // parens) -- this matches a `tel:` `ContactMethod.value` against that shape (`tel:` prefix
+    // plus the E.164 number itself), rejecting anything else before it ever reaches a Twilio call.
+    static ref TEL_URL_RE: Regex = Regex::new(r"^tel:\+[0-9]+$").unwrap();
 }
 
 fn validate_no_reserved_lead_char(value: &str, entity_name: &str) -> Result<(), Status> {
@@ -133,7 +137,16 @@ pub fn validate_email(value: &Option<String>) -> Result<(), Status> {
 }
 pub fn validate_phone(value: &Option<String>) -> Result<(), Status> {
     match value {
-        Some(value) => validate_length(&value, "phone", 1, 128),
+        Some(value) => {
+            validate_length(&value, "phone", 1, 128)?;
+            if !TEL_URL_RE.is_match(value) {
+                return Err(Status::new(
+                    Code::InvalidArgument,
+                    "phone_must_be_a_tel_url_in_e164_format",
+                ));
+            }
+            Ok(())
+        }
         None => Ok(()),
     }
 }
