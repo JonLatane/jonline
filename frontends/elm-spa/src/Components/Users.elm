@@ -886,6 +886,12 @@ permissionText permission =
         SYNCEVENTSFROMICS ->
             "Sync Events from iCal"
 
+        SYNCPOSTSFROMRSS ->
+            "Sync Posts from RSS"
+
+        SYNCPOSTSFROMATOM ->
+            "Sync Posts from Atom"
+
         VIEWMEDIA ->
             "View Media"
 

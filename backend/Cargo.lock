@@ -212,6 +212,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "atom_syndication"
+version = "0.12.10"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d48d93a31c932d58b9fd68664a904ae5b74bea37f06c5f68d5bec92f0cdd106d"
+dependencies = [
+ "chrono",
+ "derive_builder",
+ "diligent-date-parser",
+ "quick-xml 0.41.0",
+]
+
+[[package]]
 name = "atomic"
 version = "0.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1246,6 +1258,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f1dd6dbb5841937940781866fa1281a1ff7bd3bf827091440879f9994983d5c2"
 dependencies = [
  "crypto-common 0.2.2",
+]
+
+[[package]]
+name = "diligent-date-parser"
+version = "0.1.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c8ede7d79366f419921e2e2f67889c12125726692a313bffb474bd5f37a581e9"
+dependencies = [
+ "chrono",
 ]
 
 [[package]]
@@ -3683,6 +3704,7 @@ version = "0.5.553"
 dependencies = [
  "anyhow",
  "async-compression",
+ "atom_syndication",
  "aws-creds",
  "base64 0.23.1",
  "bcrypt",
@@ -3722,6 +3744,7 @@ dependencies = [
  "rocket-cache-response",
  "rocket_async_compression",
  "rrule",
+ "rss",
  "rust-s3",
  "rustls 0.23.43",
  "serde",
@@ -3981,6 +4004,17 @@ dependencies = [
  "spki 0.7.3",
  "subtle",
  "zeroize",
+]
+
+[[package]]
+name = "rss"
+version = "2.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5fdc977a288e79bfacb4faeaba370da8aef9893ac38b68ae1df6a30d4224a2f9"
+dependencies = [
+ "atom_syndication",
+ "derive_builder",
+ "quick-xml 0.41.0",
 ]
 
 [[package]]

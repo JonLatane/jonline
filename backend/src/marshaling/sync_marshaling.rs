@@ -96,6 +96,19 @@ pub fn source_configuration_to_json(
     }
 }
 
+/// Which permission gates creating/updating a `SyncSource` with this `configuration` -- one of
+/// `SyncEventsFromIcs`/`SyncPostsFromRss`/`SyncPostsFromAtom` (see `permissions.proto`), matching
+/// whichever `oneof` variant is set. Falls back to `SyncEventsFromIcs` for `None` (mirrors
+/// `source_configuration_to_json`'s own `None` fallback, and matches `create_sync_source`'s
+/// existing behavior before RSS/Atom sources existed).
+pub fn required_sync_source_permission(configuration: &Option<sync_source::Configuration>) -> Permission {
+    match configuration {
+        Some(sync_source::Configuration::RssSubscriptionUrl(_)) => Permission::SyncPostsFromRss,
+        Some(sync_source::Configuration::AtomSubscriptionUrl(_)) => Permission::SyncPostsFromAtom,
+        _ => Permission::SyncEventsFromIcs,
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct MarshalableSyncDestination(pub models::SyncDestination, pub models::Author);
 

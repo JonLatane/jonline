@@ -301,7 +301,8 @@ export const protobufPackage = "rellm";
  * `event_count`/`event_instance_count` on every sync.
  *
  * Sources are managed via [`GetSyncSources`](#grpc-api-GetSyncSources), [`CreateSyncSource`](#grpc-api-CreateSyncSource)
- * (requires `SYNC_EVENTS_FROM_ICS`, or Admin), [`UpdateSyncSource`](#grpc-api-UpdateSyncSource), and
+ * (requires `SYNC_EVENTS_FROM_ICS`/`SYNC_POSTS_FROM_RSS`/`SYNC_POSTS_FROM_ATOM` -- whichever matches
+ * the source's own configuration -- or Admin), [`UpdateSyncSource`](#grpc-api-UpdateSyncSource), and
  * [`DeleteSyncSource`](#grpc-api-DeleteSyncSource).
  *
  * See also: [`SyncDestination`](#rellm-SyncDestination)
@@ -1419,7 +1420,10 @@ export const RellmDefinition = {
       responseStream: false,
       options: {},
     },
-    /** Creates a SyncSource for the current user. *Authenticated*, requires `SYNC_EVENTS_FROM_ICS` (or Admin). */
+    /**
+     * Creates a SyncSource for the current user. *Authenticated*, requires `SYNC_EVENTS_FROM_ICS`/
+     * `SYNC_POSTS_FROM_RSS`/`SYNC_POSTS_FROM_ATOM` (whichever matches `configuration`, or Admin).
+     */
     createSyncSource: {
       name: "CreateSyncSource",
       requestType: SyncSource,
@@ -1428,7 +1432,11 @@ export const RellmDefinition = {
       responseStream: false,
       options: {},
     },
-    /** Updates a SyncSource. *Authenticated* (owner, or Admin for any user's), requires `SYNC_EVENTS_FROM_ICS` (or Admin). */
+    /**
+     * Updates a SyncSource. *Authenticated* (owner, or Admin for any user's), requires
+     * `SYNC_EVENTS_FROM_ICS`/`SYNC_POSTS_FROM_RSS`/`SYNC_POSTS_FROM_ATOM` (whichever matches the
+     * effective `configuration` -- the request's own if set, else the existing source's -- or Admin).
+     */
     updateSyncSource: {
       name: "UpdateSyncSource",
       requestType: SyncSource,
@@ -1920,9 +1928,16 @@ export interface RellmServiceImplementation<CallContextExt = {}> {
   deleteRemovedEventInstances(request: Event, context: CallContext & CallContextExt): Promise<DeepPartial<Event>>;
   /** Gets a user's SyncSources. *Authenticated* (self, or Admin for any user). */
   getSyncSources(request: User, context: CallContext & CallContextExt): Promise<DeepPartial<GetSyncSourcesResponse>>;
-  /** Creates a SyncSource for the current user. *Authenticated*, requires `SYNC_EVENTS_FROM_ICS` (or Admin). */
+  /**
+   * Creates a SyncSource for the current user. *Authenticated*, requires `SYNC_EVENTS_FROM_ICS`/
+   * `SYNC_POSTS_FROM_RSS`/`SYNC_POSTS_FROM_ATOM` (whichever matches `configuration`, or Admin).
+   */
   createSyncSource(request: SyncSource, context: CallContext & CallContextExt): Promise<DeepPartial<SyncSource>>;
-  /** Updates a SyncSource. *Authenticated* (owner, or Admin for any user's), requires `SYNC_EVENTS_FROM_ICS` (or Admin). */
+  /**
+   * Updates a SyncSource. *Authenticated* (owner, or Admin for any user's), requires
+   * `SYNC_EVENTS_FROM_ICS`/`SYNC_POSTS_FROM_RSS`/`SYNC_POSTS_FROM_ATOM` (whichever matches the
+   * effective `configuration` -- the request's own if set, else the existing source's -- or Admin).
+   */
   updateSyncSource(request: SyncSource, context: CallContext & CallContextExt): Promise<DeepPartial<SyncSource>>;
   /** Deletes a SyncSource. *Authenticated* (owner, or Admin). */
   deleteSyncSource(
@@ -2295,9 +2310,16 @@ export interface RellmClient<CallOptionsExt = {}> {
   deleteRemovedEventInstances(request: DeepPartial<Event>, options?: CallOptions & CallOptionsExt): Promise<Event>;
   /** Gets a user's SyncSources. *Authenticated* (self, or Admin for any user). */
   getSyncSources(request: DeepPartial<User>, options?: CallOptions & CallOptionsExt): Promise<GetSyncSourcesResponse>;
-  /** Creates a SyncSource for the current user. *Authenticated*, requires `SYNC_EVENTS_FROM_ICS` (or Admin). */
+  /**
+   * Creates a SyncSource for the current user. *Authenticated*, requires `SYNC_EVENTS_FROM_ICS`/
+   * `SYNC_POSTS_FROM_RSS`/`SYNC_POSTS_FROM_ATOM` (whichever matches `configuration`, or Admin).
+   */
   createSyncSource(request: DeepPartial<SyncSource>, options?: CallOptions & CallOptionsExt): Promise<SyncSource>;
-  /** Updates a SyncSource. *Authenticated* (owner, or Admin for any user's), requires `SYNC_EVENTS_FROM_ICS` (or Admin). */
+  /**
+   * Updates a SyncSource. *Authenticated* (owner, or Admin for any user's), requires
+   * `SYNC_EVENTS_FROM_ICS`/`SYNC_POSTS_FROM_RSS`/`SYNC_POSTS_FROM_ATOM` (whichever matches the
+   * effective `configuration` -- the request's own if set, else the existing source's -- or Admin).
+   */
   updateSyncSource(request: DeepPartial<SyncSource>, options?: CallOptions & CallOptionsExt): Promise<SyncSource>;
   /** Deletes a SyncSource. *Authenticated* (owner, or Admin). */
   deleteSyncSource(

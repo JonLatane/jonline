@@ -237,7 +237,8 @@ import "server_configuration.proto";
 // `event_count`/`event_instance_count` on every sync.
 //
 // Sources are managed via [`GetSyncSources`](#grpc-api-GetSyncSources), [`CreateSyncSource`](#grpc-api-CreateSyncSource)
-// (requires `SYNC_EVENTS_FROM_ICS`, or Admin), [`UpdateSyncSource`](#grpc-api-UpdateSyncSource), and
+// (requires `SYNC_EVENTS_FROM_ICS`/`SYNC_POSTS_FROM_RSS`/`SYNC_POSTS_FROM_ATOM` -- whichever matches
+// the source's own configuration -- or Admin), [`UpdateSyncSource`](#grpc-api-UpdateSyncSource), and
 // [`DeleteSyncSource`](#grpc-api-DeleteSyncSource).
 //
 // See also: [`SyncDestination`](#rellm-SyncDestination)
@@ -973,9 +974,12 @@ service Rellm {
 
   // Gets a user's SyncSources. *Authenticated* (self, or Admin for any user).
   rpc GetSyncSources(User) returns (GetSyncSourcesResponse) {}
-  // Creates a SyncSource for the current user. *Authenticated*, requires `SYNC_EVENTS_FROM_ICS` (or Admin).
+  // Creates a SyncSource for the current user. *Authenticated*, requires `SYNC_EVENTS_FROM_ICS`/
+  // `SYNC_POSTS_FROM_RSS`/`SYNC_POSTS_FROM_ATOM` (whichever matches `configuration`, or Admin).
   rpc CreateSyncSource(SyncSource) returns (SyncSource) {}
-  // Updates a SyncSource. *Authenticated* (owner, or Admin for any user's), requires `SYNC_EVENTS_FROM_ICS` (or Admin).
+  // Updates a SyncSource. *Authenticated* (owner, or Admin for any user's), requires
+  // `SYNC_EVENTS_FROM_ICS`/`SYNC_POSTS_FROM_RSS`/`SYNC_POSTS_FROM_ATOM` (whichever matches the
+  // effective `configuration` -- the request's own if set, else the existing source's -- or Admin).
   rpc UpdateSyncSource(SyncSource) returns (SyncSource) {}
   // Deletes a SyncSource. *Authenticated* (owner, or Admin).
   rpc DeleteSyncSource(DeleteSyncSourceRequest) returns (google.protobuf.Empty) {}

@@ -771,7 +771,8 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
     </p>
     <p>
       Sources are managed via <a href="#grpc-api-GetSyncSources"><code>GetSyncSources</code></a>, <a href="#grpc-api-CreateSyncSource"><code>CreateSyncSource</code></a>
-      (requires <code>SYNC_EVENTS_FROM_ICS</code>, or Admin), <a href="#grpc-api-UpdateSyncSource"><code>UpdateSyncSource</code></a>, and
+      (requires <code>SYNC_EVENTS_FROM_ICS</code>/<code>SYNC_POSTS_FROM_RSS</code>/<code>SYNC_POSTS_FROM_ATOM</code> -- whichever matches
+      the source's own configuration -- or Admin), <a href="#grpc-api-UpdateSyncSource"><code>UpdateSyncSource</code></a>, and
       <a href="#grpc-api-DeleteSyncSource"><code>DeleteSyncSource</code></a>.
     </p>
     <p>See also: <a href="#rellm-SyncDestination"><code>SyncDestination</code></a></p>
@@ -1772,13 +1773,13 @@ directory</a> is (<code>{name}</code> denotes a
           <td>CreateSyncSource</td>
           <td><a href="#rellm-SyncSource">SyncSource</a></td>
           <td><a href="#rellm-SyncSource">SyncSource</a></td>
-          <td>Creates a SyncSource for the current user. <em>Authenticated</em>, requires <code>SYNC_EVENTS_FROM_ICS</code> (or Admin).</td>
+          <td>Creates a SyncSource for the current user. <em>Authenticated</em>, requires <code>SYNC_EVENTS_FROM_ICS</code>/ <code>SYNC_POSTS_FROM_RSS</code>/<code>SYNC_POSTS_FROM_ATOM</code> (whichever matches <code>configuration</code>, or Admin).</td>
         </tr>
         <tr>
           <td>UpdateSyncSource</td>
           <td><a href="#rellm-SyncSource">SyncSource</a></td>
           <td><a href="#rellm-SyncSource">SyncSource</a></td>
-          <td>Updates a SyncSource. <em>Authenticated</em> (owner, or Admin for any user's), requires <code>SYNC_EVENTS_FROM_ICS</code> (or Admin).</td>
+          <td>Updates a SyncSource. <em>Authenticated</em> (owner, or Admin for any user's), requires <code>SYNC_EVENTS_FROM_ICS</code>/<code>SYNC_POSTS_FROM_RSS</code>/<code>SYNC_POSTS_FROM_ATOM</code> (whichever matches the effective <code>configuration</code> -- the request's own if set, else the existing source's -- or Admin).</td>
         </tr>
         <tr>
           <td>DeleteSyncSource</td>
@@ -2650,6 +2651,16 @@ directory</a> is (<code>{name}</code> denotes a
           <td>SYNC_EVENTS_FROM_ICS</td>
           <td>700</td>
           <td>Allow the user to create/update <a href="#rellm-SyncSource"><code>SyncSource</code></a>s (iCal subscriptions) that synchronize <a href="#rellm-Event"><code>Event</code></a>s in.</td>
+        </tr>
+        <tr>
+          <td>SYNC_POSTS_FROM_RSS</td>
+          <td>701</td>
+          <td>Allow the user to create/update <a href="#rellm-SyncSource"><code>SyncSource</code></a>s (RSS subscriptions) that synchronize <a href="#rellm-Post"><code>Post</code></a>s in.</td>
+        </tr>
+        <tr>
+          <td>SYNC_POSTS_FROM_ATOM</td>
+          <td>702</td>
+          <td>Allow the user to create/update <a href="#rellm-SyncSource"><code>SyncSource</code></a>s (Atom subscriptions) that synchronize <a href="#rellm-Post"><code>Post</code></a>s in.</td>
         </tr>
         <tr>
           <td>SYNC_EVENTS_TO_FACEBOOK</td>

@@ -508,12 +508,21 @@ timestampsText time post =
 `postAuthorAvatarUrl`), not necessarily `post.author` itself. Opens the shared
 Markdown editor panel via `onEditClicked`, supplied by the caller
 (`Pages.Post.PostId_`).
+
+Hidden entirely for a Post synced in from an RSS/Atom `SyncSource` (`post.syncSource /= Nothing`
+-- see `posts.proto`'s `Post.sync_source`), mirroring `Components.Events.hasIcsSyncSource`/
+`Components.Pages.EventPage.editable`'s same lock for a synced `Event`: such a Post's `content`
+gets silently overwritten back to the feed's own text on every subsequent sync run (see
+`logic::sync_sources::feed_sync::sync_post_text`), so a local edit here would just be clobbered.
+`postDetail` renders `title`/`link` as plain, non-editable text regardless of `syncSource` --
+there's no separate edit affordance for either to lock in the first place, only `content` goes
+through this button.
 -}
 editContentButton : Maybe RellmAccount -> msg -> Post -> Html msg
 editContentButton maybeAccount onEditClicked post =
     case maybeAccount of
         Just account ->
-            if isAuthor account post then
+            if isAuthor account post && post.syncSource == Nothing then
                 button [ class "post-edit-button", Html.Events.onClick onEditClicked ] [ text "Edit Content" ]
 
             else

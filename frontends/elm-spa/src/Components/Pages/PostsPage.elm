@@ -33,12 +33,13 @@ import Components.Users.ProfileHeading as ProfileHeading
 import Dict exposing (Dict)
 import Effect exposing (Effect)
 import Grpc
-import Html exposing (Html, a, button, div, h2, input, option, p, select, text)
-import Html.Attributes exposing (class, href, placeholder, selected, style, title, type_, value)
+import Html exposing (Html, a, button, div, h2, h3, input, option, p, select, span, text)
+import Html.Attributes exposing (class, href, placeholder, selected, style, target, title, type_, value)
 import Html.Events exposing (onClick, onInput, preventDefaultOn)
 import Html.Keyed
 import Http
 import Json.Decode as Decode
+import Ports
 import Process
 import Proto.Rellm exposing (Post, SyncDestination, User)
 import Proto.Rellm.PostContext exposing (PostContext(..))
@@ -59,7 +60,7 @@ import Shared.Time as SharedTime
 import Shared.UserPreferences as UserPreferences
 import Task
 import Time
-import UI.Classes exposing (classes, hostnameToCSSClass)
+import UI.Classes exposing (classes, hostnameToCSSClass, openClosedClass)
 import UI.CustomNav as CustomNav
 import UI.Flip
 import Url.Builder
@@ -144,7 +145,29 @@ type alias Model =
     -- exactly.
     , pushStatuses : Dict String SubmitStatus
 
+    -- Whether the "Export" button's RSS/Atom-subscription-link popover (see
+    -- `exportButtonView`) is currently open -- mirrors
+    -- `Components.Pages.EventsPage.Model.exportPopoverOpen` exactly, just for RSS/Atom links
+    -- instead of one ICS link.
+    , exportPopoverOpen : Bool
+
+    -- Which of the popover's two "Copy X Link" buttons (if either) most recently fired within
+    -- the last 5s -- shows "Link Copied!" on that one specifically (unlike
+    -- `Components.Pages.EventsPage.Model.copyLinkCopied`'s plain `Bool`, since there are two
+    -- separate links/buttons here to disambiguate between). `copyLinkGeneration` mirrors that
+    -- same debounce convention exactly -- see its own doc.
+    , copyLinkCopied : Maybe ExportFeedKind
+    , copyLinkGeneration : Int
     }
+
+
+{-| Which feed format a `CopyLinkClicked`/the popover's own link `<a>` refers to -- RSS
+(`GET /rss.xml`) or Atom (`GET /atom.xml`, see `backend/src/web/rss_subscription.rs`/
+`atom_subscription.rs`).
+-}
+type ExportFeedKind
+    = Rss
+    | Atom
 
 
 {-| Mirrors `Components.Pages.EventsPage.SubmitStatus`/`Pages.Event.PostId_.SubmitStatus`
@@ -199,6 +222,17 @@ type Msg
       -- exactly.
     | PushPostToDestination String String String
     | GotPushResult String String String (Result Grpc.Error ( Maybe AccountsPanel.Msg, Post ))
+      -- Opens/closes the "Export" button's RSS/Atom-subscription-link popover (see
+      -- `exportButtonView`) -- mirrors `Components.Pages.EventsPage.ExportClicked`/
+      -- `ExportPopoverClosed` exactly.
+    | ExportClicked
+    | ExportPopoverClosed
+      -- Copies `feedUrl kind`'s link to the clipboard via `Ports.copyToClipboard` and shows
+      -- "Link Copied!" on that one button for 5s -- mirrors
+      -- `Components.Pages.EventsPage.CopyLinkClicked`/`CopyLinkCopyTimeoutElapsed` exactly, just
+      -- carrying which of the two links (`ExportFeedKind`) was copied.
+    | CopyLinkClicked ExportFeedKind
+    | CopyLinkCopyTimeoutElapsed Int
 
 
 type ServerPosts
@@ -450,6 +484,9 @@ init shared author navKey path query embeddedPage availableSyncDestinations prof
                 , showSyncDestinations = False
                 , availableSyncDestinations = availableSyncDestinations
                 , pushStatuses = Dict.empty
+                , exportPopoverOpen = False
+                , copyLinkCopied = Nothing
+                , copyLinkGeneration = 0
                 }
     in
     -- Closes any open panel (Accounts, Starred, etc.) unconditionally on
@@ -819,6 +856,36 @@ updateInner shared msg model =
                     ( { clearedModel | pushStatuses = Dict.insert key (SubmitFailed (AccountsPanel.grpcErrorToString err)) clearedModel.pushStatuses }
                     , Effect.none
                     )
+
+        ExportClicked ->
+            ( { model | exportPopoverOpen = not model.exportPopoverOpen }, Effect.none )
+
+        ExportPopoverClosed ->
+            ( { model | exportPopoverOpen = False }, Effect.none )
+
+        CopyLinkClicked kind ->
+            let
+                generation : Int
+                generation =
+                    model.copyLinkGeneration + 1
+            in
+            ( { model | copyLinkCopied = Just kind, copyLinkGeneration = generation }
+            , Effect.batch
+                [ Ports.copyToClipboard (feedUrl shared model kind) |> Effect.fromCmd
+                , Process.sleep 5000
+                    |> Task.perform (\_ -> CopyLinkCopyTimeoutElapsed generation)
+                    |> Effect.fromCmd
+                ]
+            )
+
+        CopyLinkCopyTimeoutElapsed generation ->
+            if generation == model.copyLinkGeneration then
+                ( { model | copyLinkCopied = Nothing }, Effect.none )
+
+            else
+                -- A later `CopyLinkClicked` already bumped `copyLinkGeneration` past this
+                -- timer's -- it's stale, ignore it.
+                ( model, Effect.none )
 
 
 pushStatusKey : String -> String -> String
@@ -1458,7 +1525,7 @@ view shared showSearchRow showAuthorHeading model =
           else
             text ""
         , if showSearchRow then
-            searchRowView model
+            searchRowView shared model
 
           else
             text ""
@@ -1570,8 +1637,8 @@ plain posts feed). The clear ("╳") button, styled like `UI.elm`'s
 hardcoded to `Shared.Msg`/`AccountsPanel.Msg`, not this module's own `Msg`),
 only appears once there's search text to clear.
 -}
-searchRowView : Model -> Html Msg
-searchRowView model =
+searchRowView : Shared.Model -> Model -> Html Msg
+searchRowView shared model =
     div [ class "filter-controls-row" ]
         [ div [ class "filter-search-field" ]
             [ input
@@ -1612,6 +1679,103 @@ searchRowView model =
                             [ text (postContextLabel context) ]
                     )
                     [ POST, REPLY ]
+                )
+            , exportButtonView shared model
+            ]
+        ]
+
+
+{-| `kind`'s own subscription path (see `backend/src/web/rss_subscription.rs`/
+`atom_subscription.rs`) -- `feedUrl`'s own query-string-appending half.
+-}
+feedKindPath : ExportFeedKind -> String
+feedKindPath kind =
+    case kind of
+        Rss ->
+            "/rss.xml"
+
+        Atom ->
+            "/atom.xml"
+
+
+feedKindLabel : ExportFeedKind -> String
+feedKindLabel kind =
+    case kind of
+        Rss ->
+            "RSS"
+
+        Atom ->
+            "Atom"
+
+
+{-| The backend's `kind`-formatted feed endpoint (`GET /rss.xml`/`GET /atom.xml`,
+`?user_id={id}` once `model.author` scopes this listing to one user) -- mirrors
+`Components.Pages.EventsPage.icsUrl` exactly, just parameterized over which of the two formats,
+and serving Posts instead of Events.
+-}
+feedUrl : Shared.Model -> Model -> ExportFeedKind -> String
+feedUrl shared model kind =
+    case model.author of
+        Just ( host, user ) ->
+            "https://" ++ host ++ feedKindPath kind ++ Url.Builder.toQuery [ Url.Builder.string "user_id" user.id ]
+
+        Nothing ->
+            "https://" ++ shared.accounts.mainFrontendHost ++ feedKindPath kind
+
+
+{-| The "Export" icon button at the end of `searchRowView`'s `.filter-controls-trailing` --
+mirrors `Components.Pages.EventsPage.exportButtonView` almost exactly (same
+`popover-anchor`/`popover-toggle`/`popover`/`popover-backdrop` structure from `ui/popover.css`),
+just offering both RSS and Atom links/copy buttons side by side instead of one ICS link, since a
+Posts feed can be subscribed to as either format (see `logic::sync_sources::feed_sync`'s own
+"either syncs the same way" symmetry on the *pulling-in* side -- this is the *serving-out* side).
+-}
+exportButtonView : Shared.Model -> Model -> Html Msg
+exportButtonView shared model =
+    div [ classes [ "posts-export", "popover-anchor" ] ]
+        [ button
+            [ classes [ "filter-icon-button", "popover-toggle", "background-color-nav", openClosedClass model.exportPopoverOpen ]
+            , onClick ExportClicked
+            , title "Export posts (RSS/Atom)"
+            , type_ "button"
+            ]
+            [ text "⤓" ]
+        , div [ classes [ "popover-backdrop", openClosedClass model.exportPopoverOpen ], onClick ExportPopoverClosed ] []
+        , div [ classes [ "posts-export-popover", "popover", openClosedClass model.exportPopoverOpen ] ]
+            [ h3 [ class "posts-export-popover-heading" ]
+                [ text "Subscribe to Posts" ]
+            , p [] [ text "Works with Feedly, Inoreader, NetNewsWire, and most feed readers." ]
+            , div [ class "posts-export-popover-links" ]
+                (List.map
+                    (\kind ->
+                        a
+                            [ href (feedUrl shared model kind)
+                            , target "_blank"
+                            , class "posts-export-popover-link"
+                            ]
+                            [ text (feedKindLabel kind ++ ": " ++ feedUrl shared model kind) ]
+                    )
+                    [ Rss, Atom ]
+                )
+            , div [ class "posts-export-popover-copy-row" ]
+                (List.map
+                    (\kind ->
+                        button
+                            [ classes [ "posts-export-popover-copy", "background-color-primary" ]
+                            , onClick (CopyLinkClicked kind)
+                            , type_ "button"
+                            ]
+                            [ span [ class "posts-export-popover-copy-icon" ] [ text "⎘" ]
+                            , text
+                                (if model.copyLinkCopied == Just kind then
+                                    "Copied!"
+
+                                 else
+                                    "Copy " ++ feedKindLabel kind ++ " Link"
+                                )
+                            ]
+                    )
+                    [ Rss, Atom ]
                 )
             ]
         ]

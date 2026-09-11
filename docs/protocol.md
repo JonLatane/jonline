@@ -414,7 +414,8 @@ A background job re-pulls each source on its own `sync_interval_seconds` cadence
 `event_count`/`event_instance_count` on every sync.
 
 Sources are managed via [`GetSyncSources`](#grpc-api-GetSyncSources), [`CreateSyncSource`](#grpc-api-CreateSyncSource)
-(requires `SYNC_EVENTS_FROM_ICS`, or Admin), [`UpdateSyncSource`](#grpc-api-UpdateSyncSource), and
+(requires `SYNC_EVENTS_FROM_ICS`/`SYNC_POSTS_FROM_RSS`/`SYNC_POSTS_FROM_ATOM` -- whichever matches
+the source&#39;s own configuration -- or Admin), [`UpdateSyncSource`](#grpc-api-UpdateSyncSource), and
 [`DeleteSyncSource`](#grpc-api-DeleteSyncSource).
 
 See also: [`SyncDestination`](#rellm-SyncDestination)
@@ -1046,8 +1047,8 @@ discarded and a fresh keypair generated, so it&#39;s single-use per completed/fa
 | UpdateEventInstances | [Event](#rellm-Event) | [Event](#rellm-Event) | Updates EventInstances in an existing Event for every EventInstance in the request that&#39;s already on the event. Any other instances in the request are ignored. *Authenticated.* |
 | DeleteRemovedEventInstances | [Event](#rellm-Event) | [Event](#rellm-Event) | Deletes EventInstances in an existing Event that aren&#39;t present in the input Event. *Authenticated.* |
 | GetSyncSources | [User](#rellm-User) | [GetSyncSourcesResponse](#rellm-GetSyncSourcesResponse) | Gets a user&#39;s SyncSources. *Authenticated* (self, or Admin for any user). |
-| CreateSyncSource | [SyncSource](#rellm-SyncSource) | [SyncSource](#rellm-SyncSource) | Creates a SyncSource for the current user. *Authenticated*, requires `SYNC_EVENTS_FROM_ICS` (or Admin). |
-| UpdateSyncSource | [SyncSource](#rellm-SyncSource) | [SyncSource](#rellm-SyncSource) | Updates a SyncSource. *Authenticated* (owner, or Admin for any user&#39;s), requires `SYNC_EVENTS_FROM_ICS` (or Admin). |
+| CreateSyncSource | [SyncSource](#rellm-SyncSource) | [SyncSource](#rellm-SyncSource) | Creates a SyncSource for the current user. *Authenticated*, requires `SYNC_EVENTS_FROM_ICS`/ `SYNC_POSTS_FROM_RSS`/`SYNC_POSTS_FROM_ATOM` (whichever matches `configuration`, or Admin). |
+| UpdateSyncSource | [SyncSource](#rellm-SyncSource) | [SyncSource](#rellm-SyncSource) | Updates a SyncSource. *Authenticated* (owner, or Admin for any user&#39;s), requires `SYNC_EVENTS_FROM_ICS`/`SYNC_POSTS_FROM_RSS`/`SYNC_POSTS_FROM_ATOM` (whichever matches the effective `configuration` -- the request&#39;s own if set, else the existing source&#39;s -- or Admin). |
 | DeleteSyncSource | [DeleteSyncSourceRequest](#rellm-DeleteSyncSourceRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes a SyncSource. *Authenticated* (owner, or Admin). |
 | GetSyncDestinations | [User](#rellm-User) | [GetSyncDestinationsResponse](#rellm-GetSyncDestinationsResponse) | Gets a user&#39;s SyncDestinations. *Authenticated* (self, or Admin for any user). |
 | CreateSyncDestination | [SyncDestination](#rellm-SyncDestination) | [SyncDestination](#rellm-SyncDestination) | Creates a SyncDestination for the current user. *Authenticated*, requires `SYNC_EVENTS_TO_FACEBOOK` or `SYNC_POSTS_TO_FACEBOOK` (or Admin). |
@@ -1421,6 +1422,8 @@ and to Group non-members via [`non_member_permissions` in `Group`](#rellm-Group)
 | READ_ALL_SYSTEM_MESSAGES | 51 |  |
 | CREATE_AI_MODEL_PROVIDERS | 60 | Allow the user to create/update their own [`AIModelProvider`](#rellm-AIModelProvider)s (see `ai_model_providers.proto`) and grant/revoke other users&#39; access to them. |
 | SYNC_EVENTS_FROM_ICS | 700 | Allow the user to create/update [`SyncSource`](#rellm-SyncSource)s (iCal subscriptions) that synchronize [`Event`](#rellm-Event)s in. |
+| SYNC_POSTS_FROM_RSS | 701 | Allow the user to create/update [`SyncSource`](#rellm-SyncSource)s (RSS subscriptions) that synchronize [`Post`](#rellm-Post)s in. |
+| SYNC_POSTS_FROM_ATOM | 702 | Allow the user to create/update [`SyncSource`](#rellm-SyncSource)s (Atom subscriptions) that synchronize [`Post`](#rellm-Post)s in. |
 | SYNC_EVENTS_TO_FACEBOOK | 1000 | Sync permissions -- each gates creating/updating [`SyncDestination`](#rellm-SyncDestination)s of that platform, and syncing that content type to them (see `sync.proto`). A generous reserved block (`1000`&#43;) since this is the most likely area to keep growing as new platforms are added.
 
 Allow the user to create/update [`SyncDestination`](#rellm-SyncDestination)s that cross-post EventInstances to a connected Facebook Page, and to sync EventInstances to them. |

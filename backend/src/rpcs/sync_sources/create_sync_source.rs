@@ -19,8 +19,13 @@ pub fn create_sync_source(
 ) -> Result<SyncSource, Status> {
     // Create is always for the current user -- admins may manage other users' sources (see
     // `update_sync_source`/`delete_sync_source`) but never create one on their
-    // behalf.
-    validate_permission(&Some(current_user), Permission::SyncEventsFromIcs)?;
+    // behalf. Gated per-configuration-type (`SyncEventsFromIcs`/`SyncPostsFromRss`/
+    // `SyncPostsFromAtom`, whichever matches `request.configuration`, or Admin) -- see
+    // `required_sync_source_permission`.
+    validate_permission(
+        &Some(current_user),
+        required_sync_source_permission(&request.configuration),
+    )?;
 
     let configuration = source_configuration_to_json(&request.configuration);
     let has_subscription_url = ["ics_subscription_url", "rss_subscription_url", "atom_subscription_url"]

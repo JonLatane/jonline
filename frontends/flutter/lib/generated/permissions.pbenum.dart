@@ -55,6 +55,8 @@ class Permission extends $pb.ProtobufEnum {
   static const Permission READ_ALL_SYSTEM_MESSAGES = Permission._(51, _omitEnumNames ? '' : 'READ_ALL_SYSTEM_MESSAGES');
   static const Permission CREATE_AI_MODEL_PROVIDERS = Permission._(60, _omitEnumNames ? '' : 'CREATE_AI_MODEL_PROVIDERS');
   static const Permission SYNC_EVENTS_FROM_ICS = Permission._(700, _omitEnumNames ? '' : 'SYNC_EVENTS_FROM_ICS');
+  static const Permission SYNC_POSTS_FROM_RSS = Permission._(701, _omitEnumNames ? '' : 'SYNC_POSTS_FROM_RSS');
+  static const Permission SYNC_POSTS_FROM_ATOM = Permission._(702, _omitEnumNames ? '' : 'SYNC_POSTS_FROM_ATOM');
   static const Permission SYNC_EVENTS_TO_FACEBOOK = Permission._(1000, _omitEnumNames ? '' : 'SYNC_EVENTS_TO_FACEBOOK');
   static const Permission SYNC_POSTS_TO_FACEBOOK = Permission._(1001, _omitEnumNames ? '' : 'SYNC_POSTS_TO_FACEBOOK');
   static const Permission SYNC_EVENTS_TO_INSTAGRAM = Permission._(1010, _omitEnumNames ? '' : 'SYNC_EVENTS_TO_INSTAGRAM');
@@ -110,6 +112,8 @@ class Permission extends $pb.ProtobufEnum {
     READ_ALL_SYSTEM_MESSAGES,
     CREATE_AI_MODEL_PROVIDERS,
     SYNC_EVENTS_FROM_ICS,
+    SYNC_POSTS_FROM_RSS,
+    SYNC_POSTS_FROM_ATOM,
     SYNC_EVENTS_TO_FACEBOOK,
     SYNC_POSTS_TO_FACEBOOK,
     SYNC_EVENTS_TO_INSTAGRAM,

@@ -18,10 +18,22 @@ pub fn update_sync_source(
     current_user: &models::User,
     conn: &mut PgPooledConnection,
 ) -> Result<SyncSource, Status> {
-    validate_permission(&Some(current_user), Permission::SyncEventsFromIcs)?;
-
     let source_id = request.id.to_db_id_or_err("id")?;
     let mut existing = models::get_sync_source(source_id, conn)?;
+
+    // Gated per-configuration-type (`SyncEventsFromIcs`/`SyncPostsFromRss`/`SyncPostsFromAtom`,
+    // or Admin) same as `create_sync_source` -- against the request's own `configuration` if
+    // it's changing the source's type, else the existing source's, so e.g. just bumping
+    // `sync_interval_seconds` on an RSS source is gated on `SyncPostsFromRss`, not
+    // `SyncEventsFromIcs`.
+    let effective_configuration = request
+        .configuration
+        .clone()
+        .or_else(|| source_configuration_to_proto(&existing.configuration));
+    validate_permission(
+        &Some(current_user),
+        required_sync_source_permission(&effective_configuration),
+    )?;
 
     if existing.user_id != current_user.id {
         validate_permission(&Some(current_user), Permission::Admin)?;

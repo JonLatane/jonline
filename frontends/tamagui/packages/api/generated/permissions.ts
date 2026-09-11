@@ -131,6 +131,16 @@ export enum Permission {
    */
   SYNC_EVENTS_FROM_ICS = 700,
   /**
+   * SYNC_POSTS_FROM_RSS - Allow the user to create/update [`SyncSource`](#rellm-SyncSource)s (RSS subscriptions) that
+   * synchronize [`Post`](#rellm-Post)s in.
+   */
+  SYNC_POSTS_FROM_RSS = 701,
+  /**
+   * SYNC_POSTS_FROM_ATOM - Allow the user to create/update [`SyncSource`](#rellm-SyncSource)s (Atom subscriptions) that
+   * synchronize [`Post`](#rellm-Post)s in.
+   */
+  SYNC_POSTS_FROM_ATOM = 702,
+  /**
    * SYNC_EVENTS_TO_FACEBOOK - Sync permissions -- each gates creating/updating [`SyncDestination`](#rellm-SyncDestination)s of that platform, and
    * syncing that content type to them (see `sync.proto`). A generous reserved block (`1000`+)
    * since this is the most likely area to keep growing as new platforms are added.
@@ -337,6 +347,12 @@ export function permissionFromJSON(object: any): Permission {
     case 700:
     case "SYNC_EVENTS_FROM_ICS":
       return Permission.SYNC_EVENTS_FROM_ICS;
+    case 701:
+    case "SYNC_POSTS_FROM_RSS":
+      return Permission.SYNC_POSTS_FROM_RSS;
+    case 702:
+    case "SYNC_POSTS_FROM_ATOM":
+      return Permission.SYNC_POSTS_FROM_ATOM;
     case 1000:
     case "SYNC_EVENTS_TO_FACEBOOK":
       return Permission.SYNC_EVENTS_TO_FACEBOOK;
@@ -469,6 +485,10 @@ export function permissionToJSON(object: Permission): string {
       return "CREATE_AI_MODEL_PROVIDERS";
     case Permission.SYNC_EVENTS_FROM_ICS:
       return "SYNC_EVENTS_FROM_ICS";
+    case Permission.SYNC_POSTS_FROM_RSS:
+      return "SYNC_POSTS_FROM_RSS";
+    case Permission.SYNC_POSTS_FROM_ATOM:
+      return "SYNC_POSTS_FROM_ATOM";
     case Permission.SYNC_EVENTS_TO_FACEBOOK:
       return "SYNC_EVENTS_TO_FACEBOOK";
     case Permission.SYNC_POSTS_TO_FACEBOOK:

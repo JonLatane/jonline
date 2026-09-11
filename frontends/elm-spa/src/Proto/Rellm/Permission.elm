@@ -132,6 +132,12 @@ fieldNumbersPermission n_ =
         SYNCEVENTSFROMICS ->
             700
 
+        SYNCPOSTSFROMRSS ->
+            701
+
+        SYNCPOSTSFROMATOM ->
+            702
+
         SYNCEVENTSTOFACEBOOK ->
             1000
 
@@ -310,6 +316,12 @@ encodePermission value =
             SYNCEVENTSFROMICS ->
                 700
 
+            SYNCPOSTSFROMRSS ->
+                701
+
+            SYNCPOSTSFROMATOM ->
+                702
+
             SYNCEVENTSTOFACEBOOK ->
                 1000
 
@@ -482,6 +494,12 @@ decodePermission =
                     700 ->
                         SYNCEVENTSFROMICS
 
+                    701 ->
+                        SYNCPOSTSFROMRSS
+
+                    702 ->
+                        SYNCPOSTSFROMATOM
+
                     1000 ->
                         SYNCEVENTSTOFACEBOOK
 
@@ -578,6 +596,8 @@ type Permission
     | READALLSYSTEMMESSAGES
     | CREATEAIMODELPROVIDERS
     | SYNCEVENTSFROMICS
+    | SYNCPOSTSFROMRSS
+    | SYNCPOSTSFROMATOM
     | SYNCEVENTSTOFACEBOOK
     | SYNCPOSTSTOFACEBOOK
     | SYNCEVENTSTOINSTAGRAM

@@ -231,7 +231,8 @@ To run it, add a dependency via `elm install` on [`elm-protocol-buffers`](https:
  `event_count`/`event_instance_count` on every sync.
 
  Sources are managed via [`GetSyncSources`](#grpc-api-GetSyncSources), [`CreateSyncSource`](#grpc-api-CreateSyncSource)
- (requires `SYNC_EVENTS_FROM_ICS`, or Admin), [`UpdateSyncSource`](#grpc-api-UpdateSyncSource), and
+ (requires `SYNC_EVENTS_FROM_ICS`/`SYNC_POSTS_FROM_RSS`/`SYNC_POSTS_FROM_ATOM` -- whichever matches
+ the source's own configuration -- or Admin), [`UpdateSyncSource`](#grpc-api-UpdateSyncSource), and
  [`DeleteSyncSource`](#grpc-api-DeleteSyncSource).
 
  See also: [`SyncDestination`](#rellm-SyncDestination)
@@ -1268,7 +1269,9 @@ deleteSyncSource =
 
 {-| A template for a gRPC call to the method 'UpdateSyncSource' sending a `SyncSource` to get back a `SyncSource`.
 
- Updates a SyncSource. *Authenticated* (owner, or Admin for any user's), requires `SYNC_EVENTS_FROM_ICS` (or Admin).
+ Updates a SyncSource. *Authenticated* (owner, or Admin for any user's), requires
+ `SYNC_EVENTS_FROM_ICS`/`SYNC_POSTS_FROM_RSS`/`SYNC_POSTS_FROM_ATOM` (whichever matches the
+ effective `configuration` -- the request's own if set, else the existing source's -- or Admin).
 
 
 -}
@@ -1285,7 +1288,8 @@ updateSyncSource =
 
 {-| A template for a gRPC call to the method 'CreateSyncSource' sending a `SyncSource` to get back a `SyncSource`.
 
- Creates a SyncSource for the current user. *Authenticated*, requires `SYNC_EVENTS_FROM_ICS` (or Admin).
+ Creates a SyncSource for the current user. *Authenticated*, requires `SYNC_EVENTS_FROM_ICS`/
+ `SYNC_POSTS_FROM_RSS`/`SYNC_POSTS_FROM_ATOM` (whichever matches `configuration`, or Admin).
 
 
 -}

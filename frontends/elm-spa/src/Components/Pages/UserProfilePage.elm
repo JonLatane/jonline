@@ -448,6 +448,72 @@ configurationForKindOf existing kind url =
                     Configuration.AtomSubscriptionUrl url
 
 
+{-| The permission (`protos/permissions.proto`) that gates creating/updating a `SyncSource` of
+`kind` -- `SYNC_EVENTS_FROM_ICS`/`SYNC_POSTS_FROM_RSS`/`SYNC_POSTS_FROM_ATOM`, mirroring
+`backend/src/marshaling/sync_marshaling.rs`'s own `required_sync_source_permission` exactly.
+-}
+syncSourceKindPermission : SyncSourceKind -> Permission
+syncSourceKindPermission kind =
+    case kind of
+        Ics ->
+            SYNCEVENTSFROMICS
+
+        Rss ->
+            SYNCPOSTSFROMRSS
+
+        Atom ->
+            SYNCPOSTSFROMATOM
+
+
+{-| Whether `maybeAccount` holds `kind`'s own permission (or `ADMIN`) -- gates that one option in
+`syncSourceKindSelect`'s type selector (see `availableSyncSourceKinds`).
+-}
+hasSyncSourceKindPermission : SyncSourceKind -> Maybe RellmAccount -> Bool
+hasSyncSourceKindPermission kind maybeAccount =
+    maybeAccount
+        |> Maybe.map
+            (\account ->
+                List.member (syncSourceKindPermission kind) account.permissions
+                    || List.member ADMIN account.permissions
+            )
+        |> Maybe.withDefault False
+
+
+{-| The `SyncSourceKind`s `maybeAccount` may create a new source as -- `syncSourceAddRowView`'s
+type selector only ever offers these (see `syncSourceKindSelect`), same as `canUseSyncSources`
+gating the add row/section as a whole on there being at least one.
+-}
+availableSyncSourceKinds : Maybe RellmAccount -> List SyncSourceKind
+availableSyncSourceKinds maybeAccount =
+    [ Ics, Rss, Atom ] |> List.filter (\kind -> hasSyncSourceKindPermission kind maybeAccount)
+
+
+{-| Whether `maybeAccount` holds *any* of the 3 SyncSource permissions (or `ADMIN`) -- gates
+whether the "add a source" affordance is shown at all, mirroring `canUseSyncDestinations`'s same
+any-of-N-permissions gate for the "Sync Destinations" section.
+-}
+canUseSyncSources : Maybe RellmAccount -> Bool
+canUseSyncSources maybeAccount =
+    not (List.isEmpty (availableSyncSourceKinds maybeAccount))
+
+
+{-| `kind` itself, if it's one of `availableKinds` -- otherwise `availableKinds`' own first entry
+(falling back to `kind` unchanged only if `availableKinds` is somehow empty, which shouldn't
+happen in practice since the add row is only ever shown when `canUseSyncSources` is `True`).
+Keeps `addForm.kind`'s stored value and the type selector's rendered/submitted value in sync
+even when the viewer's permissions don't include `EventSyncAddForm`'s own default (`Ics`) -- e.g.
+an RSS-only account would otherwise have the selector visually default to "RSS" (the first
+available option) while `SyncSourceAddClicked` silently built an ICS configuration underneath.
+-}
+effectiveSyncSourceAddKind : List SyncSourceKind -> SyncSourceKind -> SyncSourceKind
+effectiveSyncSourceAddKind availableKinds kind =
+    if List.member kind availableKinds then
+        kind
+
+    else
+        List.head availableKinds |> Maybe.withDefault kind
+
+
 {-| The "Sync Sources" section's own state -- basic CRUD over
 `SyncSource` (`protos/sync.proto`) for this profile's own user (or,
 for an Admin viewing someone else's profile, that user's sources). Bundled
@@ -1833,10 +1899,18 @@ updateInner shared msg model =
                 es =
                     model.syncSources
 
+                maybeAccount : Maybe RellmAccount
+                maybeAccount =
+                    serverAndAccount shared model |> Maybe.map Tuple.second
+
+                effectiveKind : SyncSourceKind
+                effectiveKind =
+                    effectiveSyncSourceAddKind (availableSyncSourceKinds maybeAccount) es.addForm.kind
+
                 newSource : SyncSource
                 newSource =
                     { defaultSyncSource
-                        | configuration = Just (configurationForKindOf Nothing es.addForm.kind es.addForm.url)
+                        | configuration = Just (configurationForKindOf Nothing effectiveKind es.addForm.url)
                         , syncIntervalSeconds = Conversions.int64FromInt es.addForm.intervalSeconds
                     }
             in
@@ -3650,7 +3724,7 @@ profileDetail shared model server maybeAccount user =
 
             Nothing ->
                 text ""
-        , syncSourcesSection shared model canEdit (isOwnProfile maybeAccount user) user
+        , syncSourcesSection shared model canEdit maybeAccount user
         , syncDestinationsSection shared model maybeAccount user
         , aiModelProvidersSection model canEdit (isOwnProfile maybeAccount user) user
         , aiModelProviderGrantedSection model canEdit user
@@ -4465,18 +4539,28 @@ syncSourceDeleteButtonLabel source =
 {-| `canManage` is self-or-Admin (owner may always manage their own; an
 Admin may manage anyone's) -- gates the whole section's edit/delete
 affordances (a caller with neither shouldn't even see this section, but this
-doesn't assume that's already been checked). `canAdd` is self-only (an Admin
-still can't create a source _for_ someone else, see
-`create_sync_source.rs`) -- gates just the add row. Collapsed by
+doesn't assume that's already been checked). The add row is shown only on the
+viewer's own profile (an Admin still can't create a source _for_ someone
+else, see `create_sync_source.rs`) *and* only if `maybeAccount` holds at
+least one of the 3 SyncSource permissions (or `ADMIN`) -- see
+`canUseSyncSources` -- mirroring `syncDestinationsSection`'s own
+`canUseSyncDestinations` gate, just as an addition on top of the existing
+`canManage`/add split rather than replacing it (existing sources should stay
+manageable even if the viewer's permissions were later revoked). Collapsed by
 default (`model.syncSourcesExpanded`) behind `expandableProfileSection`'s
 own header.
 -}
-syncSourcesSection : Shared.Model -> Model -> Bool -> Bool -> User -> Html Msg
-syncSourcesSection shared model canManage canAdd user =
+syncSourcesSection : Shared.Model -> Model -> Bool -> Maybe RellmAccount -> User -> Html Msg
+syncSourcesSection shared model canManage maybeAccount user =
     if not canManage then
         text ""
 
     else
+        let
+            canAdd : Bool
+            canAdd =
+                isOwnProfile maybeAccount user && canUseSyncSources maybeAccount
+        in
         expandableProfileSection "sync-sources-section"
             "Sync Sources"
             model.syncSourcesExpanded
@@ -4484,7 +4568,7 @@ syncSourcesSection shared model canManage canAdd user =
             (refreshRowView SyncSourcesRefreshClicked model.syncSources.refreshStatus
                 :: div [ class "sync-sources-list" ] (syncSourcesContentView model.resolver.targetHost shared.time.browserTimeZone model.syncSources user.syncSources)
                 :: (if canAdd then
-                        [ syncSourceAddRowView model.resolver.targetHost model.syncSources.addForm ]
+                        [ syncSourceAddRowView model.resolver.targetHost (availableSyncSourceKinds maybeAccount) model.syncSources.addForm ]
 
                     else
                         []
@@ -4608,15 +4692,20 @@ syncSourceRowView targetHost browserTimeZone es source =
         ]
 
 
-syncSourceAddRowView : String -> EventSyncAddForm -> Html Msg
-syncSourceAddRowView targetHost addForm =
+syncSourceAddRowView : String -> List SyncSourceKind -> EventSyncAddForm -> Html Msg
+syncSourceAddRowView targetHost availableKinds addForm =
+    let
+        effectiveKind : SyncSourceKind
+        effectiveKind =
+            effectiveSyncSourceAddKind availableKinds addForm.kind
+    in
     div [ classes [ "sync-source-row", "sync-source-add-row", hostnameToCSSClass targetHost ] ]
-        [ syncSourceKindSelect SyncSourceAddKindChanged addForm.kind (addForm.status == Submitting)
+        [ syncSourceKindSelect SyncSourceAddKindChanged availableKinds effectiveKind (addForm.status == Submitting)
         , input
             [ class "sync-source-url"
             , type_ "text"
             , value addForm.url
-            , placeholder ("New " ++ syncSourceKindLabel addForm.kind ++ " subscription URL")
+            , placeholder ("New " ++ syncSourceKindLabel effectiveKind ++ " subscription URL")
             , disabled (addForm.status == Submitting)
             , onInput SyncSourceAddUrlChanged
             ]
@@ -5524,16 +5613,18 @@ eventSyncIntervalSelect onChange selectedSeconds disabledAttr =
 
 {-| The new-source "type" selector (`syncSourceAddRowView` only -- an existing row's kind is
 never re-chosen, see `SyncSourceKind`'s own doc) picking which `Configuration` variant the
-URL below it will be saved as.
+URL below it will be saved as. Only offers `availableKinds` (see `availableSyncSourceKinds`) --
+a viewer with just the RSS permission, say, never sees "iCal"/"Atom" options they couldn't
+actually submit.
 -}
-syncSourceKindSelect : (SyncSourceKind -> Msg) -> SyncSourceKind -> Bool -> Html Msg
-syncSourceKindSelect onChange selectedKind disabledAttr =
+syncSourceKindSelect : (SyncSourceKind -> Msg) -> List SyncSourceKind -> SyncSourceKind -> Bool -> Html Msg
+syncSourceKindSelect onChange availableKinds selectedKind disabledAttr =
     select
         [ class "sync-source-kind"
         , disabled disabledAttr
         , onInput (\s -> onChange (syncSourceKindFromLabel s))
         ]
-        ([ Ics, Rss, Atom ]
+        (availableKinds
             |> List.map
                 (\kind ->
                     option [ value (syncSourceKindLabel kind), selected (kind == selectedKind) ] [ text (syncSourceKindLabel kind) ]
