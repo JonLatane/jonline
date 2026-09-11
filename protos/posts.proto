@@ -185,6 +185,11 @@ message Post {
 
   // SyncDestinations this post has been synced (cross-posted) to, and their status.
   repeated SyncDestinationStatus sync_destinations = 25;
+
+  // If the Post was created/is kept in sync from a [`SyncSource`](#rellm-SyncSource) (an ICS
+  // Event/EventInstance, or an RSS/Atom feed item), this is the source it was synced from.
+  // Only its media should be considered editable for such a Post.
+  optional SyncSource sync_source = 26;
 }
 
 // Syncs (cross-posts) a single Post to one SyncDestination.

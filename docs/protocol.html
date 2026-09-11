@@ -4732,6 +4732,12 @@ directory</a> is (<code>{name}</code> denotes a
           <td>repeated</td>
           <td>SyncDestinations this post has been synced (cross-posted) to, and their status.</td>
         </tr>
+        <tr>
+          <td>sync_source</td>
+          <td><a href="#rellm-SyncSource">SyncSource</a></td>
+          <td>optional</td>
+          <td>If the Post was created/is kept in sync from a <a href="#rellm-SyncSource"><code>SyncSource</code></a> (an ICS Event/EventInstance, or an RSS/Atom feed item), this is the source it was synced from. Only its media should be considered editable for such a Post.</td>
+        </tr>
       </tbody>
     </table>
     <p><a name="rellm-SyncPostRequest"></a></p>
@@ -5018,12 +5024,6 @@ directory</a> is (<code>{name}</code> denotes a
           <td>repeated</td>
           <td>A list of instances for the Event. <em>Events will only include all instances if the request is for a single event.</em></td>
         </tr>
-        <tr>
-          <td>sync_source</td>
-          <td><a href="#rellm-SyncSource">SyncSource</a></td>
-          <td>optional</td>
-          <td>If the event was synced from a source (meaning only its media should not be editable), this is the source it was synced from.</td>
-        </tr>
       </tbody>
     </table>
     <p><a name="rellm-EventAttendance"></a></p>
@@ -5245,12 +5245,6 @@ directory</a> is (<code>{name}</code> denotes a
           <td><a href="#rellm-Location">Location</a></td>
           <td>optional</td>
           <td>The location of the event.</td>
-        </tr>
-        <tr>
-          <td>sync_source_instance_id</td>
-          <td><a href="#string">string</a></td>
-          <td>optional</td>
-          <td>The "iCal ID" (or external ID) of this instance, if its <a href="#rellm-Event"><code>Event</code></a> was synced from a <a href="#rellm-SyncSource"><code>SyncSource</code></a>.</td>
         </tr>
         <tr>
           <td>sync_missing_since</td>
@@ -7585,13 +7579,25 @@ Instagram account</strong>. Unlike <a href="#rellm-FacebookPage"><code>FacebookP
           <td>post_count</td>
           <td><a href="#uint64">uint64</a></td>
           <td></td>
-          <td>The number of posts total associated with this SyncSource. Not yet populated -- no source type syncs posts in yet.</td>
+          <td>The number of posts total associated with this SyncSource. Populated for an RSS/Atom source (recomputed on each sync, like <code>event_count</code>/<code>event_instance_count</code> are for an ICS source); always 0 for an ICS source, which syncs Events/EventInstances instead.</td>
         </tr>
         <tr>
           <td>ics_subscription_url</td>
           <td><a href="#string">string</a></td>
           <td></td>
-          <td>The iCal subscription URL for the calendar sync.</td>
+          <td>The iCal subscription URL for the calendar sync. Creates/updates Events/EventInstances.</td>
+        </tr>
+        <tr>
+          <td>rss_subscription_url</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>The RSS subscription URL for the feed sync. Creates/updates plain Posts.</td>
+        </tr>
+        <tr>
+          <td>atom_subscription_url</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>The Atom subscription URL for the feed sync. Creates/updates plain Posts.</td>
         </tr>
       </tbody>
     </table>

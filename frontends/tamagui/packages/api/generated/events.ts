@@ -11,7 +11,7 @@ import { Location } from "./location";
 import { MediaReference } from "./media";
 import { Permission, permissionFromJSON, permissionToJSON } from "./permissions";
 import { Post } from "./posts";
-import { SyncDestinationStatus, SyncSource } from "./sync";
+import { SyncDestinationStatus } from "./sync";
 import { ContactMethod } from "./users";
 import { Moderation, moderationFromJSON, moderationToJSON } from "./visibility_moderation";
 
@@ -297,11 +297,6 @@ export interface Event {
     | undefined;
   /** A list of instances for the Event. *Events will only include all instances if the request is for a single event.* */
   instances: EventInstance[];
-  /**
-   * If the event was synced from a source (meaning only its media should not be editable),
-   * this is the source it was synced from.
-   */
-  syncSource?: SyncSource | undefined;
 }
 
 /** Syncs (cross-posts) a single EventInstance to one SyncDestination. */
@@ -386,10 +381,6 @@ export interface EventInstance {
   /** The location of the event. */
   location?:
     | Location
-    | undefined;
-  /** The "iCal ID" (or external ID) of this instance, if its [`Event`](#rellm-Event) was synced from a [`SyncSource`](#rellm-SyncSource). */
-  syncSourceInstanceId?:
-    | string
     | undefined;
   /**
    * The time since this event "disappeared" from the sync source.
@@ -962,7 +953,7 @@ export const GetEventsResponse: MessageFns<GetEventsResponse> = {
 };
 
 function createBaseEvent(): Event {
-  return { post: undefined, info: undefined, instances: [], syncSource: undefined };
+  return { post: undefined, info: undefined, instances: [] };
 }
 
 export const Event: MessageFns<Event> = {
@@ -975,9 +966,6 @@ export const Event: MessageFns<Event> = {
     }
     for (const v of message.instances) {
       EventInstance.encode(v!, writer.uint32(34).fork()).join();
-    }
-    if (message.syncSource !== undefined) {
-      SyncSource.encode(message.syncSource, writer.uint32(42).fork()).join();
     }
     return writer;
   },
@@ -1013,14 +1001,6 @@ export const Event: MessageFns<Event> = {
           message.instances.push(EventInstance.decode(reader, reader.uint32()));
           continue;
         }
-        case 5: {
-          if (tag !== 42) {
-            break;
-          }
-
-          message.syncSource = SyncSource.decode(reader, reader.uint32());
-          continue;
-        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1037,7 +1017,6 @@ export const Event: MessageFns<Event> = {
       instances: globalThis.Array.isArray(object?.instances)
         ? object.instances.map((e: any) => EventInstance.fromJSON(e))
         : [],
-      syncSource: isSet(object.syncSource) ? SyncSource.fromJSON(object.syncSource) : undefined,
     };
   },
 
@@ -1052,9 +1031,6 @@ export const Event: MessageFns<Event> = {
     if (message.instances?.length) {
       obj.instances = message.instances.map((e) => EventInstance.toJSON(e));
     }
-    if (message.syncSource !== undefined) {
-      obj.syncSource = SyncSource.toJSON(message.syncSource);
-    }
     return obj;
   },
 
@@ -1066,9 +1042,6 @@ export const Event: MessageFns<Event> = {
     message.post = (object.post !== undefined && object.post !== null) ? Post.fromPartial(object.post) : undefined;
     message.info = (object.info !== undefined && object.info !== null) ? EventInfo.fromPartial(object.info) : undefined;
     message.instances = object.instances?.map((e) => EventInstance.fromPartial(e)) || [];
-    message.syncSource = (object.syncSource !== undefined && object.syncSource !== null)
-      ? SyncSource.fromPartial(object.syncSource)
-      : undefined;
     return message;
   },
 };
@@ -1373,7 +1346,6 @@ function createBaseEventInstance(): EventInstance {
     startsAt: undefined,
     endsAt: undefined,
     location: undefined,
-    syncSourceInstanceId: undefined,
     syncMissingSince: undefined,
     attendances: undefined,
     currentUserAttendance: undefined,
@@ -1401,9 +1373,6 @@ export const EventInstance: MessageFns<EventInstance> = {
     }
     if (message.location !== undefined) {
       Location.encode(message.location, writer.uint32(58).fork()).join();
-    }
-    if (message.syncSourceInstanceId !== undefined) {
-      writer.uint32(66).string(message.syncSourceInstanceId);
     }
     if (message.syncMissingSince !== undefined) {
       Timestamp.encode(toTimestamp(message.syncMissingSince), writer.uint32(74).fork()).join();
@@ -1478,14 +1447,6 @@ export const EventInstance: MessageFns<EventInstance> = {
           message.location = Location.decode(reader, reader.uint32());
           continue;
         }
-        case 8: {
-          if (tag !== 66) {
-            break;
-          }
-
-          message.syncSourceInstanceId = reader.string();
-          continue;
-        }
         case 9: {
           if (tag !== 74) {
             break;
@@ -1543,9 +1504,6 @@ export const EventInstance: MessageFns<EventInstance> = {
       startsAt: isSet(object.startsAt) ? globalThis.String(object.startsAt) : undefined,
       endsAt: isSet(object.endsAt) ? globalThis.String(object.endsAt) : undefined,
       location: isSet(object.location) ? Location.fromJSON(object.location) : undefined,
-      syncSourceInstanceId: isSet(object.syncSourceInstanceId)
-        ? globalThis.String(object.syncSourceInstanceId)
-        : undefined,
       syncMissingSince: isSet(object.syncMissingSince) ? globalThis.String(object.syncMissingSince) : undefined,
       attendances: isSet(object.attendances) ? EventAttendances.fromJSON(object.attendances) : undefined,
       currentUserAttendance: isSet(object.currentUserAttendance)
@@ -1577,9 +1535,6 @@ export const EventInstance: MessageFns<EventInstance> = {
     }
     if (message.location !== undefined) {
       obj.location = Location.toJSON(message.location);
-    }
-    if (message.syncSourceInstanceId !== undefined) {
-      obj.syncSourceInstanceId = message.syncSourceInstanceId;
     }
     if (message.syncMissingSince !== undefined) {
       obj.syncMissingSince = message.syncMissingSince;
@@ -1614,7 +1569,6 @@ export const EventInstance: MessageFns<EventInstance> = {
     message.location = (object.location !== undefined && object.location !== null)
       ? Location.fromPartial(object.location)
       : undefined;
-    message.syncSourceInstanceId = object.syncSourceInstanceId ?? undefined;
     message.syncMissingSince = object.syncMissingSince ?? undefined;
     message.attendances = (object.attendances !== undefined && object.attendances !== null)
       ? EventAttendances.fromPartial(object.attendances)

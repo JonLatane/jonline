@@ -311,12 +311,21 @@ export interface SyncSource {
    */
   eventInstanceCount: number;
   /**
-   * The number of posts total associated with this SyncSource. Not yet populated --
-   * no source type syncs posts in yet.
+   * The number of posts total associated with this SyncSource. Populated for an RSS/Atom
+   * source (recomputed on each sync, like `event_count`/`event_instance_count` are for an
+   * ICS source); always 0 for an ICS source, which syncs Events/EventInstances instead.
    */
   postCount: number;
-  /** The iCal subscription URL for the calendar sync. */
-  icsSubscriptionUrl?: string | undefined;
+  /** The iCal subscription URL for the calendar sync. Creates/updates Events/EventInstances. */
+  icsSubscriptionUrl?:
+    | string
+    | undefined;
+  /** The RSS subscription URL for the feed sync. Creates/updates plain Posts. */
+  rssSubscriptionUrl?:
+    | string
+    | undefined;
+  /** The Atom subscription URL for the feed sync. Creates/updates plain Posts. */
+  atomSubscriptionUrl?: string | undefined;
 }
 
 export interface GetSyncSourcesResponse {
@@ -1450,6 +1459,8 @@ function createBaseSyncSource(): SyncSource {
     eventInstanceCount: 0,
     postCount: 0,
     icsSubscriptionUrl: undefined,
+    rssSubscriptionUrl: undefined,
+    atomSubscriptionUrl: undefined,
   };
 }
 
@@ -1484,6 +1495,12 @@ export const SyncSource: MessageFns<SyncSource> = {
     }
     if (message.icsSubscriptionUrl !== undefined) {
       writer.uint32(74).string(message.icsSubscriptionUrl);
+    }
+    if (message.rssSubscriptionUrl !== undefined) {
+      writer.uint32(90).string(message.rssSubscriptionUrl);
+    }
+    if (message.atomSubscriptionUrl !== undefined) {
+      writer.uint32(98).string(message.atomSubscriptionUrl);
     }
     return writer;
   },
@@ -1575,6 +1592,22 @@ export const SyncSource: MessageFns<SyncSource> = {
           message.icsSubscriptionUrl = reader.string();
           continue;
         }
+        case 11: {
+          if (tag !== 90) {
+            break;
+          }
+
+          message.rssSubscriptionUrl = reader.string();
+          continue;
+        }
+        case 12: {
+          if (tag !== 98) {
+            break;
+          }
+
+          message.atomSubscriptionUrl = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1596,6 +1629,10 @@ export const SyncSource: MessageFns<SyncSource> = {
       eventInstanceCount: isSet(object.eventInstanceCount) ? globalThis.Number(object.eventInstanceCount) : 0,
       postCount: isSet(object.postCount) ? globalThis.Number(object.postCount) : 0,
       icsSubscriptionUrl: isSet(object.icsSubscriptionUrl) ? globalThis.String(object.icsSubscriptionUrl) : undefined,
+      rssSubscriptionUrl: isSet(object.rssSubscriptionUrl) ? globalThis.String(object.rssSubscriptionUrl) : undefined,
+      atomSubscriptionUrl: isSet(object.atomSubscriptionUrl)
+        ? globalThis.String(object.atomSubscriptionUrl)
+        : undefined,
     };
   },
 
@@ -1631,6 +1668,12 @@ export const SyncSource: MessageFns<SyncSource> = {
     if (message.icsSubscriptionUrl !== undefined) {
       obj.icsSubscriptionUrl = message.icsSubscriptionUrl;
     }
+    if (message.rssSubscriptionUrl !== undefined) {
+      obj.rssSubscriptionUrl = message.rssSubscriptionUrl;
+    }
+    if (message.atomSubscriptionUrl !== undefined) {
+      obj.atomSubscriptionUrl = message.atomSubscriptionUrl;
+    }
     return obj;
   },
 
@@ -1651,6 +1694,8 @@ export const SyncSource: MessageFns<SyncSource> = {
     message.eventInstanceCount = object.eventInstanceCount ?? 0;
     message.postCount = object.postCount ?? 0;
     message.icsSubscriptionUrl = object.icsSubscriptionUrl ?? undefined;
+    message.rssSubscriptionUrl = object.rssSubscriptionUrl ?? undefined;
+    message.atomSubscriptionUrl = object.atomSubscriptionUrl ?? undefined;
     return message;
   },
 };

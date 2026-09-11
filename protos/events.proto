@@ -128,9 +128,8 @@ message Event {
   // A list of instances for the Event. *Events will only include all instances if the request is for a single event.*
   repeated EventInstance instances = 4;
 
-  // If the event was synced from a source (meaning only its media should not be editable),
-  // this is the source it was synced from.
-  optional SyncSource sync_source = 5;
+  reserved 5;
+  reserved "sync_source"; // Moved to `post.sync_source` -- see posts.proto's `Post.sync_source`.
 }
 
 // Syncs (cross-posts) a single EventInstance to one SyncDestination.
@@ -186,8 +185,8 @@ message EventInstance {
   google.protobuf.Timestamp ends_at = 6;
   // The location of the event.
   optional Location location = 7;
-  // The "iCal ID" (or external ID) of this instance, if its [`Event`](#rellm-Event) was synced from a [`SyncSource`](#rellm-SyncSource).
-  optional string sync_source_instance_id = 8;
+  reserved 8;
+  reserved "sync_source_instance_id"; // Moved to `post.sync_source` -- see posts.proto's `Post.sync_source`.
   // The time since this event "disappeared" from the sync source.
   // It is up to the owner whether this means it should be deleted.
   optional google.protobuf.Timestamp sync_missing_since = 9;

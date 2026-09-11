@@ -22,16 +22,20 @@ pub fn create_sync_source(
     // behalf.
     validate_permission(&Some(current_user), Permission::SyncEventsFromIcs)?;
 
-    let configuration = configuration_to_json(&request.configuration);
-    if configuration
-        .get("ics_subscription_url")
-        .and_then(|v| v.as_str())
-        .map(|s| s.trim().is_empty())
-        .unwrap_or(true)
-    {
+    let configuration = source_configuration_to_json(&request.configuration);
+    let has_subscription_url = ["ics_subscription_url", "rss_subscription_url", "atom_subscription_url"]
+        .iter()
+        .any(|key| {
+            configuration
+                .get(key)
+                .and_then(|v| v.as_str())
+                .map(|s| !s.trim().is_empty())
+                .unwrap_or(false)
+        });
+    if !has_subscription_url {
         return Err(Status::new(
             Code::InvalidArgument,
-            "ics_subscription_url_required",
+            "subscription_url_required",
         ));
     }
 

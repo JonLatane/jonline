@@ -237,13 +237,18 @@ message SyncSource {
   // The number of event instances total associated with this SyncSource. Recomputed
   // on each sync.
   uint64 event_instance_count = 8;
-  // The number of posts total associated with this SyncSource. Not yet populated --
-  // no source type syncs posts in yet.
+  // The number of posts total associated with this SyncSource. Populated for an RSS/Atom
+  // source (recomputed on each sync, like `event_count`/`event_instance_count` are for an
+  // ICS source); always 0 for an ICS source, which syncs Events/EventInstances instead.
   uint64 post_count = 10;
 
   oneof configuration {
-    // The iCal subscription URL for the calendar sync.
+    // The iCal subscription URL for the calendar sync. Creates/updates Events/EventInstances.
     string ics_subscription_url = 9;
+    // The RSS subscription URL for the feed sync. Creates/updates plain Posts.
+    string rss_subscription_url = 11;
+    // The Atom subscription URL for the feed sync. Creates/updates plain Posts.
+    string atom_subscription_url = 12;
   }
 }
 

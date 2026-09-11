@@ -541,14 +541,14 @@ import Protobuf.Types.Int64
 fieldNumbersProto__Rellm__SyncSource__Configuration__Configuration :
     FieldNumbersProto__Rellm__SyncSource__Configuration__Configuration
 fieldNumbersProto__Rellm__SyncSource__Configuration__Configuration =
-    { icsSubscriptionUrl = 9 }
+    { icsSubscriptionUrl = 9, rssSubscriptionUrl = 11, atomSubscriptionUrl = 12 }
 
 
 {-| The field numbers for the fields of `Proto__Rellm__SyncSource__Configuration__Configuration`. This is mostly useful for internals, like documentation generation.
 
 -}
 type alias FieldNumbersProto__Rellm__SyncSource__Configuration__Configuration =
-    { icsSubscriptionUrl : Int }
+    { icsSubscriptionUrl : Int, rssSubscriptionUrl : Int, atomSubscriptionUrl : Int }
 
 
 {-| Declares how to decode a `Proto__Rellm__SyncSource__Configuration__Configuration` from Bytes. To actually perform the conversion from Bytes, you need to use Protobuf.Decode.decode from eriktim/elm-protocol-buffers.
@@ -558,7 +558,10 @@ decodeProto__Rellm__SyncSource__Configuration__Configuration :
     (Maybe Proto__Rellm__SyncSource__Configuration__Configuration -> a -> a) -> Protobuf.Decode.FieldDecoder a
 decodeProto__Rellm__SyncSource__Configuration__Configuration =
     Protobuf.Decode.oneOf
-        [ ( 9, Protobuf.Decode.map Proto.Rellm.SyncSource.Configuration.IcsSubscriptionUrl Protobuf.Decode.string ) ]
+        [ ( 9, Protobuf.Decode.map Proto.Rellm.SyncSource.Configuration.IcsSubscriptionUrl Protobuf.Decode.string )
+        , ( 11, Protobuf.Decode.map Proto.Rellm.SyncSource.Configuration.RssSubscriptionUrl Protobuf.Decode.string )
+        , ( 12, Protobuf.Decode.map Proto.Rellm.SyncSource.Configuration.AtomSubscriptionUrl Protobuf.Decode.string )
+        ]
 
 
 {-| Declares how to encode a `Proto__Rellm__SyncSource__Configuration__Configuration` to Bytes. To actually perform the conversion to Bytes, you need to use Protobuf.Encode.encode from eriktim/elm-protocol-buffers.
@@ -574,12 +577,18 @@ encodeProto__Rellm__SyncSource__Configuration__Configuration value =
         Just (Proto.Rellm.SyncSource.Configuration.IcsSubscriptionUrl innerValue) ->
             ( 9, Protobuf.Encode.string innerValue )
 
+        Just (Proto.Rellm.SyncSource.Configuration.RssSubscriptionUrl innerValue) ->
+            ( 11, Protobuf.Encode.string innerValue )
+
+        Just (Proto.Rellm.SyncSource.Configuration.AtomSubscriptionUrl innerValue) ->
+            ( 12, Protobuf.Encode.string innerValue )
+
 
 {-| `Proto__Rellm__SyncSource__Configuration__Configuration` options
 
 -}
 type alias Proto__Rellm__SyncSource__Configuration__Configuration =
-    Proto.Rellm.SyncSource.Configuration.Configuration String
+    Proto.Rellm.SyncSource.Configuration.Configuration String String String
 
 
 {-| The field numbers for the fields of `Proto__Rellm__SyncDestination__Configuration__Configuration`. This is mostly useful for internals, like documentation generation.
@@ -4215,7 +4224,6 @@ fieldNumbersProto__Rellm__EventInstance :
     , startsAt : Int
     , endsAt : Int
     , location : Int
-    , syncSourceInstanceId : Int
     , syncMissingSince : Int
     , attendances : Int
     , currentUserAttendance : Int
@@ -4229,7 +4237,6 @@ fieldNumbersProto__Rellm__EventInstance =
     , startsAt = 5
     , endsAt = 6
     , location = 7
-    , syncSourceInstanceId = 8
     , syncMissingSince = 9
     , attendances = 10
     , currentUserAttendance = 11
@@ -4249,7 +4256,6 @@ defaultProto__Rellm__EventInstance =
     , startsAt = Nothing
     , endsAt = Nothing
     , location = Nothing
-    , syncSourceInstanceId = Nothing
     , syncMissingSince = Nothing
     , attendances = Nothing
     , currentUserAttendance = Nothing
@@ -4283,10 +4289,6 @@ decodeProto__Rellm__EventInstance =
             7
             (Protobuf.Decode.map Just decodeProto__Rellm__Location)
             (\a r -> { r | location = a })
-        , Protobuf.Decode.optional
-            8
-            (Protobuf.Decode.map Just Protobuf.Decode.string)
-            (\a r -> { r | syncSourceInstanceId = a })
         , Protobuf.Decode.optional
             9
             (Protobuf.Decode.map Just Proto.Google.Protobuf.Internals_.decodeProto__Google__Protobuf__Timestamp)
@@ -4330,7 +4332,6 @@ encodeProto__Rellm__EventInstance value =
                 value.endsAt
           )
         , ( 7, (Maybe.map encodeProto__Rellm__Location >> Maybe.withDefault Protobuf.Encode.none) value.location )
-        , ( 8, (Maybe.map Protobuf.Encode.string >> Maybe.withDefault Protobuf.Encode.none) value.syncSourceInstanceId )
         , ( 9
           , (Maybe.map Proto.Google.Protobuf.Internals_.encodeProto__Google__Protobuf__Timestamp
                 >> Maybe.withDefault Protobuf.Encode.none
@@ -4359,7 +4360,6 @@ type alias Proto__Rellm__EventInstance =
     , startsAt : Maybe Proto.Google.Protobuf.Internals_.Proto__Google__Protobuf__Timestamp
     , endsAt : Maybe Proto.Google.Protobuf.Internals_.Proto__Google__Protobuf__Timestamp
     , location : Maybe Proto__Rellm__Location
-    , syncSourceInstanceId : Maybe String
     , syncMissingSince : Maybe Proto.Google.Protobuf.Internals_.Proto__Google__Protobuf__Timestamp
     , attendances : Maybe Proto__Rellm__EventAttendances
     , currentUserAttendance : Maybe Proto__Rellm__EventAttendance
@@ -4552,9 +4552,9 @@ type alias Proto__Rellm__SyncEventInstanceRequest =
 {-| The field numbers for the fields of `Proto__Rellm__Event`. This is mostly useful for internals, like documentation generation.
 
 -}
-fieldNumbersProto__Rellm__Event : { post : Int, info : Int, instances : Int, syncSource : Int }
+fieldNumbersProto__Rellm__Event : { post : Int, info : Int, instances : Int }
 fieldNumbersProto__Rellm__Event =
-    { post = 2, info = 3, instances = 4, syncSource = 5 }
+    { post = 2, info = 3, instances = 4 }
 
 
 {-| Default for Proto__Rellm__Event. Should only be used for 'required' decoders as an initial value.
@@ -4562,7 +4562,7 @@ fieldNumbersProto__Rellm__Event =
 -}
 defaultProto__Rellm__Event : Proto__Rellm__Event
 defaultProto__Rellm__Event =
-    { post = Nothing, info = Nothing, instances = [], syncSource = Nothing }
+    { post = Nothing, info = Nothing, instances = [] }
 
 
 {-| Declares how to decode a `Proto__Rellm__Event` from Bytes. To actually perform the conversion from Bytes, you need to use Protobuf.Decode.decode from eriktim/elm-protocol-buffers.
@@ -4575,10 +4575,6 @@ decodeProto__Rellm__Event =
         [ Protobuf.Decode.optional 2 (Protobuf.Decode.map Just decodeProto__Rellm__Post) (\a r -> { r | post = a })
         , Protobuf.Decode.optional 3 (Protobuf.Decode.map Just decodeProto__Rellm__EventInfo) (\a r -> { r | info = a })
         , Protobuf.Decode.repeated 4 decodeProto__Rellm__EventInstance .instances (\a r -> { r | instances = a })
-        , Protobuf.Decode.optional
-            5
-            (Protobuf.Decode.map Just decodeProto__Rellm__SyncSource)
-            (\a r -> { r | syncSource = a })
         ]
 
 
@@ -4591,7 +4587,6 @@ encodeProto__Rellm__Event value =
         [ ( 2, (Maybe.map encodeProto__Rellm__Post >> Maybe.withDefault Protobuf.Encode.none) value.post )
         , ( 3, (Maybe.map encodeProto__Rellm__EventInfo >> Maybe.withDefault Protobuf.Encode.none) value.info )
         , ( 4, (Protobuf.Encode.list encodeProto__Rellm__EventInstance) value.instances )
-        , ( 5, (Maybe.map encodeProto__Rellm__SyncSource >> Maybe.withDefault Protobuf.Encode.none) value.syncSource )
         ]
 
 
@@ -4602,7 +4597,6 @@ type alias Proto__Rellm__Event =
     { post : Maybe Proto__Rellm__Post
     , info : Maybe Proto__Rellm__EventInfo
     , instances : List Proto__Rellm__EventInstance
-    , syncSource : Maybe Proto__Rellm__SyncSource
     }
 
 
@@ -5267,6 +5261,7 @@ fieldNumbersProto__Rellm__Post :
     , lastActivityAt : Int
     , unauthenticatedStarCount : Int
     , syncDestinations : Int
+    , syncSource : Int
     }
 fieldNumbersProto__Rellm__Post =
     { id = 1
@@ -5294,6 +5289,7 @@ fieldNumbersProto__Rellm__Post =
     , lastActivityAt = 23
     , unauthenticatedStarCount = 24
     , syncDestinations = 25
+    , syncSource = 26
     }
 
 
@@ -5327,6 +5323,7 @@ defaultProto__Rellm__Post =
     , lastActivityAt = Nothing
     , unauthenticatedStarCount = Protobuf.Types.Int64.fromInts 0 0
     , syncDestinations = []
+    , syncSource = Nothing
     }
 
 
@@ -5391,6 +5388,10 @@ decodeProto__Rellm__Post =
             decodeProto__Rellm__SyncDestinationStatus
             .syncDestinations
             (\a r -> { r | syncDestinations = a })
+        , Protobuf.Decode.optional
+            26
+            (Protobuf.Decode.map Just decodeProto__Rellm__SyncSource)
+            (\a r -> { r | syncSource = a })
         ]
 
 
@@ -5447,6 +5448,7 @@ encodeProto__Rellm__Post value =
           )
         , ( 24, Protobuf.Encode.int64 value.unauthenticatedStarCount )
         , ( 25, (Protobuf.Encode.list encodeProto__Rellm__SyncDestinationStatus) value.syncDestinations )
+        , ( 26, (Maybe.map encodeProto__Rellm__SyncSource >> Maybe.withDefault Protobuf.Encode.none) value.syncSource )
         ]
 
 
@@ -5479,6 +5481,7 @@ type alias Proto__Rellm__Post =
     , lastActivityAt : Maybe Proto.Google.Protobuf.Internals_.Proto__Google__Protobuf__Timestamp
     , unauthenticatedStarCount : Protobuf.Types.Int64.Int64
     , syncDestinations : List Proto__Rellm__SyncDestinationStatus
+    , syncSource : Maybe Proto__Rellm__SyncSource
     }
 
 

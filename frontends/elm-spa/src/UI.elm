@@ -3082,6 +3082,12 @@ deleteConfirmationModal shared =
                                         Just (Configuration.IcsSubscriptionUrl url) ->
                                             url
 
+                                        Just (Configuration.RssSubscriptionUrl url) ->
+                                            url
+
+                                        Just (Configuration.AtomSubscriptionUrl url) ->
+                                            url
+
                                         Nothing ->
                                             "this source"
                             in

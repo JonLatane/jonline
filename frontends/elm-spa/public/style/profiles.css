@@ -462,6 +462,21 @@
   font-size: 0.85rem;
 }
 
+.sync-source-kind {
+  padding: 0.15rem 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--fg);
+  font-size: 0.85rem;
+}
+
+.sync-source-kind-label {
+  color: var(--muted);
+  font-size: 0.8rem;
+  min-width: 2.5rem;
+}
+
 .sync-source-actions {
   display: flex;
   align-items: center;

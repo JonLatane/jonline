@@ -1,8 +1,6 @@
 use std::collections::HashMap;
 use std::mem::transmute;
 
-use chrono::{DateTime, Utc};
-
 use super::{
     load_media_lookup, MediaLookup, ToI32Moderation, ToProtoId, ToProtoMarshalablePost,
     ToProtoSyncDestinationStatus, ToProtoTime,
@@ -12,79 +10,7 @@ use crate::protos::event_attendance::Attendee;
 use crate::protos::*;
 use crate::{marshaling::ToProtoAuthor, models};
 
-use super::MarshalablePost;
-
-pub type SyncSourceLookup = HashMap<i64, MarshalableSyncSource>;
-
-pub fn load_sync_source_lookup(
-    sync_source_ids: Vec<i64>,
-    conn: &mut PgPooledConnection,
-) -> Option<SyncSourceLookup> {
-    Some(
-        models::get_sync_sources_by_ids(sync_source_ids, conn)
-            .into_iter()
-            .map(|(source, owner)| (source.id, MarshalableSyncSource(source, owner)))
-            .collect::<SyncSourceLookup>(),
-    )
-}
-
-pub trait FindSyncSource {
-    fn find_sync_source(&self, id: i64) -> Option<&MarshalableSyncSource>;
-}
-
-impl FindSyncSource for Option<&SyncSourceLookup> {
-    fn find_sync_source(&self, id: i64) -> Option<&MarshalableSyncSource> {
-        self.map(|lookup| lookup.get(&id)).flatten()
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct MarshalableSyncSource(pub models::SyncSource, pub models::Author);
-
-pub trait ToProtoMarshalableSyncSource {
-    fn to_proto(&self) -> SyncSource;
-}
-
-impl ToProtoMarshalableSyncSource for MarshalableSyncSource {
-    fn to_proto(&self) -> SyncSource {
-        let source = &self.0;
-        let owner = &self.1;
-        SyncSource {
-            id: source.id.to_proto_id(),
-            owner: Some(owner.to_proto(None)),
-            sync_interval_seconds: source.sync_interval_seconds as u64,
-            created_at: Some(source.created_at.to_proto()),
-            updated_at: source.updated_at.map(|t| t.to_proto()),
-            last_synced_at: source.last_synced_at.map(|t| t.to_proto()),
-            event_count: source.event_count as u64,
-            event_instance_count: source.event_instance_count as u64,
-            post_count: source.post_count as u64,
-            configuration: configuration_to_proto(&source.configuration),
-        }
-    }
-}
-
-/// `configuration` JSONB shape today: `{"ics_subscription_url": "https://..."}` -- mirrors the
-/// proto `oneof`, which currently has one variant.
-pub fn configuration_to_proto(
-    configuration: &serde_json::Value,
-) -> Option<sync_source::Configuration> {
-    configuration
-        .get("ics_subscription_url")
-        .and_then(|v| v.as_str())
-        .map(|s| sync_source::Configuration::IcsSubscriptionUrl(s.to_string()))
-}
-
-pub fn configuration_to_json(
-    configuration: &Option<sync_source::Configuration>,
-) -> serde_json::Value {
-    match configuration {
-        Some(sync_source::Configuration::IcsSubscriptionUrl(url)) => {
-            serde_json::json!({ "ics_subscription_url": url })
-        }
-        None => serde_json::json!({}),
-    }
-}
+use super::{load_sync_source_lookup, MarshalablePost, SyncSourceLookup};
 
 pub type EventInstanceSyncLookup = HashMap<i64, Vec<models::EventInstanceSyncDestination>>;
 
@@ -138,7 +64,16 @@ pub fn convert_events(data: &Vec<MarshalableEvent>, conn: &mut PgPooledConnectio
 
     let sync_source_ids: Vec<i64> = data
         .iter()
-        .filter_map(|marshalable_event| marshalable_event.0.sync_source_id)
+        .flat_map(|marshalable_event| {
+            let mut ids: Vec<i64> = marshalable_event.1 .0.sync_source_id.into_iter().collect();
+            ids.extend(
+                marshalable_event
+                    .2
+                    .iter()
+                    .filter_map(|MarshalableEventInstance(_, post)| post.0.sync_source_id),
+            );
+            ids
+        })
         .collect();
     let sync_source_lookup = load_sync_source_lookup(sync_source_ids, conn);
 
@@ -192,16 +127,19 @@ impl ToProtoMarshalableEvent for MarshalableEvent {
         );
         // self.to_proto(username, None)
         Event {
-            post: Some(post.to_proto(media_lookup, None)),
+            post: Some(post.to_proto(media_lookup, None, sync_source_lookup)),
             instances: instances
                 .iter()
-                .map(|i| i.to_proto(media_lookup, hide_location, instance_sync_lookup))
+                .map(|i| {
+                    i.to_proto(
+                        media_lookup,
+                        hide_location,
+                        instance_sync_lookup,
+                        sync_source_lookup,
+                    )
+                })
                 .collect(),
             info: serde_json::from_value(self.0.info.to_owned()).ok(),
-            sync_source: event
-                .sync_source_id
-                .and_then(|id| sync_source_lookup.find_sync_source(id))
-                .map(|source| source.to_proto()),
             ..Default::default()
         }
     }
@@ -213,6 +151,7 @@ pub trait ToProtoMarshalableEventInstance {
         media_lookup: Option<&MediaLookup>,
         hide_location: bool,
         instance_sync_lookup: Option<&EventInstanceSyncLookup>,
+        sync_source_lookup: Option<&SyncSourceLookup>,
     ) -> EventInstance;
 }
 
@@ -222,6 +161,7 @@ impl ToProtoMarshalableEventInstance for MarshalableEventInstance {
         media_lookup: Option<&MediaLookup>,
         hide_location: bool,
         instance_sync_lookup: Option<&EventInstanceSyncLookup>,
+        sync_source_lookup: Option<&SyncSourceLookup>,
     ) -> EventInstance {
         let event_instance = self.0.to_owned();
         let marshalable_post = self.1.to_owned();
@@ -236,7 +176,7 @@ impl ToProtoMarshalableEventInstance for MarshalableEventInstance {
             .unwrap_or_default();
         EventInstance {
             event_id: event_instance.event_id.to_proto_id(),
-            post: Some(marshalable_post.to_proto(media_lookup, None)),
+            post: Some(marshalable_post.to_proto(media_lookup, None, sync_source_lookup)),
             starts_at: Some(event_instance.starts_at.to_proto()),
             ends_at: Some(event_instance.ends_at.to_proto()),
             info: Some(EventInstanceInfo {
@@ -244,16 +184,6 @@ impl ToProtoMarshalableEventInstance for MarshalableEventInstance {
             }),
             location,
             timezone: event_instance.timezone,
-            sync_source_instance_id: match (
-                event_instance.sync_source_uid,
-                event_instance.sync_source_recurrence_anchor,
-            ) {
-                (Some(uid), Some(anchor)) => {
-                    let anchor: DateTime<Utc> = anchor.into();
-                    Some(format!("{}|{}", uid, anchor.to_rfc3339()))
-                }
-                _ => None,
-            },
             sync_destinations,
             ..Default::default()
         }

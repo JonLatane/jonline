@@ -25,36 +25,45 @@ matching doc comment on `getAIModelProviders`.
 import Grpc
 import Proto.Rellm exposing (GetSyncSourcesResponse, SyncSource, defaultUser)
 import Proto.Rellm.Rellm as Rellm
+import Proto.Rellm.SyncSource.Configuration as Configuration
 import Shared.AccountsPanel as AccountsPanel
 import Shared.AccountsPanel.RellmServers as RellmServers exposing (withAccessToken)
 import Shared.Conversions as Conversions
 import Task exposing (Task)
 
 
-{-| "N events" alone when every event has exactly one instance (the common
-non-recurring case, where naming both is redundant) -- otherwise "N events
-and M instances". Used by both `Components.Pages.UserProfilePage` (each row's
-"delete along with its events" button) and `UI`'s shared delete-confirmation
-dialog for the same source, so it lives here rather than on either caller.
+{-| An ICS source's "N events" alone when every event has exactly one instance
+(the common non-recurring case, where naming both is redundant) -- otherwise
+"N events and M instances". An RSS/Atom source (which syncs plain Posts, not
+Events -- see `posts.proto`'s `Post.sync_source`) instead shows "N posts",
+read off `source.postCount`. Used by both `Components.Pages.UserProfilePage`
+(each row's "delete along with its events/posts" button) and `UI`'s shared
+delete-confirmation dialog for the same source, so it lives here rather than
+on either caller.
 -}
 syncedCountsLabel : SyncSource -> String
 syncedCountsLabel source =
-    let
-        eventCount : Int
-        eventCount =
-            Conversions.int64ToInt source.eventCount
+    case source.configuration of
+        Just (Configuration.IcsSubscriptionUrl _) ->
+            let
+                eventCount : Int
+                eventCount =
+                    Conversions.int64ToInt source.eventCount
 
-        instanceCount : Int
-        instanceCount =
-            Conversions.int64ToInt source.eventInstanceCount
-    in
-    if eventCount == instanceCount then
-        pluralCount eventCount "event"
+                instanceCount : Int
+                instanceCount =
+                    Conversions.int64ToInt source.eventInstanceCount
+            in
+            if eventCount == instanceCount then
+                pluralCount eventCount "event"
 
-    else
-        pluralCount eventCount "event"
-            ++ " and "
-            ++ pluralCount instanceCount "instance"
+            else
+                pluralCount eventCount "event"
+                    ++ " and "
+                    ++ pluralCount instanceCount "instance"
+
+        _ ->
+            pluralCount (Conversions.int64ToInt source.postCount) "post"
 
 
 pluralCount : Int -> String -> String

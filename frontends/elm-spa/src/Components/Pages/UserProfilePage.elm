@@ -169,6 +169,7 @@ type Msg
     | SyncSourceRowRefreshClicked SyncSource
     | GotSyncSourceRowSaveResult String (Result Grpc.Error ( Maybe AccountsPanel.Msg, SyncSource ))
     | SyncSourceAddUrlChanged String
+    | SyncSourceAddKindChanged SyncSourceKind
     | SyncSourceAddIntervalChanged Int
     | SyncSourceAddClicked
     | GotSyncSourceAddResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, SyncSource ))
@@ -356,6 +357,7 @@ type alias EventSyncRowEdit =
 
 type alias EventSyncAddForm =
     { url : String
+    , kind : SyncSourceKind
     , intervalSeconds : Int
     , status : SubmitStatus
     }
@@ -363,7 +365,87 @@ type alias EventSyncAddForm =
 
 defaultEventSyncAddForm : EventSyncAddForm
 defaultEventSyncAddForm =
-    { url = "", intervalSeconds = 3600, status = Idle }
+    { url = "", kind = Ics, intervalSeconds = 3600, status = Idle }
+
+
+{-| Which `SyncSource.configuration` variant (`protos/sync.proto`) a new source's subscription
+URL should be created as -- picked via `syncSourceAddRowView`'s type selector. An existing row's
+own kind is never re-chosen (only its URL text/interval are editable, see
+`SyncSourceRowSaveClicked`) -- it's implied by whichever variant `source.configuration` already
+is, via `configurationForKindOf`.
+-}
+type SyncSourceKind
+    = Ics
+    | Rss
+    | Atom
+
+
+syncSourceKindLabel : SyncSourceKind -> String
+syncSourceKindLabel kind =
+    case kind of
+        Ics ->
+            "iCal"
+
+        Rss ->
+            "RSS"
+
+        Atom ->
+            "Atom"
+
+
+syncSourceKindFromLabel : String -> SyncSourceKind
+syncSourceKindFromLabel label =
+    case label of
+        "RSS" ->
+            Rss
+
+        "Atom" ->
+            Atom
+
+        _ ->
+            Ics
+
+
+syncSourceKindOf : SyncSource -> SyncSourceKind
+syncSourceKindOf source =
+    case source.configuration of
+        Just (Configuration.RssSubscriptionUrl _) ->
+            Rss
+
+        Just (Configuration.AtomSubscriptionUrl _) ->
+            Atom
+
+        _ ->
+            Ics
+
+
+{-| Builds the `Configuration` variant for a fresh source of `kind` with `url`, or -- for
+`SyncSourceRowSaveClicked`, editing an existing row -- rebuilds whichever variant `existing`
+already had (an existing source's kind is never changed by this UI) with a new `url`, falling
+back to `kind` only if `existing` somehow has no configuration set at all.
+-}
+configurationForKindOf : Maybe (Configuration.Configuration String String String) -> SyncSourceKind -> String -> Configuration.Configuration String String String
+configurationForKindOf existing kind url =
+    case existing of
+        Just (Configuration.IcsSubscriptionUrl _) ->
+            Configuration.IcsSubscriptionUrl url
+
+        Just (Configuration.RssSubscriptionUrl _) ->
+            Configuration.RssSubscriptionUrl url
+
+        Just (Configuration.AtomSubscriptionUrl _) ->
+            Configuration.AtomSubscriptionUrl url
+
+        Nothing ->
+            case kind of
+                Ics ->
+                    Configuration.IcsSubscriptionUrl url
+
+                Rss ->
+                    Configuration.RssSubscriptionUrl url
+
+                Atom ->
+                    Configuration.AtomSubscriptionUrl url
 
 
 {-| The "Sync Sources" section's own state -- basic CRUD over
@@ -1678,7 +1760,7 @@ updateInner shared msg model =
                 updated : SyncSource
                 updated =
                     { source
-                        | configuration = Just (Configuration.IcsSubscriptionUrl edit.pendingUrl)
+                        | configuration = Just (configurationForKindOf source.configuration Ics edit.pendingUrl)
                         , syncIntervalSeconds = Conversions.int64FromInt edit.pendingIntervalSeconds
                     }
             in
@@ -1699,7 +1781,7 @@ updateInner shared msg model =
                     { es
                         | rowEdits =
                             Dict.insert source.id
-                                { pendingUrl = eventSyncIcsUrl source, pendingIntervalSeconds = Conversions.int64ToInt source.syncIntervalSeconds, status = Submitting }
+                                { pendingUrl = eventSyncUrl source, pendingIntervalSeconds = Conversions.int64ToInt source.syncIntervalSeconds, status = Submitting }
                                 es.rowEdits
                     }
               }
@@ -1739,6 +1821,9 @@ updateInner shared msg model =
         SyncSourceAddUrlChanged url ->
             ( { model | syncSources = mapEventSyncAddForm (\f -> { f | url = url }) model.syncSources }, Effect.none )
 
+        SyncSourceAddKindChanged kind ->
+            ( { model | syncSources = mapEventSyncAddForm (\f -> { f | kind = kind }) model.syncSources }, Effect.none )
+
         SyncSourceAddIntervalChanged seconds ->
             ( { model | syncSources = mapEventSyncAddForm (\f -> { f | intervalSeconds = seconds }) model.syncSources }, Effect.none )
 
@@ -1751,7 +1836,7 @@ updateInner shared msg model =
                 newSource : SyncSource
                 newSource =
                     { defaultSyncSource
-                        | configuration = Just (Configuration.IcsSubscriptionUrl es.addForm.url)
+                        | configuration = Just (configurationForKindOf Nothing es.addForm.kind es.addForm.url)
                         , syncIntervalSeconds = Conversions.int64FromInt es.addForm.intervalSeconds
                     }
             in
@@ -4310,13 +4395,23 @@ field has something correct to diff against/build on).
 eventSyncRowEditFor : SyncSource -> SyncSourcesState -> EventSyncRowEdit
 eventSyncRowEditFor source es =
     Dict.get source.id es.rowEdits
-        |> Maybe.withDefault { pendingUrl = eventSyncIcsUrl source, pendingIntervalSeconds = Conversions.int64ToInt source.syncIntervalSeconds, status = Idle }
+        |> Maybe.withDefault { pendingUrl = eventSyncUrl source, pendingIntervalSeconds = Conversions.int64ToInt source.syncIntervalSeconds, status = Idle }
 
 
-eventSyncIcsUrl : SyncSource -> String
-eventSyncIcsUrl source =
+{-| `source`'s current subscription URL, whichever `Configuration` variant (ICS, RSS, or Atom)
+it actually is -- an existing row's kind is never re-chosen in this UI (see `SyncSourceKind`'s
+own doc), so its edit form only ever needs the URL text, not which variant it's in.
+-}
+eventSyncUrl : SyncSource -> String
+eventSyncUrl source =
     case source.configuration of
         Just (Configuration.IcsSubscriptionUrl url) ->
+            url
+
+        Just (Configuration.RssSubscriptionUrl url) ->
+            url
+
+        Just (Configuration.AtomSubscriptionUrl url) ->
             url
 
         Nothing ->
@@ -4325,7 +4420,7 @@ eventSyncIcsUrl source =
 
 syncSourceIsDirty : SyncSource -> EventSyncRowEdit -> Bool
 syncSourceIsDirty source edit =
-    edit.pendingUrl /= eventSyncIcsUrl source || edit.pendingIntervalSeconds /= Conversions.int64ToInt source.syncIntervalSeconds
+    edit.pendingUrl /= eventSyncUrl source || edit.pendingIntervalSeconds /= Conversions.int64ToInt source.syncIntervalSeconds
 
 
 mapEventSyncAddForm : (EventSyncAddForm -> EventSyncAddForm) -> SyncSourcesState -> SyncSourcesState
@@ -4461,11 +4556,12 @@ syncSourceRowView targetHost browserTimeZone es source =
                     "Never"
     in
     div [ classes [ "sync-source-row", hostnameToCSSClass targetHost, "list-item-bordered-color-primary" ] ]
-        [ input
+        [ span [ class "sync-source-kind-label" ] [ text (syncSourceKindLabel (syncSourceKindOf source)) ]
+        , input
             [ class "sync-source-url"
             , type_ "text"
             , value edit.pendingUrl
-            , placeholder "iCal subscription URL"
+            , placeholder (syncSourceKindLabel (syncSourceKindOf source) ++ " subscription URL")
             , disabled submitting
             , onInput (SyncSourceRowUrlChanged source)
             ]
@@ -4515,11 +4611,12 @@ syncSourceRowView targetHost browserTimeZone es source =
 syncSourceAddRowView : String -> EventSyncAddForm -> Html Msg
 syncSourceAddRowView targetHost addForm =
     div [ classes [ "sync-source-row", "sync-source-add-row", hostnameToCSSClass targetHost ] ]
-        [ input
+        [ syncSourceKindSelect SyncSourceAddKindChanged addForm.kind (addForm.status == Submitting)
+        , input
             [ class "sync-source-url"
             , type_ "text"
             , value addForm.url
-            , placeholder "New iCal subscription URL"
+            , placeholder ("New " ++ syncSourceKindLabel addForm.kind ++ " subscription URL")
             , disabled (addForm.status == Submitting)
             , onInput SyncSourceAddUrlChanged
             ]
@@ -5421,5 +5518,24 @@ eventSyncIntervalSelect onChange selectedSeconds disabledAttr =
             |> List.map
                 (\( seconds, label ) ->
                     option [ value (String.fromInt seconds), selected (seconds == selectedSeconds) ] [ text label ]
+                )
+        )
+
+
+{-| The new-source "type" selector (`syncSourceAddRowView` only -- an existing row's kind is
+never re-chosen, see `SyncSourceKind`'s own doc) picking which `Configuration` variant the
+URL below it will be saved as.
+-}
+syncSourceKindSelect : (SyncSourceKind -> Msg) -> SyncSourceKind -> Bool -> Html Msg
+syncSourceKindSelect onChange selectedKind disabledAttr =
+    select
+        [ class "sync-source-kind"
+        , disabled disabledAttr
+        , onInput (\s -> onChange (syncSourceKindFromLabel s))
+        ]
+        ([ Ics, Rss, Atom ]
+            |> List.map
+                (\kind ->
+                    option [ value (syncSourceKindLabel kind), selected (kind == selectedKind) ] [ text (syncSourceKindLabel kind) ]
                 )
         )

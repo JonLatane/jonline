@@ -32,9 +32,10 @@ fn synced_event(
     uid: &str,
 ) -> Option<models::Event> {
     let event_id: Option<i64> = event_instances::table
+        .inner_join(posts::table.on(posts::id.eq(event_instances::post_id)))
         .select(event_instances::event_id)
-        .filter(event_instances::sync_source_id.eq(source_id))
-        .filter(event_instances::sync_source_uid.eq(uid))
+        .filter(posts::sync_source_id.eq(source_id))
+        .filter(posts::sync_source_uid.eq(uid))
         .first(conn)
         .optional()
         .unwrap();
@@ -78,8 +79,9 @@ fn single_vevent_creates_event_and_instance() {
 
         let instances = instances_for(conn, event.post_id);
         assert_eq!(instances.len(), 1);
-        assert!(instances[0].sync_source_uid.is_some());
-        assert!(instances[0].sync_source_recurrence_anchor.is_some());
+        let instance_post = post_of(conn, instances[0].post_id);
+        assert!(instance_post.sync_source_uid.is_some());
+        assert!(instance_post.sync_source_recurrence_anchor.is_some());
 
         Ok(())
     });
@@ -180,7 +182,9 @@ fn resyncing_the_same_feed_twice_creates_no_duplicates() {
         sync_source_text(&source, &ics, conn).expect("second sync of the same feed should succeed");
 
         let matching_events: Vec<models::Event> = events::table
-            .filter(events::sync_source_id.eq(source.id))
+            .inner_join(posts::table.on(posts::id.eq(events::post_id)))
+            .filter(posts::sync_source_id.eq(source.id))
+            .select(events::all_columns)
             .load(conn)
             .unwrap();
         assert_eq!(
@@ -221,6 +225,7 @@ fn duplicate_recurrence_anchor_is_rejected_by_db_unique_constraint() {
 
         let event = synced_event(conn, source.id, "dbconstraint-1").expect("event should exist");
         let existing_instance = &instances_for(conn, event.post_id)[0];
+        let existing_instance_post = post_of(conn, existing_instance.post_id);
 
         let duplicate_post: models::Post = diesel::insert_into(posts::table)
             .values(&models::NewPost {
@@ -239,7 +244,7 @@ fn duplicate_recurrence_anchor_is_rejected_by_db_unique_constraint() {
             .get_result(conn)
             .unwrap();
 
-        let insert_result = diesel::insert_into(event_instances::table)
+        diesel::insert_into(event_instances::table)
             .values(&models::NewEventInstance {
                 event_id: event.post_id,
                 post_id: duplicate_post.id,
@@ -247,11 +252,21 @@ fn duplicate_recurrence_anchor_is_rejected_by_db_unique_constraint() {
                 starts_at: existing_instance.starts_at,
                 ends_at: existing_instance.ends_at,
                 location: None,
-                sync_source_id: existing_instance.sync_source_id,
-                sync_source_uid: existing_instance.sync_source_uid.clone(),
-                sync_source_recurrence_anchor: existing_instance.sync_source_recurrence_anchor,
                 timezone: existing_instance.timezone.clone(),
             })
+            .execute(conn)
+            .expect("event_instances insert itself no longer carries the unique constraint");
+
+        // The unique constraint now lives on `posts` (see migration
+        // 2026-09-11-000000_move_sync_source_to_posts), so it's this follow-up UPDATE --
+        // mirroring `event_sync.rs`'s own insert-then-update pattern -- that must be rejected.
+        let insert_result = diesel::update(posts::table.filter(posts::id.eq(duplicate_post.id)))
+            .set((
+                posts::sync_source_id.eq(existing_instance_post.sync_source_id),
+                posts::sync_source_uid.eq(existing_instance_post.sync_source_uid.clone()),
+                posts::sync_source_recurrence_anchor
+                    .eq(existing_instance_post.sync_source_recurrence_anchor),
+            ))
             .execute(conn);
 
         assert!(
@@ -264,6 +279,78 @@ fn duplicate_recurrence_anchor_is_rejected_by_db_unique_constraint() {
             ),
             "expected a unique constraint violation, got {:?}",
             insert_result
+        );
+
+        Ok(())
+    });
+}
+
+/// Direct proof of the other half of the two-partial-index split (see migration
+/// 2026-09-11-000000_move_sync_source_to_posts's doc comment): a single unique index across all
+/// three `posts` sync columns wouldn't actually stop two rows both having
+/// `sync_source_recurrence_anchor IS NULL` -- Postgres never treats two NULLs as colliding -- and
+/// every Event's own series-level Post has exactly that (no recurrence anchor at all), same as a
+/// future plain RSS/Atom-synced Post would. `idx_posts_sync_source_unique_non_recurring` exists
+/// specifically to still catch that case.
+#[test]
+fn duplicate_non_recurring_sync_source_uid_is_rejected_by_db_unique_constraint() {
+    let mut conn = test_conn();
+    conn.test_transaction::<_, tonic::Status, _>(|conn| {
+        let user = create_user(conn, "est_nonrecurring_owner");
+        let source = create_sync_source_row(conn, &user, "http://example.invalid/cal.ics");
+
+        let start = Utc::now() + Duration::days(1);
+        let end = start + Duration::hours(1);
+        let ics = format!(
+            "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//test//\r\nBEGIN:VEVENT\r\nUID:nonrecurring-1\r\nDTSTART:{}\r\nDTEND:{}\r\nSUMMARY:Nonrecurring Event\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+            start.format(ICS_FORMAT),
+            end.format(ICS_FORMAT)
+        );
+        sync_source_text(&source, &ics, conn).expect("sync should succeed");
+
+        let event = synced_event(conn, source.id, "nonrecurring-1").expect("event should exist");
+        let event_post = post_of(conn, event.post_id);
+        assert_eq!(
+            event_post.sync_source_recurrence_anchor, None,
+            "an Event's own series-level Post has no recurrence anchor"
+        );
+
+        let duplicate_series_post: models::Post = diesel::insert_into(posts::table)
+            .values(&models::NewPost {
+                user_id: Some(user.id),
+                parent_post_id: None,
+                title: None,
+                link: None,
+                content: None,
+                visibility: "GLOBAL_PUBLIC".to_string(),
+                embed_link: false,
+                context: "EVENT".to_string(),
+                moderation: "UNMODERATED".to_string(),
+                media: vec![],
+            })
+            .returning(models::POST_COLUMNS)
+            .get_result(conn)
+            .unwrap();
+
+        let update_result = diesel::update(posts::table.filter(posts::id.eq(duplicate_series_post.id)))
+            .set((
+                posts::sync_source_id.eq(event_post.sync_source_id),
+                posts::sync_source_uid.eq(event_post.sync_source_uid.clone()),
+                // Left NULL, same as `event_post`'s own -- this is exactly the case a single
+                // three-column unique index would have missed.
+            ))
+            .execute(conn);
+
+        assert!(
+            matches!(
+                update_result,
+                Err(diesel::result::Error::DatabaseError(
+                    diesel::result::DatabaseErrorKind::UniqueViolation,
+                    _
+                ))
+            ),
+            "expected a unique constraint violation, got {:?}",
+            update_result
         );
 
         Ok(())
@@ -589,9 +676,13 @@ fn missing_ics_url_fails_with_precondition_error() {
             create_sync_source_row(conn, &user, "http://example.invalid/cal.ics");
         source.configuration = serde_json::json!({});
 
+        // `sync_source` (the ICS/RSS/Atom dispatcher -- see `logic::sync_sources::mod`) can't
+        // tell what kind of source this is at all with an empty `configuration`, so it's this
+        // generic precondition, not `event_sync::sync_source_ics`'s own `ics_url_required`
+        // (unreachable here since the dispatcher never gets that far).
         let err = sync_source(&source, conn).unwrap_err();
         assert_eq!(err.code(), tonic::Code::FailedPrecondition);
-        assert_eq!(err.message(), "ics_url_required");
+        assert_eq!(err.message(), "sync_source_configuration_required");
 
         Ok(())
     });

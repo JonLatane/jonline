@@ -11,7 +11,7 @@ use crate::marshaling::*;
 use crate::models;
 use crate::protos::*;
 use crate::rpcs::{create_sync_source, delete_sync_source, get_sync_sources, update_sync_source};
-use crate::schema::{events, sync_sources};
+use crate::schema::{events, posts, sync_sources};
 use crate::tests::factories::*;
 
 fn ics_source_request(url: &str) -> SyncSource {
@@ -45,7 +45,7 @@ fn create_requires_sync_events_from_ics_permission() {
 }
 
 #[test]
-fn create_requires_ics_subscription_url() {
+fn create_requires_a_subscription_url() {
     let mut conn = test_conn();
     conn.test_transaction::<_, tonic::Status, _>(|conn| {
         let user = create_user(conn, "esrt_create_nourl");
@@ -53,7 +53,7 @@ fn create_requires_ics_subscription_url() {
 
         let err = create_sync_source(SyncSource::default(), &user, conn).unwrap_err();
         assert_eq!(err.code(), Code::InvalidArgument);
-        assert_eq!(err.message(), "ics_subscription_url_required");
+        assert_eq!(err.message(), "subscription_url_required");
 
         Ok(())
     });
@@ -334,7 +334,8 @@ fn delete_without_delete_synced_events_detaches_but_keeps_events() {
         let created = create_sync_source(ics_source_request(&url), &owner, conn).expect("create should succeed");
 
         let event_id_before: i64 = events::table
-            .filter(events::sync_source_id.eq(created.id.to_db_id().unwrap()))
+            .inner_join(posts::table.on(posts::id.eq(events::post_id)))
+            .filter(posts::sync_source_id.eq(created.id.to_db_id().unwrap()))
             .select(events::post_id)
             .first(conn)
             .unwrap();
@@ -353,7 +354,12 @@ fn delete_without_delete_synced_events_detaches_but_keeps_events() {
             .filter(events::post_id.eq(event_id_before))
             .first(conn)
             .expect("event should still exist after a non-destructive delete");
-        assert_eq!(event_after.sync_source_id, None, "event should be detached from the deleted source");
+        let post_after: models::Post = posts::table
+            .select(models::POST_COLUMNS)
+            .filter(posts::id.eq(event_after.post_id))
+            .first(conn)
+            .unwrap();
+        assert_eq!(post_after.sync_source_id, None, "event's post should be detached from the deleted source");
 
         let remaining_sources: i64 = sync_sources::table
             .filter(sync_sources::id.eq(created.id.to_db_id().unwrap()))
@@ -378,7 +384,8 @@ fn delete_with_delete_synced_events_removes_events_too() {
         let created = create_sync_source(ics_source_request(&url), &owner, conn).expect("create should succeed");
 
         let event_id_before: i64 = events::table
-            .filter(events::sync_source_id.eq(created.id.to_db_id().unwrap()))
+            .inner_join(posts::table.on(posts::id.eq(events::post_id)))
+            .filter(posts::sync_source_id.eq(created.id.to_db_id().unwrap()))
             .select(events::post_id)
             .first(conn)
             .unwrap();

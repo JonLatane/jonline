@@ -126,7 +126,6 @@ pub fn create_event(
             .values(&models::NewEvent {
                 post_id: event_post.id,
                 info: serde_json::to_value(request.info).unwrap_or(json!({})),
-                sync_source_id: None,
             })
             .get_result::<models::Event>(conn)?;
         let mut inserted_instances: Vec<MarshalableEventInstance> = vec![];
@@ -191,9 +190,6 @@ pub fn create_event(
                         .as_ref()
                         .map(|c| serde_json::to_value(c).unwrap()),
                     info: json!({}),
-                    sync_source_id: None,
-                    sync_source_uid: None,
-                    sync_source_recurrence_anchor: None,
                     timezone: instance.timezone.clone(),
                 })
                 .returning(models::EVENT_INSTANCE_COLUMNS)

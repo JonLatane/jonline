@@ -3064,7 +3064,6 @@ fieldNumbersEventInstance :
     , startsAt : Int
     , endsAt : Int
     , location : Int
-    , syncSourceInstanceId : Int
     , syncMissingSince : Int
     , attendances : Int
     , currentUserAttendance : Int
@@ -3297,7 +3296,7 @@ type alias SyncEventInstanceRequest =
 {-| The field numbers for the fields of `Event`. This is mostly useful for internals, like documentation generation.
 
 -}
-fieldNumbersEvent : { post : Int, info : Int, instances : Int, syncSource : Int }
+fieldNumbersEvent : { post : Int, info : Int, instances : Int }
 fieldNumbersEvent =
     Proto.Rellm.Internals_.fieldNumbersProto__Rellm__Event
 
@@ -3974,6 +3973,7 @@ fieldNumbersPost :
     , lastActivityAt : Int
     , unauthenticatedStarCount : Int
     , syncDestinations : Int
+    , syncSource : Int
     }
 fieldNumbersPost =
     Proto.Rellm.Internals_.fieldNumbersProto__Rellm__Post
@@ -5404,8 +5404,9 @@ encodeSyncSource =
 
 ### postCount
 
- The number of posts total associated with this SyncSource. Not yet populated --
- no source type syncs posts in yet.
+ The number of posts total associated with this SyncSource. Populated for an RSS/Atom
+ source (recomputed on each sync, like `event_count`/`event_instance_count` are for an
+ ICS source); always 0 for an ICS source, which syncs Events/EventInstances instead.
 
 
 -}

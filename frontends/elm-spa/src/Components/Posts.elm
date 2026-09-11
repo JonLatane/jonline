@@ -658,8 +658,10 @@ same cards.
 
 `showSyncDestinations`/`availableSyncDestinations`/`isPushing`/`pushError`/`onPush`/`onDelete`
 mirror `Components.Events.eventCard`'s own trailing params of the same name/shape exactly (just
-without an `Events`-style `showSyncSource`/`syncSourceView` pair -- Posts have no "synced
-from" concept, only "synced to") -- `showSyncDestinations` gates `postSyncDestinationsView` at the
+without an `Events`-style `showSyncSource`/`syncSourceView` pair -- a plain Post *can* now have a
+"synced from" `SyncSource` too, an RSS/Atom feed item (see `posts.proto`'s `Post.sync_source`),
+but no card here surfaces it yet the way `Events.syncSourceView` does for a synced `Event`) --
+`showSyncDestinations` gates `postSyncDestinationsView` at the
 bottom of the card, the rest thread straight into that call. `availableSyncDestinations` is
 `Nothing` for every caller except `Components.Pages.UserProfilePage`'s embedded posts feed, so
 push/delete controls render nowhere else. Ignored entirely by the `REPLY` fallback to `replyCard`

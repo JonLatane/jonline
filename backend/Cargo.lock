@@ -276,7 +276,7 @@ dependencies = [
  "attohttpc",
  "home",
  "log",
- "quick-xml",
+ "quick-xml 0.38.4",
  "rust-ini",
  "serde",
  "thiserror 2.0.20",
@@ -1461,6 +1461,23 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1e6853b52649d4ac5c0bd02320cddc5ba956bdb407c4b75a2c6b75bf51500f8c"
 dependencies = [
  "simd-adler32",
+]
+
+[[package]]
+name = "feed-rs"
+version = "2.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "369995dae0733f1fe5ab0e3f345f6503a5f384179df5d8da333702031a131cf9"
+dependencies = [
+ "chrono",
+ "mediatype",
+ "quick-xml 0.41.0",
+ "regex",
+ "serde",
+ "serde_json",
+ "siphasher",
+ "url",
+ "uuid",
 ]
 
 [[package]]
@@ -2668,6 +2685,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7ebb8d8732c6a6df3d8f032a82911cfc747e00efb95cc46e8d0acd5b5b88570c"
 
 [[package]]
+name = "mediatype"
+version = "0.21.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "120fa187be19d9962f0926633453784691731018a2bf936ddb4e29101b79c4a7"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "memchr"
 version = "2.8.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3476,6 +3502,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "quick-xml"
+version = "0.41.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e660451e55124f798a69a5af3f49ccfbefbd41910eefd25caf2393e1f3473ec1"
+dependencies = [
+ "encoding_rs",
+ "memchr",
+]
+
+[[package]]
 name = "quote"
 version = "1.0.47"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3660,6 +3696,7 @@ dependencies = [
  "diesel_migrations",
  "dotenvy",
  "env_logger",
+ "feed-rs",
  "futures",
  "headless_chrome",
  "http 1.5.0",
@@ -3986,7 +4023,7 @@ dependencies = [
  "md5",
  "minidom",
  "percent-encoding",
- "quick-xml",
+ "quick-xml 0.38.4",
  "reqwest 0.12.28",
  "serde",
  "serde_derive",
@@ -5364,6 +5401,7 @@ dependencies = [
  "idna",
  "percent-encoding",
  "serde",
+ "serde_derive",
 ]
 
 [[package]]

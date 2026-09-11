@@ -1098,6 +1098,8 @@ class SyncDestinationStatus extends $pb.GeneratedMessage {
 
 enum SyncSource_Configuration {
   icsSubscriptionUrl, 
+  rssSubscriptionUrl, 
+  atomSubscriptionUrl, 
   notSet
 }
 
@@ -1114,6 +1116,8 @@ class SyncSource extends $pb.GeneratedMessage {
     $fixnum.Int64? eventInstanceCount,
     $core.String? icsSubscriptionUrl,
     $fixnum.Int64? postCount,
+    $core.String? rssSubscriptionUrl,
+    $core.String? atomSubscriptionUrl,
   }) {
     final $result = create();
     if (id != null) {
@@ -1146,6 +1150,12 @@ class SyncSource extends $pb.GeneratedMessage {
     if (postCount != null) {
       $result.postCount = postCount;
     }
+    if (rssSubscriptionUrl != null) {
+      $result.rssSubscriptionUrl = rssSubscriptionUrl;
+    }
+    if (atomSubscriptionUrl != null) {
+      $result.atomSubscriptionUrl = atomSubscriptionUrl;
+    }
     return $result;
   }
   SyncSource._() : super();
@@ -1154,10 +1164,12 @@ class SyncSource extends $pb.GeneratedMessage {
 
   static const $core.Map<$core.int, SyncSource_Configuration> _SyncSource_ConfigurationByTag = {
     9 : SyncSource_Configuration.icsSubscriptionUrl,
+    11 : SyncSource_Configuration.rssSubscriptionUrl,
+    12 : SyncSource_Configuration.atomSubscriptionUrl,
     0 : SyncSource_Configuration.notSet
   };
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'SyncSource', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
-    ..oo(0, [9])
+    ..oo(0, [9, 11, 12])
     ..aOS(1, _omitFieldNames ? '' : 'id')
     ..aOM<$15.Author>(2, _omitFieldNames ? '' : 'owner', subBuilder: $15.Author.create)
     ..a<$fixnum.Int64>(3, _omitFieldNames ? '' : 'syncIntervalSeconds', $pb.PbFieldType.OU6, defaultOrMaker: $fixnum.Int64.ZERO)
@@ -1168,6 +1180,8 @@ class SyncSource extends $pb.GeneratedMessage {
     ..a<$fixnum.Int64>(8, _omitFieldNames ? '' : 'eventInstanceCount', $pb.PbFieldType.OU6, defaultOrMaker: $fixnum.Int64.ZERO)
     ..aOS(9, _omitFieldNames ? '' : 'icsSubscriptionUrl')
     ..a<$fixnum.Int64>(10, _omitFieldNames ? '' : 'postCount', $pb.PbFieldType.OU6, defaultOrMaker: $fixnum.Int64.ZERO)
+    ..aOS(11, _omitFieldNames ? '' : 'rssSubscriptionUrl')
+    ..aOS(12, _omitFieldNames ? '' : 'atomSubscriptionUrl')
     ..hasRequiredFields = false
   ;
 
@@ -1285,7 +1299,7 @@ class SyncSource extends $pb.GeneratedMessage {
   @$pb.TagNumber(8)
   void clearEventInstanceCount() => clearField(8);
 
-  /// The iCal subscription URL for the calendar sync.
+  /// The iCal subscription URL for the calendar sync. Creates/updates Events/EventInstances.
   @$pb.TagNumber(9)
   $core.String get icsSubscriptionUrl => $_getSZ(8);
   @$pb.TagNumber(9)
@@ -1295,8 +1309,9 @@ class SyncSource extends $pb.GeneratedMessage {
   @$pb.TagNumber(9)
   void clearIcsSubscriptionUrl() => clearField(9);
 
-  /// The number of posts total associated with this SyncSource. Not yet populated --
-  /// no source type syncs posts in yet.
+  /// The number of posts total associated with this SyncSource. Populated for an RSS/Atom
+  /// source (recomputed on each sync, like `event_count`/`event_instance_count` are for an
+  /// ICS source); always 0 for an ICS source, which syncs Events/EventInstances instead.
   @$pb.TagNumber(10)
   $fixnum.Int64 get postCount => $_getI64(9);
   @$pb.TagNumber(10)
@@ -1305,6 +1320,26 @@ class SyncSource extends $pb.GeneratedMessage {
   $core.bool hasPostCount() => $_has(9);
   @$pb.TagNumber(10)
   void clearPostCount() => clearField(10);
+
+  /// The RSS subscription URL for the feed sync. Creates/updates plain Posts.
+  @$pb.TagNumber(11)
+  $core.String get rssSubscriptionUrl => $_getSZ(10);
+  @$pb.TagNumber(11)
+  set rssSubscriptionUrl($core.String v) { $_setString(10, v); }
+  @$pb.TagNumber(11)
+  $core.bool hasRssSubscriptionUrl() => $_has(10);
+  @$pb.TagNumber(11)
+  void clearRssSubscriptionUrl() => clearField(11);
+
+  /// The Atom subscription URL for the feed sync. Creates/updates plain Posts.
+  @$pb.TagNumber(12)
+  $core.String get atomSubscriptionUrl => $_getSZ(11);
+  @$pb.TagNumber(12)
+  set atomSubscriptionUrl($core.String v) { $_setString(11, v); }
+  @$pb.TagNumber(12)
+  $core.bool hasAtomSubscriptionUrl() => $_has(11);
+  @$pb.TagNumber(12)
+  void clearAtomSubscriptionUrl() => clearField(12);
 }
 
 class GetSyncSourcesResponse extends $pb.GeneratedMessage {

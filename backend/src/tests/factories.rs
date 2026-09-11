@@ -406,6 +406,22 @@ pub fn create_sync_source_row(
         .expect("failed to create test sync source")
 }
 
+/// Mirrors `create_sync_source_row`, for an RSS/Atom feed subscription instead of an ICS one.
+pub fn create_feed_sync_source_row(
+    conn: &mut PgPooledConnection,
+    user: &models::User,
+    feed_subscription_url: &str,
+) -> models::SyncSource {
+    insert_into(sync_sources::table)
+        .values(&models::NewSyncSource {
+            user_id: user.id,
+            sync_interval_seconds: 3600,
+            configuration: serde_json::json!({ "rss_subscription_url": feed_subscription_url }),
+        })
+        .get_result::<models::SyncSource>(conn)
+        .expect("failed to create test sync source")
+}
+
 /// Options for `create_event`'s underlying container `Post` (context `EVENT`) - mirrors
 /// `PostOpts`, but only exposes the fields `get_events_tests` actually varies.
 pub struct EventOpts {
@@ -467,7 +483,6 @@ pub fn create_event(
         .values(&models::NewEvent {
             post_id: post.id,
             info: opts.info,
-            sync_source_id: None,
         })
         .get_result::<models::Event>(conn)
         .expect("failed to create test event");
@@ -539,9 +554,6 @@ pub fn create_event_instance(
             starts_at: opts.starts_at,
             ends_at: opts.ends_at,
             location: opts.location,
-            sync_source_id: None,
-            sync_source_uid: None,
-            sync_source_recurrence_anchor: None,
             timezone: opts.timezone,
         })
         .returning(models::EVENT_INSTANCE_COLUMNS)
@@ -629,6 +641,33 @@ pub fn serve_ics(ics_text: &str) -> String {
         }
     });
     format!("http://127.0.0.1:{port}/test.ics")
+}
+
+/// Mirrors `serve_ics`, for an RSS/Atom feed body instead of an ICS calendar.
+pub fn serve_feed(feed_text: &str) -> String {
+    use std::io::{Read, Write};
+    use std::net::TcpListener;
+
+    let listener = TcpListener::bind("127.0.0.1:0").expect("failed to bind test feed server");
+    let port = listener
+        .local_addr()
+        .expect("failed to read test feed server port")
+        .port();
+    let body = feed_text.to_string();
+    std::thread::spawn(move || {
+        for stream in listener.incoming() {
+            let Ok(mut stream) = stream else { continue };
+            let mut buf = [0u8; 2048];
+            let _ = stream.read(&mut buf);
+            let response = format!(
+                "HTTP/1.1 200 OK\r\nContent-Type: application/rss+xml\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
+                body.len(),
+                body
+            );
+            let _ = stream.write_all(response.as_bytes());
+        }
+    });
+    format!("http://127.0.0.1:{port}/test.rss")
 }
 
 /// Inserts a `sync_destinations` row directly (bypassing `rpcs::create_sync_destination`, so no

@@ -37,7 +37,7 @@ pub fn update_sync_source(
         existing.sync_interval_seconds = request.sync_interval_seconds as i64;
     }
     if request.configuration.is_some() {
-        existing.configuration = configuration_to_json(&request.configuration);
+        existing.configuration = source_configuration_to_json(&request.configuration);
     }
     existing.updated_at = Some(SystemTime::now());
 

@@ -14,6 +14,7 @@ mod event_instance_rpc_tests;
 mod sync_source_rpc_tests;
 mod event_sync_tests;
 mod facebook_sync_tests;
+mod feed_sync_tests;
 mod geocoding_tests;
 mod get_event_attendances_parity_tests;
 mod get_events_tests;

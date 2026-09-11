@@ -9,7 +9,7 @@ import { BinaryReader, BinaryWriter } from "@bufbuild/protobuf/wire";
 import { Author } from "./authors";
 import { Timestamp } from "./google/protobuf/timestamp";
 import { MediaReference } from "./media";
-import { SyncDestinationStatus } from "./sync";
+import { SyncDestinationStatus, SyncSource } from "./sync";
 import {
   Moderation,
   moderationFromJSON,
@@ -379,6 +379,12 @@ export interface Post {
   unauthenticatedStarCount: number;
   /** SyncDestinations this post has been synced (cross-posted) to, and their status. */
   syncDestinations: SyncDestinationStatus[];
+  /**
+   * If the Post was created/is kept in sync from a [`SyncSource`](#rellm-SyncSource) (an ICS
+   * Event/EventInstance, or an RSS/Atom feed item), this is the source it was synced from.
+   * Only its media should be considered editable for such a Post.
+   */
+  syncSource?: SyncSource | undefined;
 }
 
 /** Syncs (cross-posts) a single Post to one SyncDestination. */
@@ -755,6 +761,7 @@ function createBasePost(): Post {
     lastActivityAt: undefined,
     unauthenticatedStarCount: 0,
     syncDestinations: [],
+    syncSource: undefined,
   };
 }
 
@@ -834,6 +841,9 @@ export const Post: MessageFns<Post> = {
     }
     for (const v of message.syncDestinations) {
       SyncDestinationStatus.encode(v!, writer.uint32(202).fork()).join();
+    }
+    if (message.syncSource !== undefined) {
+      SyncSource.encode(message.syncSource, writer.uint32(210).fork()).join();
     }
     return writer;
   },
@@ -1045,6 +1055,14 @@ export const Post: MessageFns<Post> = {
           message.syncDestinations.push(SyncDestinationStatus.decode(reader, reader.uint32()));
           continue;
         }
+        case 26: {
+          if (tag !== 210) {
+            break;
+          }
+
+          message.syncSource = SyncSource.decode(reader, reader.uint32());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1085,6 +1103,7 @@ export const Post: MessageFns<Post> = {
       syncDestinations: globalThis.Array.isArray(object?.syncDestinations)
         ? object.syncDestinations.map((e: any) => SyncDestinationStatus.fromJSON(e))
         : [],
+      syncSource: isSet(object.syncSource) ? SyncSource.fromJSON(object.syncSource) : undefined,
     };
   },
 
@@ -1165,6 +1184,9 @@ export const Post: MessageFns<Post> = {
     if (message.syncDestinations?.length) {
       obj.syncDestinations = message.syncDestinations.map((e) => SyncDestinationStatus.toJSON(e));
     }
+    if (message.syncSource !== undefined) {
+      obj.syncSource = SyncSource.toJSON(message.syncSource);
+    }
     return obj;
   },
 
@@ -1202,6 +1224,9 @@ export const Post: MessageFns<Post> = {
     message.lastActivityAt = object.lastActivityAt ?? undefined;
     message.unauthenticatedStarCount = object.unauthenticatedStarCount ?? 0;
     message.syncDestinations = object.syncDestinations?.map((e) => SyncDestinationStatus.fromPartial(e)) || [];
+    message.syncSource = (object.syncSource !== undefined && object.syncSource !== null)
+      ? SyncSource.fromPartial(object.syncSource)
+      : undefined;
     return message;
   },
 };

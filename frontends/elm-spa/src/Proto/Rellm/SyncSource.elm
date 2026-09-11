@@ -21,7 +21,17 @@ import Proto.Rellm.Internals_
 
 ### IcsSubscriptionUrl
 
- The iCal subscription URL for the calendar sync.
+ The iCal subscription URL for the calendar sync. Creates/updates Events/EventInstances.
+
+
+### RssSubscriptionUrl
+
+ The RSS subscription URL for the feed sync. Creates/updates plain Posts.
+
+
+### AtomSubscriptionUrl
+
+ The Atom subscription URL for the feed sync. Creates/updates plain Posts.
 
 
 -}

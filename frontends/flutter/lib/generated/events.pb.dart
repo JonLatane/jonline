@@ -393,7 +393,6 @@ class Event extends $pb.GeneratedMessage {
     $8.Post? post,
     EventInfo? info,
     $core.Iterable<EventInstance>? instances,
-    $10.SyncSource? syncSource,
   }) {
     final $result = create();
     if (post != null) {
@@ -405,9 +404,6 @@ class Event extends $pb.GeneratedMessage {
     if (instances != null) {
       $result.instances.addAll(instances);
     }
-    if (syncSource != null) {
-      $result.syncSource = syncSource;
-    }
     return $result;
   }
   Event._() : super();
@@ -418,7 +414,6 @@ class Event extends $pb.GeneratedMessage {
     ..aOM<$8.Post>(2, _omitFieldNames ? '' : 'post', subBuilder: $8.Post.create)
     ..aOM<EventInfo>(3, _omitFieldNames ? '' : 'info', subBuilder: EventInfo.create)
     ..pc<EventInstance>(4, _omitFieldNames ? '' : 'instances', $pb.PbFieldType.PM, subBuilder: EventInstance.create)
-    ..aOM<$10.SyncSource>(5, _omitFieldNames ? '' : 'syncSource', subBuilder: $10.SyncSource.create)
     ..hasRequiredFields = false
   ;
 
@@ -471,19 +466,6 @@ class Event extends $pb.GeneratedMessage {
   /// A list of instances for the Event. *Events will only include all instances if the request is for a single event.*
   @$pb.TagNumber(4)
   $core.List<EventInstance> get instances => $_getList(2);
-
-  /// If the event was synced from a source (meaning only its media should not be editable),
-  /// this is the source it was synced from.
-  @$pb.TagNumber(5)
-  $10.SyncSource get syncSource => $_getN(3);
-  @$pb.TagNumber(5)
-  set syncSource($10.SyncSource v) { setField(5, v); }
-  @$pb.TagNumber(5)
-  $core.bool hasSyncSource() => $_has(3);
-  @$pb.TagNumber(5)
-  void clearSyncSource() => clearField(5);
-  @$pb.TagNumber(5)
-  $10.SyncSource ensureSyncSource() => $_ensure(3);
 }
 
 /// Syncs (cross-posts) a single EventInstance to one SyncDestination.
@@ -749,7 +731,6 @@ class EventInstance extends $pb.GeneratedMessage {
     $12.Timestamp? startsAt,
     $12.Timestamp? endsAt,
     $16.Location? location,
-    $core.String? syncSourceInstanceId,
     $12.Timestamp? syncMissingSince,
     EventAttendances? attendances,
     EventAttendance? currentUserAttendance,
@@ -774,9 +755,6 @@ class EventInstance extends $pb.GeneratedMessage {
     }
     if (location != null) {
       $result.location = location;
-    }
-    if (syncSourceInstanceId != null) {
-      $result.syncSourceInstanceId = syncSourceInstanceId;
     }
     if (syncMissingSince != null) {
       $result.syncMissingSince = syncMissingSince;
@@ -806,7 +784,6 @@ class EventInstance extends $pb.GeneratedMessage {
     ..aOM<$12.Timestamp>(5, _omitFieldNames ? '' : 'startsAt', subBuilder: $12.Timestamp.create)
     ..aOM<$12.Timestamp>(6, _omitFieldNames ? '' : 'endsAt', subBuilder: $12.Timestamp.create)
     ..aOM<$16.Location>(7, _omitFieldNames ? '' : 'location', subBuilder: $16.Location.create)
-    ..aOS(8, _omitFieldNames ? '' : 'syncSourceInstanceId')
     ..aOM<$12.Timestamp>(9, _omitFieldNames ? '' : 'syncMissingSince', subBuilder: $12.Timestamp.create)
     ..aOM<EventAttendances>(10, _omitFieldNames ? '' : 'attendances', subBuilder: EventAttendances.create)
     ..aOM<EventAttendance>(11, _omitFieldNames ? '' : 'currentUserAttendance', subBuilder: EventAttendance.create)
@@ -907,65 +884,55 @@ class EventInstance extends $pb.GeneratedMessage {
   @$pb.TagNumber(7)
   $16.Location ensureLocation() => $_ensure(5);
 
-  /// The "iCal ID" (or external ID) of this instance, if its [`Event`](#rellm-Event) was synced from a [`SyncSource`](#rellm-SyncSource).
-  @$pb.TagNumber(8)
-  $core.String get syncSourceInstanceId => $_getSZ(6);
-  @$pb.TagNumber(8)
-  set syncSourceInstanceId($core.String v) { $_setString(6, v); }
-  @$pb.TagNumber(8)
-  $core.bool hasSyncSourceInstanceId() => $_has(6);
-  @$pb.TagNumber(8)
-  void clearSyncSourceInstanceId() => clearField(8);
-
   /// The time since this event "disappeared" from the sync source.
   /// It is up to the owner whether this means it should be deleted.
   @$pb.TagNumber(9)
-  $12.Timestamp get syncMissingSince => $_getN(7);
+  $12.Timestamp get syncMissingSince => $_getN(6);
   @$pb.TagNumber(9)
   set syncMissingSince($12.Timestamp v) { setField(9, v); }
   @$pb.TagNumber(9)
-  $core.bool hasSyncMissingSince() => $_has(7);
+  $core.bool hasSyncMissingSince() => $_has(6);
   @$pb.TagNumber(9)
   void clearSyncMissingSince() => clearField(9);
   @$pb.TagNumber(9)
-  $12.Timestamp ensureSyncMissingSince() => $_ensure(7);
+  $12.Timestamp ensureSyncMissingSince() => $_ensure(6);
 
   /// RSVP + invite data for this instance.
   @$pb.TagNumber(10)
-  EventAttendances get attendances => $_getN(8);
+  EventAttendances get attendances => $_getN(7);
   @$pb.TagNumber(10)
   set attendances(EventAttendances v) { setField(10, v); }
   @$pb.TagNumber(10)
-  $core.bool hasAttendances() => $_has(8);
+  $core.bool hasAttendances() => $_has(7);
   @$pb.TagNumber(10)
   void clearAttendances() => clearField(10);
   @$pb.TagNumber(10)
-  EventAttendances ensureAttendances() => $_ensure(8);
+  EventAttendances ensureAttendances() => $_ensure(7);
 
   /// If the request was made by a logged-in user, this is the current user's attendance for this instance.
   @$pb.TagNumber(11)
-  EventAttendance get currentUserAttendance => $_getN(9);
+  EventAttendance get currentUserAttendance => $_getN(8);
   @$pb.TagNumber(11)
   set currentUserAttendance(EventAttendance v) { setField(11, v); }
   @$pb.TagNumber(11)
-  $core.bool hasCurrentUserAttendance() => $_has(9);
+  $core.bool hasCurrentUserAttendance() => $_has(8);
   @$pb.TagNumber(11)
   void clearCurrentUserAttendance() => clearField(11);
   @$pb.TagNumber(11)
-  EventAttendance ensureCurrentUserAttendance() => $_ensure(9);
+  EventAttendance ensureCurrentUserAttendance() => $_ensure(8);
 
   /// SyncDestinations this instance has been synced (cross-posted) to, and their status.
   @$pb.TagNumber(12)
-  $core.List<$10.SyncDestinationStatus> get syncDestinations => $_getList(10);
+  $core.List<$10.SyncDestinationStatus> get syncDestinations => $_getList(9);
 
   /// A time zone for the event instance. Used when serializing it for,
   /// e.g., Facebook or Instagram posts, or generating media.
   @$pb.TagNumber(13)
-  $core.String get timezone => $_getSZ(11);
+  $core.String get timezone => $_getSZ(10);
   @$pb.TagNumber(13)
-  set timezone($core.String v) { $_setString(11, v); }
+  set timezone($core.String v) { $_setString(10, v); }
   @$pb.TagNumber(13)
-  $core.bool hasTimezone() => $_has(11);
+  $core.bool hasTimezone() => $_has(10);
   @$pb.TagNumber(13)
   void clearTimezone() => clearField(13);
 }

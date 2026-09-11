@@ -75,6 +75,20 @@ pub struct Post {
     pub unauthenticated_star_count: i64,
 
     pub post_media_layout: PostMediaLayout,
+
+    /// The `SyncSource` this Post was created/is kept in sync from (an ICS Event/EventInstance
+    /// today; RSS/Atom items directly in the future), if any -- `None` for a plain, hand-created
+    /// Post. See migration 2026-09-11-000000_move_sync_source_to_posts's doc comment for why this
+    /// lives here rather than on `events`/`event_instances`.
+    pub sync_source_id: Option<i64>,
+    /// The SyncSource's own stable identifier for this Post (an iCal `UID`, an RSS `guid`, an
+    /// Atom `id`), scoped to `sync_source_id`.
+    pub sync_source_uid: Option<String>,
+    /// For a recurring Event's per-occurrence instance Post only: that occurrence's stable
+    /// identity within its series (see `logic::sync_sources::event_sync`'s module doc comment).
+    /// `None` for every other kind of synced Post (a plain synced Post, or an Event's own
+    /// series-level Post).
+    pub sync_source_recurrence_anchor: Option<SystemTime>,
 }
 
 /// Explicit column list for `posts`, excluding:
@@ -110,6 +124,9 @@ pub const POST_COLUMNS: (
     posts::last_activity_at,
     posts::unauthenticated_star_count,
     posts::post_media_layout,
+    posts::sync_source_id,
+    posts::sync_source_uid,
+    posts::sync_source_recurrence_anchor,
 ) = (
     posts::id,
     posts::user_id,
@@ -133,6 +150,9 @@ pub const POST_COLUMNS: (
     posts::last_activity_at,
     posts::unauthenticated_star_count,
     posts::post_media_layout,
+    posts::sync_source_id,
+    posts::sync_source_uid,
+    posts::sync_source_recurrence_anchor,
 );
 
 #[derive(Debug, Insertable)]

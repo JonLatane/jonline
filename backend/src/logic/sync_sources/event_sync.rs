@@ -4,10 +4,14 @@
 //! Recurring `VEVENT`s (an `RRULE`) are expanded with the `rrule` crate: one ICS `UID` maps to
 //! one `Event`, and each occurrence maps to one `EventInstance`, keyed by
 //! `(sync_source_id, sync_source_uid, sync_source_recurrence_anchor)` -- real, indexed columns
-//! (and a hard DB unique constraint) rather than an app-level JSON key or a hand-built/parsed
-//! string, so re-syncing finds and updates the same rows rather than duplicating them, and a bug
-//! that breaks that matching fails loudly (a constraint violation) instead of silently creating
-//! duplicates -- see 2026-09-04's duplicate-events incident, which is exactly what motivated this.
+//! (and a hard DB unique constraint) on the occurrence's own `Post` (see migration
+//! 2026-09-11-000000_move_sync_source_to_posts -- these columns started out on
+//! `events`/`event_instances` themselves, denormalized down onto `posts` so any kind of synced
+//! Post, not just Events/EventInstances, gets the same guarantee) rather than an app-level JSON
+//! key or a hand-built/parsed string, so re-syncing finds and updates the same rows rather than
+//! duplicating them, and a bug that breaks that matching fails loudly (a constraint violation)
+//! instead of silently creating duplicates -- see 2026-09-04's duplicate-events incident, which is
+//! exactly what motivated this.
 //! A `VEVENT` with a `RECURRENCE-ID` overrides that one occurrence's time/text (a moved or edited
 //! single instance of a series); `sync_source_recurrence_anchor` is that occurrence's stable
 //! identity within the series (its own start time for a plain expansion, or its *original*
@@ -52,7 +56,7 @@ const MISSING_GRACE_PERIOD_DAYS: i64 = 3;
 /// Fetches `source`'s ICS URL over HTTP, then delegates to [`sync_source_text`].
 /// Split out so specs can exercise the parsing/upserting logic against a fixed ICS string
 /// without any network access.
-pub fn sync_source(source: &models::SyncSource, conn: &mut PgPooledConnection) -> Result<(), Status> {
+pub fn sync_source_ics(source: &models::SyncSource, conn: &mut PgPooledConnection) -> Result<(), Status> {
     let url = ics_subscription_url(source)?;
     let ics_text = fetch_ics(url)?;
     sync_source_text(source, &ics_text, conn)
@@ -154,8 +158,9 @@ pub fn sync_source_text(
         // instances of a recurring series share the same `event_id`, so a plain overwrite while
         // building this map is correct.
         let existing_event_ids_by_uid: HashMap<String, i64> = event_instances::table
-            .select((event_instances::sync_source_uid, event_instances::event_id))
-            .filter(event_instances::sync_source_id.eq(source.id))
+            .inner_join(posts::table.on(posts::id.eq(event_instances::post_id)))
+            .select((posts::sync_source_uid, event_instances::event_id))
+            .filter(posts::sync_source_id.eq(source.id))
             .load::<(Option<String>, i64)>(conn)?
             .into_iter()
             .filter_map(|(uid, event_id)| uid.map(|uid| (uid, event_id)))
@@ -227,11 +232,13 @@ pub fn sync_source_text(
         }
 
         let event_count: i64 = events::table
-            .filter(events::sync_source_id.eq(source.id))
+            .inner_join(posts::table.on(posts::id.eq(events::post_id)))
+            .filter(posts::sync_source_id.eq(source.id))
             .count()
             .get_result(conn)?;
         let event_instance_count: i64 = event_instances::table
-            .filter(event_instances::sync_source_id.eq(source.id))
+            .inner_join(posts::table.on(posts::id.eq(event_instances::post_id)))
+            .filter(posts::sync_source_id.eq(source.id))
             .count()
             .get_result(conn)?;
 
@@ -289,11 +296,24 @@ fn create_event_for_group(
         .returning(models::POST_COLUMNS)
         .get_result::<models::Post>(conn)?;
 
+    // A plain UPDATE after the INSERT (mirroring `sync_post_text`'s pattern below), rather than
+    // a field on `NewPost` itself -- `NewPost` is constructed at a dozen call sites across the
+    // codebase that never set a SyncSource, and every nullable column a struct doesn't name is
+    // simply left at its SQL default (NULL) on INSERT, so this is the only place that actually
+    // needs to touch these columns at creation time. `sync_source_recurrence_anchor` stays NULL
+    // here -- it's specific to a recurring EventInstance's own occurrence identity, not this
+    // series-level Post (see `models::Post`'s field doc).
+    diesel::update(posts::table.filter(posts::id.eq(post.id)))
+        .set((
+            posts::sync_source_id.eq(Some(source_id)),
+            posts::sync_source_uid.eq(Some(&group.uid)),
+        ))
+        .execute(conn)?;
+
     insert_into(events::table)
         .values(&models::NewEvent {
             post_id: post.id,
             info: json!({}),
-            sync_source_id: Some(source_id),
         })
         .get_result::<models::Event>(conn)
 }
@@ -350,13 +370,14 @@ fn reconcile_instances(
     window_start_db: SystemTime,
     now: DateTime<Utc>,
 ) -> Result<(), diesel::result::Error> {
-    let existing_instances: Vec<models::EventInstance> = event_instances::table
-        .select(models::EVENT_INSTANCE_COLUMNS)
+    let existing_instances: Vec<(models::EventInstance, Option<SystemTime>)> = event_instances::table
+        .inner_join(posts::table.on(posts::id.eq(event_instances::post_id)))
+        .select((models::EVENT_INSTANCE_COLUMNS, posts::sync_source_recurrence_anchor))
         .filter(event_instances::event_id.eq(event_id))
-        .load::<models::EventInstance>(conn)?;
+        .load(conn)?;
     let mut existing_by_anchor: HashMap<SystemTime, models::EventInstance> = existing_instances
         .into_iter()
-        .filter_map(|i| i.sync_source_recurrence_anchor.map(|anchor| (anchor, i)))
+        .filter_map(|(i, anchor)| anchor.map(|anchor| (anchor, i)))
         .collect();
 
     for occ in &group.occurrences {
@@ -428,11 +449,19 @@ fn reconcile_instances(
                         starts_at: starts_at_db,
                         ends_at: ends_at_db,
                         location: loc_json,
-                        sync_source_id: Some(source_id),
-                        sync_source_uid: Some(group.uid.clone()),
-                        sync_source_recurrence_anchor: Some(anchor_db),
                         timezone: occ.timezone.clone(),
                     })
+                    .execute(conn)?;
+                // See `create_event_for_group`'s comment on why this is a follow-up UPDATE rather
+                // than fields on `NewPost` -- this is also where the hard DB unique constraint on
+                // (sync_source_id, sync_source_uid, sync_source_recurrence_anchor) actually gets
+                // checked (the INSERT above never sets these columns, so it can't violate it).
+                diesel::update(posts::table.filter(posts::id.eq(instance_post.id)))
+                    .set((
+                        posts::sync_source_id.eq(Some(source_id)),
+                        posts::sync_source_uid.eq(Some(&group.uid)),
+                        posts::sync_source_recurrence_anchor.eq(Some(anchor_db)),
+                    ))
                     .execute(conn)?;
             }
         }

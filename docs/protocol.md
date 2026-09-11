@@ -2372,6 +2372,7 @@ and Event Instances.
 | last_activity_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the post was last interacted with (replied to, etc.) |
 | unauthenticated_star_count | [int64](#int64) |  | The number of unauthenticated stars on the post. |
 | sync_destinations | [SyncDestinationStatus](#rellm-SyncDestinationStatus) | repeated | SyncDestinations this post has been synced (cross-posted) to, and their status. |
+| sync_source | [SyncSource](#rellm-SyncSource) | optional | If the Post was created/is kept in sync from a [`SyncSource`](#rellm-SyncSource) (an ICS Event/EventInstance, or an RSS/Atom feed item), this is the source it was synced from. Only its media should be considered editable for such a Post. |
 
 
 
@@ -2524,7 +2525,6 @@ about the `Event`. Actual time data lies in its `EventInstances`.
 | post | [Post](#rellm-Post) |  | The Post containing the underlying data for the event (title, content, moderation, visibility, etc.). Its [`PostContext`](#rellm-PostContext) should be `EVENT`. An `Event`&#39;s ID *is* its `post.id` -- there is no separate surrogate ID. |
 | info | [EventInfo](#rellm-EventInfo) |  | Event configuration like whether to allow (anonymous) RSVPs, etc. |
 | instances | [EventInstance](#rellm-EventInstance) | repeated | A list of instances for the Event. *Events will only include all instances if the request is for a single event.* |
-| sync_source | [SyncSource](#rellm-SyncSource) | optional | If the event was synced from a source (meaning only its media should not be editable), this is the source it was synced from. |
 
 
 
@@ -2612,7 +2612,6 @@ a [`Location`](#rellm-Location), and an optional [`Post`](#rellm-Post) (and disc
 | starts_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the event starts (UTC/Timestamp format). |
 | ends_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the event ends (UTC/Timestamp format). |
 | location | [Location](#rellm-Location) | optional | The location of the event. |
-| sync_source_instance_id | [string](#string) | optional | The &#34;iCal ID&#34; (or external ID) of this instance, if its [`Event`](#rellm-Event) was synced from a [`SyncSource`](#rellm-SyncSource). |
 | sync_missing_since | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time since this event &#34;disappeared&#34; from the sync source. It is up to the owner whether this means it should be deleted. |
 | attendances | [EventAttendances](#rellm-EventAttendances) | optional | RSVP &#43; invite data for this instance. |
 | current_user_attendance | [EventAttendance](#rellm-EventAttendance) | optional | If the request was made by a logged-in user, this is the current user&#39;s attendance for this instance. |
@@ -3734,8 +3733,10 @@ A user-owned source to sync events from.
 | last_synced_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time the SyncSource was last synced. |
 | event_count | [uint64](#uint64) |  | The number of events total associated with this SyncSource. Recomputed on each sync. |
 | event_instance_count | [uint64](#uint64) |  | The number of event instances total associated with this SyncSource. Recomputed on each sync. |
-| post_count | [uint64](#uint64) |  | The number of posts total associated with this SyncSource. Not yet populated -- no source type syncs posts in yet. |
-| ics_subscription_url | [string](#string) |  | The iCal subscription URL for the calendar sync. |
+| post_count | [uint64](#uint64) |  | The number of posts total associated with this SyncSource. Populated for an RSS/Atom source (recomputed on each sync, like `event_count`/`event_instance_count` are for an ICS source); always 0 for an ICS source, which syncs Events/EventInstances instead. |
+| ics_subscription_url | [string](#string) |  | The iCal subscription URL for the calendar sync. Creates/updates Events/EventInstances. |
+| rss_subscription_url | [string](#string) |  | The RSS subscription URL for the feed sync. Creates/updates plain Posts. |
+| atom_subscription_url | [string](#string) |  | The Atom subscription URL for the feed sync. Creates/updates plain Posts. |
 
 
 
