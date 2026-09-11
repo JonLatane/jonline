@@ -141,11 +141,7 @@ export enum Permission {
    */
   SYNC_POSTS_FROM_ATOM = 702,
   /**
-   * SYNC_EVENTS_TO_FACEBOOK - Sync permissions -- each gates creating/updating [`SyncDestination`](#rellm-SyncDestination)s of that platform, and
-   * syncing that content type to them (see `sync.proto`). A generous reserved block (`1000`+)
-   * since this is the most likely area to keep growing as new platforms are added.
-   *
-   * Allow the user to create/update [`SyncDestination`](#rellm-SyncDestination)s that cross-post EventInstances to a
+   * SYNC_EVENTS_TO_FACEBOOK - Allow the user to create/update [`SyncDestination`](#rellm-SyncDestination)s that cross-post EventInstances to a
    * connected Facebook Page, and to sync EventInstances to them.
    */
   SYNC_EVENTS_TO_FACEBOOK = 1000,

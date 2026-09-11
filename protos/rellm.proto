@@ -226,15 +226,16 @@ import "server_configuration.proto";
 //
 // ##### SyncSources
 // While Federation is a first-class feature of Rellm, a [`User`](#rellm-User) can also own many
-// [`SyncSource`](#rellm-SyncSource)s - server-owned external origins to sync with other fediverse and less-open
-// platforms, pulling [`Event`](#rellm-Event)s and [`Post`](#rellm-Post)s in via a `oneof configuration` naming
-// which source type it is -- currently only an iCal subscription URL (`configuration.ics_subscription_url`), though
-// the `oneof` leaves room for other source types. This is a 1:(0 or 1) relationship: it's the parent
-// [`Event`](#rellm-Event) (not the [`EventInstance`](#rellm-EventInstance)) that gets synced in and tagged with
-// its source (`Event.sync_source`), since a single source can back many synced [`Event`](#rellm-Event)s but each
-// [`Event`](#rellm-Event) has at most one source it came from -- see the Event section below for how these attach.
-// A background job re-pulls each source on its own `sync_interval_seconds` cadence, recomputing
-// `event_count`/`event_instance_count` on every sync.
+// [`SyncSource`](#rellm-SyncSource)s - server-owned external origins to sync [`Post`](#rellm-Post)s in from other
+// fediverse and less-open platforms, via a `oneof configuration` naming which source type it is: an iCal
+// subscription URL (`configuration.ics_subscription_url`, syncing in [`Event`](#rellm-Event)s/
+// [`EventInstance`](#rellm-EventInstance)s), or an RSS/Atom subscription URL (`configuration.rss_subscription_url`/
+// `configuration.atom_subscription_url`, syncing in plain [`Post`](#rellm-Post)s). Every kind of synced content is
+// tagged via its own `Post.sync_source` -- an [`Event`](#rellm-Event)'s own Post, each of its
+// [`EventInstance`](#rellm-EventInstance)s' own Post, or a plain synced Post -- since a single source can back many
+// synced Posts but each Post has at most one source it came from; see the Event and Post sections below for how
+// these attach. A background job re-pulls each source on its own `sync_interval_seconds` cadence, recomputing
+// `event_count`/`event_instance_count` (iCal) or `post_count` (RSS/Atom) on every sync.
 //
 // Sources are managed via [`GetSyncSources`](#grpc-api-GetSyncSources), [`CreateSyncSource`](#grpc-api-CreateSyncSource)
 // (requires `SYNC_EVENTS_FROM_ICS`/`SYNC_POSTS_FROM_RSS`/`SYNC_POSTS_FROM_ATOM` -- whichever matches
@@ -244,12 +245,30 @@ import "server_configuration.proto";
 // See also: [`SyncDestination`](#rellm-SyncDestination)
 //
 // ###### iCal
-// `configuration.ics_subscription_url` is the only source type today: a plain iCal (`.ics`) subscription URL. The
-// background job fetches and parses it on each sync, creating/updating one [`Event`](#rellm-Event) per iCal `VEVENT`
-// (keyed by the iCal UID, stored as `EventInstance.sync_source_instance_id`) and recomputing `event_count`/
-// `event_instance_count`. An `Event`'s `sync_missing_since` is set the first time one of its instances stops
-// appearing in the feed, letting the owner decide whether that means it should be deleted. No auth/credentials are
-// supported yet -- only public iCal URLs.
+// `configuration.ics_subscription_url` is a plain iCal (`.ics`) subscription URL. The background job fetches and
+// parses it on each sync, creating/updating one [`Event`](#rellm-Event) (and one [`EventInstance`](#rellm-EventInstance)
+// per occurrence) per iCal `VEVENT` -- each occurrence's own Post is keyed by `(sync_source_id, sync_source_uid,
+// sync_source_recurrence_anchor)`, the iCal UID plus that occurrence's stable identity within its series (its own
+// start time, or its original scheduled time if since rescheduled) -- and recomputing `event_count`/
+// `event_instance_count`. An `EventInstance`'s `sync_missing_since` is set the first time it stops appearing in
+// the feed, letting the owner decide whether that means it should be deleted. No auth/credentials are supported
+// yet -- only public iCal URLs.
+//
+// ###### RSS
+// `configuration.rss_subscription_url` is a plain RSS 2.0 subscription URL. The background job fetches and parses
+// it on each sync, creating/updating one plain [`Post`](#rellm-Post) per RSS `<item>` -- each Post is keyed by
+// `(sync_source_id, sync_source_uid)`, `sync_source_uid` being the item's own `<guid>` (or a hash of its `<link>`
+// if it has none) -- and recomputing `post_count`. Unlike iCal, a `<item>` that stops appearing in the feed is left
+// alone rather than pruned: RSS feeds are commonly truncated to their most recent N items by the publisher, so
+// "no longer in the feed" doesn't mean "was retracted". No auth/credentials are supported yet -- only public RSS
+// URLs.
+//
+// ###### Atom
+// `configuration.atom_subscription_url` is a plain Atom subscription URL, behaving identically to RSS (above) --
+// one plain [`Post`](#rellm-Post) per `<entry>`, keyed by `(sync_source_id, sync_source_uid)` with `sync_source_uid`
+// being the entry's own `<id>`, recomputing `post_count`, missing entries left alone rather than pruned. RSS and
+// Atom feeds are parsed via the same underlying library into one unified shape, so both formats share this exact
+// behavior -- pick whichever a given source actually publishes.
 //
 // ##### SyncDestinations
 // A [`User`](#rellm-User) can also own many [`SyncDestination`](#rellm-SyncDestination)s - user-owned external
@@ -672,6 +691,18 @@ import "server_configuration.proto";
 // ##### `GET /calendar.ics?user_id={id}`: User Calendar
 // "Subscribe" to a user's calendar at, for instance, `https://jonline.io/calendar.ics?user_id=CruFm` to get a
 // calendar of all public events for that user.
+//
+// ##### `GET /rss.xml` / `GET /atom.xml`: Server Posts Feed
+// The reverse direction of a `SyncSource`'s own RSS/Atom subscription (see the SyncSources section above): serves
+// Rellm's own [`Post`](#rellm-Post)s back out as a feed, only public Posts included. "Subscribe" to a Rellm server
+// at, for instance, `https://jonline.io/rss.xml` (or `/atom.xml`) to get a feed of all public posts on the server,
+// in whichever of the two formats a given feed reader prefers -- both endpoints serve the same underlying Posts.
+// In the Elm frontend, links to these endpoints are provided next to the Posts page's own search controls, and on
+// the home page and user profile pages' embedded posts lists.
+//
+// ##### `GET /rss.xml?user_id={id}` / `GET /atom.xml?user_id={id}`: User Posts Feed
+// "Subscribe" to a user's posts at, for instance, `https://jonline.io/rss.xml?user_id=CruFm` (or `/atom.xml?user_id=CruFm`)
+// to get a feed of all public posts for that user.
 //
 // ### Web UI paths
 // Rellm serves three web frontends from the same backend: Tamagui (React/Next.js), Elm, and Flutter.

@@ -399,7 +399,17 @@ See also: [Sync Destinations](#sync-destinations)
 
 ##### iCal
 
-`configuration.ics_subscription_url` is the only source type today: a plain iCal (`.ics`) subscription URL. The background job fetches and parses it on each sync, creating/updating one [`Event`](https://jonline.io/docs/protocol#rellm-Event) per iCal `VEVENT`, recomputing `event_count`/`event_instance_count`. No auth/credentials are supported yet -- only public iCal URLs.
+`configuration.ics_subscription_url` is a plain iCal (`.ics`) subscription URL. The background job fetches and parses it on each sync, creating/updating one [`Event`](https://jonline.io/docs/protocol#rellm-Event) (and one [`EventInstance`](https://jonline.io/docs/protocol#rellm-EventInstance) per occurrence) per iCal `VEVENT`, recomputing `event_count`/`event_instance_count`. No auth/credentials are supported yet -- only public iCal URLs.
+
+##### RSS
+
+`configuration.rss_subscription_url` is a plain RSS 2.0 subscription URL. The background job fetches and parses it on each sync, creating/updating one plain [`Post`](https://jonline.io/docs/protocol#rellm-Post) per RSS item, recomputing `post_count`. Unlike iCal, an item that stops appearing in the feed is left alone rather than pruned -- RSS feeds are commonly truncated to their most recent N items by the publisher, so "no longer in the feed" doesn't mean "was retracted". No auth/credentials are supported yet -- only public RSS URLs.
+
+##### Atom
+
+`configuration.atom_subscription_url` is a plain Atom subscription URL, behaving identically to RSS (above) -- one plain [`Post`](https://jonline.io/docs/protocol#rellm-Post) per entry, recomputing `post_count`, missing entries left alone rather than pruned. RSS and Atom feeds are parsed via the same underlying library into one unified shape, so both formats share this exact behavior -- pick whichever a given source actually publishes.
+
+Rellm also serves its own Posts back out as an RSS/Atom feed (`GET /rss.xml`/`GET /atom.xml`, optionally `?user_id={id}`) -- the reverse direction of a `SyncSource`'s own subscription, for other feed readers to subscribe to a Rellm server or user.
 
 #### Sync Destinations
 

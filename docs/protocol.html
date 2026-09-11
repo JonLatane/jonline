@@ -759,15 +759,16 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
     <h5 id="syncsources"><a class="anchor" aria-hidden="true" tabindex="-1" href="#syncsources"><span class="octicon octicon-link"></span></a>SyncSources</h5>
     <p>
       While Federation is a first-class feature of Rellm, a <a href="#rellm-User"><code>User</code></a> can also own many
-      <a href="#rellm-SyncSource"><code>SyncSource</code></a>s - server-owned external origins to sync with other fediverse and less-open
-      platforms, pulling <a href="#rellm-Event"><code>Event</code></a>s and <a href="#rellm-Post"><code>Post</code></a>s in via a <code>oneof configuration</code> naming
-      which source type it is -- currently only an iCal subscription URL (<code>configuration.ics_subscription_url</code>), though
-      the <code>oneof</code> leaves room for other source types. This is a 1:(0 or 1) relationship: it's the parent
-      <a href="#rellm-Event"><code>Event</code></a> (not the <a href="#rellm-EventInstance"><code>EventInstance</code></a>) that gets synced in and tagged with
-      its source (<code>Event.sync_source</code>), since a single source can back many synced <a href="#rellm-Event"><code>Event</code></a>s but each
-      <a href="#rellm-Event"><code>Event</code></a> has at most one source it came from -- see the Event section below for how these attach.
-      A background job re-pulls each source on its own <code>sync_interval_seconds</code> cadence, recomputing
-      <code>event_count</code>/<code>event_instance_count</code> on every sync.
+      <a href="#rellm-SyncSource"><code>SyncSource</code></a>s - server-owned external origins to sync <a href="#rellm-Post"><code>Post</code></a>s in from other
+      fediverse and less-open platforms, via a <code>oneof configuration</code> naming which source type it is: an iCal
+      subscription URL (<code>configuration.ics_subscription_url</code>, syncing in <a href="#rellm-Event"><code>Event</code></a>s/
+      <a href="#rellm-EventInstance"><code>EventInstance</code></a>s), or an RSS/Atom subscription URL (<code>configuration.rss_subscription_url</code>/
+      <code>configuration.atom_subscription_url</code>, syncing in plain <a href="#rellm-Post"><code>Post</code></a>s). Every kind of synced content is
+      tagged via its own <code>Post.sync_source</code> -- an <a href="#rellm-Event"><code>Event</code></a>'s own Post, each of its
+      <a href="#rellm-EventInstance"><code>EventInstance</code></a>s' own Post, or a plain synced Post -- since a single source can back many
+      synced Posts but each Post has at most one source it came from; see the Event and Post sections below for how
+      these attach. A background job re-pulls each source on its own <code>sync_interval_seconds</code> cadence, recomputing
+      <code>event_count</code>/<code>event_instance_count</code> (iCal) or <code>post_count</code> (RSS/Atom) on every sync.
     </p>
     <p>
       Sources are managed via <a href="#grpc-api-GetSyncSources"><code>GetSyncSources</code></a>, <a href="#grpc-api-CreateSyncSource"><code>CreateSyncSource</code></a>
@@ -778,12 +779,31 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
     <p>See also: <a href="#rellm-SyncDestination"><code>SyncDestination</code></a></p>
     <h6 id="ical"><a class="anchor" aria-hidden="true" tabindex="-1" href="#ical"><span class="octicon octicon-link"></span></a>iCal</h6>
     <p>
-      <code>configuration.ics_subscription_url</code> is the only source type today: a plain iCal (<code>.ics</code>) subscription URL. The
-      background job fetches and parses it on each sync, creating/updating one <a href="#rellm-Event"><code>Event</code></a> per iCal <code>VEVENT</code>
-      (keyed by the iCal UID, stored as <code>EventInstance.sync_source_instance_id</code>) and recomputing <code>event_count</code>/
-      <code>event_instance_count</code>. An <code>Event</code>'s <code>sync_missing_since</code> is set the first time one of its instances stops
-      appearing in the feed, letting the owner decide whether that means it should be deleted. No auth/credentials are
-      supported yet -- only public iCal URLs.
+      <code>configuration.ics_subscription_url</code> is a plain iCal (<code>.ics</code>) subscription URL. The background job fetches and
+      parses it on each sync, creating/updating one <a href="#rellm-Event"><code>Event</code></a> (and one <a href="#rellm-EventInstance"><code>EventInstance</code></a>
+      per occurrence) per iCal <code>VEVENT</code> -- each occurrence's own Post is keyed by <code>(sync_source_id, sync_source_uid, sync_source_recurrence_anchor)</code>, the iCal UID plus that occurrence's stable identity within its series (its own
+      start time, or its original scheduled time if since rescheduled) -- and recomputing <code>event_count</code>/
+      <code>event_instance_count</code>. An <code>EventInstance</code>'s <code>sync_missing_since</code> is set the first time it stops appearing in
+      the feed, letting the owner decide whether that means it should be deleted. No auth/credentials are supported
+      yet -- only public iCal URLs.
+    </p>
+    <h6 id="rss"><a class="anchor" aria-hidden="true" tabindex="-1" href="#rss"><span class="octicon octicon-link"></span></a>RSS</h6>
+    <p>
+      <code>configuration.rss_subscription_url</code> is a plain RSS 2.0 subscription URL. The background job fetches and parses
+      it on each sync, creating/updating one plain <a href="#rellm-Post"><code>Post</code></a> per RSS <code>&#x26;lt;item&#x26;gt;</code> -- each Post is keyed by
+      <code>(sync_source_id, sync_source_uid)</code>, <code>sync_source_uid</code> being the item's own <code>&#x26;lt;guid&#x26;gt;</code> (or a hash of its <code>&#x26;lt;link&#x26;gt;</code>
+      if it has none) -- and recomputing <code>post_count</code>. Unlike iCal, a <code>&#x26;lt;item&#x26;gt;</code> that stops appearing in the feed is left
+      alone rather than pruned: RSS feeds are commonly truncated to their most recent N items by the publisher, so
+      "no longer in the feed" doesn't mean "was retracted". No auth/credentials are supported yet -- only public RSS
+      URLs.
+    </p>
+    <h6 id="atom"><a class="anchor" aria-hidden="true" tabindex="-1" href="#atom"><span class="octicon octicon-link"></span></a>Atom</h6>
+    <p>
+      <code>configuration.atom_subscription_url</code> is a plain Atom subscription URL, behaving identically to RSS (above) --
+      one plain <a href="#rellm-Post"><code>Post</code></a> per <code>&#x26;lt;entry&#x26;gt;</code>, keyed by <code>(sync_source_id, sync_source_uid)</code> with <code>sync_source_uid</code>
+      being the entry's own <code>&#x26;lt;id&#x26;gt;</code>, recomputing <code>post_count</code>, missing entries left alone rather than pruned. RSS and
+      Atom feeds are parsed via the same underlying library into one unified shape, so both formats share this exact
+      behavior -- pick whichever a given source actually publishes.
     </p>
     <h5 id="syncdestinations"><a class="anchor" aria-hidden="true" tabindex="-1" href="#syncdestinations"><span class="octicon octicon-link"></span></a>SyncDestinations</h5>
     <p>
@@ -1304,6 +1324,20 @@ the destination&#x26;#39;s resulting post ID/URL and last-synced time.
     <p>
       "Subscribe" to a user's calendar at, for instance, <code>https://jonline.io/calendar.ics?user_id=CruFm</code> to get a
       calendar of all public events for that user.
+    </p>
+    <h5 id="get-rssxml--get-atomxml-server-posts-feed"><a class="anchor" aria-hidden="true" tabindex="-1" href="#get-rssxml--get-atomxml-server-posts-feed"><span class="octicon octicon-link"></span></a><code>GET /rss.xml</code> / <code>GET /atom.xml</code>: Server Posts Feed</h5>
+    <p>
+      The reverse direction of a <code>SyncSource</code>'s own RSS/Atom subscription (see the SyncSources section above): serves
+      Rellm's own <a href="#rellm-Post"><code>Post</code></a>s back out as a feed, only public Posts included. "Subscribe" to a Rellm server
+      at, for instance, <code>https://jonline.io/rss.xml</code> (or <code>/atom.xml</code>) to get a feed of all public posts on the server,
+      in whichever of the two formats a given feed reader prefers -- both endpoints serve the same underlying Posts.
+      In the Elm frontend, links to these endpoints are provided next to the Posts page's own search controls, and on
+      the home page and user profile pages' embedded posts lists.
+    </p>
+    <h5 id="get-rssxmluser_idid--get-atomxmluser_idid-user-posts-feed"><a class="anchor" aria-hidden="true" tabindex="-1" href="#get-rssxmluser_idid--get-atomxmluser_idid-user-posts-feed"><span class="octicon octicon-link"></span></a><code>GET /rss.xml?user_id={id}</code> / <code>GET /atom.xml?user_id={id}</code>: User Posts Feed</h5>
+    <p>
+      "Subscribe" to a user's posts at, for instance, <code>https://jonline.io/rss.xml?user_id=CruFm</code> (or <code>/atom.xml?user_id=CruFm</code>)
+      to get a feed of all public posts for that user.
     </p>
     <h3 id="web-ui-paths"><a class="anchor" aria-hidden="true" tabindex="-1" href="#web-ui-paths"><span class="octicon octicon-link"></span></a>Web UI paths</h3>
     <p>Rellm serves three web frontends from the same backend: Tamagui (React/Next.js), Elm, and Flutter.</p>
@@ -2665,29 +2699,90 @@ directory</a> is (<code>{name}</code> denotes a
         <tr>
           <td>SYNC_EVENTS_TO_FACEBOOK</td>
           <td>1000</td>
-          <td>Sync permissions -- each gates creating/updating <a href="#rellm-SyncDestination"><code>SyncDestination</code></a>s of that platform, and syncing that content type to them (see <code>sync.proto</code>). A generous reserved block (<code>1000</code>+) since this is the most likely area to keep growing as new platforms are added.</td>
+          <td>Allow the user to create/update <a href="#rellm-SyncDestination"><code>SyncDestination</code></a>s that cross-post EventInstances to a connected Facebook Page, and to sync EventInstances to them.</td>
+        </tr>
+        <tr>
+          <td>SYNC_POSTS_TO_FACEBOOK</td>
+          <td>1001</td>
+          <td>Allow the user to create/update <a href="#rellm-SyncDestination"><code>SyncDestination</code></a>s that cross-post Posts to a connected Facebook Page, and to sync Posts to them.</td>
+        </tr>
+        <tr>
+          <td>SYNC_EVENTS_TO_INSTAGRAM</td>
+          <td>1010</td>
+          <td>Allow the user to create/update <a href="#rellm-SyncDestination"><code>SyncDestination</code></a>s that cross-post EventInstances to a connected Instagram Business/Creator account, and to sync EventInstances to them.</td>
+        </tr>
+        <tr>
+          <td>SYNC_POSTS_TO_INSTAGRAM</td>
+          <td>1011</td>
+          <td>Allow the user to create/update <a href="#rellm-SyncDestination"><code>SyncDestination</code></a>s that cross-post Posts to a connected Instagram Business/Creator account, and to sync Posts to them.</td>
+        </tr>
+        <tr>
+          <td>SYNC_EVENTS_TO_MASTODON</td>
+          <td>1020</td>
+          <td>Allow the user to create/update <a href="#rellm-SyncDestination"><code>SyncDestination</code></a>s that cross-post EventInstances to a connected Mastodon account, and to sync EventInstances to them.</td>
+        </tr>
+        <tr>
+          <td>SYNC_POSTS_TO_MASTODON</td>
+          <td>1021</td>
+          <td>Allow the user to create/update <a href="#rellm-SyncDestination"><code>SyncDestination</code></a>s that cross-post Posts to a connected Mastodon account, and to sync Posts to them.</td>
+        </tr>
+        <tr>
+          <td>SYNC_EVENTS_TO_BLUESKY</td>
+          <td>1030</td>
+          <td>Allow the user to create/update <a href="#rellm-SyncDestination"><code>SyncDestination</code></a>s that cross-post EventInstances to a connected Bluesky account, and to sync EventInstances to them.</td>
+        </tr>
+        <tr>
+          <td>SYNC_POSTS_TO_BLUESKY</td>
+          <td>1031</td>
+          <td>Allow the user to create/update <a href="#rellm-SyncDestination"><code>SyncDestination</code></a>s that cross-post Posts to a connected Bluesky account, and to sync Posts to them.</td>
+        </tr>
+        <tr>
+          <td>SYNC_EVENTS_TO_X_TWITTER</td>
+          <td>1040</td>
+          <td>Allow the user to create/update <a href="#rellm-SyncDestination"><code>SyncDestination</code></a>s that cross-post EventInstances to a connected X (Twitter) account, and to sync EventInstances to them.</td>
+        </tr>
+        <tr>
+          <td>SYNC_POSTS_TO_X_TWITTER</td>
+          <td>1041</td>
+          <td>Allow the user to create/update <a href="#rellm-SyncDestination"><code>SyncDestination</code></a>s that cross-post Posts to a connected X (Twitter) account, and to sync Posts to them.</td>
+        </tr>
+        <tr>
+          <td>SYNC_EVENTS_TO_THREADS</td>
+          <td>1050</td>
+          <td>Allow the user to create/update <a href="#rellm-SyncDestination"><code>SyncDestination</code></a>s that cross-post EventInstances to a connected Threads account, and to sync EventInstances to them.</td>
+        </tr>
+        <tr>
+          <td>SYNC_POSTS_TO_THREADS</td>
+          <td>1051</td>
+          <td>Allow the user to create/update <a href="#rellm-SyncDestination"><code>SyncDestination</code></a>s that cross-post Posts to a connected Threads account, and to sync Posts to them.</td>
+        </tr>
+        <tr>
+          <td>BUSINESS</td>
+          <td>9998</td>
+          <td>Indicates the user is a business. Used purely for display purposes.</td>
+        </tr>
+        <tr>
+          <td>RUN_BOTS</td>
+          <td>9999</td>
+          <td>Allow the user to run bots. There is no enforcement of this permission (yet), but it lets other users know that the user is allowed to run bots.</td>
+        </tr>
+        <tr>
+          <td>ADMIN</td>
+          <td>10000</td>
+          <td>Marks the user as an admin. In the context of user permissions, allows the user to configure the server, moderate/update visibility/permissions to any <a href="#rellm-User"><code>User</code></a>, <a href="#rellm-Group"><code>Group</code></a>, <a href="#rellm-Post"><code>Post</code></a> or <a href="#rellm-Event"><code>Event</code></a>. In the context of group permissions, allows the user to configure the group, modify members and member permissions, and moderate <a href="#rellm-GroupPost"><code>GroupPost</code></a>s and <code>GroupEvent</code>s.</td>
+        </tr>
+        <tr>
+          <td>VIEW_PRIVATE_CONTACT_METHODS</td>
+          <td>10001</td>
+          <td>Allow the user to view the private contact methods of other users. Kept separate from <code>ADMIN</code> to allow for more fine-grained privacy control.</td>
+        </tr>
+        <tr>
+          <td>EDIT_CLUSTER_SETTINGS</td>
+          <td>10002</td>
+          <td>Allow the user to edit <a href="#rellm-ClusterResources"><code>ServerConfiguration.cluster_resources</code></a> via <a href="#grpc-api-ConfigureServer"><code>ConfigureServer</code></a>. <code>cluster_resources</code> is otherwise visible (read-only) to any <code>ADMIN</code> -- this permission gates <em>editing</em> it specifically, on top of <code>ADMIN</code>, since misconfiguring it (wrong <code>conductor_host</code>/<code>cluster_shared_secret</code>) affects cluster-mates this admin may not operate. Kept separate from <code>ADMIN</code> the same way <code>VIEW_PRIVATE_CONTACT_METHODS</code> is, and deliberately <em>not</em> grantable via <a href="#grpc-api-UpdateUser"><code>UpdateUser</code></a> like other permissions -- only settable directly in the database (e.g. via the <code>set_permission</code> binary), so granting it is always a deliberate operator action, never a side effect of a normal admin-managing-admins flow.</td>
         </tr>
       </tbody>
     </table>
-    <p>
-      Allow the user to create/update <a href="#rellm-SyncDestination"><code>SyncDestination</code></a>s that cross-post EventInstances to a connected Facebook Page, and to sync EventInstances to them. |
-      | SYNC_POSTS_TO_FACEBOOK | 1001 | Allow the user to create/update <a href="#rellm-SyncDestination"><code>SyncDestination</code></a>s that cross-post Posts to a connected Facebook Page, and to sync Posts to them. |
-      | SYNC_EVENTS_TO_INSTAGRAM | 1010 | Allow the user to create/update <a href="#rellm-SyncDestination"><code>SyncDestination</code></a>s that cross-post EventInstances to a connected Instagram Business/Creator account, and to sync EventInstances to them. |
-      | SYNC_POSTS_TO_INSTAGRAM | 1011 | Allow the user to create/update <a href="#rellm-SyncDestination"><code>SyncDestination</code></a>s that cross-post Posts to a connected Instagram Business/Creator account, and to sync Posts to them. |
-      | SYNC_EVENTS_TO_MASTODON | 1020 | Allow the user to create/update <a href="#rellm-SyncDestination"><code>SyncDestination</code></a>s that cross-post EventInstances to a connected Mastodon account, and to sync EventInstances to them. |
-      | SYNC_POSTS_TO_MASTODON | 1021 | Allow the user to create/update <a href="#rellm-SyncDestination"><code>SyncDestination</code></a>s that cross-post Posts to a connected Mastodon account, and to sync Posts to them. |
-      | SYNC_EVENTS_TO_BLUESKY | 1030 | Allow the user to create/update <a href="#rellm-SyncDestination"><code>SyncDestination</code></a>s that cross-post EventInstances to a connected Bluesky account, and to sync EventInstances to them. |
-      | SYNC_POSTS_TO_BLUESKY | 1031 | Allow the user to create/update <a href="#rellm-SyncDestination"><code>SyncDestination</code></a>s that cross-post Posts to a connected Bluesky account, and to sync Posts to them. |
-      | SYNC_EVENTS_TO_X_TWITTER | 1040 | Allow the user to create/update <a href="#rellm-SyncDestination"><code>SyncDestination</code></a>s that cross-post EventInstances to a connected X (Twitter) account, and to sync EventInstances to them. |
-      | SYNC_POSTS_TO_X_TWITTER | 1041 | Allow the user to create/update <a href="#rellm-SyncDestination"><code>SyncDestination</code></a>s that cross-post Posts to a connected X (Twitter) account, and to sync Posts to them. |
-      | SYNC_EVENTS_TO_THREADS | 1050 | Allow the user to create/update <a href="#rellm-SyncDestination"><code>SyncDestination</code></a>s that cross-post EventInstances to a connected Threads account, and to sync EventInstances to them. |
-      | SYNC_POSTS_TO_THREADS | 1051 | Allow the user to create/update <a href="#rellm-SyncDestination"><code>SyncDestination</code></a>s that cross-post Posts to a connected Threads account, and to sync Posts to them. |
-      | BUSINESS | 9998 | Indicates the user is a business. Used purely for display purposes. |
-      | RUN_BOTS | 9999 | Allow the user to run bots. There is no enforcement of this permission (yet), but it lets other users know that the user is allowed to run bots. |
-      | ADMIN | 10000 | Marks the user as an admin. In the context of user permissions, allows the user to configure the server, moderate/update visibility/permissions to any <a href="#rellm-User"><code>User</code></a>, <a href="#rellm-Group"><code>Group</code></a>, <a href="#rellm-Post"><code>Post</code></a> or <a href="#rellm-Event"><code>Event</code></a>. In the context of group permissions, allows the user to configure the group, modify members and member permissions, and moderate <a href="#rellm-GroupPost"><code>GroupPost</code></a>s and <code>GroupEvent</code>s. |
-      | VIEW_PRIVATE_CONTACT_METHODS | 10001 | Allow the user to view the private contact methods of other users. Kept separate from <code>ADMIN</code> to allow for more fine-grained privacy control. |
-      | EDIT_CLUSTER_SETTINGS | 10002 | Allow the user to edit <a href="#rellm-ClusterResources"><code>ServerConfiguration.cluster_resources</code></a> via <a href="#grpc-api-ConfigureServer"><code>ConfigureServer</code></a>. <code>cluster_resources</code> is otherwise visible (read-only) to any <code>ADMIN</code> -- this permission gates <em>editing</em> it specifically, on top of <code>ADMIN</code>, since misconfiguring it (wrong <code>conductor_host</code>/<code>cluster_shared_secret</code>) affects cluster-mates this admin may not operate. Kept separate from <code>ADMIN</code> the same way <code>VIEW_PRIVATE_CONTACT_METHODS</code> is, and deliberately <em>not</em> grantable via <a href="#grpc-api-UpdateUser"><code>UpdateUser</code></a> like other permissions -- only settable directly in the database (e.g. via the <code>set_permission</code> binary), so granting it is always a deliberate operator action, never a side effect of a normal admin-managing-admins flow. |
-    </p>
     <p><a name="users-proto"></a></p>
     <p align="right"><a href="#top">Top</a></p>
     <h2 id="usersproto"><a class="anchor" aria-hidden="true" tabindex="-1" href="#usersproto"><span class="octicon octicon-link"></span></a>users.proto</h2>

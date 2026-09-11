@@ -403,15 +403,16 @@ in a [`Group`](#rellm-Group), tracking the user&#39;s [`Permission`](#rellm-Perm
 
 ##### SyncSources
 While Federation is a first-class feature of Rellm, a [`User`](#rellm-User) can also own many
-[`SyncSource`](#rellm-SyncSource)s - server-owned external origins to sync with other fediverse and less-open
-platforms, pulling [`Event`](#rellm-Event)s and [`Post`](#rellm-Post)s in via a `oneof configuration` naming
-which source type it is -- currently only an iCal subscription URL (`configuration.ics_subscription_url`), though
-the `oneof` leaves room for other source types. This is a 1:(0 or 1) relationship: it&#39;s the parent
-[`Event`](#rellm-Event) (not the [`EventInstance`](#rellm-EventInstance)) that gets synced in and tagged with
-its source (`Event.sync_source`), since a single source can back many synced [`Event`](#rellm-Event)s but each
-[`Event`](#rellm-Event) has at most one source it came from -- see the Event section below for how these attach.
-A background job re-pulls each source on its own `sync_interval_seconds` cadence, recomputing
-`event_count`/`event_instance_count` on every sync.
+[`SyncSource`](#rellm-SyncSource)s - server-owned external origins to sync [`Post`](#rellm-Post)s in from other
+fediverse and less-open platforms, via a `oneof configuration` naming which source type it is: an iCal
+subscription URL (`configuration.ics_subscription_url`, syncing in [`Event`](#rellm-Event)s/
+[`EventInstance`](#rellm-EventInstance)s), or an RSS/Atom subscription URL (`configuration.rss_subscription_url`/
+`configuration.atom_subscription_url`, syncing in plain [`Post`](#rellm-Post)s). Every kind of synced content is
+tagged via its own `Post.sync_source` -- an [`Event`](#rellm-Event)&#39;s own Post, each of its
+[`EventInstance`](#rellm-EventInstance)s&#39; own Post, or a plain synced Post -- since a single source can back many
+synced Posts but each Post has at most one source it came from; see the Event and Post sections below for how
+these attach. A background job re-pulls each source on its own `sync_interval_seconds` cadence, recomputing
+`event_count`/`event_instance_count` (iCal) or `post_count` (RSS/Atom) on every sync.
 
 Sources are managed via [`GetSyncSources`](#grpc-api-GetSyncSources), [`CreateSyncSource`](#grpc-api-CreateSyncSource)
 (requires `SYNC_EVENTS_FROM_ICS`/`SYNC_POSTS_FROM_RSS`/`SYNC_POSTS_FROM_ATOM` -- whichever matches
@@ -421,12 +422,30 @@ the source&#39;s own configuration -- or Admin), [`UpdateSyncSource`](#grpc-api-
 See also: [`SyncDestination`](#rellm-SyncDestination)
 
 ###### iCal
-`configuration.ics_subscription_url` is the only source type today: a plain iCal (`.ics`) subscription URL. The
-background job fetches and parses it on each sync, creating/updating one [`Event`](#rellm-Event) per iCal `VEVENT`
-(keyed by the iCal UID, stored as `EventInstance.sync_source_instance_id`) and recomputing `event_count`/
-`event_instance_count`. An `Event`&#39;s `sync_missing_since` is set the first time one of its instances stops
-appearing in the feed, letting the owner decide whether that means it should be deleted. No auth/credentials are
-supported yet -- only public iCal URLs.
+`configuration.ics_subscription_url` is a plain iCal (`.ics`) subscription URL. The background job fetches and
+parses it on each sync, creating/updating one [`Event`](#rellm-Event) (and one [`EventInstance`](#rellm-EventInstance)
+per occurrence) per iCal `VEVENT` -- each occurrence&#39;s own Post is keyed by `(sync_source_id, sync_source_uid,
+sync_source_recurrence_anchor)`, the iCal UID plus that occurrence&#39;s stable identity within its series (its own
+start time, or its original scheduled time if since rescheduled) -- and recomputing `event_count`/
+`event_instance_count`. An `EventInstance`&#39;s `sync_missing_since` is set the first time it stops appearing in
+the feed, letting the owner decide whether that means it should be deleted. No auth/credentials are supported
+yet -- only public iCal URLs.
+
+###### RSS
+`configuration.rss_subscription_url` is a plain RSS 2.0 subscription URL. The background job fetches and parses
+it on each sync, creating/updating one plain [`Post`](#rellm-Post) per RSS `&lt;item&gt;` -- each Post is keyed by
+`(sync_source_id, sync_source_uid)`, `sync_source_uid` being the item&#39;s own `&lt;guid&gt;` (or a hash of its `&lt;link&gt;`
+if it has none) -- and recomputing `post_count`. Unlike iCal, a `&lt;item&gt;` that stops appearing in the feed is left
+alone rather than pruned: RSS feeds are commonly truncated to their most recent N items by the publisher, so
+&#34;no longer in the feed&#34; doesn&#39;t mean &#34;was retracted&#34;. No auth/credentials are supported yet -- only public RSS
+URLs.
+
+###### Atom
+`configuration.atom_subscription_url` is a plain Atom subscription URL, behaving identically to RSS (above) --
+one plain [`Post`](#rellm-Post) per `&lt;entry&gt;`, keyed by `(sync_source_id, sync_source_uid)` with `sync_source_uid`
+being the entry&#39;s own `&lt;id&gt;`, recomputing `post_count`, missing entries left alone rather than pruned. RSS and
+Atom feeds are parsed via the same underlying library into one unified shape, so both formats share this exact
+behavior -- pick whichever a given source actually publishes.
 
 ##### SyncDestinations
 A [`User`](#rellm-User) can also own many [`SyncDestination`](#rellm-SyncDestination)s - user-owned external
@@ -849,6 +868,18 @@ the Events page, and the user profile pages for all users with events in the las
 ##### `GET /calendar.ics?user_id={id}`: User Calendar
 &#34;Subscribe&#34; to a user&#39;s calendar at, for instance, `https://jonline.io/calendar.ics?user_id=CruFm` to get a
 calendar of all public events for that user.
+
+##### `GET /rss.xml` / `GET /atom.xml`: Server Posts Feed
+The reverse direction of a `SyncSource`&#39;s own RSS/Atom subscription (see the SyncSources section above): serves
+Rellm&#39;s own [`Post`](#rellm-Post)s back out as a feed, only public Posts included. &#34;Subscribe&#34; to a Rellm server
+at, for instance, `https://jonline.io/rss.xml` (or `/atom.xml`) to get a feed of all public posts on the server,
+in whichever of the two formats a given feed reader prefers -- both endpoints serve the same underlying Posts.
+In the Elm frontend, links to these endpoints are provided next to the Posts page&#39;s own search controls, and on
+the home page and user profile pages&#39; embedded posts lists.
+
+##### `GET /rss.xml?user_id={id}` / `GET /atom.xml?user_id={id}`: User Posts Feed
+&#34;Subscribe&#34; to a user&#39;s posts at, for instance, `https://jonline.io/rss.xml?user_id=CruFm` (or `/atom.xml?user_id=CruFm`)
+to get a feed of all public posts for that user.
 
 ### Web UI paths
 Rellm serves three web frontends from the same backend: Tamagui (React/Next.js), Elm, and Flutter.
@@ -1424,9 +1455,7 @@ and to Group non-members via [`non_member_permissions` in `Group`](#rellm-Group)
 | SYNC_EVENTS_FROM_ICS | 700 | Allow the user to create/update [`SyncSource`](#rellm-SyncSource)s (iCal subscriptions) that synchronize [`Event`](#rellm-Event)s in. |
 | SYNC_POSTS_FROM_RSS | 701 | Allow the user to create/update [`SyncSource`](#rellm-SyncSource)s (RSS subscriptions) that synchronize [`Post`](#rellm-Post)s in. |
 | SYNC_POSTS_FROM_ATOM | 702 | Allow the user to create/update [`SyncSource`](#rellm-SyncSource)s (Atom subscriptions) that synchronize [`Post`](#rellm-Post)s in. |
-| SYNC_EVENTS_TO_FACEBOOK | 1000 | Sync permissions -- each gates creating/updating [`SyncDestination`](#rellm-SyncDestination)s of that platform, and syncing that content type to them (see `sync.proto`). A generous reserved block (`1000`&#43;) since this is the most likely area to keep growing as new platforms are added.
-
-Allow the user to create/update [`SyncDestination`](#rellm-SyncDestination)s that cross-post EventInstances to a connected Facebook Page, and to sync EventInstances to them. |
+| SYNC_EVENTS_TO_FACEBOOK | 1000 | Allow the user to create/update [`SyncDestination`](#rellm-SyncDestination)s that cross-post EventInstances to a connected Facebook Page, and to sync EventInstances to them. |
 | SYNC_POSTS_TO_FACEBOOK | 1001 | Allow the user to create/update [`SyncDestination`](#rellm-SyncDestination)s that cross-post Posts to a connected Facebook Page, and to sync Posts to them. |
 | SYNC_EVENTS_TO_INSTAGRAM | 1010 | Allow the user to create/update [`SyncDestination`](#rellm-SyncDestination)s that cross-post EventInstances to a connected Instagram Business/Creator account, and to sync EventInstances to them. |
 | SYNC_POSTS_TO_INSTAGRAM | 1011 | Allow the user to create/update [`SyncDestination`](#rellm-SyncDestination)s that cross-post Posts to a connected Instagram Business/Creator account, and to sync Posts to them. |
