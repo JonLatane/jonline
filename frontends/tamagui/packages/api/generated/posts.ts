@@ -396,7 +396,7 @@ export interface SyncPostRequest {
 }
 
 /**
- * Removes a single Post's sync (cross-post) to one SyncDestination -- the reverse of [`SyncPost`](#grpc-api-SyncPost).
+ * Removes a single Post's sync (cross-post) to one SyncDestination - the reverse of [`SyncPost`](#grpc-api-SyncPost).
  * Does not delete the post already made on the destination (e.g. the Facebook Page post), only the local sync record.
  */
 export interface DeletePostSyncDestinationRequest {

@@ -37,7 +37,7 @@ At a high level, Rellm's CI/CD ([example run](https://github.com/JonLatane/rellm
       * Homebrew/Linux rename the Rust `rellm` server binary to `rellm-server` (macOS) and `rellm-server-[arm64|amd64]` (Linux).
       * The launcher runs everything from an "install directory" which also contains the frontends (`/#{etc}/rellm/` for Homebrew, your extracted test directory or `~/.rellm-linux/` for the Linux package).
       * The Linux/macOS launchers store environment variables in `~/.rellm` and load them before starting the server or other services.
-      * The install directory also bundles a full copy of [`deploys/`](https://github.com/JonLatane/rellm/tree/main/deploys), so `rellm deploy <targets...>` (requires `make`) can drive your own Kubernetes cluster without cloning the repo -- see [Quick deploy to your own cluster](#quick-deploy-to-your-own-cluster).
+      * The install directory also bundles a full copy of [`deploys/`](https://github.com/JonLatane/rellm/tree/main/deploys), so `rellm deploy <targets...>` (requires `make`) can drive your own Kubernetes cluster without cloning the repo - see [Quick deploy to your own cluster](#quick-deploy-to-your-own-cluster).
 
 ### macOS: Install and Run via Homebrew
 
@@ -52,9 +52,9 @@ Additional docs for the Rellm thin launcher can be found in [`docs/rellm_homebre
 * Installation: `brew`
 * Postgres autoconfiguration: `createdb`, `dropdb`
 * Docker/MinIO autoconfiguration: `docker`
-* `convert_media_sizes` background job (images): ImageMagick (`brew install imagemagick`), providing either `magick` or the legacy `convert`+`identify` pair. Optional -- the job just skips images (logging an error) if it's missing.
-* `convert_media_sizes` background job (video): `ffmpeg` (`brew install ffmpeg`), providing both `ffmpeg` and `ffprobe`. Optional -- the job just skips videos (logging an error) if it's missing.
-* `rellm deploy` (managing your own K8s cluster): `make` and `kubectl`. Optional -- only needed if you use `rellm deploy`.
+* `convert_media_sizes` background job (images): ImageMagick (`brew install imagemagick`), providing either `magick` or the legacy `convert`+`identify` pair. Optional - the job just skips images (logging an error) if it's missing.
+* `convert_media_sizes` background job (video): `ffmpeg` (`brew install ffmpeg`), providing both `ffmpeg` and `ffprobe`. Optional - the job just skips videos (logging an error) if it's missing.
+* `rellm deploy` (managing your own K8s cluster): `make` and `kubectl`. Optional - only needed if you use `rellm deploy`.
 
 ```bash
 brew install jonlatane/rellm/rellm
@@ -104,9 +104,9 @@ Unlike the Homebrew distro, this is *straight up untested by me*. So please, sub
 * Installation/Updates: `jq`, `curl`, `xargs`
 * Postgres autoconfiguration: `createdb`, `dropdb`
 * Docker/MinIO autoconfiguration: `docker`
-* `convert_media_sizes` background job (images): ImageMagick (`apt install imagemagick`), providing either `magick` or the legacy `convert`+`identify` pair. Optional -- the job just skips images (logging an error) if it's missing.
-* `convert_media_sizes` background job (video): `ffmpeg` (`apt install ffmpeg`), providing both `ffmpeg` and `ffprobe`. Optional -- the job just skips videos (logging an error) if it's missing.
-* `rellm deploy` (managing your own K8s cluster): `make` and `kubectl`. Optional -- only needed if you use `rellm deploy`.
+* `convert_media_sizes` background job (images): ImageMagick (`apt install imagemagick`), providing either `magick` or the legacy `convert`+`identify` pair. Optional - the job just skips images (logging an error) if it's missing.
+* `convert_media_sizes` background job (video): `ffmpeg` (`apt install ffmpeg`), providing both `ffmpeg` and `ffprobe`. Optional - the job just skips videos (logging an error) if it's missing.
+* `rellm deploy` (managing your own K8s cluster): `make` and `kubectl`. Optional - only needed if you use `rellm deploy`.
 
 ```bash
 # Get the package with curl/jq, and extract it. This is actually also what updater script does.
@@ -183,9 +183,9 @@ Rellm has an intuitive (helm-less) mechanism and conventions for templating Rell
 
 #### Deploying DockerHub images to Kubernetes from Homebrew/Linux (`rellm deploy`)
 
-If you installed Rellm via [Homebrew](#macos-install-and-run-via-homebrew) or the [Linux package](#linux-self-updateable-tarbz2-with-arm64-and-amd64-binaries-and-launcher), both bundle a full copy of the `deploys/` directory -- so `rellm deploy <targets...>` runs the exact same `kubectl`-powered `make` targets described in [Quick deploy to your own cluster](#quick-deploy-to-your-own-cluster) and [`deploys/README.md`](https://github.com/JonLatane/rellm/blob/main/deploys/README.md), without cloning this repo. For example: `rellm deploy create_backend_data create_external_backend NAMESPACE=my-rellm-instance-namespace`.
+If you installed Rellm via [Homebrew](#macos-install-and-run-via-homebrew) or the [Linux package](#linux-self-updateable-tarbz2-with-arm64-and-amd64-binaries-and-launcher), both bundle a full copy of the `deploys/` directory - so `rellm deploy <targets...>` runs the exact same `kubectl`-powered `make` targets described in [Quick deploy to your own cluster](#quick-deploy-to-your-own-cluster) and [`deploys/README.md`](https://github.com/JonLatane/rellm/blob/main/deploys/README.md), without cloning this repo. For example: `rellm deploy create_backend_data create_external_backend NAMESPACE=my-rellm-instance-namespace`.
 
-Tab-completion is available for both `rellm`'s own subcommands and `rellm deploy`'s targets. Homebrew wires this up automatically when you `brew install`; on Linux there's no package manager to hook into, so you'll want to add it yourself -- see the "Optional: tab-completion" step of [3 minute startup on Linux](#3-minute-startup-on-linux).
+Tab-completion is available for both `rellm`'s own subcommands and `rellm deploy`'s targets. Homebrew wires this up automatically when you `brew install`; on Linux there's no package manager to hook into, so you'll want to add it yourself - see the "Optional: tab-completion" step of [3 minute startup on Linux](#3-minute-startup-on-linux).
 
 #### Live (DigitalOcean Kubernetes/DOKS) deployments
 
@@ -228,6 +228,8 @@ To set up a deployment yourself, see: [Quick deploy to your own cluster](#quick-
     - [Synchronization with Outside Servers](#synchronization-with-outside-servers)
       - [Sync Sources](#sync-sources)
         - [iCal](#ical)
+        - [RSS](#rss)
+        - [Atom](#atom)
       - [Sync Destinations](#sync-destinations)
         - [Facebook](#facebook)
         - [Instagram](#instagram)
@@ -330,7 +332,7 @@ Whereas ActivityPub has a flexible Activity model capable of holding varied meta
 
 In addition to Users, Posts, and Events, which could all be "described" by ActivityPub's specification, Rellm also has Media (designed to leverage external CDNs), Groups, Server Configuration, and moderation/visibility/permission management across everything as a first-class citizen.
 
-Put differently: Rellm's federation *mechanism* is strictly simpler than ActivityPub's (no server-to-server delivery protocol at all -- see [Delightful Federation](#delightful-federation)), while its *object model* covers a meaningful superset of what a typical ActivityPub app implements -- first-class Events (with recurring EventInstances), Groups (with membership/moderation), and Media (as its own visibility-controlled entity), alongside Users/Posts. So it's fair to call Rellm roughly isomorphic to a statically-typed, non-extensible *profile* of ActivityPub's actor/object vocabulary, expanded with a few practical types the base spec leaves to extensions -- but not to ActivityPub's federation protocol itself, which Rellm deliberately doesn't replicate.
+Put differently: Rellm's federation *mechanism* is strictly simpler than ActivityPub's (no server-to-server delivery protocol at all - see [Delightful Federation](#delightful-federation)), while its *object model* covers a meaningful superset of what a typical ActivityPub app implements - first-class Events (with recurring EventInstances), Groups (with membership/moderation), and Media (as its own visibility-controlled entity), alongside Users/Posts. So it's fair to call Rellm roughly isomorphic to a statically-typed, non-extensible *profile* of ActivityPub's actor/object vocabulary, expanded with a few practical types the base spec leaves to extensions - but not to ActivityPub's federation protocol itself, which Rellm deliberately doesn't replicate.
 
 The hope is to build more useful business objects - yes, your boring SalesForce/NetSuite/SAP type stuff - into this social protocol. So Rellm Payments, Products, Subscriptions, and who knows what else could, eventually, be gradually implemented atop the Rellm protocol, with all the same clear, concise, documentation, cross-language portability, and other benefits it offers.
 
@@ -338,9 +340,9 @@ All this is to say: it should be pretty straightforward to create, say, Ruby bin
 
 #### Rellm as a protocol vs. Bluesky/AT Protocol
 
-Bluesky's AT Protocol looks architecturally nothing like Rellm (or ActivityPub, for that matter): identity and data live on independent Personal Data Servers (PDSes), which get crawled by Relays into a global firehose, which is then indexed and ranked into feeds by separate AppViews (Bluesky's own app being just one of potentially many). Nothing in Rellm has an equivalent of this data/aggregation/ranking split -- a Rellm server is identity, storage, and API all in one, much closer to a Mastodon instance (or a plain web app) than to a PDS.
+Bluesky's AT Protocol looks architecturally nothing like Rellm (or ActivityPub, for that matter): identity and data live on independent Personal Data Servers (PDSes), which get crawled by Relays into a global firehose, which is then indexed and ranked into feeds by separate AppViews (Bluesky's own app being just one of potentially many). Nothing in Rellm has an equivalent of this data/aggregation/ranking split - a Rellm server is identity, storage, and API all in one, much closer to a Mastodon instance (or a plain web app) than to a PDS.
 
-Rellm's [Cross-Protocol Federation](#cross-protocol-federation) reads Bluesky content by simply calling the same public AT Protocol endpoints (`com.atproto.server.createSession`, `app.bsky.feed.getTimeline`) any Bluesky client would, translated client-side into Rellm's `Post` shape -- it doesn't, and doesn't need to, participate in the PDS/Relay/AppView network itself.
+Rellm's [Cross-Protocol Federation](#cross-protocol-federation) reads Bluesky content by simply calling the same public AT Protocol endpoints (`com.atproto.server.createSession`, `app.bsky.feed.getTimeline`) any Bluesky client would, translated client-side into Rellm's `Post` shape - it doesn't, and doesn't need to, participate in the PDS/Relay/AppView network itself.
 
 ### Why *not* Rellm?
 
@@ -351,7 +353,7 @@ Rellm's [Cross-Protocol Federation](#cross-protocol-federation) reads Bluesky co
 
 ### Inter-Server Federation
 
-Whereas ActivityPub servers federate by pushing Activities directly to each other's inboxes (authenticated via HTTP Signatures), and Bluesky (AT Protocol) federates via independent Personal Data Servers that get crawled by Relays and re-indexed by AppViews, two Rellm servers never talk to each other at all. A server only ever *recommends* other servers by hostname; it's always the client that calls each recommended server's own client-facing API directly and merges the results -- see [Federated Servers](#federated-servers) below, and [Cross-Protocol Federation](#cross-protocol-federation), which reads Mastodon/Bluesky content into a Rellm client the exact same way. The one place Rellm's own backend does initiate server-to-server calls is [Sync Destinations](#sync-destinations) -- pushing a user's own content *out* to other platforms on their behalf, which needs the server (not a browser tab) to hold onto that user's long-lived credentials for those platforms.
+Whereas ActivityPub servers federate by pushing Activities directly to each other's inboxes (authenticated via HTTP Signatures), and Bluesky (AT Protocol) federates via independent Personal Data Servers that get crawled by Relays and re-indexed by AppViews, two Rellm servers never talk to each other at all. A server only ever *recommends* other servers by hostname; it's always the client that calls each recommended server's own client-facing API directly and merges the results - see [Federated Servers](#federated-servers) below, and [Cross-Protocol Federation](#cross-protocol-federation), which reads Mastodon/Bluesky content into a Rellm client the exact same way. The one place Rellm's own backend does initiate server-to-server calls is [Sync Destinations](#sync-destinations) - pushing a user's own content *out* to other platforms on their behalf, which needs the server (not a browser tab) to hold onto that user's long-lived credentials for those platforms.
 
 #### Federated Servers
 
@@ -359,15 +361,15 @@ Rellm servers can recommend other servers to clients via the `federation_info` f
 
 #### Cross-Protocol Federation
 
-Rellm can also translate content *from* other federated protocols into its own [`Post`](https://jonline.io/docs/protocol#rellm-Post) model, entirely client-side -- no Rellm server ever proxies or bridges this data, it's the same "client does the merging" pattern as [Federated Servers](#federated-servers) above, just reaching across a protocol boundary instead of a Rellm-to-Rellm one. It's also one-directional (reading in, not posting out) -- publishing a Rellm Post *to* Mastodon or Bluesky is instead handled by [Sync Destinations](#sync-destinations).
+Rellm can also translate content *from* other federated protocols into its own [`Post`](https://jonline.io/docs/protocol#rellm-Post) model, entirely client-side - no Rellm server ever proxies or bridges this data, it's the same "client does the merging" pattern as [Federated Servers](#federated-servers) above, just reaching across a protocol boundary instead of a Rellm-to-Rellm one. It's also one-directional (reading in, not posting out) - publishing a Rellm Post *to* Mastodon or Bluesky is instead handled by [Sync Destinations](#sync-destinations).
 
 ##### Mastodon/ActivityPub
 
-Any Mastodon instance's local public timeline can be browsed with no account or admin configuration at all, since it's already a public, unauthenticated REST endpoint -- see [Federated Browsing](#federated-browsing). Connecting an actual Mastodon *account* (to eventually post/reply as yourself, or see your own home timeline) is a heavier flow, since a server admin first has to register an OAuth app on that instance (`FederationInfo.mastodon_servers`, a [`MastodonServer`](https://jonline.io/docs/protocol#rellm-MastodonServer)) -- unlike Facebook or X, Mastodon has no single central platform to register one app against for every instance at once.
+Any Mastodon instance's local public timeline can be browsed with no account or admin configuration at all, since it's already a public, unauthenticated REST endpoint - see [Federated Browsing](#federated-browsing). Connecting an actual Mastodon *account* (to eventually post/reply as yourself, or see your own home timeline) is a heavier flow, since a server admin first has to register an OAuth app on that instance (`FederationInfo.mastodon_servers`, a [`MastodonServer`](https://jonline.io/docs/protocol#rellm-MastodonServer)) - unlike Facebook or X, Mastodon has no single central platform to register one app against for every instance at once.
 
 ##### BlueSky/AT Protocol
 
-Unlike Mastodon, AT Protocol has no "local instance timeline" concept a client could browse anonymously -- every Personal Data Server only ever serves its own users' own data. So Bluesky cross-protocol federation always requires a connected account: a handle plus an [App Password](https://bsky.app/settings/app-passwords) (not OAuth -- Bluesky has no per-app registration step the way Mastodon/Facebook/X do), showing that account's own home timeline rather than a public firehose.
+Unlike Mastodon, AT Protocol has no "local instance timeline" concept a client could browse anonymously - every Personal Data Server only ever serves its own users' own data. So Bluesky cross-protocol federation always requires a connected account: a handle plus an [App Password](https://bsky.app/settings/app-passwords) (not OAuth - Bluesky has no per-app registration step the way Mastodon/Facebook/X do), showing that account's own home timeline rather than a public firehose.
 
 #### Federated Profiles
 
@@ -391,31 +393,35 @@ While Federation is a first-class feature of Rellm, it also supports synchroniza
 
 #### Sync Sources
 
-A [`SyncSource`](https://jonline.io/docs/protocol#rellm-SyncSource) is a server-owned external origin to pull [`Post`](https://jonline.io/docs/protocol#rellm-Post)s in from, via a `oneof configuration` naming which source type it is: an iCal subscription URL (creates/updates [`Event`](https://jonline.io/docs/protocol#rellm-Event)s and [`EventInstance`](https://jonline.io/docs/protocol#rellm-EventInstance)s), or an RSS/Atom subscription URL (creates/updates plain [`Post`](https://jonline.io/docs/protocol#rellm-Post)s). Every kind of synced content is tagged via its own `Post.sync_source` -- an [`Event`](https://jonline.io/docs/protocol#rellm-Event)'s own Post, each of its [`EventInstance`](https://jonline.io/docs/protocol#rellm-EventInstance)s' own Post, or a plain synced Post -- since a single source can back many synced Posts but each Post has at most one source it came from. A background job re-pulls each source on its own configurable interval.
+A [`SyncSource`](https://jonline.io/docs/protocol#rellm-SyncSource) is a server-owned external origin to pull [`Post`](https://jonline.io/docs/protocol#rellm-Post)s in from, via a `oneof configuration` naming which source type it is: an iCal subscription URL (creates/updates [`Event`](https://jonline.io/docs/protocol#rellm-Event)s and [`EventInstance`](https://jonline.io/docs/protocol#rellm-EventInstance)s), or an RSS/Atom subscription URL (creates/updates plain [`Post`](https://jonline.io/docs/protocol#rellm-Post)s). Every kind of synced content is tagged via its own `Post.sync_source` - an [`Event`](https://jonline.io/docs/protocol#rellm-Event)'s own Post, each of its [`EventInstance`](https://jonline.io/docs/protocol#rellm-EventInstance)s' own Post, or a plain synced Post - since a single source can back many synced Posts but each Post has at most one source it came from. A background job re-pulls each source on its own configurable interval.
 
-Sources are managed via [`GetSyncSources`](https://jonline.io/docs/protocol#grpc-api-GetSyncSources), [`CreateSyncSource`](https://jonline.io/docs/protocol#grpc-api-CreateSyncSource) (requires `SYNC_EVENTS_FROM_ICS`/`SYNC_POSTS_FROM_RSS`/`SYNC_POSTS_FROM_ATOM` -- whichever matches the source's own configuration -- or Admin), [`UpdateSyncSource`](https://jonline.io/docs/protocol#grpc-api-UpdateSyncSource), and [`DeleteSyncSource`](https://jonline.io/docs/protocol#grpc-api-DeleteSyncSource).
+Sources are managed via [`GetSyncSources`](https://jonline.io/docs/protocol#grpc-api-GetSyncSources), [`CreateSyncSource`](https://jonline.io/docs/protocol#grpc-api-CreateSyncSource) (requires `SYNC_EVENTS_FROM_ICS`/`SYNC_POSTS_FROM_RSS`/`SYNC_POSTS_FROM_ATOM` - whichever matches the source's own configuration - or Admin), [`UpdateSyncSource`](https://jonline.io/docs/protocol#grpc-api-UpdateSyncSource), and [`DeleteSyncSource`](https://jonline.io/docs/protocol#grpc-api-DeleteSyncSource).
 
 See also: [Sync Destinations](#sync-destinations)
 
 ##### iCal
 
-`configuration.ics_subscription_url` is a plain iCal (`.ics`) subscription URL. The background job fetches and parses it on each sync, creating/updating one [`Event`](https://jonline.io/docs/protocol#rellm-Event) (and one [`EventInstance`](https://jonline.io/docs/protocol#rellm-EventInstance) per occurrence) per iCal `VEVENT`, recomputing `event_count`/`event_instance_count`. No auth/credentials are supported yet -- only public iCal URLs.
+`configuration.ics_subscription_url` is a plain iCal (`.ics`) subscription URL. The background job fetches and parses it on each sync, creating/updating one [`Event`](https://jonline.io/docs/protocol#rellm-Event) (and one [`EventInstance`](https://jonline.io/docs/protocol#rellm-EventInstance) per occurrence) per iCal `VEVENT`, recomputing `event_count`/`event_instance_count`. No auth/credentials are supported yet - only public iCal URLs.
+
+Rellm also serves its own Events back out as an ICS feed (`GET /calendar.ics`, optionally `?user_id={id}`) - the reverse direction of a `SyncSource`'s own subscription, for others to subscribe to a Rellm server or user.
 
 ##### RSS
 
-`configuration.rss_subscription_url` is a plain RSS 2.0 subscription URL. The background job fetches and parses it on each sync, creating/updating one plain [`Post`](https://jonline.io/docs/protocol#rellm-Post) per RSS item, recomputing `post_count`. Unlike iCal, an item that stops appearing in the feed is left alone rather than pruned -- RSS feeds are commonly truncated to their most recent N items by the publisher, so "no longer in the feed" doesn't mean "was retracted". No auth/credentials are supported yet -- only public RSS URLs.
+`configuration.rss_subscription_url` is a plain RSS 2.0 subscription URL. The background job fetches and parses it on each sync, creating/updating one plain [`Post`](https://jonline.io/docs/protocol#rellm-Post) per RSS item, recomputing `post_count`. Unlike iCal, an item that stops appearing in the feed is left alone rather than pruned - RSS feeds are commonly truncated to their most recent N items by the publisher, so "no longer in the feed" doesn't mean "was retracted". No auth/credentials are supported yet - only public RSS URLs.
+
+Rellm also serves its own Posts back out as an RSS feed (`GET /rss.xml`, optionally `?user_id={id}`) - the reverse direction of a `SyncSource`'s own subscription, for other feed readers to subscribe to a Rellm server or user.
 
 ##### Atom
 
-`configuration.atom_subscription_url` is a plain Atom subscription URL, behaving identically to RSS (above) -- one plain [`Post`](https://jonline.io/docs/protocol#rellm-Post) per entry, recomputing `post_count`, missing entries left alone rather than pruned. RSS and Atom feeds are parsed via the same underlying library into one unified shape, so both formats share this exact behavior -- pick whichever a given source actually publishes.
+`configuration.atom_subscription_url` is a plain Atom subscription URL, behaving identically to RSS (above) - one plain [`Post`](https://jonline.io/docs/protocol#rellm-Post) per entry, recomputing `post_count`, missing entries left alone rather than pruned. RSS and Atom feeds are parsed via the same underlying library into one unified shape, so both formats share this exact behavior - pick whichever a given source actually publishes.
 
-Rellm also serves its own Posts back out as an RSS/Atom feed (`GET /rss.xml`/`GET /atom.xml`, optionally `?user_id={id}`) -- the reverse direction of a `SyncSource`'s own subscription, for other feed readers to subscribe to a Rellm server or user.
+Rellm also serves its own Posts back out as an Atom feed (`GET /atom.xml`, optionally `?user_id={id}`) - the reverse direction of a `SyncSource`'s own subscription, for other feed readers to subscribe to a Rellm server or user.
 
 #### Sync Destinations
 
 A [`SyncDestination`](https://jonline.io/docs/protocol#rellm-SyncDestination) is a user-owned external target to push [`EventInstance`](https://jonline.io/docs/protocol#rellm-EventInstance)s and [`Post`](https://jonline.io/docs/protocol#rellm-Post)s out to, via a `oneof configuration` naming which platform it is. This is a many-to-many relationship: it's each [`EventInstance`](https://jonline.io/docs/protocol#rellm-EventInstance) or [`Post`](https://jonline.io/docs/protocol#rellm-Post) (not, say, the parent [`Event`](https://jonline.io/docs/protocol#rellm-Event)) that syncs out, and each may push to several destinations at once, tracked per-destination via the repeated `EventInstance.sync_destinations`/`Post.sync_destinations` (each a [`SyncDestinationStatus`](https://jonline.io/docs/protocol#rellm-SyncDestinationStatus), carrying the destination's resulting post ID/URL and last-synced time). Destinations are pushed to on demand rather than synced in bulk on an interval.
 
-Destinations are managed via the [`GetSyncDestinations`](https://jonline.io/docs/protocol#grpc-api-GetSyncDestinations), [`CreateSyncDestination`](https://jonline.io/docs/protocol#grpc-api-CreateSyncDestination), [`UpdateSyncDestination`](https://jonline.io/docs/protocol#grpc-api-UpdateSyncDestination), and [`DeleteSyncDestination`](https://jonline.io/docs/protocol#grpc-api-DeleteSyncDestination) RPCs -- each gated on the `SYNC_EVENTS_TO_*`/`SYNC_POSTS_TO_*` permission pair matching the destination's own platform (or Admin; see each platform below). Actually syncing (or un-syncing) a given [`EventInstance`](https://jonline.io/docs/protocol#rellm-EventInstance) or [`Post`](https://jonline.io/docs/protocol#rellm-Post) to a destination is a separate step, via [`SyncEventInstance`](https://jonline.io/docs/protocol#grpc-api-SyncEventInstance)/[`DeleteEventInstanceSyncDestination`](https://jonline.io/docs/protocol#grpc-api-DeleteEventInstanceSyncDestination) and [`SyncPost`](https://jonline.io/docs/protocol#grpc-api-SyncPost)/[`DeletePostSyncDestination`](https://jonline.io/docs/protocol#grpc-api-DeletePostSyncDestination).
+Destinations are managed via the [`GetSyncDestinations`](https://jonline.io/docs/protocol#grpc-api-GetSyncDestinations), [`CreateSyncDestination`](https://jonline.io/docs/protocol#grpc-api-CreateSyncDestination), [`UpdateSyncDestination`](https://jonline.io/docs/protocol#grpc-api-UpdateSyncDestination), and [`DeleteSyncDestination`](https://jonline.io/docs/protocol#grpc-api-DeleteSyncDestination) RPCs - each gated on the `SYNC_EVENTS_TO_*`/`SYNC_POSTS_TO_*` permission pair matching the destination's own platform (or Admin; see each platform below). Actually syncing (or un-syncing) a given [`EventInstance`](https://jonline.io/docs/protocol#rellm-EventInstance) or [`Post`](https://jonline.io/docs/protocol#rellm-Post) to a destination is a separate step, via [`SyncEventInstance`](https://jonline.io/docs/protocol#grpc-api-SyncEventInstance)/[`DeleteEventInstanceSyncDestination`](https://jonline.io/docs/protocol#grpc-api-DeleteEventInstanceSyncDestination) and [`SyncPost`](https://jonline.io/docs/protocol#grpc-api-SyncPost)/[`DeletePostSyncDestination`](https://jonline.io/docs/protocol#grpc-api-DeletePostSyncDestination).
 
 See also: [Sync Sources](#sync-sources)
 
@@ -425,23 +431,23 @@ See also: [Sync Sources](#sync-sources)
 
 ##### Instagram
 
-`configuration.instagram_account` (an [`InstagramAccount`](https://jonline.io/docs/protocol#rellm-InstagramAccount)) is a connected Instagram Business/Creator account. Instagram posting is only possible for an account linked to a Facebook Page, so connecting one reuses the exact same Facebook Login flow/app credentials as Facebook above -- the server exchanges the token for the chosen Page's access token, then looks up that Page's linked Instagram Business account. Unlike Facebook, Instagram's Graph API has no text-only post type; syncing a [`Post`](https://jonline.io/docs/protocol#rellm-Post)/[`EventInstance`](https://jonline.io/docs/protocol#rellm-EventInstance) with no attached media fails. Gated on `SYNC_EVENTS_TO_INSTAGRAM`/`SYNC_POSTS_TO_INSTAGRAM`.
+`configuration.instagram_account` (an [`InstagramAccount`](https://jonline.io/docs/protocol#rellm-InstagramAccount)) is a connected Instagram Business/Creator account. Instagram posting is only possible for an account linked to a Facebook Page, so connecting one reuses the exact same Facebook Login flow/app credentials as Facebook above - the server exchanges the token for the chosen Page's access token, then looks up that Page's linked Instagram Business account. Unlike Facebook, Instagram's Graph API has no text-only post type; syncing a [`Post`](https://jonline.io/docs/protocol#rellm-Post)/[`EventInstance`](https://jonline.io/docs/protocol#rellm-EventInstance) with no attached media fails. Gated on `SYNC_EVENTS_TO_INSTAGRAM`/`SYNC_POSTS_TO_INSTAGRAM`.
 
 ##### Mastodon
 
-`configuration.mastodon_account` (a [`MastodonAccount`](https://jonline.io/docs/protocol#rellm-MastodonAccount)) is a connected Mastodon account, on any instance the user names -- there's no single app to register the way Facebook/Instagram have one, so connecting one is a user-pasted Personal Access Token (generated on the user's own instance under Preferences > Development) rather than an OAuth popup. Gated on `SYNC_EVENTS_TO_MASTODON`/`SYNC_POSTS_TO_MASTODON`.
+`configuration.mastodon_account` (a [`MastodonAccount`](https://jonline.io/docs/protocol#rellm-MastodonAccount)) is a connected Mastodon account, on any instance the user names - there's no single app to register the way Facebook/Instagram have one, so connecting one is a user-pasted Personal Access Token (generated on the user's own instance under Preferences > Development) rather than an OAuth popup. Gated on `SYNC_EVENTS_TO_MASTODON`/`SYNC_POSTS_TO_MASTODON`.
 
 ##### Bluesky
 
-`configuration.bluesky_account` (a [`BlueskyAccount`](https://jonline.io/docs/protocol#rellm-BlueskyAccount)) is a connected Bluesky (AT Protocol) account. Connecting one is a user-supplied "App Password" (generated at Settings > App Passwords -- not the account's main password) rather than an OAuth popup. Gated on `SYNC_EVENTS_TO_BLUESKY`/`SYNC_POSTS_TO_BLUESKY`.
+`configuration.bluesky_account` (a [`BlueskyAccount`](https://jonline.io/docs/protocol#rellm-BlueskyAccount)) is a connected Bluesky (AT Protocol) account. Connecting one is a user-supplied "App Password" (generated at Settings > App Passwords - not the account's main password) rather than an OAuth popup. Gated on `SYNC_EVENTS_TO_BLUESKY`/`SYNC_POSTS_TO_BLUESKY`.
 
 ##### X (Twitter)
 
-`configuration.x_twitter_account` (an [`XTwitterAccount`](https://jonline.io/docs/protocol#rellm-XTwitterAccount)) is reserved for a connected X account, but **not yet functional** -- this requires a registered X Developer App (`FederationInfo.x_twitter_auth_config`), so every RPC touching an [`XTwitterAccount`](https://jonline.io/docs/protocol#rellm-XTwitterAccount) destination currently fails. Gated on `SYNC_EVENTS_TO_X_TWITTER`/`SYNC_POSTS_TO_X_TWITTER` once functional.
+`configuration.x_twitter_account` (an [`XTwitterAccount`](https://jonline.io/docs/protocol#rellm-XTwitterAccount)) is reserved for a connected X account, but **not yet functional** - this requires a registered X Developer App (`FederationInfo.x_twitter_auth_config`), so every RPC touching an [`XTwitterAccount`](https://jonline.io/docs/protocol#rellm-XTwitterAccount) destination currently fails. Gated on `SYNC_EVENTS_TO_X_TWITTER`/`SYNC_POSTS_TO_X_TWITTER` once functional.
 
 ##### Threads
 
-`configuration.threads_account` (a [`ThreadsAccount`](https://jonline.io/docs/protocol#rellm-ThreadsAccount)) is a connected Threads account. The Threads API is a product added to a server's *existing* Facebook App rather than a separately-registered app, but its OAuth flow is otherwise its own: authorization happens at threads.net (not facebook.com) using `response_type=code` rather than Facebook's implicit `response_type=token`, with no "choose a Page" step -- it directly authorizes the user's own Threads account. Unlike Instagram, Threads supports text-only posts. Gated on `SYNC_EVENTS_TO_THREADS`/`SYNC_POSTS_TO_THREADS`.
+`configuration.threads_account` (a [`ThreadsAccount`](https://jonline.io/docs/protocol#rellm-ThreadsAccount)) is a connected Threads account. The Threads API is a product added to a server's *existing* Facebook App rather than a separately-registered app, but its OAuth flow is otherwise its own: authorization happens at threads.net (not facebook.com) using `response_type=code` rather than Facebook's implicit `response_type=token`, with no "choose a Page" step - it directly authorizes the user's own Threads account. Unlike Instagram, Threads supports text-only posts. Gated on `SYNC_EVENTS_TO_THREADS`/`SYNC_POSTS_TO_THREADS`.
 
 ## Cloud/Cluster-Friendly Features
 
@@ -554,7 +560,7 @@ An OpenAI API connection ([`OpenAICredentials`](https://jonline.io/docs/protocol
 
 #### Anthropic
 
-An Anthropic API connection ([`AnthropicCredentials`](https://jonline.io/docs/protocol#rellm-AnthropicCredentials)), reserved but **not yet creatable** -- Anthropic doesn't offer an image generation API, so this is defined only for forward compatibility.
+An Anthropic API connection ([`AnthropicCredentials`](https://jonline.io/docs/protocol#rellm-AnthropicCredentials)), reserved but **not yet creatable** - Anthropic doesn't offer an image generation API, so this is defined only for forward compatibility.
 
 #### DigitalOcean
 
@@ -575,7 +581,7 @@ linking any unique [`Group`](https://jonline.io/docs/protocol#rellm-Group) to an
 
 [`Event`](https://jonline.io/docs/protocol#rellm-Event)s are a thin layer atop [`Post`](https://jonline.io/docs/protocol#rellm-Post)s. Any Event has a single Post, as well as at least one EventInstance. An EventInstance has a start time, end time, location, and RSVP/attendance data. Group Events work through the [`GroupPost`](https://jonline.io/docs/protocol#rellm-GroupPost) mechanism.
 
-An [`Event`](https://jonline.io/docs/protocol#rellm-Event)'s ID *is* its own [`Post`](https://jonline.io/docs/protocol#rellm-Post)'s ID, and likewise an [`EventInstance`](https://jonline.io/docs/protocol#rellm-EventInstance)'s ID is its own Post's ID -- neither carries a separate surrogate ID. [`GetEventsRequest.post_id`](https://jonline.io/docs/protocol#rellm-GetEventsRequest) looks a single Event up either way (by its own Post ID, or by any of its EventInstances' Post IDs), always returning the whole Event with all its instances.
+An [`Event`](https://jonline.io/docs/protocol#rellm-Event)'s ID *is* its own [`Post`](https://jonline.io/docs/protocol#rellm-Post)'s ID, and likewise an [`EventInstance`](https://jonline.io/docs/protocol#rellm-EventInstance)'s ID is its own Post's ID - neither carries a separate surrogate ID. [`GetEventsRequest.post_id`](https://jonline.io/docs/protocol#rellm-GetEventsRequest) looks a single Event up either way (by its own Post ID, or by any of its EventInstances' Post IDs), always returning the whole Event with all its instances.
 
 ### Messages
 
@@ -604,7 +610,7 @@ If you want these features prioritized, or have ideas about how they would fit i
 
 ### Delightful Federation
 
-A key thing that separates Rellm from Mastodon and other Fediverse projects is that its servers never talk to each other directly at all -- there's no server-to-server delivery protocol. Instead, a server only *recommends* other servers by hostname (a [protocol-defined federated server](https://jonline.io/docs/protocol#federated-servers)), and it's the client -- e.g. your browser, loading [jonline.io](https://jonline.io) -- that calls each recommended server's API directly and merges in its posts and events, such as [bullcity.social](https://bullcity.social)'s and [oakcity.social](https://oakcity.social)'s. That's exactly why CORS is the relevant safeguard here, not server-side access control: bullcity.social and oakcity.social admins can always lock down their own CORS policy to control which other origins (i.e. other Rellm UIs) are allowed to pull their public data this way. [Cross-Protocol Federation](https://jonline.io/docs/protocol#cross-protocol-federation) is this same idea taken one step further: a Rellm client reads Mastodon and BlueSky content directly from those platforms' own public APIs and translates it into the same `Post` shape, again with no Rellm server acting as a bridge or proxy. (The one place a Rellm server *does* itself talk to another server on a user's behalf is [Sync Destinations](https://jonline.io/docs/protocol#sync-destinations) -- pushing that user's own content *out* to Facebook, Mastodon, Bluesky, etc.)
+A key thing that separates Rellm from Mastodon and other Fediverse projects is that its servers never talk to each other directly at all - there's no server-to-server delivery protocol. Instead, a server only *recommends* other servers by hostname (a [protocol-defined federated server](https://jonline.io/docs/protocol#federated-servers)), and it's the client - e.g. your browser, loading [jonline.io](https://jonline.io) - that calls each recommended server's API directly and merges in its posts and events, such as [bullcity.social](https://bullcity.social)'s and [oakcity.social](https://oakcity.social)'s. That's exactly why CORS is the relevant safeguard here, not server-side access control: bullcity.social and oakcity.social admins can always lock down their own CORS policy to control which other origins (i.e. other Rellm UIs) are allowed to pull their public data this way. [Cross-Protocol Federation](https://jonline.io/docs/protocol#cross-protocol-federation) is this same idea taken one step further: a Rellm client reads Mastodon and BlueSky content directly from those platforms' own public APIs and translates it into the same `Post` shape, again with no Rellm server acting as a bridge or proxy. (The one place a Rellm server *does* itself talk to another server on a user's behalf is [Sync Destinations](https://jonline.io/docs/protocol#sync-destinations) - pushing that user's own content *out* to Facebook, Mastodon, Bluesky, etc.)
 
 Similarly, [the protocol supports federated profiles](https://github.com/JonLatane/rellm/blob/main/docs/protocol.md#federatedaccount) that allow, e.g., my profile at [jonline.io/jon](https://jonline.io/jon) to automatcally integrate information from other profiles at [bullcity.social/jon](https://bullcity.social/jon) and [oakcity.social/jon](https://oakcity.social/jon).
 
@@ -693,7 +699,7 @@ The [Flutter frontend, in `frontends/flutter`](https://github.com/JonLatane/rell
 
 ## Quick deploy to your own cluster
 
-This section is the fastest path to a running cluster; see [`deploys/README.md`](https://github.com/JonLatane/rellm/blob/main/deploys/README.md) for the full reference on everything else `make`/`rellm deploy` can do here -- multi-namespace setups, pointing domains at your deployment, TLS certs, Postgres upgrades, and more. (Already on Homebrew or the Linux package? See [Deploying to Kubernetes from Homebrew/Linux](#deploying-to-kubernetes-from-homebrewlinux-rellm-deploy) -- you can skip straight to `rellm deploy` without cloning this repo.)
+This section is the fastest path to a running cluster; see [`deploys/README.md`](https://github.com/JonLatane/rellm/blob/main/deploys/README.md) for the full reference on everything else `make`/`rellm deploy` can do here - multi-namespace setups, pointing domains at your deployment, TLS certs, Postgres upgrades, and more. (Already on Homebrew or the Linux package? See [Deploying to Kubernetes from Homebrew/Linux](#deploying-to-kubernetes-from-homebrewlinux-rellm-deploy) - you can skip straight to `rellm deploy` without cloning this repo.)
 
 If you have `kubectl` and `make`, you can be setup in a few minutes. (If you're looking for a quick, fairly priced, scalable Kubernetes host, [I recommend DigitalOcean](https://m.do.co/c/1eaa3f9e536c).) First make sure `kubectl` is setup correctly and your instance has the `rellm` namespace available with `kubectl get services` and `kubectl get namespace rellm`:
 
@@ -713,7 +719,7 @@ git clone https://github.com/JonLatane/rellm.git
 cd rellm
 ```
 
-(On Homebrew or the Linux package instead? Skip the clone -- see [Deploying to Kubernetes from Homebrew/Linux](#deploying-to-kubernetes-from-homebrewlinux-rellm-deploy).)
+(On Homebrew or the Linux package instead? Skip the clone - see [Deploying to Kubernetes from Homebrew/Linux](#deploying-to-kubernetes-from-homebrewlinux-rellm-deploy).)
 
 Next, from the repo root, to create Postgres, Minio and two load-balanced Rellm servers in the namespace `rellm` (plus a few recurring jobs), run:
 
@@ -722,7 +728,7 @@ Next, from the repo root, to create Postgres, Minio and two load-balanced Rellm 
 # The create_external_backend Make target, specifically, will create the Joline service as a K8s LoadBalancer.
 # Of course, it costs nothing to use Minikube.
 # To deploy for use with a different ingress (say, a shared nginx, or Rellm's pending internal LB), use create_internal_backend or deploy_be_internal_insecure_create to deploy it as a K8s ClusterIP instead.
-# NAMESPACE is required (no default) -- pick whichever namespace you want this deployed to.
+# NAMESPACE is required (no default) - pick whichever namespace you want this deployed to.
 NAMESPACE=rellm make create_backend_data create_external_backend
 ```
 

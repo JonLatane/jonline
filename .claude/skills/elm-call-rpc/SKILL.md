@@ -10,8 +10,8 @@ Each RPC (`protos/rellm.proto`'s `service Rellm`) has a generated `Grpc.Rpc req 
 ```elm
 Grpc.new Rellm.updatePost requestValue
     |> Grpc.setHost (AccountsPanel.serverUrl server)
-    |> Grpc.addHeader "authorization" token   -- only for authenticated calls
-    |> Grpc.toTask                            -- : Task Grpc.Error res
+    |> Grpc.addHeader "authorization" token   - only for authenticated calls
+    |> Grpc.toTask                            - : Task Grpc.Error res
 ```
 
 Use `Grpc.toTask` when chaining (`Task.andThen`) or `Task.attempt`ing yourself; `Grpc.toCmd` if you just want a `Cmd msg` directly.

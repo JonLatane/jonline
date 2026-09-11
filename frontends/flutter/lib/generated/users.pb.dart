@@ -462,21 +462,21 @@ class User extends $pb.GeneratedMessage {
   /// Populated by [`GetUsers`](#grpc-api-GetUsers)' single-user lookups (by username or by user_id) when the
   /// viewer is the target user themselves (and holds `SYNC_EVENTS_TO_FACEBOOK` or
   /// `SYNC_POSTS_TO_FACEBOOK`) or an Admin, and by [`Login`](#grpc-api-Login)/[`CreateAccount`](#grpc-api-CreateAccount)/[`GetCurrentUser`](#grpc-api-GetCurrentUser)
-  /// (always a self-view) -- always empty otherwise, including via every other [`GetUsers`](#grpc-api-GetUsers)
+  /// (always a self-view) - always empty otherwise, including via every other [`GetUsers`](#grpc-api-GetUsers)
   /// listing type.
   @$pb.TagNumber(82)
   $core.List<$10.SyncDestination> get syncDestinations => $_getList(24);
 
   /// The target user's own [`SyncSource`](#rellm-SyncSource)s. Unlike `sync_destinations`, also populated for
   /// the target user themselves *or an Admin* across every [`GetUsers`](#grpc-api-GetUsers) listing type (not just
-  /// single-user lookups) -- e.g. an Admin's `EVERYONE` listing gets every returned user's sources
+  /// single-user lookups) - e.g. an Admin's `EVERYONE` listing gets every returned user's sources
   /// filled in, batch-loaded in one query rather than per-user. Also populated by
   /// [`Login`](#grpc-api-Login)/[`CreateAccount`](#grpc-api-CreateAccount)/[`GetCurrentUser`](#grpc-api-GetCurrentUser) (always a self-view). Always empty for
   /// any other viewer.
   @$pb.TagNumber(83)
   $core.List<$10.SyncSource> get syncSources => $_getList(25);
 
-  /// Every [`AIModelProvider`](#rellm-AIModelProvider) model the target user may currently call -- their own
+  /// Every [`AIModelProvider`](#rellm-AIModelProvider) model the target user may currently call - their own
   /// providers' models, plus any models granted to them on other users' providers (see
   /// [`AvailableAIModel`](#rellm-AvailableAIModel)). Gated and populated the same way as `sync_sources`
   /// (target user themselves, or an Admin, across any [`GetUsers`](#grpc-api-GetUsers) listing type, plus

@@ -548,40 +548,40 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
       <a href="#rellm-Post"><code>Post</code></a>/<a href="#rellm-Author"><code>Author</code></a> shapes used everywhere else in the app --
       entirely client-side, with no RPCs of their own. The server's only role is admin configuration:
       <a href="#rellm-FederationInfo"><code>FederationInfo</code></a> tells clients which instances/apps are safe or
-      expected to pull from. There is no server-to-server proxying or bridging involved -- this follows
+      expected to pull from. There is no server-to-server proxying or bridging involved - this follows
       the same "the client does the merging" pattern as <a href="#rellm-FederatedServer"><code>FederatedServer</code></a>,
       just reaching across a protocol boundary instead of a Rellm-to-Rellm one. It's also
-      one-directional (reading in, not posting out) -- publishing a Rellm <a href="#rellm-Post"><code>Post</code></a> <em>to</em>
+      one-directional (reading in, not posting out) - publishing a Rellm <a href="#rellm-Post"><code>Post</code></a> <em>to</em>
       Mastodon or Bluesky is a separate feature, <a href="#rellm-SyncDestination"><code>SyncDestination</code></a>.
     </p>
     <h5 id="mastodonactivitypub"><a class="anchor" aria-hidden="true" tabindex="-1" href="#mastodonactivitypub"><span class="octicon octicon-link"></span></a>Mastodon/ActivityPub</h5>
     <p>
       A client can browse any Mastodon instance's local public timeline
       (<code>GET /api/v1/timelines/public?local=true</code>) with zero configuration, since it's already a public,
-      unauthenticated REST endpoint -- no <a href="#rellm-MastodonServer"><code>MastodonServer</code></a> entry is needed
+      unauthenticated REST endpoint - no <a href="#rellm-MastodonServer"><code>MastodonServer</code></a> entry is needed
       just to <em>read</em> public posts.
     </p>
     <p>
       Connecting an actual Mastodon <em>account</em> is a heavier flow, since Mastodon has no single central
-      OAuth authority the way Facebook/X do -- every instance is its own separate OAuth provider. A
+      OAuth authority the way Facebook/X do - every instance is its own separate OAuth provider. A
       server admin registers an app on a given instance ahead of time
       (<code>FederationInfo.mastodon_servers</code>, a <a href="#rellm-MastodonServer"><code>MastodonServer</code></a> carrying that
       instance's <code>app_id</code>/<code>app_secret</code>), and only then can a user on that instance complete the OAuth
       popup + PKCE flow to connect their own account. <code>MastodonServer.configured_by_default</code>/
       <code>pinned_by_default</code> let an admin recommend a given instance be auto-browsed the first time a
-      client visits this server -- see those fields' own docs for the current relationship between the
+      client visits this server - see those fields' own docs for the current relationship between the
       two.
     </p>
     <h5 id="blueskyat-protocol"><a class="anchor" aria-hidden="true" tabindex="-1" href="#blueskyat-protocol"><span class="octicon octicon-link"></span></a>BlueSky/AT Protocol</h5>
     <p>
-      Unlike Mastodon, AT Protocol has no "local instance timeline" concept at all -- every Personal
+      Unlike Mastodon, AT Protocol has no "local instance timeline" concept at all - every Personal
       Data Server (PDS) only ever serves its own users' own repos, so there is nothing equivalent to
       browse anonymously. Cross-protocol federation with Bluesky therefore always requires a connected
       account: a handle and an <a href="https://bsky.app/settings/app-passwords">App Password</a> (not OAuth --
       AT Protocol has no per-client app-registration step the way Mastodon/Facebook/X require), used to
       call <code>com.atproto.server.createSession</code> and then the account's own
       <code>app.bsky.feed.getTimeline</code>. Because there's no server-side app to register, there is no
-      <code>BlueskyServer</code> config type mirroring <a href="#rellm-MastodonServer"><code>MastodonServer</code></a> -- nothing about
+      <code>BlueskyServer</code> config type mirroring <a href="#rellm-MastodonServer"><code>MastodonServer</code></a> - nothing about
       connecting a Bluesky account is admin-configurable the way a Mastodon OAuth app is.
     </p>
     <h3 id="api-design-notes"><a class="anchor" aria-hidden="true" tabindex="-1" href="#api-design-notes"><span class="octicon octicon-link"></span></a>API Design Notes</h3>
@@ -607,7 +607,7 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
     </p>
     <p>
       <a href="#grpc-api-UpdateEvent"><code>UpdateEvent</code></a>, however, is non-atomic. Given that an <a href="#rellm-Event"><code>Event</code></a> has a <a href="#rellm-Post"><code>Post</code></a> and many <a href="#rellm-EventInstance"><code>EventInstance</code></a>s,
-      <a href="#grpc-api-UpdateEvent"><code>UpdateEvent</code></a> is implemented as a composition of four other RPCs -- each independently callable and individually atomic --
+      <a href="#grpc-api-UpdateEvent"><code>UpdateEvent</code></a> is implemented as a composition of four other RPCs - each independently callable and individually atomic --
       run in a fixed order: <a href="#grpc-api-UpdateEventDetails"><code>UpdateEventDetails</code></a> (which itself first updates the <a href="#rellm-Event"><code>Event</code></a>'s own <a href="#rellm-Post"><code>Post</code></a>
       atomically, literally calling the <a href="#grpc-api-UpdatePost"><code>UpdatePost</code></a> RPC), then <a href="#grpc-api-CreateNewEventInstances"><code>CreateNewEventInstances</code></a>,
       <a href="#grpc-api-UpdateEventInstances"><code>UpdateEventInstances</code></a>, and finally <a href="#grpc-api-DeleteRemovedEventInstances"><code>DeleteRemovedEventInstances</code></a>.
@@ -650,20 +650,20 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
     <h5 id="custom-tabs"><a class="anchor" aria-hidden="true" tabindex="-1" href="#custom-tabs"><span class="octicon octicon-link"></span></a>Custom Tabs</h5>
     <p>
       <a href="#rellm-CustomNavigationTabSet"><code>CustomNavigationTabSet</code></a> (<code>custom_tabs</code>) lets a server admin override the Elm
-      UI's default navigation. <code>home</code> (a <a href="#rellm-CustomHomePage"><code>CustomHomePage</code></a>) replaces <code>/</code> itself -- a
+      UI's default navigation. <code>home</code> (a <a href="#rellm-CustomHomePage"><code>CustomHomePage</code></a>) replaces <code>/</code> itself - a
       predefined tab or a specific Post, optionally with Posts pinned above its content and/or an Events strip shown
       above it; <code>tabs</code> (repeated <a href="#rellm-CustomNavigationTab"><code>CustomNavigationTab</code></a>) replaces the
       <code>EVENTS_TAB</code>/<code>POSTS_TAB</code>/<code>PEOPLE_TAB</code>/<code>ABOUT_TAB</code> set entirely, each pinned to its own custom URL (<code>path</code>). Each
       <code>CustomNavigationTab</code> targets either a predefined <a href="#rellm-NavigationTab"><code>NavigationTab</code></a>, a Post ID, or
       (path-only) a user profile, with its own emoji- or Media-backed icon and optional title override. <code>path</code> is
-      fully live -- the Elm SPA actually routes it (<code>Pages.UsernameOrCustomTab_</code>), not just previews it -- except for
+      fully live - the Elm SPA actually routes it (<code>Pages.UsernameOrCustomTab_</code>), not just previews it - except for
       the built-in <code>/events</code>, <code>/posts</code>, <code>/people</code>, and <code>/about</code> paths themselves, which stay reserved for their own
       matching predefined tab and can't be remapped elsewhere.
     </p>
     <h5 id="anonymous-default-and-basic-user-permission-sets"><a class="anchor" aria-hidden="true" tabindex="-1" href="#anonymous-default-and-basic-user-permission-sets"><span class="octicon octicon-link"></span></a>Anonymous, Default, and Basic User Permission Sets</h5>
     <p>
       Three <a href="#rellm-Permission"><code>Permission</code></a> lists set the server's baseline access, each enforced independently of
-      any per-User/per-Group grants: <code>anonymous_user_permissions</code> (what a logged-out visitor may do -- only the
+      any per-User/per-Group grants: <code>anonymous_user_permissions</code> (what a logged-out visitor may do - only the
       <code>VIEW_*</code> permissions are valid here), <code>default_user_permissions</code> (what every new account starts with), and
       <code>basic_user_permissions</code> (the superset a user holding <code>GRANT_BASIC_PERMISSIONS</code> may hand out to others). Granting
       <code>GLOBAL_PUBLIC</code> as a feature's <code>default_visibility</code> (see <code>people_settings</code>/<code>group_settings</code>/<code>post_settings</code>/
@@ -684,10 +684,10 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
     <h6 id="mastodonactivitypub-servers"><a class="anchor" aria-hidden="true" tabindex="-1" href="#mastodonactivitypub-servers"><span class="octicon octicon-link"></span></a>Mastodon/ActivityPub servers</h6>
     <p>
       <code>mastodon_servers</code> (repeated <a href="#rellm-MastodonServer"><code>MastodonServer</code></a>) plays a similar role to
-      <code>servers</code> above, but for Mastodon instances instead of other Rellm servers -- see
+      <code>servers</code> above, but for Mastodon instances instead of other Rellm servers - see
       <a href="#cross-protocol-federation">Cross-Protocol Federation</a> for the client-side feature this backs.
       Unlike a real <code>FederatedServer</code>, though, an entry here is <em>not</em> required just to browse an
-      instance's public timeline read-only -- that's already a public, unauthenticated Mastodon REST
+      instance's public timeline read-only - that's already a public, unauthenticated Mastodon REST
       endpoint any client can call directly. It's only needed to let a user <em>connect their own</em>
       Mastodon account (OAuth + PKCE), since Mastodon has no single central OAuth authority the way
       Facebook/X do: every instance is its own separate OAuth provider, so an admin has to register an
@@ -701,7 +701,7 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
       A Mastodon instance functions like a much thinner version of a federated Rellm server in the
       UI: its public posts appear in the same multi-server feed, translated into Rellm's own
       <a href="#rellm-Post"><code>Post</code></a> shape, but it has no equivalent of Rellm's Events, Groups, Media
-      library, or People/Follows -- just posts and their authors.
+      library, or People/Follows - just posts and their authors.
     </p>
     <h6 id="facebook-api-keys"><a class="anchor" aria-hidden="true" tabindex="-1" href="#facebook-api-keys"><span class="octicon octicon-link"></span></a>Facebook API Keys</h6>
     <p>
@@ -709,21 +709,25 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
       this server's Facebook App, enabling users to connect Facebook Page and Instagram Business
       <a href="#rellm-SyncDestination"><code>SyncDestination</code></a>s. <code>app_secret</code> is write-only/never serialized back to clients;
       admins set/rotate it via <a href="#grpc-api-ConfigureServer"><code>ConfigureServer</code></a> (i.e. the same admin UI form that
-      manages the rest of <a href="#rellm-ServerConfiguration"><code>ServerConfiguration</code></a>) -- the secret is simply never echoed
+      manages the rest of <a href="#rellm-ServerConfiguration"><code>ServerConfiguration</code></a>) - the secret is simply never echoed
       back in subsequent <a href="#grpc-api-GetServerConfiguration"><code>GetServerConfiguration</code></a> responses.
     </p>
     <h6 id="x-twitter-api-keys"><a class="anchor" aria-hidden="true" tabindex="-1" href="#x-twitter-api-keys"><span class="octicon octicon-link"></span></a>X (Twitter) API Keys</h6>
     <p>
       <code>x_twitter_auth_config</code> (an <a href="#rellm-XTwitterAuthConfig"><code>XTwitterAuthConfig</code></a>, <code>client_id</code>/<code>client_secret</code>)
       registers this server's X Developer App, enabling users to connect X <a href="#rellm-SyncDestination"><code>SyncDestination</code></a>s
-      -- until set, X SyncDestinations fail with <code>x_twitter_app_not_configured</code>. <code>client_secret</code> is write-only/never
-      serialized back to clients, set/rotated the same way as the Facebook API keys above.
     </p>
+    <ul>
+      <li>
+        until set, X SyncDestinations fail with <code>x_twitter_app_not_configured</code>. <code>client_secret</code> is write-only/never
+        serialized back to clients, set/rotated the same way as the Facebook API keys above.
+      </li>
+    </ul>
     <h5 id="web-push-configuration"><a class="anchor" aria-hidden="true" tabindex="-1" href="#web-push-configuration"><span class="octicon octicon-link"></span></a>Web Push Configuration</h5>
     <p>
       <a href="#rellm-WebPushConfig"><code>WebPushConfig</code></a> (<code>web_push_config</code>) holds the server's VAPID keypair for Web Push
       notifications: <code>public_vapid_key</code> is served to clients so they can subscribe, while <code>private_vapid_key</code> signs
-      outgoing pushes and is <em>never</em> serialized to clients -- like the federation secrets above, admins set/rotate it
+      outgoing pushes and is <em>never</em> serialized to clients - like the federation secrets above, admins set/rotate it
       via <a href="#grpc-api-ConfigureServer"><code>ConfigureServer</code></a>, not by editing the database directly.
     </p>
     <h5 id="cdn-configuration"><a class="anchor" aria-hidden="true" tabindex="-1" href="#cdn-configuration"><span class="octicon octicon-link"></span></a>CDN Configuration</h5>
@@ -764,16 +768,16 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
       subscription URL (<code>configuration.ics_subscription_url</code>, syncing in <a href="#rellm-Event"><code>Event</code></a>s/
       <a href="#rellm-EventInstance"><code>EventInstance</code></a>s), or an RSS/Atom subscription URL (<code>configuration.rss_subscription_url</code>/
       <code>configuration.atom_subscription_url</code>, syncing in plain <a href="#rellm-Post"><code>Post</code></a>s). Every kind of synced content is
-      tagged via its own <code>Post.sync_source</code> -- an <a href="#rellm-Event"><code>Event</code></a>'s own Post, each of its
-      <a href="#rellm-EventInstance"><code>EventInstance</code></a>s' own Post, or a plain synced Post -- since a single source can back many
+      tagged via its own <code>Post.sync_source</code> - an <a href="#rellm-Event"><code>Event</code></a>'s own Post, each of its
+      <a href="#rellm-EventInstance"><code>EventInstance</code></a>s' own Post, or a plain synced Post - since a single source can back many
       synced Posts but each Post has at most one source it came from; see the Event and Post sections below for how
       these attach. A background job re-pulls each source on its own <code>sync_interval_seconds</code> cadence, recomputing
       <code>event_count</code>/<code>event_instance_count</code> (iCal) or <code>post_count</code> (RSS/Atom) on every sync.
     </p>
     <p>
       Sources are managed via <a href="#grpc-api-GetSyncSources"><code>GetSyncSources</code></a>, <a href="#grpc-api-CreateSyncSource"><code>CreateSyncSource</code></a>
-      (requires <code>SYNC_EVENTS_FROM_ICS</code>/<code>SYNC_POSTS_FROM_RSS</code>/<code>SYNC_POSTS_FROM_ATOM</code> -- whichever matches
-      the source's own configuration -- or Admin), <a href="#grpc-api-UpdateSyncSource"><code>UpdateSyncSource</code></a>, and
+      (requires <code>SYNC_EVENTS_FROM_ICS</code>/<code>SYNC_POSTS_FROM_RSS</code>/<code>SYNC_POSTS_FROM_ATOM</code> - whichever matches
+      the source's own configuration - or Admin), <a href="#grpc-api-UpdateSyncSource"><code>UpdateSyncSource</code></a>, and
       <a href="#grpc-api-DeleteSyncSource"><code>DeleteSyncSource</code></a>.
     </p>
     <p>See also: <a href="#rellm-SyncDestination"><code>SyncDestination</code></a></p>
@@ -781,20 +785,20 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
     <p>
       <code>configuration.ics_subscription_url</code> is a plain iCal (<code>.ics</code>) subscription URL. The background job fetches and
       parses it on each sync, creating/updating one <a href="#rellm-Event"><code>Event</code></a> (and one <a href="#rellm-EventInstance"><code>EventInstance</code></a>
-      per occurrence) per iCal <code>VEVENT</code> -- each occurrence's own Post is keyed by <code>(sync_source_id, sync_source_uid, sync_source_recurrence_anchor)</code>, the iCal UID plus that occurrence's stable identity within its series (its own
-      start time, or its original scheduled time if since rescheduled) -- and recomputing <code>event_count</code>/
+      per occurrence) per iCal <code>VEVENT</code> - each occurrence's own Post is keyed by <code>(sync_source_id, sync_source_uid, sync_source_recurrence_anchor)</code>, the iCal UID plus that occurrence's stable identity within its series (its own
+      start time, or its original scheduled time if since rescheduled) - and recomputing <code>event_count</code>/
       <code>event_instance_count</code>. An <code>EventInstance</code>'s <code>sync_missing_since</code> is set the first time it stops appearing in
       the feed, letting the owner decide whether that means it should be deleted. No auth/credentials are supported
-      yet -- only public iCal URLs.
+      yet - only public iCal URLs.
     </p>
     <h6 id="rss"><a class="anchor" aria-hidden="true" tabindex="-1" href="#rss"><span class="octicon octicon-link"></span></a>RSS</h6>
     <p>
       <code>configuration.rss_subscription_url</code> is a plain RSS 2.0 subscription URL. The background job fetches and parses
-      it on each sync, creating/updating one plain <a href="#rellm-Post"><code>Post</code></a> per RSS <code>&#x26;lt;item&#x26;gt;</code> -- each Post is keyed by
+      it on each sync, creating/updating one plain <a href="#rellm-Post"><code>Post</code></a> per RSS <code>&#x26;lt;item&#x26;gt;</code> - each Post is keyed by
       <code>(sync_source_id, sync_source_uid)</code>, <code>sync_source_uid</code> being the item's own <code>&#x26;lt;guid&#x26;gt;</code> (or a hash of its <code>&#x26;lt;link&#x26;gt;</code>
-      if it has none) -- and recomputing <code>post_count</code>. Unlike iCal, a <code>&#x26;lt;item&#x26;gt;</code> that stops appearing in the feed is left
+      if it has none) - and recomputing <code>post_count</code>. Unlike iCal, a <code>&#x26;lt;item&#x26;gt;</code> that stops appearing in the feed is left
       alone rather than pruned: RSS feeds are commonly truncated to their most recent N items by the publisher, so
-      "no longer in the feed" doesn't mean "was retracted". No auth/credentials are supported yet -- only public RSS
+      "no longer in the feed" doesn't mean "was retracted". No auth/credentials are supported yet - only public RSS
       URLs.
     </p>
     <h6 id="atom"><a class="anchor" aria-hidden="true" tabindex="-1" href="#atom"><span class="octicon octicon-link"></span></a>Atom</h6>
@@ -803,7 +807,7 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
       one plain <a href="#rellm-Post"><code>Post</code></a> per <code>&#x26;lt;entry&#x26;gt;</code>, keyed by <code>(sync_source_id, sync_source_uid)</code> with <code>sync_source_uid</code>
       being the entry's own <code>&#x26;lt;id&#x26;gt;</code>, recomputing <code>post_count</code>, missing entries left alone rather than pruned. RSS and
       Atom feeds are parsed via the same underlying library into one unified shape, so both formats share this exact
-      behavior -- pick whichever a given source actually publishes.
+      behavior - pick whichever a given source actually publishes.
     </p>
     <h5 id="syncdestinations"><a class="anchor" aria-hidden="true" tabindex="-1" href="#syncdestinations"><span class="octicon octicon-link"></span></a>SyncDestinations</h5>
     <p>
@@ -822,7 +826,7 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
     <p>
       Destinations are managed via <a href="#grpc-api-GetSyncDestinations"><code>GetSyncDestinations</code></a>,
       <a href="#grpc-api-CreateSyncDestination"><code>CreateSyncDestination</code></a>, <a href="#grpc-api-UpdateSyncDestination"><code>UpdateSyncDestination</code></a>,
-      and <a href="#grpc-api-DeleteSyncDestination"><code>DeleteSyncDestination</code></a> -- each gated on the <code>SYNC_EVENTS_TO_*</code>/
+      and <a href="#grpc-api-DeleteSyncDestination"><code>DeleteSyncDestination</code></a> - each gated on the <code>SYNC_EVENTS_TO_*</code>/
       <code>SYNC_POSTS_TO_*</code> permission pair matching the destination's own platform (or Admin; see each platform's own
       section below). Actually syncing (or un-syncing) a given <a href="#rellm-EventInstance"><code>EventInstance</code></a> or <a href="#rellm-Post"><code>Post</code></a> to a destination is a separate
       step, via <a href="#grpc-api-SyncEventInstance"><code>SyncEventInstance</code></a>/
@@ -843,7 +847,7 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
     <p>
       <code>configuration.instagram_account</code> (an <a href="#rellm-InstagramAccount"><code>InstagramAccount</code></a>) is a connected Instagram
       Business/Creator account. Instagram posting is only possible for an account linked to a Facebook Page, so
-      connecting one reuses the exact same Facebook Login flow/app credentials as Facebook above -- the server exchanges
+      connecting one reuses the exact same Facebook Login flow/app credentials as Facebook above - the server exchanges
       the token for the chosen Page's access token, then looks up that Page's linked Instagram Business account
       (<code>instagram_business_account_id</code>). Unlike Facebook, Instagram's Graph API has no text-only post type; syncing a
       <a href="#rellm-Post"><code>Post</code></a>/<a href="#rellm-EventInstance"><code>EventInstance</code></a> with no attached media fails with <code>instagram_requires_media</code>. Gated on
@@ -852,7 +856,7 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
     <h6 id="mastodon"><a class="anchor" aria-hidden="true" tabindex="-1" href="#mastodon"><span class="octicon octicon-link"></span></a>Mastodon</h6>
     <p>
       <code>configuration.mastodon_account</code> (a <a href="#rellm-MastodonAccount"><code>MastodonAccount</code></a>) is a connected Mastodon
-      account, on any instance the user names (<code>instance_host</code>) -- there's no single app to register the way
+      account, on any instance the user names (<code>instance_host</code>) - there's no single app to register the way
       Facebook/Instagram have one, so connecting one is a user-pasted Personal Access Token
       (<code>MastodonAccount.access_token</code>, generated on the user's own instance under Preferences > Development) rather than
       an OAuth popup. Gated on <code>SYNC_EVENTS_TO_MASTODON</code>/<code>SYNC_POSTS_TO_MASTODON</code>.
@@ -861,16 +865,16 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
     <p>
       <code>configuration.bluesky_account</code> (a <a href="#rellm-BlueskyAccount"><code>BlueskyAccount</code></a>) is a connected Bluesky (AT
       Protocol) account. Connecting one is a user-supplied "App Password" (<code>BlueskyAccount.app_password</code>, generated at
-      Settings > App Passwords -- not the account's main password) rather than an OAuth popup. Gated on
+      Settings > App Passwords - not the account's main password) rather than an OAuth popup. Gated on
       <code>SYNC_EVENTS_TO_BLUESKY</code>/<code>SYNC_POSTS_TO_BLUESKY</code>.
     </p>
     <h6 id="x-twitter"><a class="anchor" aria-hidden="true" tabindex="-1" href="#x-twitter"><span class="octicon octicon-link"></span></a>X (Twitter)</h6>
     <p>
       <code>configuration.x_twitter_account</code> (an <a href="#rellm-XTwitterAccount"><code>XTwitterAccount</code></a>) is a connected X account. Requires this
-      server to have a registered X Developer App configured (<code>FederationInfo.x_twitter_auth_config</code>) -- until an admin
+      server to have a registered X Developer App configured (<code>FederationInfo.x_twitter_auth_config</code>) - until an admin
       sets one, every RPC touching an <a href="#rellm-XTwitterAccount"><code>XTwitterAccount</code></a> destination fails with <code>x_twitter_app_not_configured</code>. Once
       configured, connecting is an OAuth 2.0 Authorization Code + PKCE flow at x.com (<code>response_type=code</code>, like
-      Threads, but with a <code>code_challenge</code>/<code>code_verifier</code> pair X requires and Threads doesn't) -- the server exchanges
+      Threads, but with a <code>code_challenge</code>/<code>code_verifier</code> pair X requires and Threads doesn't) - the server exchanges
       the code for a short-lived access token (2 hour expiry) plus a refresh token, transparently refreshing before
       each post. Only image media is uploaded today; video is not yet supported (see <code>XTwitterAccount</code>'s own doc).
       Gated on <code>SYNC_EVENTS_TO_X_TWITTER</code>/<code>SYNC_POSTS_TO_X_TWITTER</code>.
@@ -881,8 +885,8 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
       Threads API is a product added to this server's <em>existing</em> Facebook App (see <a href="#rellm-FacebookAuthConfig"><code>FacebookAuthConfig</code></a>) rather than a
       separately-registered app, but its OAuth flow is otherwise its own: authorization happens at threads.net (not
       facebook.com) using <code>response_type=code</code> rather than Facebook's implicit <code>response_type=token</code>, with no "choose a
-      Page" step -- it directly authorizes the user's own Threads account. The server exchanges the code for a
-      short-lived token, then a long-lived one (~60 day expiry, refreshable via <code>grant_type=th_refresh_token</code> -- not yet
+      Page" step - it directly authorizes the user's own Threads account. The server exchanges the code for a
+      short-lived token, then a long-lived one (~60 day expiry, refreshable via <code>grant_type=th_refresh_token</code> - not yet
       implemented, so a connected destination needs reconnecting after ~60 days). Unlike Instagram, Threads supports
       text-only posts. Gated on <code>SYNC_EVENTS_TO_THREADS</code>/<code>SYNC_POSTS_TO_THREADS</code>.
     </p>
@@ -900,10 +904,10 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
     <h4 id="aimodelprovider"><a class="anchor" aria-hidden="true" tabindex="-1" href="#aimodelprovider"><span class="octicon octicon-link"></span></a>AIModelProvider</h4>
     <p>
       An <a href="#rellm-AIModelProvider"><code>AIModelProvider</code></a> is a user-owned connection to an external AI model API (e.g. a
-      Gemini API key), via a <code>oneof provider</code> naming which service it is -- structurally similar to
+      Gemini API key), via a <code>oneof provider</code> naming which service it is - structurally similar to
       <a href="#rellm-SyncDestination"><code>SyncDestination</code></a>/<a href="#rellm-SyncSource"><code>SyncSource</code></a>, but rather than pushing/pulling
       content, it's metered <em>access</em> an owner can share out to other users of this server. As with
-      <a href="#rellm-SyncDestination"><code>SyncDestination</code></a>'s platform credentials, the actual API key is write-only -- accepted
+      <a href="#rellm-SyncDestination"><code>SyncDestination</code></a>'s platform credentials, the actual API key is write-only - accepted
       on <a href="#grpc-api-CreateAIModelProvider"><code>CreateAIModelProvider</code></a>/<a href="#grpc-api-UpdateAIModelProvider"><code>UpdateAIModelProvider</code></a>
       but never populated back in a response.
     </p>
@@ -911,8 +915,10 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
       Providers are managed via <a href="#grpc-api-GetAIModelProviders"><code>GetAIModelProviders</code></a>,
       <a href="#grpc-api-CreateAIModelProvider"><code>CreateAIModelProvider</code></a> (requires <code>CREATE_AI_MODEL_PROVIDERS</code>, or Admin),
       <a href="#grpc-api-UpdateAIModelProvider"><code>UpdateAIModelProvider</code></a>, and <a href="#grpc-api-DeleteAIModelProvider"><code>DeleteAIModelProvider</code></a>
-      -- each gated self-or-Admin, the same shape as <a href="#rellm-SyncDestination"><code>SyncDestination</code></a>'s RPCs.
     </p>
+    <ul>
+      <li>each gated self-or-Admin, the same shape as <a href="#rellm-SyncDestination"><code>SyncDestination</code></a>'s RPCs.</li>
+    </ul>
     <h5 id="gemini"><a class="anchor" aria-hidden="true" tabindex="-1" href="#gemini"><span class="octicon octicon-link"></span></a>Gemini</h5>
     <p>
       <code>provider.gemini_credentials</code> (a <a href="#rellm-GeminiCredentials"><code>GeminiCredentials</code></a>) is a Google Gemini API
@@ -928,14 +934,14 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
     <h5 id="anthropic"><a class="anchor" aria-hidden="true" tabindex="-1" href="#anthropic"><span class="octicon octicon-link"></span></a>Anthropic</h5>
     <p>
       <code>provider.anthropic_credentials</code> (an <a href="#rellm-AnthropicCredentials"><code>AnthropicCredentials</code></a>) is reserved for a
-      connected Anthropic API, but <strong>not yet creatable</strong> -- Anthropic doesn't offer an image generation API, so it's
+      connected Anthropic API, but <strong>not yet creatable</strong> - Anthropic doesn't offer an image generation API, so it's
       defined only for forward compatibility.
     </p>
     <h5 id="digitalocean"><a class="anchor" aria-hidden="true" tabindex="-1" href="#digitalocean"><span class="octicon octicon-link"></span></a>DigitalOcean</h5>
     <p>
       <code>provider.digitalocean_credentials</code> (a <a href="#rellm-DigitalOceanCredentials"><code>DigitalOceanCredentials</code></a>) is a
       DigitalOcean Gradient AI Platform / Serverless Inference connection (<code>docs.digitalocean.com/products/inference</code>),
-      used for image <em>generation only</em> (no editing -- DigitalOcean's Serverless Inference API has no
+      used for image <em>generation only</em> (no editing - DigitalOcean's Serverless Inference API has no
       <code>/v1/images/edits</code>-equivalent endpoint) via its OpenAI-Images-API-shaped <code>/v1/images/generations</code> endpoint (GPT
       Image and Stable Diffusion models, re-hosted under DigitalOcean's own billing).
     </p>
@@ -944,9 +950,9 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
       A provider's owner may share metered access to it with other users via
       <a href="#rellm-AIModelProviderGrant"><code>AIModelProviderGrant</code></a>s, each carrying a <code>tokens_remaining</code> budget for that grantee.
       Granted/reset via <a href="#grpc-api-GrantAIModelProvider"><code>GrantAIModelProvider</code></a> (upserted on the unique
-      <code>(ai_model_provider_id, grantee)</code> pair -- granting again <em>resets</em>, rather than adds to, <code>tokens_remaining</code>) and
+      <code>(ai_model_provider_id, grantee)</code> pair - granting again <em>resets</em>, rather than adds to, <code>tokens_remaining</code>) and
       removed via <a href="#grpc-api-RevokeAIModelProvider"><code>RevokeAIModelProvider</code></a>. Unlike every other RPC pair in this section,
-      these two are <strong>owner-only, with no Admin override</strong> -- an Admin may manage the provider record itself, but only
+      these two are <strong>owner-only, with no Admin override</strong> - an Admin may manage the provider record itself, but only
       its owner may hand out access to it.
     </p>
     <h4 id="media"><a class="anchor" aria-hidden="true" tabindex="-1" href="#media"><span class="octicon octicon-link"></span></a>Media</h4>
@@ -1092,7 +1098,7 @@ the destination&#x26;#39;s resulting post ID/URL and last-synced time.
       <a href="#authfromencrypted_account_auth_tokens-receiving-side"><code>/auth/from/...</code></a>) exchange
       an encrypted pair of tokens via a full-page redirect; no gRPC/HTTP endpoint on either backend is involved beyond
       the <a href="#grpc-api-Login"><code>Login</code></a> RPC itself (plus <a href="#grpc-api-GetCurrentUser"><code>GetCurrentUser</code></a> on the receiving side,
-      to hydrate everything else -- see step 6).
+      to hydrate everything else - see step 6).
     </p>
     <ol>
       <li>
@@ -1110,14 +1116,14 @@ the destination&#x26;#39;s resulting post ID/URL and last-synced time.
       </li>
       <li>
         The user authenticates via the <a href="#grpc-api-Login"><code>Login</code></a> RPC. This always issues a <em>fresh</em> <code>refresh_token</code>/
-        <code>access_token</code> pair, reserved purely for transfer back to <code>jonline.io</code> -- it's never used to sign the browser into
+        <code>access_token</code> pair, reserved purely for transfer back to <code>jonline.io</code> - it's never used to sign the browser into
         <code>bullcity.social</code> itself. If "Sign back in here" is checked, a <strong>second</strong>, independent <a href="#grpc-api-Login"><code>Login</code></a>
         call also runs, so <code>bullcity.social</code> gets its own local session too, and the two servers never end up sharing a
         token pair. (Hence "1-2 refresh tokens.")
       </li>
       <li>
         Only <code>bullcity.social</code>'s hostname and that fresh <code>refresh_token</code>/<code>access_token</code> pair are JSON-encoded and
-        encrypted to <code>jonline.io</code>'s public key from step 2 (ephemeral ECDH + HKDF + AES-GCM -- see below) -- nothing else
+        encrypted to <code>jonline.io</code>'s public key from step 2 (ephemeral ECDH + HKDF + AES-GCM - see below) - nothing else
         about the account travels in the payload. The browser is then redirected back to <code>jonline.io</code> at
         <code>/auth/from/{ciphertext}</code>.
       </li>
@@ -1126,7 +1132,7 @@ the destination&#x26;#39;s resulting post ID/URL and last-synced time.
         <a href="#grpc-api-GetCurrentUser"><code>GetCurrentUser</code></a> against <code>bullcity.social</code> with the decrypted <code>access_token</code> to hydrate
         the rest of the account (user ID, username, avatar, permissions, etc. straight from <code>bullcity.social</code> itself
         rather than trusting a client-supplied copy of them), then adds it to its Accounts panel and navigates the user
-        onward -- no confirmation step. Either way, the one-time keypair generated in step 2 is discarded and a fresh one
+        onward - no confirmation step. Either way, the one-time keypair generated in step 2 is discarded and a fresh one
         generated in its place, so it can't be reused for a second transfer.
       </li>
     </ol>
@@ -1181,13 +1187,13 @@ the destination&#x26;#39;s resulting post ID/URL and last-synced time.
       <a href="https://github.com/JonLatane/rellm/blob/main/deploys/email/README.md">README</a> for setup/architecture) once it
       accepts an inbound message addressed to one of this Rellm instance's onboarded domains, turning it into a
       <a href="#rellm-Message"><code>Message</code></a>. It is <strong>internal-only</strong>: mounted solely on the unsecured 27705 server (never on
-      80/8000/443), has no authentication of its own, and trusts its caller completely -- that trust boundary is
+      80/8000/443), has no authentication of its own, and trusts its caller completely - that trust boundary is
       expected to be enforced at the network layer (e.g. a <code>NetworkPolicy</code> restricting port 27705 to Stalwart's pod).
     </p>
     <ul>
       <li>
         <strong>Request</strong>: the body is Stalwart's <code>data</code>-stage <a href="https://stalw.art/docs/mta/filter/mtahooks/">MTA Hook</a> JSON
-        payload (up to 50 MiB), not a raw MIME stream -- only the fields below are read, the rest of Stalwart's payload
+        payload (up to 50 MiB), not a raw MIME stream - only the fields below are read, the rest of Stalwart's payload
         (<code>context</code>, <code>envelope.from</code>, <code>message.serverHeaders</code>, <code>message.size</code>, ...) is ignored:
       </li>
     </ul>
@@ -1207,10 +1213,10 @@ the destination&#x26;#39;s resulting post ID/URL and last-synced time.
 }
 " class="copied"><svg class="octicon-copy" aria-hidden="true" viewBox="0 0 16 16" fill="currentColor" height="12" width="12"><path fill-rule="evenodd" d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z"></path><path fill-rule="evenodd" d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z"></path></svg><svg class="octicon-check" aria-hidden="true" viewBox="0 0 16 16" fill="currentColor" height="12" width="12"><path fill-rule="evenodd" d="M13.78 4.22a.75.75 0 010 1.06l-7.25 7.25a.75.75 0 01-1.06 0L2.22 9.28a.75.75 0 011.06-1.06L6 10.94l6.72-6.72a.75.75 0 011.06 0z"></path></svg></div></pre>
     <p>
-      Recipients come from <code>envelope.to[].address</code> -- deliberately the SMTP envelope, not the message's <code>To</code>/<code>Cc</code>
+      Recipients come from <code>envelope.to[].address</code> - deliberately the SMTP envelope, not the message's <code>To</code>/<code>Cc</code>
       headers, since that's the only place Bcc'd recipients show up at all. The message itself is reconstructed by
       concatenating <code>message.headers</code> (each an unfolded <code>[name, value]</code> pair) with <code>message.contents</code> across a blank
-      line, which <code>mail_parser</code> then parses as the RFC822 message -- Stalwart only splits at the top-level header/body
+      line, which <code>mail_parser</code> then parses as the RFC822 message - Stalwart only splits at the top-level header/body
       boundary, so this still captures multipart bodies and attachments intact within <code>contents</code>. A body that isn't
       valid JSON in this shape, or that doesn't reconstruct into a parseable MIME message, returns <code>400 Bad Request</code>;
       an oversized body returns <code>413 Payload Too Large</code>.
@@ -1224,7 +1230,7 @@ the destination&#x26;#39;s resulting post ID/URL and last-synced time.
       </li>
       <li>
         <strong>Storage</strong>: matched recipients become a <a href="#rellm-Message"><code>Message</code></a> addressed to a
-        <a href="#rellm-MessagingGroup"><code>MessagingGroup</code></a> keyed on the <code>To</code>/<code>Cc</code> recipients only -- Bcc'd recipients are excluded
+        <a href="#rellm-MessagingGroup"><code>MessagingGroup</code></a> keyed on the <code>To</code>/<code>Cc</code> recipients only - Bcc'd recipients are excluded
         from the group (so they stay invisible to everyone else on the thread) and instead recorded individually as <code>Bcc</code>
         rows on the <a href="#rellm-Message"><code>Message</code></a>. The <a href="#rellm-Message"><code>Message</code></a> has no <code>from_user_id</code>, since inbound email never has a local sender; its
         parsed <code>from</code>/<code>to</code>/<code>cc</code> headers are stored alongside it, and the raw <code>.eml</code> is uploaded to the same MinIO store
@@ -1232,7 +1238,7 @@ the destination&#x26;#39;s resulting post ID/URL and last-synced time.
         existing <a href="#rellm-Message"><code>Message</code></a> row rather than storing/uploading a duplicate.
       </li>
       <li>
-        <strong>Response</strong>: <code>200 OK</code> with a body of <code>{&#x26;#34;action&#x26;#34;: &#x26;#34;accept&#x26;#34;}</code> on success -- Stalwart's MTA Hook protocol parses
+        <strong>Response</strong>: <code>200 OK</code> with a body of <code>{&#x26;#34;action&#x26;#34;: &#x26;#34;accept&#x26;#34;}</code> on success - Stalwart's MTA Hook protocol parses
         the response <em>body</em>, not just the status code, so this has to be the exact shape it expects
         (see &#x3C;<a href="https://stalw.art/docs/mta/filter/mtahooks/">https://stalw.art/docs/mta/filter/mtahooks/</a>>) or Stalwart treats the call as a hook failure regardless of
         status; combined with the <code>MtaHook</code>'s <code>tempFailOnError: true</code>, that surfaces to the sending client as a
@@ -1273,8 +1279,8 @@ the destination&#x26;#39;s resulting post ID/URL and last-synced time.
     <h5 id="get-sitemapxml-sitemap"><a class="anchor" aria-hidden="true" tabindex="-1" href="#get-sitemapxml-sitemap"><span class="octicon octicon-link"></span></a><code>GET /sitemap.xml</code>: Sitemap</h5>
     <p>
       Generated on the fly (not a static file) from the request's <code>Host</code> header, publicly cacheable for 1 hour. Lists a
-      fixed set of top-level, server-wide pages -- <code>/</code>, <code>/posts</code>, <code>/events</code>, <code>/people</code>, <code>/about</code>, <code>/about_rellm</code>,
-      <code>/flutter</code>, <code>/tamagui</code>, <code>/elm</code> -- plus any <code>CustomNavigationTabSet.tabs</code> paths configured on the server (excluding
+      fixed set of top-level, server-wide pages - <code>/</code>, <code>/posts</code>, <code>/events</code>, <code>/people</code>, <code>/about</code>, <code>/about_rellm</code>,
+      <code>/flutter</code>, <code>/tamagui</code>, <code>/elm</code> - plus any <code>CustomNavigationTabSet.tabs</code> paths configured on the server (excluding
       the reserved <code>posts</code>/<code>events</code>/<code>people</code>/<code>about</code> paths, which are always included above), each qualified with the
       request's <code>Host</code>. It also enumerates individual pages: every <a href="#rellm-Post"><code>Post</code></a> from an unauthenticated <a href="#grpc-api-GetPosts"><code>GetPosts</code></a> (the same
       "first page" an anonymous visitor sees) as <code>/post/{id}</code>, and every <a href="#rellm-Event"><code>Event</code></a> instance from an unauthenticated
@@ -1297,22 +1303,24 @@ the destination&#x26;#39;s resulting post ID/URL and last-synced time.
       See the <a href="#rellm-Media">Media</a> section for the <a href="#rellm-Media"><code>Media</code></a> type itself; this is how its bytes actually get in
       (an <code>OPTIONS /media</code> variant also exists, solely to satisfy CORS preflight requests). <em>Authenticated</em> (via
       <code>Authorization</code> header or a <code>rellm_access_token</code> cookie). Requires <code>Content-Type</code> and <code>Filename</code> headers; the
-      body is streamed directly to the object store, capped at 250 MiB -- note that a larger upload is silently
+      body is streamed directly to the object store, capped at 250 MiB - note that a larger upload is silently
       truncated to that cap rather than rejected, since nothing checks for completeness the way <code>POST /email</code> does --
       at a path namespaced by uploader and request host (<code>user/{user_id}@{host}-{username}/{uuid}-{filename}</code>). A
       <a href="#rellm-Media"><code>Media</code></a> row is created immediately at <code>GLOBAL_PUBLIC</code> visibility (video content types also get
-      a default <code>video_preview_time_ms</code>) and its ID returned as plain text -- there's no separate "confirm" step, and
+      a default <code>video_preview_time_ms</code>) and its ID returned as plain text - there's no separate "confirm" step, and
       no image/video conversion happens synchronously on this request (see the background media-conversion job).
     </p>
     <h5 id="get-mediaidsizeoriginalsmallmediumlarge-download-media"><a class="anchor" aria-hidden="true" tabindex="-1" href="#get-mediaidsizeoriginalsmallmediumlarge-download-media"><span class="octicon octicon-link"></span></a><code>GET /media/{id}?size={original|small|medium|large}</code>: Download Media</h5>
-    <p>
-      (An <code>OPTIONS /media/{id}</code> variant also exists, solely to satisfy CORS preflight requests.) Publicly downloadable
-      -- <strong>moderation/visibility/permission checks on read are not yet enforced</strong> (a <code>TODO</code> in <code>media_file</code>'s
-      implementation), so a <a href="#rellm-Media"><code>Media</code></a> ID is currently a bearer capability. <code>size</code> (default <code>medium</code>) selects a converted
-      rendition, falling back to the original upload if that conversion doesn't exist. The first request for a given
-      rendition lazily downloads it from the object store into a local on-disk cache; subsequent requests are served
-      from that cache. Cacheable for 12 hours (<code>must-revalidate</code>).
-    </p>
+    <p>(An <code>OPTIONS /media/{id}</code> variant also exists, solely to satisfy CORS preflight requests.) Publicly downloadable</p>
+    <ul>
+      <li>
+        <strong>moderation/visibility/permission checks on read are not yet enforced</strong> (a <code>TODO</code> in <code>media_file</code>'s
+        implementation), so a <a href="#rellm-Media"><code>Media</code></a> ID is currently a bearer capability. <code>size</code> (default <code>medium</code>) selects a converted
+        rendition, falling back to the original upload if that conversion doesn't exist. The first request for a given
+        rendition lazily downloads it from the object store into a local on-disk cache; subsequent requests are served
+        from that cache. Cacheable for 12 hours (<code>must-revalidate</code>).
+      </li>
+    </ul>
     <h5 id="get-calendarics-server-calendar"><a class="anchor" aria-hidden="true" tabindex="-1" href="#get-calendarics-server-calendar"><span class="octicon octicon-link"></span></a><code>GET /calendar.ics</code>: Server Calendar</h5>
     <p>
       Rellm events support iCalendar/RFC5545; only public events are included. "Subscribe" to a Rellm server at,
@@ -1330,7 +1338,7 @@ the destination&#x26;#39;s resulting post ID/URL and last-synced time.
       The reverse direction of a <code>SyncSource</code>'s own RSS/Atom subscription (see the SyncSources section above): serves
       Rellm's own <a href="#rellm-Post"><code>Post</code></a>s back out as a feed, only public Posts included. "Subscribe" to a Rellm server
       at, for instance, <code>https://jonline.io/rss.xml</code> (or <code>/atom.xml</code>) to get a feed of all public posts on the server,
-      in whichever of the two formats a given feed reader prefers -- both endpoints serve the same underlying Posts.
+      in whichever of the two formats a given feed reader prefers - both endpoints serve the same underlying Posts.
       In the Elm frontend, links to these endpoints are provided next to the Posts page's own search controls, and on
       the home page and user profile pages' embedded posts lists.
     </p>
@@ -1345,15 +1353,15 @@ the destination&#x26;#39;s resulting post ID/URL and last-synced time.
       Tamagui and Elm share one page structure (below) and are always <em>both</em> reachable, explicitly, at <code>/tamagui/*</code>
       and <code>/elm/*</code> respectively; unprefixed requests (<code>/</code>, <code>/posts</code>, <code>/post/{postId}</code>, etc.) render whichever of the
       two the server's <code>ServerConfiguration.server_info.web_user_interface</code> selects (<code>ELM_SPA</code> picks Elm; every other
-      setting, including no preference at all, picks Tamagui). Elm is a genuine single-page app -- every Elm-served
+      setting, including no preference at all, picks Tamagui). Elm is a genuine single-page app - every Elm-served
       path, prefixed or not, resolves to the same <code>index.html</code>, with in-app (client-side) routing taking over from
-      there -- whereas Tamagui's Next.js build is statically exported one HTML file per route, so the server picks
+      there - whereas Tamagui's Next.js build is statically exported one HTML file per route, so the server picks
       between actual distinct files below, each enriched with server-rendered, per-route social-preview
       (<code>&#x26;lt;title&#x26;gt;</code>/<code>og:*</code>) tags before being served.
     </p>
     <p>
       <strong>Flutter does not participate in any of this.</strong> It has no page structure of its own to speak of: no per-route
-      pages, no server-rendered social-preview metadata, and no unprefixed presence at all -- a server configured to
+      pages, no server-rendered social-preview metadata, and no unprefixed presence at all - a server configured to
       prefer it doesn't route "/" through the Tamagui/Elm machinery below and then render Flutter, it instead serves
       Flutter's own <code>index.html</code> directly, bypassing that machinery entirely. Flutter is otherwise reached only at the
       literal <code>/flutter</code> and <code>/flutter/*</code> paths, which serve its compiled static assets; from there, all further
@@ -1371,7 +1379,7 @@ directory</a> is (<code>{name}</code> denotes a
     <p>The Posts listing.</p>
     <h5 id="postpostidhost-post"><a class="anchor" aria-hidden="true" tabindex="-1" href="#postpostidhost-post"><span class="octicon octicon-link"></span></a><code>/post/{postId}[@{host}]</code>: Post</h5>
     <p>
-      An individual <a href="#rellm-Post"><code>Post</code></a> -- including <a href="#rellm-Event"><code>Event</code></a>/<a href="#rellm-EventInstance"><code>EventInstance</code></a> posts and replies, which are <a href="#rellm-Post"><code>Post</code></a>s
+      An individual <a href="#rellm-Post"><code>Post</code></a> - including <a href="#rellm-Event"><code>Event</code></a>/<a href="#rellm-EventInstance"><code>EventInstance</code></a> posts and replies, which are <a href="#rellm-Post"><code>Post</code></a>s
       themselves (see <a href="#post">Post</a> above).
     </p>
     <h4 id="events-events"><a class="anchor" aria-hidden="true" tabindex="-1" href="#events-events"><span class="octicon octicon-link"></span></a><code>/events</code>: Events</h4>
@@ -1381,9 +1389,9 @@ directory</a> is (<code>{name}</code> denotes a
       A <a href="#rellm-Post"><code>Post</code></a> or <a href="#rellm-Event"><code>Event</code></a>/<a href="#rellm-EventInstance"><code>EventInstance</code></a>, reached at its own <code>post.id</code> prefixed
       with any single character a username/custom tab path could never legally start with (see
       <a href="https://github.com/JonLatane/rellm/blob/main/backend/src/rpcs/validations/validate_fields.rs"><code>validate_username</code></a>'s
-      own reserved-lead-character check) -- e.g. <code>jonline.io/:4rAfoSKAuJo</code> or <code>ato.band/~4rAfoSKAuJo</code>.
+      own reserved-lead-character check) - e.g. <code>jonline.io/:4rAfoSKAuJo</code> or <code>ato.band/~4rAfoSKAuJo</code>.
       This is purely a shorter, friendlier alias for <code>/post/{postId}[@{host}]</code> or
-      <code>/event/{postId}[@{host}]</code> (whichever the id turns out to belong to) -- it renders exactly that
+      <code>/event/{postId}[@{host}]</code> (whichever the id turns out to belong to) - it renders exactly that
       same content in place, without redirecting the address bar away from the short URL. <code>#</code> is
       deliberately excluded from the reserved set: URL fragments never reach the server, so they
       can't be used for this.
@@ -1391,7 +1399,7 @@ directory</a> is (<code>{name}</code> denotes a
     <h5 id="eventpostidhost-event"><a class="anchor" aria-hidden="true" tabindex="-1" href="#eventpostidhost-event"><span class="octicon octicon-link"></span></a><code>/event/{postId}[@{host}]</code>: Event</h5>
     <p>An individual <a href="#rellm-Event"><code>Event</code></a>, looked up by its own <code>post.id</code> or any of its <a href="#rellm-EventInstance"><code>EventInstance</code></a>s' <code>post.id</code>s.</p>
     <h5 id="event_ai-ai-event-importer"><a class="anchor" aria-hidden="true" tabindex="-1" href="#event_ai-ai-event-importer"><span class="octicon octicon-link"></span></a><code>/event_ai</code>: AI Event Importer</h5>
-    <p>Tamagui-only, for now -- an AI-assisted bulk <a href="#rellm-Event"><code>Event</code></a> importer. Elm doesn't have this page yet.</p>
+    <p>Tamagui-only, for now - an AI-assisted bulk <a href="#rellm-Event"><code>Event</code></a> importer. Elm doesn't have this page yet.</p>
     <h4 id="people-people"><a class="anchor" aria-hidden="true" tabindex="-1" href="#people-people"><span class="octicon octicon-link"></span></a><code>/people</code>: People</h4>
     <p>The People listing.</p>
     <h5 id="peoplefollow_requests-follow-requests"><a class="anchor" aria-hidden="true" tabindex="-1" href="#peoplefollow_requests-follow-requests"><span class="octicon octicon-link"></span></a><code>/people/follow_requests</code>: Follow Requests</h5>
@@ -1401,12 +1409,12 @@ directory</a> is (<code>{name}</code> denotes a
     <h4 id="custom_tab_or_username-user-pages-by-username-or-a-custom-tab"><a class="anchor" aria-hidden="true" tabindex="-1" href="#custom_tab_or_username-user-pages-by-username-or-a-custom-tab"><span class="octicon octicon-link"></span></a><code>/{custom_tab_or_username}</code>: User pages by username, or a custom tab</h4>
     <p>
       The same <a href="#rellm-User"><code>User</code></a> profile (and its Posts/Friends/Followers/Following sub-pages) as <code>/user/{userId}</code> above, but
-      looked up by the current <code>username</code> instead -- lighter-weight to link to, but less stable than <code>/user/{userId}</code>
+      looked up by the current <code>username</code> instead - lighter-weight to link to, but less stable than <code>/user/{userId}</code>
       since a username can change. This single path segment is also the server's last-resort catch-all, resolved in
       order: first any actual matching build asset or other explicit route above (e.g. <code>/posts</code>, <code>/user/{userId}</code>)
       wins outright; then, if none matched, an admin-configured custom tab path (see
-      <a href="#rellm-CustomNavigationTab"><code>CustomNavigationTab</code></a>.path) -- e.g. a band mounting their Events
-      listing at <code>/gigs</code> -- wins over a same-named user; only then, last, is it looked up as a plain username. A small
+      <a href="#rellm-CustomNavigationTab"><code>CustomNavigationTab</code></a>.path) - e.g. a band mounting their Events
+      listing at <code>/gigs</code> - wins over a same-named user; only then, last, is it looked up as a plain username. A small
       set of reserved names can never be reached this way, only via <code>/user/{userId}</code>.
     </p>
     <h5 id="usernameposts-posts"><a class="anchor" aria-hidden="true" tabindex="-1" href="#usernameposts-posts"><span class="octicon octicon-link"></span></a><code>/{username}/posts</code>: Posts</h5>
@@ -1414,7 +1422,7 @@ directory</a> is (<code>{name}</code> denotes a
     <h5 id="usernamefollowers-followers"><a class="anchor" aria-hidden="true" tabindex="-1" href="#usernamefollowers-followers"><span class="octicon octicon-link"></span></a><code>/{username}/followers</code>: Followers</h5>
     <h5 id="usernamefollowing-following"><a class="anchor" aria-hidden="true" tabindex="-1" href="#usernamefollowing-following"><span class="octicon octicon-link"></span></a><code>/{username}/following</code>: Following</h5>
     <h4 id="gshortname-groups"><a class="anchor" aria-hidden="true" tabindex="-1" href="#gshortname-groups"><span class="octicon octicon-link"></span></a><code>/g/{shortname}</code>: Groups</h4>
-    <p>A <a href="#rellm-Group"><code>Group</code></a>'s pages. Tamagui-only for now -- the Elm frontend doesn't have Group pages yet.</p>
+    <p>A <a href="#rellm-Group"><code>Group</code></a>'s pages. Tamagui-only for now - the Elm frontend doesn't have Group pages yet.</p>
     <h5 id="gshortname-home"><a class="anchor" aria-hidden="true" tabindex="-1" href="#gshortname-home"><span class="octicon octicon-link"></span></a><code>/g/{shortname}</code>: Home</h5>
     <h5 id="gshortnameposts-posts"><a class="anchor" aria-hidden="true" tabindex="-1" href="#gshortnameposts-posts"><span class="octicon octicon-link"></span></a><code>/g/{shortname}/posts</code>: Posts</h5>
     <h5 id="gshortnameppostidhost-post"><a class="anchor" aria-hidden="true" tabindex="-1" href="#gshortnameppostidhost-post"><span class="octicon octicon-link"></span></a><code>/g/{shortname}/p/{postId}[@{host}]</code>: Post</h5>
@@ -1430,8 +1438,8 @@ directory</a> is (<code>{name}</code> denotes a
     <p>This server's own About page, and a general "what is Rellm" page.</p>
     <h4 id="authtopublic_keyrequesting_host-and-authfromencrypted_account_auth_tokens-federated-sign-in"><a class="anchor" aria-hidden="true" tabindex="-1" href="#authtopublic_keyrequesting_host-and-authfromencrypted_account_auth_tokens-federated-sign-in"><span class="octicon octicon-link"></span></a><code>/auth/to/{public_key}@{requesting_host}</code> and <code>/auth/from/{encrypted_account_auth_tokens}</code>: Federated Sign-In</h4>
     <p>
-      <strong>Elm-only</strong> -- unlike everything else in this section, these two paths have no Tamagui equivalent. They're Elm
-      SPA pages (served like any other SPA route -- under the <code>/elm</code> base path when the Elm frontend isn't the one
+      <strong>Elm-only</strong> - unlike everything else in this section, these two paths have no Tamagui equivalent. They're Elm
+      SPA pages (served like any other SPA route - under the <code>/elm</code> base path when the Elm frontend isn't the one
       mounted at <code>/</code>) rather than backend/gRPC handlers, driving the
       <a href="#federated-authentication">Federated Authentication</a> flow entirely in-browser via a pair of full-page redirects
       carrying an encrypted payload.
@@ -1450,7 +1458,7 @@ directory</a> is (<code>{name}</code> denotes a
         unambiguous).
       </li>
       <li>
-        <strong>Query params</strong>: <code>start_path</code> -- the app-relative path the user was on when they clicked "Sign in via ...", so
+        <strong>Query params</strong>: <code>start_path</code> - the app-relative path the user was on when they clicked "Sign in via ...", so
         they can be dropped back there after the round trip. Percent-encoded; passed through unchanged to the eventual
         <a href="#authfromencrypted_account_auth_tokens-receiving-side"><code>/auth/from</code></a> redirect.
       </li>
@@ -1484,7 +1492,7 @@ directory</a> is (<code>{name}</code> denotes a
         built the <a href="#authtopublic_keyrequesting_host-sending-side"><code>/auth/to</code></a> link (same ECDH + HKDF-SHA256 + AES-GCM
         derivation, in reverse), yielding <code>bullcity.social</code>'s hostname and its <code>refresh_token</code>/<code>access_token</code>. Calls
         <a href="#grpc-api-GetCurrentUser"><code>GetCurrentUser</code></a> against that server with the decrypted <code>access_token</code> to hydrate the
-        rest of the account, then adds it straight to the local Accounts panel and navigates to <code>start_path</code> -- no
+        rest of the account, then adds it straight to the local Accounts panel and navigates to <code>start_path</code> - no
         confirmation step (decryption succeeding is itself the authenticity check: the ciphertext is AEAD-encrypted to
         this origin's own one-time private key, so a forged or replayed payload just fails to decrypt rather than
         producing a wrong-but-valid account). If either step fails (bad decrypt, or the <code>GetCurrentUser</code> call itself),
@@ -1591,13 +1599,13 @@ directory</a> is (<code>{name}</code> denotes a
           <td>MarkMessagesRead</td>
           <td><a href="#rellm-MarkMessagesReadRequest">MarkMessagesReadRequest</a></td>
           <td><a href="#rellm-MarkMessagesReadResponse">MarkMessagesReadResponse</a></td>
-          <td>Marks one or more Messages as read (or unread) by the current user, e.g. every message in a thread once it's been opened. <em>Authenticated.</em> Only needs the recipient/sender access <a href="#grpc-api-GetMessages"><code>GetMessages</code></a> already requires for each Message -- no separate permission. Atomic: if the caller lacks access to <em>any</em> of <code>message_ids</code>, none of them are marked (matching <code>MarkMessagesReadRequest.message_ids</code>' own doc), so a client never has to reconcile a partially-applied batch.</td>
+          <td>Marks one or more Messages as read (or unread) by the current user, e.g. every message in a thread once it's been opened. <em>Authenticated.</em> Only needs the recipient/sender access <a href="#grpc-api-GetMessages"><code>GetMessages</code></a> already requires for each Message - no separate permission. Atomic: if the caller lacks access to <em>any</em> of <code>message_ids</code>, none of them are marked (matching <code>MarkMessagesReadRequest.message_ids</code>' own doc), so a client never has to reconcile a partially-applied batch.</td>
         </tr>
         <tr>
           <td>RegisterPushSubscription</td>
           <td><a href="#rellm-RegisterPushSubscriptionRequest">RegisterPushSubscriptionRequest</a></td>
           <td><a href="#rellm-PushSubscription">PushSubscription</a></td>
-          <td>Registers (or re-registers) a browser's Web Push subscription for the current user, so new Messages sent/delivered to them (in-app or via email) push a notification to it even while the browser tab is closed. <em>Authenticated.</em> Re-registering an already-registered <code>endpoint</code> (e.g. because <code>PushManager.subscribe()</code> refreshed its keys) updates it in place rather than erroring. No-ops (server-side; not surfaced as an error to the caller) if the server has no <a href="#rellm-WebPushConfig"><code>WebPushConfig</code></a> configured -- there's nothing to push notifications <em>with</em>.</td>
+          <td>Registers (or re-registers) a browser's Web Push subscription for the current user, so new Messages sent/delivered to them (in-app or via email) push a notification to it even while the browser tab is closed. <em>Authenticated.</em> Re-registering an already-registered <code>endpoint</code> (e.g. because <code>PushManager.subscribe()</code> refreshed its keys) updates it in place rather than erroring. No-ops (server-side; not surfaced as an error to the caller) if the server has no <a href="#rellm-WebPushConfig"><code>WebPushConfig</code></a> configured - there's nothing to push notifications <em>with</em>.</td>
         </tr>
         <tr>
           <td>UnregisterPushSubscription</td>
@@ -1609,7 +1617,7 @@ directory</a> is (<code>{name}</code> denotes a
           <td>GetPushSubscriptionStatus</td>
           <td><a href="#rellm-GetPushSubscriptionStatusRequest">GetPushSubscriptionStatusRequest</a></td>
           <td><a href="#rellm-GetPushSubscriptionStatusResponse">GetPushSubscriptionStatusResponse</a></td>
-          <td>Checks whether the calling user specifically (not just "some account on this browser") has a <a href="#rellm-PushSubscription"><code>PushSubscription</code></a> registered for <code>endpoint</code>. <em>Authenticated.</em> Exists because a browser only ever exposes its own subscription's <code>endpoint</code>/keys, never <em>who</em> on the server side is registered against it -- multiple local accounts on the same server can share one browser subscription (see <a href="#grpc-api-RegisterPushSubscription"><code>RegisterPushSubscription</code></a>'s own doc comment), so knowing the endpoint alone isn't enough to know which of them are actually notified by it.</td>
+          <td>Checks whether the calling user specifically (not just "some account on this browser") has a <a href="#rellm-PushSubscription"><code>PushSubscription</code></a> registered for <code>endpoint</code>. <em>Authenticated.</em> Exists because a browser only ever exposes its own subscription's <code>endpoint</code>/keys, never <em>who</em> on the server side is registered against it - multiple local accounts on the same server can share one browser subscription (see <a href="#grpc-api-RegisterPushSubscription"><code>RegisterPushSubscription</code></a>'s own doc comment), so knowing the endpoint alone isn't enough to know which of them are actually notified by it.</td>
         </tr>
         <tr>
           <td>CreateFollow</td>
@@ -1813,7 +1821,7 @@ directory</a> is (<code>{name}</code> denotes a
           <td>UpdateSyncSource</td>
           <td><a href="#rellm-SyncSource">SyncSource</a></td>
           <td><a href="#rellm-SyncSource">SyncSource</a></td>
-          <td>Updates a SyncSource. <em>Authenticated</em> (owner, or Admin for any user's), requires <code>SYNC_EVENTS_FROM_ICS</code>/<code>SYNC_POSTS_FROM_RSS</code>/<code>SYNC_POSTS_FROM_ATOM</code> (whichever matches the effective <code>configuration</code> -- the request's own if set, else the existing source's -- or Admin).</td>
+          <td>Updates a SyncSource. <em>Authenticated</em> (owner, or Admin for any user's), requires <code>SYNC_EVENTS_FROM_ICS</code>/<code>SYNC_POSTS_FROM_RSS</code>/<code>SYNC_POSTS_FROM_ATOM</code> (whichever matches the effective <code>configuration</code> - the request's own if set, else the existing source's - or Admin).</td>
         </tr>
         <tr>
           <td>DeleteSyncSource</td>
@@ -1897,7 +1905,7 @@ directory</a> is (<code>{name}</code> denotes a
           <td>GenerateMedia</td>
           <td><a href="#rellm-GenerateMediaRequest">GenerateMediaRequest</a></td>
           <td><a href="#rellm-Media">Media</a></td>
-          <td>Generates (or edits, given reference <code>media_ids</code>) an image via one of the current user's AvailableAIModels, storing it as a new Media and, if <code>target</code> is set, attaching it to that Post/Event. <em>Authenticated</em> -- caller must own or have been granted access to the chosen AIModelProvider, and (if <code>target</code> is set) have edit access to that Post/Event. A grantee (never the provider's own owner) spends real AIModelProviderGrant.tokens_remaining on every call -- the provider's own reported token usage once generation succeeds, or (rejected before any request is even sent to the provider) a rough pre-flight estimate of the request's input cost alone, whichever catches an insufficient balance first.</td>
+          <td>Generates (or edits, given reference <code>media_ids</code>) an image via one of the current user's AvailableAIModels, storing it as a new Media and, if <code>target</code> is set, attaching it to that Post/Event. <em>Authenticated</em> - caller must own or have been granted access to the chosen AIModelProvider, and (if <code>target</code> is set) have edit access to that Post/Event. A grantee (never the provider's own owner) spends real AIModelProviderGrant.tokens_remaining on every call - the provider's own reported token usage once generation succeeds, or (rejected before any request is even sent to the provider) a rough pre-flight estimate of the request's input cost alone, whichever catches an insufficient balance first.</td>
         </tr>
         <tr>
           <td>GetEventAttendances</td>
@@ -1933,19 +1941,19 @@ directory</a> is (<code>{name}</code> denotes a
           <td>ConfigureServer</td>
           <td><a href="#rellm-ServerConfiguration">ServerConfiguration</a></td>
           <td><a href="#rellm-ServerConfiguration">ServerConfiguration</a></td>
-          <td>Configure the server (i.e. the response to GetServerConfiguration). <em>Authenticated.</em> Requires <code>ADMIN</code> permissions. Editing <code>cluster_resources</code> additionally requires <code>EDIT_CLUSTER_SETTINGS</code> -- see that field's own doc.</td>
+          <td>Configure the server (i.e. the response to GetServerConfiguration). <em>Authenticated.</em> Requires <code>ADMIN</code> permissions. Editing <code>cluster_resources</code> additionally requires <code>EDIT_CLUSTER_SETTINGS</code> - see that field's own doc.</td>
         </tr>
         <tr>
           <td>LockClusterResources</td>
           <td><a href="#rellm-LockClusterResourcesRequest">LockClusterResourcesRequest</a></td>
           <td><a href="#rellm-LockClusterResourcesResponse">LockClusterResourcesResponse</a></td>
-          <td>Attempts to acquire one or more <code>ClusterResource</code> locks on behalf of <code>namespace_id</code>. <em>Not part of the authenticated-user auth system</em> -- this is server-to-server, cluster-internal coordination, authorized <em>entirely</em> by the <code>cluster-shared-secret</code> gRPC metadata header matching this server's own stored <a href="#rellm-ClusterResources"><code>ClusterResources.cluster_shared_secret</code></a> -- knowing the secret is what makes a caller entitled to treat this server as the conductor, regardless of what this server's own <code>ClusterResources.namespace_id</code>/<code>conductor_host</code> happen to say. Fails with <code>FAILED_PRECONDITION</code> if this server has no <code>cluster_resources</code> configured at all (nothing to check the secret against), and with <code>UNAUTHENTICATED</code> if the header is missing or doesn't match. See <a href="#rellm-LockClusterResourcesResponse"><code>LockClusterResourcesResponse</code></a> for the polling contract this expects of callers.</td>
+          <td>Attempts to acquire one or more <code>ClusterResource</code> locks on behalf of <code>namespace_id</code>. <em>Not part of the authenticated-user auth system</em> - this is server-to-server, cluster-internal coordination, authorized <em>entirely</em> by the <code>cluster-shared-secret</code> gRPC metadata header matching this server's own stored <a href="#rellm-ClusterResources"><code>ClusterResources.cluster_shared_secret</code></a> - knowing the secret is what makes a caller entitled to treat this server as the conductor, regardless of what this server's own <code>ClusterResources.namespace_id</code>/<code>conductor_host</code> happen to say. Fails with <code>FAILED_PRECONDITION</code> if this server has no <code>cluster_resources</code> configured at all (nothing to check the secret against), and with <code>UNAUTHENTICATED</code> if the header is missing or doesn't match. See <a href="#rellm-LockClusterResourcesResponse"><code>LockClusterResourcesResponse</code></a> for the polling contract this expects of callers.</td>
         </tr>
         <tr>
           <td>FreeClusterResources</td>
           <td><a href="#rellm-FreeClusterResourcesRequest">FreeClusterResourcesRequest</a></td>
           <td><a href="#google-protobuf-Empty">.google.protobuf.Empty</a></td>
-          <td>Releases resources previously acquired via <a href="#grpc-api-LockClusterResources"><code>LockClusterResources</code></a>. <em>Publicly accessible <strong>or</strong> Authenticated</em> -- unlike <code>LockClusterResources</code>, this accepts <em>either</em> the <code>cluster-shared-secret</code> header (same as <code>LockClusterResources</code>) <em>or</em> normal per-user auth, in which case the caller needs <code>EDIT_CLUSTER_SETTINGS</code> (see that permission's own doc) and the header is ignored entirely -- this is what lets an admin free a stuck lock straight from the Cluster tab UI rather than needing shell access to the cluster's shared secret. See <a href="#rellm-FreeClusterResourcesRequest"><code>FreeClusterResourcesRequest</code></a>'s own doc for its no-op-if-not-held behavior.</td>
+          <td>Releases resources previously acquired via <a href="#grpc-api-LockClusterResources"><code>LockClusterResources</code></a>. <em>Publicly accessible <strong>or</strong> Authenticated</em> - unlike <code>LockClusterResources</code>, this accepts <em>either</em> the <code>cluster-shared-secret</code> header (same as <code>LockClusterResources</code>) <em>or</em> normal per-user auth, in which case the caller needs <code>EDIT_CLUSTER_SETTINGS</code> (see that permission's own doc) and the header is ignored entirely - this is what lets an admin free a stuck lock straight from the Cluster tab UI rather than needing shell access to the cluster's shared secret. See <a href="#rellm-FreeClusterResourcesRequest"><code>FreeClusterResourcesRequest</code></a>'s own doc for its no-op-if-not-held behavior.</td>
         </tr>
         <tr>
           <td>ResetData</td>
@@ -2779,7 +2787,7 @@ directory</a> is (<code>{name}</code> denotes a
         <tr>
           <td>EDIT_CLUSTER_SETTINGS</td>
           <td>10002</td>
-          <td>Allow the user to edit <a href="#rellm-ClusterResources"><code>ServerConfiguration.cluster_resources</code></a> via <a href="#grpc-api-ConfigureServer"><code>ConfigureServer</code></a>. <code>cluster_resources</code> is otherwise visible (read-only) to any <code>ADMIN</code> -- this permission gates <em>editing</em> it specifically, on top of <code>ADMIN</code>, since misconfiguring it (wrong <code>conductor_host</code>/<code>cluster_shared_secret</code>) affects cluster-mates this admin may not operate. Kept separate from <code>ADMIN</code> the same way <code>VIEW_PRIVATE_CONTACT_METHODS</code> is, and deliberately <em>not</em> grantable via <a href="#grpc-api-UpdateUser"><code>UpdateUser</code></a> like other permissions -- only settable directly in the database (e.g. via the <code>set_permission</code> binary), so granting it is always a deliberate operator action, never a side effect of a normal admin-managing-admins flow.</td>
+          <td>Allow the user to edit <a href="#rellm-ClusterResources"><code>ServerConfiguration.cluster_resources</code></a> via <a href="#grpc-api-ConfigureServer"><code>ConfigureServer</code></a>. <code>cluster_resources</code> is otherwise visible (read-only) to any <code>ADMIN</code> - this permission gates <em>editing</em> it specifically, on top of <code>ADMIN</code>, since misconfiguring it (wrong <code>conductor_host</code>/<code>cluster_shared_secret</code>) affects cluster-mates this admin may not operate. Kept separate from <code>ADMIN</code> the same way <code>VIEW_PRIVATE_CONTACT_METHODS</code> is, and deliberately <em>not</em> grantable via <a href="#grpc-api-UpdateUser"><code>UpdateUser</code></a> like other permissions - only settable directly in the database (e.g. via the <code>set_permission</code> binary), so granting it is always a deliberate operator action, never a side effect of a normal admin-managing-admins flow.</td>
         </tr>
       </tbody>
     </table>
@@ -3190,19 +3198,19 @@ directory</a> is (<code>{name}</code> denotes a
           <td>sync_destinations</td>
           <td><a href="#rellm-SyncDestination">SyncDestination</a></td>
           <td>repeated</td>
-          <td>The target user's own linked SyncDestinations (e.g. Facebook Pages). Populated by <a href="#grpc-api-GetUsers"><code>GetUsers</code></a>' single-user lookups (by username or by user_id) when the viewer is the target user themselves (and holds <code>SYNC_EVENTS_TO_FACEBOOK</code> or <code>SYNC_POSTS_TO_FACEBOOK</code>) or an Admin, and by <a href="#grpc-api-Login"><code>Login</code></a>/<a href="#grpc-api-CreateAccount"><code>CreateAccount</code></a>/<a href="#grpc-api-GetCurrentUser"><code>GetCurrentUser</code></a> (always a self-view) -- always empty otherwise, including via every other <a href="#grpc-api-GetUsers"><code>GetUsers</code></a> listing type.</td>
+          <td>The target user's own linked SyncDestinations (e.g. Facebook Pages). Populated by <a href="#grpc-api-GetUsers"><code>GetUsers</code></a>' single-user lookups (by username or by user_id) when the viewer is the target user themselves (and holds <code>SYNC_EVENTS_TO_FACEBOOK</code> or <code>SYNC_POSTS_TO_FACEBOOK</code>) or an Admin, and by <a href="#grpc-api-Login"><code>Login</code></a>/<a href="#grpc-api-CreateAccount"><code>CreateAccount</code></a>/<a href="#grpc-api-GetCurrentUser"><code>GetCurrentUser</code></a> (always a self-view) - always empty otherwise, including via every other <a href="#grpc-api-GetUsers"><code>GetUsers</code></a> listing type.</td>
         </tr>
         <tr>
           <td>sync_sources</td>
           <td><a href="#rellm-SyncSource">SyncSource</a></td>
           <td>repeated</td>
-          <td>The target user's own <a href="#rellm-SyncSource"><code>SyncSource</code></a>s. Unlike <code>sync_destinations</code>, also populated for the target user themselves <em>or an Admin</em> across every <a href="#grpc-api-GetUsers"><code>GetUsers</code></a> listing type (not just single-user lookups) -- e.g. an Admin's <code>EVERYONE</code> listing gets every returned user's sources filled in, batch-loaded in one query rather than per-user. Also populated by <a href="#grpc-api-Login"><code>Login</code></a>/<a href="#grpc-api-CreateAccount"><code>CreateAccount</code></a>/<a href="#grpc-api-GetCurrentUser"><code>GetCurrentUser</code></a> (always a self-view). Always empty for any other viewer.</td>
+          <td>The target user's own <a href="#rellm-SyncSource"><code>SyncSource</code></a>s. Unlike <code>sync_destinations</code>, also populated for the target user themselves <em>or an Admin</em> across every <a href="#grpc-api-GetUsers"><code>GetUsers</code></a> listing type (not just single-user lookups) - e.g. an Admin's <code>EVERYONE</code> listing gets every returned user's sources filled in, batch-loaded in one query rather than per-user. Also populated by <a href="#grpc-api-Login"><code>Login</code></a>/<a href="#grpc-api-CreateAccount"><code>CreateAccount</code></a>/<a href="#grpc-api-GetCurrentUser"><code>GetCurrentUser</code></a> (always a self-view). Always empty for any other viewer.</td>
         </tr>
         <tr>
           <td>available_ai_models</td>
           <td><a href="#rellm-AvailableAIModel">AvailableAIModel</a></td>
           <td>repeated</td>
-          <td>Every <a href="#rellm-AIModelProvider"><code>AIModelProvider</code></a> model the target user may currently call -- their own providers' models, plus any models granted to them on other users' providers (see <a href="#rellm-AvailableAIModel"><code>AvailableAIModel</code></a>). Gated and populated the same way as <code>sync_sources</code> (target user themselves, or an Admin, across any <a href="#grpc-api-GetUsers"><code>GetUsers</code></a> listing type, plus <a href="#grpc-api-Login"><code>Login</code></a>/<a href="#grpc-api-CreateAccount"><code>CreateAccount</code></a>/<a href="#grpc-api-GetCurrentUser"><code>GetCurrentUser</code></a>).</td>
+          <td>Every <a href="#rellm-AIModelProvider"><code>AIModelProvider</code></a> model the target user may currently call - their own providers' models, plus any models granted to them on other users' providers (see <a href="#rellm-AvailableAIModel"><code>AvailableAIModel</code></a>). Gated and populated the same way as <code>sync_sources</code> (target user themselves, or an Admin, across any <a href="#grpc-api-GetUsers"><code>GetUsers</code></a> listing type, plus <a href="#grpc-api-Login"><code>Login</code></a>/<a href="#grpc-api-CreateAccount"><code>CreateAccount</code></a>/<a href="#grpc-api-GetCurrentUser"><code>GetCurrentUser</code></a>).</td>
         </tr>
         <tr>
           <td>created_at</td>
@@ -3687,7 +3695,7 @@ directory</a> is (<code>{name}</code> denotes a
     <h3 id="markmessagesreadrequest"><a class="anchor" aria-hidden="true" tabindex="-1" href="#markmessagesreadrequest"><span class="octicon octicon-link"></span></a>MarkMessagesReadRequest</h3>
     <p>
       Marks (or unmarks) one or more Messages as read by the calling user, e.g. every message in a
-      thread once it's been opened. <em>Authenticated</em> -- read status is inherently personal, so there's
+      thread once it's been opened. <em>Authenticated</em> - read status is inherently personal, so there's
       no anonymous variant the way <a href="#grpc-api-SendMessage"><code>SendMessage</code></a> has one.
     </p>
     <table>
@@ -3704,20 +3712,20 @@ directory</a> is (<code>{name}</code> denotes a
           <td>unread</td>
           <td><a href="#bool">bool</a></td>
           <td></td>
-          <td>If <code>false</code> (the default), the request is to mark the messages as read. If <code>true</code>, marks them (back) as unread instead -- e.g. an explicit "mark unread" action on an already-read message.</td>
+          <td>If <code>false</code> (the default), the request is to mark the messages as read. If <code>true</code>, marks them (back) as unread instead - e.g. an explicit "mark unread" action on an already-read message.</td>
         </tr>
         <tr>
           <td>message_ids</td>
           <td><a href="#string">string</a></td>
           <td>repeated</td>
-          <td>The Messages to mark read/unread. The caller must have the same access to each of them <a href="#grpc-api-GetMessages"><code>GetMessages</code></a> would require (sender, a <code>messaging_group</code> member, a Bcc recipient, or an admin) -- see <a href="#grpc-api-MarkMessagesRead"><code>MarkMessagesRead</code></a>'s own RPC doc comment. A message id the caller doesn't have access to fails the whole request (see that RPC's own doc on atomicity) rather than silently skipping it.</td>
+          <td>The Messages to mark read/unread. The caller must have the same access to each of them <a href="#grpc-api-GetMessages"><code>GetMessages</code></a> would require (sender, a <code>messaging_group</code> member, a Bcc recipient, or an admin) - see <a href="#grpc-api-MarkMessagesRead"><code>MarkMessagesRead</code></a>'s own RPC doc comment. A message id the caller doesn't have access to fails the whole request (see that RPC's own doc on atomicity) rather than silently skipping it.</td>
         </tr>
       </tbody>
     </table>
     <p><a name="rellm-MarkMessagesReadResponse"></a></p>
     <h3 id="markmessagesreadresponse"><a class="anchor" aria-hidden="true" tabindex="-1" href="#markmessagesreadresponse"><span class="octicon octicon-link"></span></a>MarkMessagesReadResponse</h3>
     <p>
-      Response to a <a href="#rellm-MarkMessagesReadRequest"><code>MarkMessagesReadRequest</code></a> -- one <a href="#rellm-MessageRead"><code>MessageRead</code></a> per <code>message_ids</code> entry, in the
+      Response to a <a href="#rellm-MarkMessagesReadRequest"><code>MarkMessagesReadRequest</code></a> - one <a href="#rellm-MessageRead"><code>MessageRead</code></a> per <code>message_ids</code> entry, in the
       same order, each reflecting that message's own read/unread result (see <code>MarkMessagesReadRequest.unread</code>).
     </p>
     <table>
@@ -3818,7 +3826,7 @@ directory</a> is (<code>{name}</code> denotes a
           <td>current_user_read</td>
           <td><a href="#rellm-MessageRead">MessageRead</a></td>
           <td>optional</td>
-          <td>Whether/when <em>this response's viewer</em> has read the message -- unset means unread. Always reflects the currently-authenticated caller's own read status (via <a href="#grpc-api-MarkMessagesRead"><code>MarkMessagesRead</code></a>), even when browsing <code>ALL_SYSTEM_MESSAGES(_TEXT_SEARCH)</code> as an admin: it's a personal "have I seen this" marker, not tied to whichever user this response happens to be showing <code>messaging_group</code> for.</td>
+          <td>Whether/when <em>this response's viewer</em> has read the message - unset means unread. Always reflects the currently-authenticated caller's own read status (via <a href="#grpc-api-MarkMessagesRead"><code>MarkMessagesRead</code></a>), even when browsing <code>ALL_SYSTEM_MESSAGES(_TEXT_SEARCH)</code> as an admin: it's a personal "have I seen this" marker, not tied to whichever user this response happens to be showing <code>messaging_group</code> for.</td>
         </tr>
         <tr>
           <td>created_at</td>
@@ -3831,9 +3839,9 @@ directory</a> is (<code>{name}</code> denotes a
     <p><a name="rellm-MessageRead"></a></p>
     <h3 id="messageread"><a class="anchor" aria-hidden="true" tabindex="-1" href="#messageread"><span class="octicon octicon-link"></span></a>MessageRead</h3>
     <p>
-      Records that a user has read a particular Message -- one row (conceptually; see the composite
+      Records that a user has read a particular Message - one row (conceptually; see the composite
       <code>message_id</code>/<code>user_id</code> key on the backing table) per (Message, user) that's ever been marked
-      read. Only ever surfaced back to the user it belongs to, as <code>Message.current_user_read</code> -- there's
+      read. Only ever surfaced back to the user it belongs to, as <code>Message.current_user_read</code> - there's
       no RPC to see <em>other</em> users' read status on a Message.
     </p>
     <table>
@@ -3862,7 +3870,7 @@ directory</a> is (<code>{name}</code> denotes a
           <td>read_at</td>
           <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
           <td></td>
-          <td>When the message was marked read. Always set on a <a href="#rellm-MessageRead"><code>MessageRead</code></a> returned from <a href="#grpc-api-MarkMessagesRead"><code>MarkMessagesRead</code></a> -- including a <code>{ unread: true }</code> call, where it's simply the time of that unmark request, not a meaningful "last read" timestamp (there's no longer a row for it to come from at that point).</td>
+          <td>When the message was marked read. Always set on a <a href="#rellm-MessageRead"><code>MessageRead</code></a> returned from <a href="#grpc-api-MarkMessagesRead"><code>MarkMessagesRead</code></a> - including a <code>{ unread: true }</code> call, where it's simply the time of that unmark request, not a meaningful "last read" timestamp (there's no longer a row for it to come from at that point).</td>
         </tr>
       </tbody>
     </table>
@@ -3908,7 +3916,7 @@ directory</a> is (<code>{name}</code> denotes a
     <p>
       A browser's Web Push subscription (see <a href="https://developer.mozilla.org/en-US/docs/Web/API/Push_API">https://developer.mozilla.org/en-US/docs/Web/API/Push_API</a>),
       registered so the server can push new-Message notifications to it even while the browser tab is
-      closed. Only ever surfaced back to the user who registered it -- there's no RPC to list other
+      closed. Only ever surfaced back to the user who registered it - there's no RPC to list other
       users' subscriptions.
     </p>
     <table>
@@ -4397,7 +4405,7 @@ directory</a> is (<code>{name}</code> denotes a
     <p><a name="rellm-DeletePostSyncDestinationRequest"></a></p>
     <h3 id="deletepostsyncdestinationrequest"><a class="anchor" aria-hidden="true" tabindex="-1" href="#deletepostsyncdestinationrequest"><span class="octicon octicon-link"></span></a>DeletePostSyncDestinationRequest</h3>
     <p>
-      Removes a single Post's sync (cross-post) to one SyncDestination -- the reverse of <a href="#grpc-api-SyncPost"><code>SyncPost</code></a>.
+      Removes a single Post's sync (cross-post) to one SyncDestination - the reverse of <a href="#grpc-api-SyncPost"><code>SyncPost</code></a>.
       Does not delete the post already made on the destination (e.g. the Facebook Page post), only the local sync record.
     </p>
     <table>
@@ -5068,7 +5076,7 @@ directory</a> is (<code>{name}</code> denotes a
     <p><a name="rellm-DeleteEventInstanceSyncDestinationRequest"></a></p>
     <h3 id="deleteeventinstancesyncdestinationrequest"><a class="anchor" aria-hidden="true" tabindex="-1" href="#deleteeventinstancesyncdestinationrequest"><span class="octicon octicon-link"></span></a>DeleteEventInstanceSyncDestinationRequest</h3>
     <p>
-      Removes a single EventInstance's sync (cross-post) to one SyncDestination -- the reverse of <a href="#grpc-api-SyncEventInstance"><code>SyncEventInstance</code></a>.
+      Removes a single EventInstance's sync (cross-post) to one SyncDestination - the reverse of <a href="#grpc-api-SyncEventInstance"><code>SyncEventInstance</code></a>.
       Does not delete the post already made on the destination (e.g. the Facebook Page post), only the local sync record.
     </p>
     <table>
@@ -5116,7 +5124,7 @@ directory</a> is (<code>{name}</code> denotes a
           <td>post</td>
           <td><a href="#rellm-Post">Post</a></td>
           <td></td>
-          <td>The Post containing the underlying data for the event (title, content, moderation, visibility, etc.). Its <a href="#rellm-PostContext"><code>PostContext</code></a> should be <code>EVENT</code>. An <code>Event</code>'s ID <em>is</em> its <code>post.id</code> -- there is no separate surrogate ID.</td>
+          <td>The Post containing the underlying data for the event (title, content, moderation, visibility, etc.). Its <a href="#rellm-PostContext"><code>PostContext</code></a> should be <code>EVENT</code>. An <code>Event</code>'s ID <em>is</em> its <code>post.id</code> - there is no separate surrogate ID.</td>
         </tr>
         <tr>
           <td>info</td>
@@ -5326,7 +5334,7 @@ directory</a> is (<code>{name}</code> denotes a
           <td>post</td>
           <td><a href="#rellm-Post">Post</a></td>
           <td></td>
-          <td>Optional <a href="#rellm-Post"><code>Post</code></a> containing alternate title/link/description for this particular instance. Its <a href="#rellm-PostContext"><code>PostContext</code></a> should be <code>EVENT_INSTANCE</code>. An <code>EventInstance</code>'s ID <em>is</em> its <code>post.id</code> -- there is no separate surrogate ID.</td>
+          <td>Optional <a href="#rellm-Post"><code>Post</code></a> containing alternate title/link/description for this particular instance. Its <a href="#rellm-PostContext"><code>PostContext</code></a> should be <code>EVENT_INSTANCE</code>. An <code>EventInstance</code>'s ID <em>is</em> its <code>post.id</code> - there is no separate surrogate ID.</td>
         </tr>
         <tr>
           <td>info</td>
@@ -5588,7 +5596,7 @@ directory</a> is (<code>{name}</code> denotes a
           <td>event_instance_post_ids</td>
           <td><a href="#string">string</a></td>
           <td>repeated</td>
-          <td>Loads multiple events by their event instances' Post IDs -- returns one Event per matching EventInstance (see GetEventsResponse's own doc), not the requested EventInstance's whole parent Event's full instance list.</td>
+          <td>Loads multiple events by their event instances' Post IDs - returns one Event per matching EventInstance (see GetEventsResponse's own doc), not the requested EventInstance's whole parent Event's full instance list.</td>
         </tr>
         <tr>
           <td>anonymous_attendee_auth_token</td>
@@ -5856,10 +5864,10 @@ directory</a> is (<code>{name}</code> denotes a
     <p><a name="rellm-ClusterConductorState"></a></p>
     <h3 id="clusterconductorstate"><a class="anchor" aria-hidden="true" tabindex="-1" href="#clusterconductorstate"><span class="octicon octicon-link"></span></a>ClusterConductorState</h3>
     <p>
-      The conductor's live view of currently-held locks -- one <code>ClusterResourceLock</code> per distinct
-      holder (a given namespace can appear at most once here -- <code>LockClusterResources</code> never grants a
+      The conductor's live view of currently-held locks - one <code>ClusterResourceLock</code> per distinct
+      holder (a given namespace can appear at most once here - <code>LockClusterResources</code> never grants a
       <code>ClusterResource</code> it's already granted that same <code>namespace_id</code>, and folds any additional
-      resources into that namespace's existing entry rather than creating a second one -- see that
+      resources into that namespace's existing entry rather than creating a second one - see that
       RPC's own doc). With a <code>limits</code> entry above <code>1</code> (see <code>ClusterResourceLimit</code>'s own doc), more than
       one distinct namespace can hold the <em>same</em> <code>ClusterResource</code> at once, so there can be more
       entries here than there are <code>ClusterResource</code> values.
@@ -5885,14 +5893,14 @@ directory</a> is (<code>{name}</code> denotes a
           <td>limits</td>
           <td><a href="#rellm-ClusterResourceLimit">ClusterResourceLimit</a></td>
           <td>repeated</td>
-          <td>How many distinct namespaces may concurrently hold each <code>ClusterResource</code>'s lock -- e.g. only one headless browser at a time, but a handful of <code>ffmpeg</code>/ImageMagick conversions in parallel across the cluster, since those are far lighter-weight. Any <code>ClusterResource</code> not present here -- including on a cluster that's never had <code>ConfigureServer</code> touch <code>limits</code> at all -- defaults to <code>1</code> (see <code>ClusterTab.elm</code>'s matching client-side default, shown/edited there as "Browser Instance Limit"/"FFMPEG Process Limit"/"ImageMagick Process Limit"). These are changed by <code>ConfigureServer</code> (gated on <code>EDIT_CLUSTER_SETTINGS</code>, like the rest of <code>cluster_resources</code>) and create a new ServerConfiguration version, unlike <code>locks</code> above.</td>
+          <td>How many distinct namespaces may concurrently hold each <code>ClusterResource</code>'s lock - e.g. only one headless browser at a time, but a handful of <code>ffmpeg</code>/ImageMagick conversions in parallel across the cluster, since those are far lighter-weight. Any <code>ClusterResource</code> not present here - including on a cluster that's never had <code>ConfigureServer</code> touch <code>limits</code> at all - defaults to <code>1</code> (see <code>ClusterTab.elm</code>'s matching client-side default, shown/edited there as "Browser Instance Limit"/"FFMPEG Process Limit"/"ImageMagick Process Limit"). These are changed by <code>ConfigureServer</code> (gated on <code>EDIT_CLUSTER_SETTINGS</code>, like the rest of <code>cluster_resources</code>) and create a new ServerConfiguration version, unlike <code>locks</code> above.</td>
         </tr>
       </tbody>
     </table>
     <p><a name="rellm-ClusterResourceLimit"></a></p>
     <h3 id="clusterresourcelimit"><a class="anchor" aria-hidden="true" tabindex="-1" href="#clusterresourcelimit"><span class="octicon octicon-link"></span></a>ClusterResourceLimit</h3>
     <p>
-      One <code>ClusterResource</code>'s configured concurrency limit -- a single <code>resource</code>/<code>limit</code> pairing per
+      One <code>ClusterResource</code>'s configured concurrency limit - a single <code>resource</code>/<code>limit</code> pairing per
       message (both fields are singleton lists in practice; see <code>ClusterConductorState.limits</code>'s own
       doc for why a <code>ClusterResource</code> missing from every <code>ClusterResourceLimit</code> here defaults to <code>1</code>
       rather than <code>0</code>).
@@ -5925,9 +5933,9 @@ directory</a> is (<code>{name}</code> denotes a
     <h3 id="clusterresourcelock"><a class="anchor" aria-hidden="true" tabindex="-1" href="#clusterresourcelock"><span class="octicon octicon-link"></span></a>ClusterResourceLock</h3>
     <p>
       One namespace's currently-held lock on one or more <code>ClusterResource</code>s, and when it acquired
-      them -- shown in <code>ClusterTab</code>'s Elm UI so an admin can tell a genuinely stuck lock (acquired
+      them - shown in <code>ClusterTab</code>'s Elm UI so an admin can tell a genuinely stuck lock (acquired
       long ago, its holder's job surely long dead) from one just in normal, brief use, and reach for
-      <code>free_all_cluster_resources</code> (a <code>bin/</code> admin tool -- see its own doc) accordingly.
+      <code>free_all_cluster_resources</code> (a <code>bin/</code> admin tool - see its own doc) accordingly.
     </p>
     <table>
       <thead>
@@ -5972,7 +5980,7 @@ directory</a> is (<code>{name}</code> denotes a
       <code>conductor_host</code>) and brokers locks via
       <a href="#grpc-api-LockClusterResources"><code>LockClusterResources</code></a>/
       <a href="#grpc-api-FreeClusterResources"><code>FreeClusterResources</code></a>; every instance in the cluster --
-      including the conductor itself -- sets its own <code>ClusterResources</code> pointing at whichever host
+      including the conductor itself - sets its own <code>ClusterResources</code> pointing at whichever host
       that is.
     </p>
     <p>See <code>ServerConfiguration.cluster_resources</code>'s own doc for who can see/edit this.</p>
@@ -5990,20 +5998,20 @@ directory</a> is (<code>{name}</code> denotes a
           <td>namespace_id</td>
           <td><a href="#string">string</a></td>
           <td></td>
-          <td>Identifies this instance to the conductor -- e.g. its Kubernetes namespace. Passed as <code>LockClusterResourcesRequest.namespace_id</code>/<code>FreeClusterResourcesRequest.namespace_id</code> so the conductor knows who's asking, and echoed back as <code>ClusterResourceLock.lock_holder_namespace_id</code> while this instance holds a lock. By convention (not enforced -- see <code>cluster_shared_secret</code>'s own doc), the conductor sets its own <code>namespace_id</code> equal to its own <code>conductor_host</code>; clients (e.g. the Elm <code>ClusterTab</code>) use that convention purely for display, to tell "this instance is the conductor" from "some other instance is."</td>
+          <td>Identifies this instance to the conductor - e.g. its Kubernetes namespace. Passed as <code>LockClusterResourcesRequest.namespace_id</code>/<code>FreeClusterResourcesRequest.namespace_id</code> so the conductor knows who's asking, and echoed back as <code>ClusterResourceLock.lock_holder_namespace_id</code> while this instance holds a lock. By convention (not enforced - see <code>cluster_shared_secret</code>'s own doc), the conductor sets its own <code>namespace_id</code> equal to its own <code>conductor_host</code>; clients (e.g. the Elm <code>ClusterTab</code>) use that convention purely for display, to tell "this instance is the conductor" from "some other instance is."</td>
         </tr>
         <tr>
           <td>conductor_host</td>
           <td><a href="#string">string</a></td>
           <td></td>
-          <td>DNS hostname of whichever instance in the cluster is the "conductor" -- the single instance that actually brokers <a href="#grpc-api-LockClusterResources"><code>LockClusterResources</code></a>/ <a href="#grpc-api-FreeClusterResources"><code>FreeClusterResources</code></a> calls for every other instance (including, by convention, itself -- see <code>conductor_state</code>). Every instance in the cluster points this at the same host.</td>
+          <td>DNS hostname of whichever instance in the cluster is the "conductor" - the single instance that actually brokers <a href="#grpc-api-LockClusterResources"><code>LockClusterResources</code></a>/ <a href="#grpc-api-FreeClusterResources"><code>FreeClusterResources</code></a> calls for every other instance (including, by convention, itself - see <code>conductor_state</code>). Every instance in the cluster points this at the same host.</td>
         </tr>
       </tbody>
     </table>
     <p>
-      Note: callers should resolve this the same way any other cross-server Rellm call does -- via <a href="#http-based-client-host-negotiation-for-external-cdns-get-backend_host"><code>GET {conductor_host}/backend_host</code></a> first, falling back to <code>conductor_host</code> itself -- rather than connecting to it directly, in case the conductor sits behind an <a href="#rellm-ExternalCDNConfig"><code>ExternalCDNConfig</code></a>. |
-      | cluster_shared_secret | <a href="#string">string</a> | | Shared secret proving a <code>LockClusterResources</code>/<code>FreeClusterResources</code> caller is a legitimate member of this cluster, passed as the <code>cluster-shared-secret</code> gRPC metadata header (not a request field -- there's no per-user auth involved in these calls at all, just this secret). The receiving server checks it against its own stored <code>cluster_shared_secret</code> -- that's the <em>entire</em> authorization check: knowing the secret is what makes a caller entitled to treat that server as the conductor, regardless of what that server's own <code>namespace_id</code>/<code>conductor_host</code> happen to say (see <code>namespace_id</code>'s own doc on that being a display-only convention). Write-only, like <a href="#rellm-FacebookAuthConfig"><code>FacebookAuthConfig.app_secret</code></a>/ <a href="#rellm-WebPushConfig"><code>WebPushConfig.private_vapid_key</code></a> -- <code>GetServerConfiguration</code> never sends the real value back to <em>any</em> client (not even an admin), and an empty incoming value on <code>ConfigureServer</code> means "leave the stored secret alone," not "clear it." Should never be transmitted over a non-TLS connection. |
-      | conductor_state | <a href="#rellm-ClusterConductorState">ClusterConductorState</a> | optional | The conductor's live view of who currently holds each <code>ClusterResource</code>'s lock. Only ever populated on whichever instance actually receives (and grants) <code>LockClusterResources</code> calls -- in a correctly configured cluster, that's the one instance every participant points <code>conductor_host</code> at (see that field's own doc), but nothing server-side enforces that; every other instance simply never gets asked to hold this state. Reflects the database directly, updated in place by <code>LockClusterResources</code>/<code>FreeClusterResources</code> -- unlike the rest of <code>ServerConfiguration</code>, <a href="#grpc-api-ConfigureServer"><code>ConfigureServer</code></a> never lets a caller change this, and it isn't versioned the way other <code>ConfigureServer</code> changes are. |
+      Note: callers should resolve this the same way any other cross-server Rellm call does -- via <a href="#http-based-client-host-negotiation-for-external-cdns-get-backend_host"><code>GET {conductor_host}/backend_host</code></a> first, falling back to <code>conductor_host</code> itself - rather than connecting to it directly, in case the conductor sits behind an <a href="#rellm-ExternalCDNConfig"><code>ExternalCDNConfig</code></a>. |
+      | cluster_shared_secret | <a href="#string">string</a> | | Shared secret proving a <code>LockClusterResources</code>/<code>FreeClusterResources</code> caller is a legitimate member of this cluster, passed as the <code>cluster-shared-secret</code> gRPC metadata header (not a request field - there's no per-user auth involved in these calls at all, just this secret). The receiving server checks it against its own stored <code>cluster_shared_secret</code> - that's the <em>entire</em> authorization check: knowing the secret is what makes a caller entitled to treat that server as the conductor, regardless of what that server's own <code>namespace_id</code>/<code>conductor_host</code> happen to say (see <code>namespace_id</code>'s own doc on that being a display-only convention). Write-only, like <a href="#rellm-FacebookAuthConfig"><code>FacebookAuthConfig.app_secret</code></a>/ <a href="#rellm-WebPushConfig"><code>WebPushConfig.private_vapid_key</code></a> - <code>GetServerConfiguration</code> never sends the real value back to <em>any</em> client (not even an admin), and an empty incoming value on <code>ConfigureServer</code> means "leave the stored secret alone," not "clear it." Should never be transmitted over a non-TLS connection. |
+      | conductor_state | <a href="#rellm-ClusterConductorState">ClusterConductorState</a> | optional | The conductor's live view of who currently holds each <code>ClusterResource</code>'s lock. Only ever populated on whichever instance actually receives (and grants) <code>LockClusterResources</code> calls -- in a correctly configured cluster, that's the one instance every participant points <code>conductor_host</code> at (see that field's own doc), but nothing server-side enforces that; every other instance simply never gets asked to hold this state. Reflects the database directly, updated in place by <code>LockClusterResources</code>/<code>FreeClusterResources</code> - unlike the rest of <code>ServerConfiguration</code>, <a href="#grpc-api-ConfigureServer"><code>ConfigureServer</code></a> never lets a caller change this, and it isn't versioned the way other <code>ConfigureServer</code> changes are. |
     </p>
     <p><a name="rellm-CustomHomePage"></a></p>
     <h3 id="customhomepage"><a class="anchor" aria-hidden="true" tabindex="-1" href="#customhomepage"><span class="octicon octicon-link"></span></a>CustomHomePage</h3>
@@ -6026,7 +6034,7 @@ directory</a> is (<code>{name}</code> denotes a
           <td>tab</td>
           <td><a href="#rellm-NavigationTab">NavigationTab</a></td>
           <td></td>
-          <td>What <code>/</code> renders. Only <code>HOME_TAB</code> (the default, combined Events+Posts feed), <code>EVENTS_TAB</code>, or <code>POSTS_TAB</code> are valid here -- never <code>PEOPLE_TAB</code>/<code>ABOUT_TAB</code>.</td>
+          <td>What <code>/</code> renders. Only <code>HOME_TAB</code> (the default, combined Events+Posts feed), <code>EVENTS_TAB</code>, or <code>POSTS_TAB</code> are valid here - never <code>PEOPLE_TAB</code>/<code>ABOUT_TAB</code>.</td>
         </tr>
         <tr>
           <td>post_id</td>
@@ -6050,7 +6058,7 @@ directory</a> is (<code>{name}</code> denotes a
           <td>default_events_strip_to_row</td>
           <td><a href="#bool">bool</a></td>
           <td></td>
-          <td>Whenever an Events strip is shown above other content -- <code>show_events_strip</code> is set, or <code>target</code> is unset/<code>HOME_TAB</code> (whose strip is always shown) -- whether it defaults to its row/list layout instead of a calendar. Unset defaults to the calendar layout.</td>
+          <td>Whenever an Events strip is shown above other content - <code>show_events_strip</code> is set, or <code>target</code> is unset/<code>HOME_TAB</code> (whose strip is always shown) - whether it defaults to its row/list layout instead of a calendar. Unset defaults to the calendar layout.</td>
         </tr>
         <tr>
           <td>default_events_strip_calendar_display_mode</td>
@@ -6062,7 +6070,7 @@ directory</a> is (<code>{name}</code> denotes a
     </table>
     <p><a name="rellm-CustomNavigationTab"></a></p>
     <h3 id="customnavigationtab"><a class="anchor" aria-hidden="true" tabindex="-1" href="#customnavigationtab"><span class="octicon octicon-link"></span></a>CustomNavigationTab</h3>
-    <p>Either one of the app's predefined tabs, a Post, or a user profile -- reachable at <code>path</code>.</p>
+    <p>Either one of the app's predefined tabs, a Post, or a user profile - reachable at <code>path</code>.</p>
     <table>
       <thead>
         <tr>
@@ -6089,7 +6097,7 @@ directory</a> is (<code>{name}</code> denotes a
           <td>is_profile</td>
           <td><a href="#bool">bool</a></td>
           <td></td>
-          <td>Indicates the custom tab is for an actual user profile -- <code>path</code> is that user's username. Ultimately this isn't very "custom" in terms of the URL scheme, just it being a navigation tab.</td>
+          <td>Indicates the custom tab is for an actual user profile - <code>path</code> is that user's username. Ultimately this isn't very "custom" in terms of the URL scheme, just it being a navigation tab.</td>
         </tr>
         <tr>
           <td>emoji_icon</td>
@@ -6113,7 +6121,7 @@ directory</a> is (<code>{name}</code> denotes a
           <td>path</td>
           <td><a href="#string">string</a></td>
           <td></td>
-          <td>The path this tab is reachable at, e.g. <code>gigs</code> for a band's <code>/gigs</code> link to the Events page, or <code>weddings</code> for a Post about wedding offerings. Must be distinct across every entry in <code>CustomNavigationTabSet.tabs</code>. Note: <code>events</code>, <code>posts</code>, <code>people</code>, and <code>about</code> are reserved -- each may only be used to (redundantly) point back at its own matching predefined tab, never remapped to a different tab or a Post. <code>/</code> itself is never reachable this way -- it's overridden via <code>CustomNavigationTabSet.home</code> instead.</td>
+          <td>The path this tab is reachable at, e.g. <code>gigs</code> for a band's <code>/gigs</code> link to the Events page, or <code>weddings</code> for a Post about wedding offerings. Must be distinct across every entry in <code>CustomNavigationTabSet.tabs</code>. Note: <code>events</code>, <code>posts</code>, <code>people</code>, and <code>about</code> are reserved -- each may only be used to (redundantly) point back at its own matching predefined tab, never remapped to a different tab or a Post. <code>/</code> itself is never reachable this way - it's overridden via <code>CustomNavigationTabSet.home</code> instead.</td>
         </tr>
       </tbody>
     </table>
@@ -6140,7 +6148,7 @@ directory</a> is (<code>{name}</code> denotes a
           <td>tabs</td>
           <td><a href="#rellm-CustomNavigationTab">CustomNavigationTab</a></td>
           <td>repeated</td>
-          <td>Overrides the default tab set (<code>EVENTS_TAB</code>, <code>POSTS_TAB</code>, <code>PEOPLE_TAB</code>, <code>ABOUT_TAB</code>) entirely. Note: existing <code>/events</code>, <code>/posts</code>, <code>/people</code>, and <code>/about</code> paths are reserved for their matching predefined tab -- see <a href="#rellm-CustomNavigationTab"><code>CustomNavigationTab</code></a>.path's own doc. <code>/</code> itself is overridden via <code>home</code> above instead.</td>
+          <td>Overrides the default tab set (<code>EVENTS_TAB</code>, <code>POSTS_TAB</code>, <code>PEOPLE_TAB</code>, <code>ABOUT_TAB</code>) entirely. Note: existing <code>/events</code>, <code>/posts</code>, <code>/people</code>, and <code>/about</code> paths are reserved for their matching predefined tab - see <a href="#rellm-CustomNavigationTab"><code>CustomNavigationTab</code></a>.path's own doc. <code>/</code> itself is overridden via <code>home</code> above instead.</td>
         </tr>
       </tbody>
     </table>
@@ -6322,7 +6330,7 @@ directory</a> is (<code>{name}</code> denotes a
     <p>
       Releases resources this <code>namespace_id</code> previously locked via
       <a href="#grpc-api-LockClusterResources"><code>LockClusterResources</code></a>. A no-op (not an error) for any
-      resource <code>namespace_id</code> doesn't currently hold -- e.g. safe to call unconditionally during
+      resource <code>namespace_id</code> doesn't currently hold - e.g. safe to call unconditionally during
       cleanup even if the matching lock attempt itself failed or was never confirmed.
     </p>
     <table>
@@ -6339,7 +6347,7 @@ directory</a> is (<code>{name}</code> denotes a
           <td>namespace_id</td>
           <td><a href="#string">string</a></td>
           <td></td>
-          <td>This instance's own <code>ClusterResources.namespace_id</code> -- must match whichever <code>namespace_id</code> is recorded as the current holder for a resource to actually be released.</td>
+          <td>This instance's own <code>ClusterResources.namespace_id</code> - must match whichever <code>namespace_id</code> is recorded as the current holder for a resource to actually be released.</td>
         </tr>
         <tr>
           <td>resources</td>
@@ -6372,7 +6380,7 @@ directory</a> is (<code>{name}</code> denotes a
           <td>resources</td>
           <td><a href="#rellm-ClusterResource">ClusterResource</a></td>
           <td>repeated</td>
-          <td>Which resources to lock -- see the <code>ClusterResource</code> enum for what exists.</td>
+          <td>Which resources to lock - see the <code>ClusterResource</code> enum for what exists.</td>
         </tr>
       </tbody>
     </table>
@@ -6393,7 +6401,7 @@ directory</a> is (<code>{name}</code> denotes a
           <td>granted</td>
           <td><a href="#bool">bool</a></td>
           <td></td>
-          <td>Whether every requested resource was successfully locked for <code>namespace_id</code>. <code>false</code> means none were locked (never a partial grant) -- at least one of them is already held, by namespaces other than this one, by as many distinct holders as its configured <code>ClusterResourceLimit</code> allows (see that message's own doc); see <code>holder</code>. There's no server-side wait/queueing: a caller that gets <code>false</code> should back off and call <code>LockClusterResources</code> again later.</td>
+          <td>Whether every requested resource was successfully locked for <code>namespace_id</code>. <code>false</code> means none were locked (never a partial grant) - at least one of them is already held, by namespaces other than this one, by as many distinct holders as its configured <code>ClusterResourceLimit</code> allows (see that message's own doc); see <code>holder</code>. There's no server-side wait/queueing: a caller that gets <code>false</code> should back off and call <code>LockClusterResources</code> again later.</td>
         </tr>
         <tr>
           <td>holder</td>
@@ -6621,7 +6629,7 @@ directory</a> is (<code>{name}</code> denotes a
           <td>cluster_resources</td>
           <td><a href="#rellm-ClusterResources">ClusterResources</a></td>
           <td>optional</td>
-          <td>Cluster-internal coordination state -- see <code>ClusterResources</code>'s own doc. Visible to any logged-in admin (unlike most fields here, this describes infrastructure topology rather than anything end users need, so it's stripped entirely from <a href="#grpc-api-GetServerConfiguration"><code>GetServerConfiguration</code></a> for non-admins/anonymous callers); editing it via <a href="#grpc-api-ConfigureServer"><code>ConfigureServer</code></a> additionally requires the <a href="#rellm-Permission"><code>EDIT_CLUSTER_SETTINGS</code></a> permission.</td>
+          <td>Cluster-internal coordination state - see <code>ClusterResources</code>'s own doc. Visible to any logged-in admin (unlike most fields here, this describes infrastructure topology rather than anything end users need, so it's stripped entirely from <a href="#grpc-api-GetServerConfiguration"><code>GetServerConfiguration</code></a> for non-admins/anonymous callers); editing it via <a href="#grpc-api-ConfigureServer"><code>ConfigureServer</code></a> additionally requires the <a href="#rellm-Permission"><code>EDIT_CLUSTER_SETTINGS</code></a> permission.</td>
         </tr>
         <tr>
           <td>private_user_strategy</td>
@@ -6855,7 +6863,7 @@ directory</a> is (<code>{name}</code> denotes a
         <tr>
           <td>CLUSTER_RESOURCE_BROWSER</td>
           <td>0</td>
-          <td>The ability to launch a headless Chrome/Brave browser -- see <code>ClusterResources</code>'s own doc for why more than one running at once across a cluster's instances can be a problem.</td>
+          <td>The ability to launch a headless Chrome/Brave browser - see <code>ClusterResources</code>'s own doc for why more than one running at once across a cluster's instances can be a problem.</td>
         </tr>
         <tr>
           <td>CLUSTER_RESOURCE_FFMPEG</td>
@@ -7097,13 +7105,13 @@ directory</a> is (<code>{name}</code> denotes a
           <td>x_twitter_auth_config</td>
           <td><a href="#rellm-XTwitterAuthConfig">XTwitterAuthConfig</a></td>
           <td>optional</td>
-          <td>X (Twitter) authentication configuration for the server. If set, allows users to create X (Twitter) SyncDestinations for their Posts and EventInstances -- an admin registers one X Developer App here, and every user on the server connects their own X account through it via OAuth, the same relationship <code>facebook_auth_config</code> has to individual Facebook Pages. Until set, <a href="#rellm-XTwitterAccount"><code>XTwitterAccount</code></a> SyncDestinations always fail with <code>x_twitter_app_not_configured</code>.</td>
+          <td>X (Twitter) authentication configuration for the server. If set, allows users to create X (Twitter) SyncDestinations for their Posts and EventInstances - an admin registers one X Developer App here, and every user on the server connects their own X account through it via OAuth, the same relationship <code>facebook_auth_config</code> has to individual Facebook Pages. Until set, <a href="#rellm-XTwitterAccount"><code>XTwitterAccount</code></a> SyncDestinations always fail with <code>x_twitter_app_not_configured</code>.</td>
         </tr>
         <tr>
           <td>mastodon_servers</td>
           <td><a href="#rellm-MastodonServer">MastodonServer</a></td>
           <td>repeated</td>
-          <td>Mastodon instances this server has a registered OAuth app on, letting users connect/read their own account on that instance. Unlike Facebook/X, Mastodon has no single central platform to register an app against -- every instance is its own separate OAuth authority, so an admin has to register an app on each instance individually before users on it can connect. If a user's instance isn't listed here, clients should surface a "not configured" alert rather than attempting to open an OAuth popup with no app to authorize against. (A client could instead dynamically self-register a throwaway app with the instance directly, via Mastodon's own <code>POST /api/v1/apps</code>, and skip this entirely -- Mastodon itself supports that. But that's a client-side choice the Rellm protocol doesn't get involved in either way: this field only covers the admin-pre-registered path, which is what lets an app ID be shown/reused consistently across every client on this server rather than each one self-registering its own.)</td>
+          <td>Mastodon instances this server has a registered OAuth app on, letting users connect/read their own account on that instance. Unlike Facebook/X, Mastodon has no single central platform to register an app against - every instance is its own separate OAuth authority, so an admin has to register an app on each instance individually before users on it can connect. If a user's instance isn't listed here, clients should surface a "not configured" alert rather than attempting to open an OAuth popup with no app to authorize against. (A client could instead dynamically self-register a throwaway app with the instance directly, via Mastodon's own <code>POST /api/v1/apps</code>, and skip this entirely - Mastodon itself supports that. But that's a client-side choice the Rellm protocol doesn't get involved in either way: this field only covers the admin-pre-registered path, which is what lets an app ID be shown/reused consistently across every client on this server rather than each one self-registering its own.)</td>
         </tr>
       </tbody>
     </table>
@@ -7151,7 +7159,7 @@ directory</a> is (<code>{name}</code> denotes a
           <td>app_id</td>
           <td><a href="#string">string</a></td>
           <td></td>
-          <td>The registered app's Client ID for this instance. Safe to serialize to clients -- used directly to build the instance's <code>/oauth/authorize</code> URL, the same way <code>FacebookAuthConfig.app_id</code>/ <code>XTwitterAuthConfig.client_id</code> are.</td>
+          <td>The registered app's Client ID for this instance. Safe to serialize to clients - used directly to build the instance's <code>/oauth/authorize</code> URL, the same way <code>FacebookAuthConfig.app_id</code>/ <code>XTwitterAuthConfig.client_id</code> are.</td>
         </tr>
         <tr>
           <td>app_secret</td>
@@ -7163,13 +7171,13 @@ directory</a> is (<code>{name}</code> denotes a
           <td>configured_by_default</td>
           <td><a href="#bool">bool</a></td>
           <td>optional</td>
-          <td>Indicates to UI clients that they should browse the indicated instance's public timeline by default (added to it with no OAuth/account needed at all -- see this message's own doc on the difference between browsing and connecting).</td>
+          <td>Indicates to UI clients that they should browse the indicated instance's public timeline by default (added to it with no OAuth/account needed at all - see this message's own doc on the difference between browsing and connecting).</td>
         </tr>
         <tr>
           <td>pinned_by_default</td>
           <td><a href="#bool">bool</a></td>
           <td>optional</td>
-          <td>Indicates to UI clients that they should pin the indicated instance by default (showing its Posts alongside the "main" server). Currently has the same effect as <code>configured_by_default</code> -- as of this writing, clients have no "added but not shown" state for a browsed instance the way <code>FederatedServer.pinned_by_default</code>'s <code>Server.enabled</code> does, so there's nothing for this to mean <em>in addition to</em> <code>configured_by_default</code>. Kept as its own field for symmetry with <code>FederatedServer</code>, and in case that changes.</td>
+          <td>Indicates to UI clients that they should pin the indicated instance by default (showing its Posts alongside the "main" server). Currently has the same effect as <code>configured_by_default</code> - as of this writing, clients have no "added but not shown" state for a browsed instance the way <code>FederatedServer.pinned_by_default</code>'s <code>Server.enabled</code> does, so there's nothing for this to mean <em>in addition to</em> <code>configured_by_default</code>. Kept as its own field for symmetry with <code>FederatedServer</code>, and in case that changes.</td>
         </tr>
       </tbody>
     </table>
@@ -7207,12 +7215,12 @@ directory</a> is (<code>{name}</code> denotes a
     <h3 id="blueskyaccount"><a class="anchor" aria-hidden="true" tabindex="-1" href="#blueskyaccount"><span class="octicon octicon-link"></span></a>BlueskyAccount</h3>
     <p>
       A Bluesky (AT Protocol) account connected as a <a href="#rellm-SyncDestination"><code>SyncDestination</code></a> via an "App Password"
-      (generated at Settings > App Passwords -- not the account's main password), rather than an
+      (generated at Settings > App Passwords - not the account's main password), rather than an
       OAuth popup.
     </p>
     <p>
       Media limitation: only attached <em>images</em> on a synced Post/EventInstance are posted (up to 4,
-      downloaded and re-uploaded as Bluesky blobs) -- video is silently dropped entirely. Bluesky
+      downloaded and re-uploaded as Bluesky blobs) - video is silently dropped entirely. Bluesky
       video embeds need a separate, more complex upload-and-processing flow not yet built.
     </p>
     <table>
@@ -7302,19 +7310,19 @@ directory</a> is (<code>{name}</code> denotes a
     <p><a name="rellm-FacebookPage"></a></p>
     <h3 id="facebookpage"><a class="anchor" aria-hidden="true" tabindex="-1" href="#facebookpage"><span class="octicon octicon-link"></span></a>FacebookPage</h3>
     <p>
-      A Facebook Page connected as a <a href="#rellm-SyncDestination"><code>SyncDestination</code></a> -- <strong>never a personal profile</strong>. Facebook
+      A Facebook Page connected as a <a href="#rellm-SyncDestination"><code>SyncDestination</code></a> - <strong>never a personal profile</strong>. Facebook
       deprecated the <code>publish_actions</code> permission in 2018, which was the only way any third-party app
       could ever post to a personal timeline; there's no Graph API call today, for any app, that can
       post anything (feed post, photo, or otherwise) to a personal profile on a user's behalf. A Page
-      is the only kind of Facebook entity a self-hosted server like this can post to at all -- this
+      is the only kind of Facebook entity a self-hosted server like this can post to at all - this
       isn't a Rellm design choice to work around, it's a hard platform restriction. (Unrelated to
-      this: Facebook <em>Events</em> specifically are also unreachable, even for Pages -- see
+      this: Facebook <em>Events</em> specifically are also unreachable, even for Pages - see
       <code>docs/facebook_and_x_twitter_federation.md</code>'s "It posts to the Page's feed, not a real Facebook
       Event" for that separate, independent 2018-era lockdown.)
     </p>
     <p>
       Media limitation: a synced Post/EventInstance's attached video and images are mutually
-      exclusive on Facebook -- if both are present, the video is posted and any images are silently
+      exclusive on Facebook - if both are present, the video is posted and any images are silently
       dropped (Facebook Pages can't attach both to a single feed post).
     </p>
     <table>
@@ -7391,20 +7399,20 @@ directory</a> is (<code>{name}</code> denotes a
     <p><a name="rellm-InstagramAccount"></a></p>
     <h3 id="instagramaccount"><a class="anchor" aria-hidden="true" tabindex="-1" href="#instagramaccount"><span class="octicon octicon-link"></span></a>InstagramAccount</h3>
     <p>
-      An Instagram Business/Creator account connected as a <a href="#rellm-SyncDestination"><code>SyncDestination</code></a> -- <strong>never a personal
+      An Instagram Business/Creator account connected as a <a href="#rellm-SyncDestination"><code>SyncDestination</code></a> - <strong>never a personal
 Instagram account</strong>. Unlike <a href="#rellm-FacebookPage"><code>FacebookPage</code></a>'s restriction (a <em>deprecated</em> permission that used to let
       apps post to a personal timeline), this one was never possible in the first place: Instagram's
       Content Publishing API was built from the start only for professional (Business/Creator)
       accounts, so a personal Instagram account simply has no API surface to post to at all,
       regardless of what this server does. Posting to Instagram also requires the professional account
       to be linked to a Facebook Page, so this reuses the same Facebook Login popup and app credentials
-      as <a href="#rellm-FacebookPage"><code>FacebookPage</code></a> -- the server exchanges the token for the Page's access token, then looks up
+      as <a href="#rellm-FacebookPage"><code>FacebookPage</code></a> - the server exchanges the token for the Page's access token, then looks up
       that Page's linked Instagram Business account.
     </p>
     <p>
       Media limitation: only the <em>first</em> attached image/video on a synced Post/EventInstance is
-      posted -- no carousel/multi-image support yet. A post with no media at all is rejected
-      (<code>instagram_requires_media</code>) -- Instagram's Graph API has no text-only post type.
+      posted - no carousel/multi-image support yet. A post with no media at all is rejected
+      (<code>instagram_requires_media</code>) - Instagram's Graph API has no text-only post type.
     </p>
     <table>
       <thead>
@@ -7447,7 +7455,7 @@ Instagram account</strong>. Unlike <a href="#rellm-FacebookPage"><code>FacebookP
     <p>
       A Mastodon account connected as a <a href="#rellm-SyncDestination"><code>SyncDestination</code></a> via a user-supplied Personal Access Token
       (generated on the user's own instance, under Preferences > Development), rather than an OAuth
-      popup -- Mastodon instances are user-chosen arbitrary domains, so there's no single app to
+      popup - Mastodon instances are user-chosen arbitrary domains, so there's no single app to
       register ahead of time the way Facebook/Instagram have one.
     </p>
     <p>
@@ -7710,21 +7718,21 @@ Instagram account</strong>. Unlike <a href="#rellm-FacebookPage"><code>FacebookP
     <p><a name="rellm-ThreadsAccount"></a></p>
     <h3 id="threadsaccount"><a class="anchor" aria-hidden="true" tabindex="-1" href="#threadsaccount"><span class="octicon octicon-link"></span></a>ThreadsAccount</h3>
     <p>
-      A connected Threads account -- <strong>a genuinely personal account works fine here</strong>, unlike
+      A connected Threads account - <strong>a genuinely personal account works fine here</strong>, unlike
       <a href="#rellm-FacebookPage"><code>FacebookPage</code></a>/<a href="#rellm-InstagramAccount"><code>InstagramAccount</code></a>: the Threads API (a separate product from Instagram's,
-      launched 2024) has no Page-linkage or Business/Creator-account requirement at all -- Threads
+      launched 2024) has no Page-linkage or Business/Creator-account requirement at all - Threads
       OAuth directly authorizes whatever single Threads account the user logs in with, personal or
       not. It's still a product added to this server's existing Meta App (see <a href="#rellm-FacebookAuthConfig"><code>FacebookAuthConfig</code></a>)
       rather than a separately-registered app, so no separate auth config is needed. Unlike
       <a href="#rellm-FacebookPage"><code>FacebookPage</code></a>/<a href="#rellm-InstagramAccount"><code>InstagramAccount</code></a>, connecting one is a <code>response_type=code</code> OAuth flow at
-      threads.net (not facebook.com) with no "choose a Page" step -- the code is exchanged server-side
+      threads.net (not facebook.com) with no "choose a Page" step - the code is exchanged server-side
       for a short-lived token, then a long-lived one (~60 day expiry, refreshable via
-      <code>grant_type=th_refresh_token</code> -- not yet implemented; a connected destination will need
+      <code>grant_type=th_refresh_token</code> - not yet implemented; a connected destination will need
       reconnecting after ~60 days until a refresh job exists).
     </p>
     <p>
       Media limitation: only the <em>first</em> attached image/video on a synced Post/EventInstance is
-      posted -- no carousel/multi-image support yet. Unlike <a href="#rellm-InstagramAccount"><code>InstagramAccount</code></a>, a text-only post
+      posted - no carousel/multi-image support yet. Unlike <a href="#rellm-InstagramAccount"><code>InstagramAccount</code></a>, a text-only post
       (no media at all) is valid.
     </p>
     <table>
@@ -7762,15 +7770,15 @@ Instagram account</strong>. Unlike <a href="#rellm-FacebookPage"><code>FacebookP
     <p>
       An X (Twitter) account connected as a <a href="#rellm-SyncDestination"><code>SyncDestination</code></a>, via an OAuth 2.0 Authorization Code +
       PKCE flow at x.com. Requires this server to have a registered X Developer App configured (see
-      <code>FederationInfo.x_twitter_auth_config</code>) -- every RPC touching an <code>XTwitterAccount</code> destination
+      <code>FederationInfo.x_twitter_auth_config</code>) - every RPC touching an <code>XTwitterAccount</code> destination
       fails with <code>x_twitter_app_not_configured</code> until an admin sets one, mirroring
       <a href="#rellm-FacebookAuthConfig"><code>FacebookAuthConfig</code></a>/<code>facebook_app_not_configured</code>. Unlike Facebook/Instagram/Threads (which reuse one
       Meta App), an admin registers this app once and every user on the server connects their own X
-      account through it -- no per-user API keys needed.
+      account through it - no per-user API keys needed.
     </p>
     <p>
       Media limitation: up to 4 attached <em>images</em> on a synced Post/EventInstance are downloaded and
-      re-uploaded via X's media upload endpoint. Video is not yet supported -- X's video upload
+      re-uploaded via X's media upload endpoint. Video is not yet supported - X's video upload
       requires a chunked upload-and-processing flow (mirroring Bluesky's own documented video gap)
       not yet built; a video attachment is silently skipped.
     </p>
@@ -7820,14 +7828,14 @@ Instagram account</strong>. Unlike <a href="#rellm-FacebookPage"><code>FacebookP
       key), which its owner can grant other users of this server metered, budgeted access to. Mirrors
       <a href="#rellm-SyncDestination"><code>SyncDestination</code></a>/<a href="#rellm-SyncSource"><code>SyncSource</code></a> (also user-owned integrations
       with an <a href="#rellm-Author"><code>Author</code></a> <code>owner</code> and a <code>oneof</code> naming which external system is configured), but where
-      those push/pull content, an AIModelProvider is metered <em>access</em> to a third-party LLM API -- shared out to
+      those push/pull content, an AIModelProvider is metered <em>access</em> to a third-party LLM API - shared out to
       other users via <a href="#rellm-AIModelProviderGrant"><code>AIModelProviderGrant</code></a>s rather than posted-to/subscribed-from.
     </p>
     <p>
       Providers are managed via <a href="#grpc-api-GetAIModelProviders"><code>GetAIModelProviders</code></a>,
       <a href="#grpc-api-CreateAIModelProvider"><code>CreateAIModelProvider</code></a> (requires <code>CREATE_AI_MODEL_PROVIDERS</code>, or Admin),
       <a href="#grpc-api-UpdateAIModelProvider"><code>UpdateAIModelProvider</code></a> (owner, or Admin for any user's), and
-      <a href="#grpc-api-DeleteAIModelProvider"><code>DeleteAIModelProvider</code></a> (owner, or Admin) -- the same self-or-Admin shape as
+      <a href="#grpc-api-DeleteAIModelProvider"><code>DeleteAIModelProvider</code></a> (owner, or Admin) - the same self-or-Admin shape as
       <a href="#rellm-SyncDestination"><code>SyncDestination</code></a>'s RPCs. Access to a provider is granted/revoked to other users via
       <a href="#grpc-api-GrantAIModelProvider"><code>GrantAIModelProvider</code></a>/<a href="#grpc-api-RevokeAIModelProvider"><code>RevokeAIModelProvider</code></a> which,
       unlike every other RPC pair here, are <strong>owner-only with no Admin override</strong>: an Admin can manage the provider
@@ -7837,7 +7845,7 @@ Instagram account</strong>. Unlike <a href="#rellm-FacebookPage"><code>FacebookP
     <p>
       <a href="#rellm-GeminiCredentials"><code>GeminiCredentials</code></a>/<a href="#rellm-OpenAICredentials"><code>OpenAICredentials</code></a>/
       <a href="#rellm-DigitalOceanCredentials"><code>DigitalOceanCredentials</code></a> all have a working connection flow (Gemini's
-      Interactions API, OpenAI's Images API, DigitalOcean's Serverless Inference API -- the last of which is also
+      Interactions API, OpenAI's Images API, DigitalOcean's Serverless Inference API - the last of which is also
       OpenAI-Images-API-shaped, just a different base URL/key and generation-only, no editing endpoint);
       <a href="#rellm-AnthropicCredentials"><code>AnthropicCredentials</code></a> is defined for forward compatibility but is not yet
       accepted by <a href="#grpc-api-CreateAIModelProvider"><code>CreateAIModelProvider</code></a> (Anthropic doesn't offer image generation).
@@ -7862,13 +7870,13 @@ Instagram account</strong>. Unlike <a href="#rellm-FacebookPage"><code>FacebookP
           <td>owner</td>
           <td><a href="#rellm-Author">Author</a></td>
           <td></td>
-          <td>The user information for the owner of this AIModelProvider -- the only user (besides Admins) who may rename it or change its credentials/provider, and the <em>only</em> user (not even Admins) who may grant/revoke other users' access to it.</td>
+          <td>The user information for the owner of this AIModelProvider - the only user (besides Admins) who may rename it or change its credentials/provider, and the <em>only</em> user (not even Admins) who may grant/revoke other users' access to it.</td>
         </tr>
         <tr>
           <td>name</td>
           <td><a href="#string">string</a></td>
           <td></td>
-          <td>A display name for the provider, chosen by its owner (e.g. "My Gemini Key", "Team OpenAI Account"). Purely cosmetic -- has no effect on behavior.</td>
+          <td>A display name for the provider, chosen by its owner (e.g. "My Gemini Key", "Team OpenAI Account"). Purely cosmetic - has no effect on behavior.</td>
         </tr>
         <tr>
           <td>gemini_credentials</td>
@@ -7886,13 +7894,13 @@ Instagram account</strong>. Unlike <a href="#rellm-FacebookPage"><code>FacebookP
           <td>anthropic_credentials</td>
           <td><a href="#rellm-AnthropicCredentials">AnthropicCredentials</a></td>
           <td></td>
-          <td>An <a href="https://docs.anthropic.com/">Anthropic API</a> connection. <em>Not yet creatable</em> -- Anthropic doesn't offer an image generation API.</td>
+          <td>An <a href="https://docs.anthropic.com/">Anthropic API</a> connection. <em>Not yet creatable</em> - Anthropic doesn't offer an image generation API.</td>
         </tr>
         <tr>
           <td>digitalocean_credentials</td>
           <td><a href="#rellm-DigitalOceanCredentials">DigitalOceanCredentials</a></td>
           <td></td>
-          <td>A <a href="https://docs.digitalocean.com/products/gradient-ai-platform/">DigitalOcean Gradient AI Platform</a> / Serverless Inference connection, used for image generation (no editing -- DigitalOcean's <a href="https://docs.digitalocean.com/products/gradient-ai-platform/reference/api/serverless-inference/">Serverless Inference API</a> has no <code>/v1/images/edits</code>-equivalent endpoint) via its OpenAI-Images-API-shaped <code>/v1/images/generations</code> endpoint (GPT Image and Stable Diffusion models, re-hosted under DigitalOcean's own billing).</td>
+          <td>A <a href="https://docs.digitalocean.com/products/gradient-ai-platform/">DigitalOcean Gradient AI Platform</a> / Serverless Inference connection, used for image generation (no editing - DigitalOcean's <a href="https://docs.digitalocean.com/products/gradient-ai-platform/reference/api/serverless-inference/">Serverless Inference API</a> has no <code>/v1/images/edits</code>-equivalent endpoint) via its OpenAI-Images-API-shaped <code>/v1/images/generations</code> endpoint (GPT Image and Stable Diffusion models, re-hosted under DigitalOcean's own billing).</td>
         </tr>
         <tr>
           <td>grants</td>
@@ -7920,7 +7928,7 @@ Instagram account</strong>. Unlike <a href="#rellm-FacebookPage"><code>FacebookP
       A grant of metered access to someone else's <a href="#rellm-AIModelProvider"><code>AIModelProvider</code></a>, created/reset via
       <a href="#grpc-api-GrantAIModelProvider"><code>GrantAIModelProvider</code></a> and removed via
       <a href="#grpc-api-RevokeAIModelProvider"><code>RevokeAIModelProvider</code></a>. Upserted on the unique
-      <code>(ai_model_provider_id, ai_model_grantee)</code> pair -- calling <a href="#grpc-api-GrantAIModelProvider"><code>GrantAIModelProvider</code></a>
+      <code>(ai_model_provider_id, ai_model_grantee)</code> pair - calling <a href="#grpc-api-GrantAIModelProvider"><code>GrantAIModelProvider</code></a>
       again for a user who already has a grant <em>resets</em> <code>tokens_remaining</code> to the newly-requested amount, it does not
       add to it.
     </p>
@@ -7962,7 +7970,7 @@ Instagram account</strong>. Unlike <a href="#rellm-FacebookPage"><code>FacebookP
           <td>overage</td>
           <td><a href="#uint64">uint64</a></td>
           <td></td>
-          <td>How far a single <a href="#grpc-api-GenerateMedia"><code>GenerateMedia</code></a> call's actual token usage overshot <code>tokens_remaining</code> the moment it hit 0 -- effectively a "negative <code>tokens_remaining</code>" (which, being <code>uint64</code>, can't represent a negative value directly), recorded here instead as a positive debt for the owner's own visibility. E.g. a grantee with 30 tokens left whose next call actually costs 45 ends up with <code>tokens_remaining = 0</code> and <code>overage = 15</code>. Always 0 immediately after a fresh <a href="#grpc-api-GrantAIModelProvider"><code>GrantAIModelProvider</code></a> call (any prior debt is cleared, not carried forward) -- see that RPC's own doc.</td>
+          <td>How far a single <a href="#grpc-api-GenerateMedia"><code>GenerateMedia</code></a> call's actual token usage overshot <code>tokens_remaining</code> the moment it hit 0 - effectively a "negative <code>tokens_remaining</code>" (which, being <code>uint64</code>, can't represent a negative value directly), recorded here instead as a positive debt for the owner's own visibility. E.g. a grantee with 30 tokens left whose next call actually costs 45 ends up with <code>tokens_remaining = 0</code> and <code>overage = 15</code>. Always 0 immediately after a fresh <a href="#grpc-api-GrantAIModelProvider"><code>GrantAIModelProvider</code></a> call (any prior debt is cleared, not carried forward) - see that RPC's own doc.</td>
         </tr>
         <tr>
           <td>created_at</td>
@@ -7981,7 +7989,7 @@ Instagram account</strong>. Unlike <a href="#rellm-FacebookPage"><code>FacebookP
     <p><a name="rellm-AnthropicCredentials"></a></p>
     <h3 id="anthropiccredentials"><a class="anchor" aria-hidden="true" tabindex="-1" href="#anthropiccredentials"><span class="octicon octicon-link"></span></a>AnthropicCredentials</h3>
     <p>
-      Credentials for an <a href="https://docs.anthropic.com/">Anthropic API</a> connection. <em>Not yet creatable</em> -- defined for
+      Credentials for an <a href="https://docs.anthropic.com/">Anthropic API</a> connection. <em>Not yet creatable</em> - defined for
       forward compatibility only.
     </p>
     <table>
@@ -8005,13 +8013,13 @@ Instagram account</strong>. Unlike <a href="#rellm-FacebookPage"><code>FacebookP
     <p><a name="rellm-AvailableAIModel"></a></p>
     <h3 id="availableaimodel"><a class="anchor" aria-hidden="true" tabindex="-1" href="#availableaimodel"><span class="octicon octicon-link"></span></a>AvailableAIModel</h3>
     <p>
-      One specific model a user may call right now, and how -- via an <a href="#rellm-AIModelProvider"><code>AIModelProvider</code></a>
+      One specific model a user may call right now, and how - via an <a href="#rellm-AIModelProvider"><code>AIModelProvider</code></a>
       they own outright (<code>grant</code> unset), or via an <a href="#rellm-AIModelProviderGrant"><code>AIModelProviderGrant</code></a> someone else
-      granted them (<code>grant</code> set). Only ever defined relative to a user -- see
+      granted them (<code>grant</code> set). Only ever defined relative to a user - see
       <a href="#rellm-User"><code>User.available_ai_models</code></a>/<a href="#rellm-GetAIModelProvidersResponse"><code>GetAIModelProvidersResponse.available_ai_models</code></a>.
       One <code>AvailableAIModel</code> exists per (provider, model) pair: an owner gets one row per model their
       provider supports (see the server's own model catalog per provider type); a grantee gets one row
-      per model their grant actually covers -- expanded from <code>AIModelProviderGrant.model_names</code>, or
+      per model their grant actually covers - expanded from <code>AIModelProviderGrant.model_names</code>, or
       every model the provider supports if that list is empty.
     </p>
     <table>
@@ -8034,19 +8042,19 @@ Instagram account</strong>. Unlike <a href="#rellm-FacebookPage"><code>FacebookP
           <td>capabilities</td>
           <td><a href="#rellm-AIModelCapability">AIModelCapability</a></td>
           <td>repeated</td>
-          <td>What this model can actually do -- from the server's own hardcoded catalog for <code>provider.provider</code>'s variant (see <a href="#rellm-AIModelCapability"><code>AIModelCapability</code></a>), not anything reported by the provider's API itself. Feature gating keys off this rather than <code>model_name</code> directly, so e.g. <a href="#grpc-api-GenerateMedia"><code>GenerateMedia</code></a> (which needs <code>AI_MODEL_CAPABILITY_IMAGE_EDITING</code> whenever <code>GenerateMediaRequest.media_ids</code> is non-empty, or just <code>AI_MODEL_CAPABILITY_IMAGE_GENERATION</code> when it's empty) doesn't need its own hardcoded list of model names.</td>
+          <td>What this model can actually do - from the server's own hardcoded catalog for <code>provider.provider</code>'s variant (see <a href="#rellm-AIModelCapability"><code>AIModelCapability</code></a>), not anything reported by the provider's API itself. Feature gating keys off this rather than <code>model_name</code> directly, so e.g. <a href="#grpc-api-GenerateMedia"><code>GenerateMedia</code></a> (which needs <code>AI_MODEL_CAPABILITY_IMAGE_EDITING</code> whenever <code>GenerateMediaRequest.media_ids</code> is non-empty, or just <code>AI_MODEL_CAPABILITY_IMAGE_GENERATION</code> when it's empty) doesn't need its own hardcoded list of model names.</td>
         </tr>
         <tr>
           <td>grant</td>
           <td><a href="#rellm-AIModelProviderGrant">AIModelProviderGrant</a></td>
           <td>optional</td>
-          <td>The grant that allows this access, when the current user isn't <code>provider.owner</code> themselves. Unset when the current user owns <code>provider</code> outright (full, ungated access -- no grant needed).</td>
+          <td>The grant that allows this access, when the current user isn't <code>provider.owner</code> themselves. Unset when the current user owns <code>provider</code> outright (full, ungated access - no grant needed).</td>
         </tr>
         <tr>
           <td>provider</td>
           <td><a href="#rellm-AIModelProvider">AIModelProvider</a></td>
           <td></td>
-          <td>The provider this model belongs to. Its own <code>grants</code> list is only populated when the current user is <code>provider.owner</code> (or an Admin) -- see <a href="#grpc-api-GetAIModelProviders"><code>GetAIModelProviders</code></a>'s own doc; a mere grantee never sees who else has been granted access to a provider they don't own.</td>
+          <td>The provider this model belongs to. Its own <code>grants</code> list is only populated when the current user is <code>provider.owner</code> (or an Admin) - see <a href="#grpc-api-GetAIModelProviders"><code>GetAIModelProviders</code></a>'s own doc; a mere grantee never sees who else has been granted access to a provider they don't own.</td>
         </tr>
       </tbody>
     </table>
@@ -8077,7 +8085,7 @@ Instagram account</strong>. Unlike <a href="#rellm-FacebookPage"><code>FacebookP
       Credentials for a <a href="https://docs.digitalocean.com/products/gradient-ai-platform/">DigitalOcean Gradient AI Platform</a> /
       Serverless Inference connection, accepted by
       <a href="#grpc-api-CreateAIModelProvider"><code>CreateAIModelProvider</code></a>/<a href="#grpc-api-UpdateAIModelProvider"><code>UpdateAIModelProvider</code></a>.
-      Used for image <em>generation only</em> (no editing -- see <code>AIModelProvider.provider</code>'s own doc on this variant) via its
+      Used for image <em>generation only</em> (no editing - see <code>AIModelProvider.provider</code>'s own doc on this variant) via its
       <a href="https://docs.digitalocean.com/products/gradient-ai-platform/reference/api/serverless-inference/">Serverless Inference API</a>
       <code>/v1/images/generations</code> endpoint, OpenAI-Images-API-shaped and re-hosting GPT Image and Stable Diffusion models --
       see <a href="#grpc-api-GenerateMedia"><code>GenerateMedia</code></a>.
@@ -8103,11 +8111,11 @@ Instagram account</strong>. Unlike <a href="#rellm-FacebookPage"><code>FacebookP
     <p><a name="rellm-GeminiCredentials"></a></p>
     <h3 id="geminicredentials"><a class="anchor" aria-hidden="true" tabindex="-1" href="#geminicredentials"><span class="octicon octicon-link"></span></a>GeminiCredentials</h3>
     <p>
-      Credentials for a <a href="https://ai.google.dev/gemini-api">Google Gemini API</a> connection -- the only
+      Credentials for a <a href="https://ai.google.dev/gemini-api">Google Gemini API</a> connection - the only
       <a href="#rellm-AIModelProvider"><code>AIModelProvider.provider</code></a> variant currently accepted by
       <a href="#grpc-api-CreateAIModelProvider"><code>CreateAIModelProvider</code></a>/<a href="#grpc-api-UpdateAIModelProvider"><code>UpdateAIModelProvider</code></a>.
       Used for image generation/editing via Gemini's <a href="https://ai.google.dev/gemini-api/docs/image-generation">Interactions API</a>,
-      e.g. to generate/edit Event posters from an Event's own content -- see <a href="#grpc-api-GenerateMedia"><code>GenerateMedia</code></a>.
+      e.g. to generate/edit Event posters from an Event's own content - see <a href="#grpc-api-GenerateMedia"><code>GenerateMedia</code></a>.
     </p>
     <table>
       <thead>
@@ -8131,9 +8139,9 @@ Instagram account</strong>. Unlike <a href="#rellm-FacebookPage"><code>FacebookP
     <h3 id="generatemediarequest"><a class="anchor" aria-hidden="true" tabindex="-1" href="#generatemediarequest"><span class="octicon octicon-link"></span></a>GenerateMediaRequest</h3>
     <p>
       Request to generate (or edit) an image via one of the current user's
-      <a href="#rellm-AvailableAIModel"><code>AvailableAIModel</code></a>s -- see <a href="#grpc-api-GenerateMedia"><code>GenerateMedia</code></a>. The resulting
-      image is stored as a new <a href="#rellm-Media"><code>Media</code></a> (<code>generated = true</code>) owned by the current user, and -- if
-      <code>target</code> is set -- prepended as the <em>first</em> item in that Post's (or Event's own Post's) <code>media</code> list.
+      <a href="#rellm-AvailableAIModel"><code>AvailableAIModel</code></a>s - see <a href="#grpc-api-GenerateMedia"><code>GenerateMedia</code></a>. The resulting
+      image is stored as a new <a href="#rellm-Media"><code>Media</code></a> (<code>generated = true</code>) owned by the current user, and - if
+      <code>target</code> is set - prepended as the <em>first</em> item in that Post's (or Event's own Post's) <code>media</code> list.
     </p>
     <table>
       <thead>
@@ -8149,19 +8157,19 @@ Instagram account</strong>. Unlike <a href="#rellm-FacebookPage"><code>FacebookP
           <td>model</td>
           <td><a href="#rellm-AvailableAIModel">AvailableAIModel</a></td>
           <td></td>
-          <td>Which of the current user's <code>AvailableAIModel</code>s to generate with -- <code>model.model_name</code> selects the actual model, <code>model.provider.id</code> identifies whose <code>AIModelProvider</code> (the current user's own, or one they've been granted access to) to call it through. Only <code>model_name</code>/<code>provider.id</code> are read server-side -- any other field sent here (e.g. a spoofed <code>grant</code>) is ignored in favor of the caller's real access, re-derived from <code>provider.id</code> and the current user.</td>
+          <td>Which of the current user's <code>AvailableAIModel</code>s to generate with - <code>model.model_name</code> selects the actual model, <code>model.provider.id</code> identifies whose <code>AIModelProvider</code> (the current user's own, or one they've been granted access to) to call it through. Only <code>model_name</code>/<code>provider.id</code> are read server-side - any other field sent here (e.g. a spoofed <code>grant</code>) is ignored in favor of the caller's real access, re-derived from <code>provider.id</code> and the current user.</td>
         </tr>
         <tr>
           <td>user_prompt</td>
           <td><a href="#string">string</a></td>
           <td></td>
-          <td>The user-editable prompt describing what to generate, e.g. "Please generate a square headline poster for the following event." Combined server-side with <code>target</code>'s own formatted content (title/description/date-time range/location -- the same formatting <a href="#rellm-SyncDestination"><code>SyncDestination</code></a>s use) before being sent to the model, so the user never has to paste that context in by hand.</td>
+          <td>The user-editable prompt describing what to generate, e.g. "Please generate a square headline poster for the following event." Combined server-side with <code>target</code>'s own formatted content (title/description/date-time range/location - the same formatting <a href="#rellm-SyncDestination"><code>SyncDestination</code></a>s use) before being sent to the model, so the user never has to paste that context in by hand.</td>
         </tr>
         <tr>
           <td>media_ids</td>
           <td><a href="#string">string</a></td>
           <td>repeated</td>
-          <td>Existing <a href="#rellm-Media"><code>Media</code></a> to pass to the model alongside <code>user_prompt</code>, for image editing/ reference-based generation (e.g. a target Post/Event's own current photos), in the order given here. Leave empty for plain text-to-image generation instead -- <code>model</code> must have the matching capability either way (<code>AI_MODEL_CAPABILITY_IMAGE_EDITING</code> here, <code>AI_MODEL_CAPABILITY_IMAGE_GENERATION</code> if empty -- see <a href="#rellm-AIModelCapability"><code>AIModelCapability</code></a>'s own doc). Every id must be owned by the current user (or the current user must be an Admin).</td>
+          <td>Existing <a href="#rellm-Media"><code>Media</code></a> to pass to the model alongside <code>user_prompt</code>, for image editing/ reference-based generation (e.g. a target Post/Event's own current photos), in the order given here. Leave empty for plain text-to-image generation instead - <code>model</code> must have the matching capability either way (<code>AI_MODEL_CAPABILITY_IMAGE_EDITING</code> here, <code>AI_MODEL_CAPABILITY_IMAGE_GENERATION</code> if empty - see <a href="#rellm-AIModelCapability"><code>AIModelCapability</code></a>'s own doc). Every id must be owned by the current user (or the current user must be an Admin).</td>
         </tr>
         <tr>
           <td>post_id</td>
@@ -8173,7 +8181,7 @@ Instagram account</strong>. Unlike <a href="#rellm-FacebookPage"><code>FacebookP
           <td>event_instance_id</td>
           <td><a href="#string">string</a></td>
           <td></td>
-          <td>Attach to (and use the content of) this EventInstance's parent Event's own Post -- named by EventInstance, not Event, since that's what a viewer is actually looking at (and what gives the generated prompt its date/time/location context, the same way <a href="#grpc-api-SyncEventInstance"><code>SyncEventInstance</code></a> does). Caller must be the Event's own Post's author, or hold <code>MODERATE_POSTS</code>/<code>MODERATE_EVENTS</code>, or be an Admin.</td>
+          <td>Attach to (and use the content of) this EventInstance's parent Event's own Post - named by EventInstance, not Event, since that's what a viewer is actually looking at (and what gives the generated prompt its date/time/location context, the same way <a href="#grpc-api-SyncEventInstance"><code>SyncEventInstance</code></a> does). Caller must be the Event's own Post's author, or hold <code>MODERATE_POSTS</code>/<code>MODERATE_EVENTS</code>, or be an Admin.</td>
         </tr>
       </tbody>
     </table>
@@ -8194,13 +8202,13 @@ Instagram account</strong>. Unlike <a href="#rellm-FacebookPage"><code>FacebookP
           <td>providers</td>
           <td><a href="#rellm-AIModelProvider">AIModelProvider</a></td>
           <td>repeated</td>
-          <td>The requested user's own AIModelProviders (those they own) -- exactly the distinct <code>provider</code>s in <code>available_ai_models</code> whose <code>owner</code> is the requested user, each with its own <code>grants</code> populated (who else can use it). A convenience duplicate of data already in <code>available_ai_models</code>, so callers managing a user's own providers (rename/rekey/delete/grant/ revoke) don't have to de-duplicate that list themselves.</td>
+          <td>The requested user's own AIModelProviders (those they own) - exactly the distinct <code>provider</code>s in <code>available_ai_models</code> whose <code>owner</code> is the requested user, each with its own <code>grants</code> populated (who else can use it). A convenience duplicate of data already in <code>available_ai_models</code>, so callers managing a user's own providers (rename/rekey/delete/grant/ revoke) don't have to de-duplicate that list themselves.</td>
         </tr>
         <tr>
           <td>available_ai_models</td>
           <td><a href="#rellm-AvailableAIModel">AvailableAIModel</a></td>
           <td>repeated</td>
-          <td>Every model the requested user may currently call -- their own providers' models, plus any models granted to them on other users' providers. See <a href="#rellm-AvailableAIModel"><code>AvailableAIModel</code></a>'s own doc.</td>
+          <td>Every model the requested user may currently call - their own providers' models, plus any models granted to them on other users' providers. See <a href="#rellm-AvailableAIModel"><code>AvailableAIModel</code></a>'s own doc.</td>
         </tr>
       </tbody>
     </table>
@@ -8208,7 +8216,7 @@ Instagram account</strong>. Unlike <a href="#rellm-FacebookPage"><code>FacebookP
     <h3 id="grantaimodelproviderrequest"><a class="anchor" aria-hidden="true" tabindex="-1" href="#grantaimodelproviderrequest"><span class="octicon octicon-link"></span></a>GrantAIModelProviderRequest</h3>
     <p>
       Request to grant (or reset) another user's metered access to one of the current user's
-      <a href="#rellm-AIModelProvider"><code>AIModelProvider</code></a>s. <em>Authenticated, owner-only -- no Admin override.</em>
+      <a href="#rellm-AIModelProvider"><code>AIModelProvider</code></a>s. <em>Authenticated, owner-only - no Admin override.</em>
     </p>
     <table>
       <thead>
@@ -8242,7 +8250,7 @@ Instagram account</strong>. Unlike <a href="#rellm-FacebookPage"><code>FacebookP
           <td>model_names</td>
           <td><a href="#string">string</a></td>
           <td>repeated</td>
-          <td>The models the grantee is allowed to use, mirroring <a href="#rellm-AIModelProviderGrant"><code>AIModelProviderGrant.model_names</code></a> -- if empty, allows access to any model the provider supports. Also replaced (not merged) on a repeat call, same as <code>tokens</code>.</td>
+          <td>The models the grantee is allowed to use, mirroring <a href="#rellm-AIModelProviderGrant"><code>AIModelProviderGrant.model_names</code></a> - if empty, allows access to any model the provider supports. Also replaced (not merged) on a repeat call, same as <code>tokens</code>.</td>
         </tr>
       </tbody>
     </table>
@@ -8252,7 +8260,7 @@ Instagram account</strong>. Unlike <a href="#rellm-FacebookPage"><code>FacebookP
       Credentials for an <a href="https://platform.openai.com/docs/api-reference">OpenAI API</a> connection, accepted by
       <a href="#grpc-api-CreateAIModelProvider"><code>CreateAIModelProvider</code></a>/<a href="#grpc-api-UpdateAIModelProvider"><code>UpdateAIModelProvider</code></a>.
       Used for image generation/editing via OpenAI's <a href="https://platform.openai.com/docs/guides/image-generation">Images API</a>
-      (the GPT Image model family) -- same use case as <a href="#rellm-GeminiCredentials"><code>GeminiCredentials</code></a>, see
+      (the GPT Image model family) - same use case as <a href="#rellm-GeminiCredentials"><code>GeminiCredentials</code></a>, see
       <a href="#grpc-api-GenerateMedia"><code>GenerateMedia</code></a>.
     </p>
     <table>
@@ -8278,7 +8286,7 @@ Instagram account</strong>. Unlike <a href="#rellm-FacebookPage"><code>FacebookP
     <p>
       Request to revoke another user's access to one of the current user's
       <a href="#rellm-AIModelProvider"><code>AIModelProvider</code></a>s, the reverse of
-      <a href="#grpc-api-GrantAIModelProvider"><code>GrantAIModelProvider</code></a>. <em>Authenticated, owner-only -- no Admin override.</em>
+      <a href="#grpc-api-GrantAIModelProvider"><code>GrantAIModelProvider</code></a>. <em>Authenticated, owner-only - no Admin override.</em>
     </p>
     <table>
       <thead>
@@ -8307,11 +8315,11 @@ Instagram account</strong>. Unlike <a href="#rellm-FacebookPage"><code>FacebookP
     <p><a name="rellm-AIModelCapability"></a></p>
     <h3 id="aimodelcapability"><a class="anchor" aria-hidden="true" tabindex="-1" href="#aimodelcapability"><span class="octicon octicon-link"></span></a>AIModelCapability</h3>
     <p>
-      What an <a href="#rellm-AvailableAIModel"><code>AvailableAIModel</code></a> can actually do -- drives feature gating
+      What an <a href="#rellm-AvailableAIModel"><code>AvailableAIModel</code></a> can actually do - drives feature gating
       (e.g. <a href="#grpc-api-GenerateMedia"><code>GenerateMedia</code></a>'s "Generate Media…" buttons/panel only offer
       models carrying <code>AI_MODEL_CAPABILITY_IMAGE_EDITING</code>/<code>AI_MODEL_CAPABILITY_IMAGE_GENERATION</code>)
       without the gated feature needing its own hardcoded list of model names to check against. A
-      model may carry more than one -- e.g. an image-editing model can also usually do plain
+      model may carry more than one - e.g. an image-editing model can also usually do plain
       text-to-image generation.
     </p>
     <table>
@@ -8336,12 +8344,12 @@ Instagram account</strong>. Unlike <a href="#rellm-FacebookPage"><code>FacebookP
         <tr>
           <td>AI_MODEL_CAPABILITY_IMAGE_GENERATION</td>
           <td>2</td>
-          <td>The model can generate a new image from a text prompt alone -- what <a href="#grpc-api-GenerateMedia"><code>GenerateMedia</code></a> requires when <code>GenerateMediaRequest.media_ids</code> is empty (no reference images to edit with).</td>
+          <td>The model can generate a new image from a text prompt alone - what <a href="#grpc-api-GenerateMedia"><code>GenerateMedia</code></a> requires when <code>GenerateMediaRequest.media_ids</code> is empty (no reference images to edit with).</td>
         </tr>
         <tr>
           <td>AI_MODEL_CAPABILITY_IMAGE_EDITING</td>
           <td>3</td>
-          <td>The model can edit an existing image, given a text prompt and one or more reference images -- what <a href="#grpc-api-GenerateMedia"><code>GenerateMedia</code></a> requires instead, whenever <code>GenerateMediaRequest.media_ids</code> is non-empty. Not every model with <code>AI_MODEL_CAPABILITY_IMAGE_GENERATION</code> also has this -- some (e.g. the cheaper/faster <code>gemini-3.1-flash-lite-image</code> tier) only support plain generation.</td>
+          <td>The model can edit an existing image, given a text prompt and one or more reference images -- what <a href="#grpc-api-GenerateMedia"><code>GenerateMedia</code></a> requires instead, whenever <code>GenerateMediaRequest.media_ids</code> is non-empty. Not every model with <code>AI_MODEL_CAPABILITY_IMAGE_GENERATION</code> also has this - some (e.g. the cheaper/faster <code>gemini-3.1-flash-lite-image</code> tier) only support plain generation.</td>
         </tr>
       </tbody>
     </table>

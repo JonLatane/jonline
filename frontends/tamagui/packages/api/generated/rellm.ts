@@ -106,37 +106,37 @@ export const protobufPackage = "rellm";
  * [`Post`](#rellm-Post)/[`Author`](#rellm-Author) shapes used everywhere else in the app --
  * entirely client-side, with no RPCs of their own. The server's only role is admin configuration:
  * [`FederationInfo`](#rellm-FederationInfo) tells clients which instances/apps are safe or
- * expected to pull from. There is no server-to-server proxying or bridging involved -- this follows
+ * expected to pull from. There is no server-to-server proxying or bridging involved - this follows
  * the same "the client does the merging" pattern as [`FederatedServer`](#rellm-FederatedServer),
  * just reaching across a protocol boundary instead of a Rellm-to-Rellm one. It's also
- * one-directional (reading in, not posting out) -- publishing a Rellm [`Post`](#rellm-Post) *to*
+ * one-directional (reading in, not posting out) - publishing a Rellm [`Post`](#rellm-Post) *to*
  * Mastodon or Bluesky is a separate feature, [`SyncDestination`](#rellm-SyncDestination).
  *
  * ##### Mastodon/ActivityPub
  * A client can browse any Mastodon instance's local public timeline
  * (`GET /api/v1/timelines/public?local=true`) with zero configuration, since it's already a public,
- * unauthenticated REST endpoint -- no [`MastodonServer`](#rellm-MastodonServer) entry is needed
+ * unauthenticated REST endpoint - no [`MastodonServer`](#rellm-MastodonServer) entry is needed
  * just to *read* public posts.
  *
  * Connecting an actual Mastodon *account* is a heavier flow, since Mastodon has no single central
- * OAuth authority the way Facebook/X do -- every instance is its own separate OAuth provider. A
+ * OAuth authority the way Facebook/X do - every instance is its own separate OAuth provider. A
  * server admin registers an app on a given instance ahead of time
  * (`FederationInfo.mastodon_servers`, a [`MastodonServer`](#rellm-MastodonServer) carrying that
  * instance's `app_id`/`app_secret`), and only then can a user on that instance complete the OAuth
  * popup + PKCE flow to connect their own account. `MastodonServer.configured_by_default`/
  * `pinned_by_default` let an admin recommend a given instance be auto-browsed the first time a
- * client visits this server -- see those fields' own docs for the current relationship between the
+ * client visits this server - see those fields' own docs for the current relationship between the
  * two.
  *
  * ##### BlueSky/AT Protocol
- * Unlike Mastodon, AT Protocol has no "local instance timeline" concept at all -- every Personal
+ * Unlike Mastodon, AT Protocol has no "local instance timeline" concept at all - every Personal
  * Data Server (PDS) only ever serves its own users' own repos, so there is nothing equivalent to
  * browse anonymously. Cross-protocol federation with Bluesky therefore always requires a connected
  * account: a handle and an [App Password](https://bsky.app/settings/app-passwords) (not OAuth --
  * AT Protocol has no per-client app-registration step the way Mastodon/Facebook/X require), used to
  * call `com.atproto.server.createSession` and then the account's own
  * `app.bsky.feed.getTimeline`. Because there's no server-side app to register, there is no
- * `BlueskyServer` config type mirroring [`MastodonServer`](#rellm-MastodonServer) -- nothing about
+ * `BlueskyServer` config type mirroring [`MastodonServer`](#rellm-MastodonServer) - nothing about
  * connecting a Bluesky account is admin-configurable the way a Mastodon OAuth app is.
  *
  * ### API Design Notes
@@ -157,7 +157,7 @@ export const protobufPackage = "rellm";
  * For instance, [`UpdatePost`](#grpc-api-UpdatePost) is fully atomic.
  *
  * [`UpdateEvent`](#grpc-api-UpdateEvent), however, is non-atomic. Given that an [`Event`](#rellm-Event) has a [`Post`](#rellm-Post) and many [`EventInstance`](#rellm-EventInstance)s,
- * [`UpdateEvent`](#grpc-api-UpdateEvent) is implemented as a composition of four other RPCs -- each independently callable and individually atomic --
+ * [`UpdateEvent`](#grpc-api-UpdateEvent) is implemented as a composition of four other RPCs - each independently callable and individually atomic --
  * run in a fixed order: [`UpdateEventDetails`](#grpc-api-UpdateEventDetails) (which itself first updates the [`Event`](#rellm-Event)'s own [`Post`](#rellm-Post)
  * atomically, literally calling the [`UpdatePost`](#grpc-api-UpdatePost) RPC), then [`CreateNewEventInstances`](#grpc-api-CreateNewEventInstances),
  * [`UpdateEventInstances`](#grpc-api-UpdateEventInstances), and finally [`DeleteRemovedEventInstances`](#grpc-api-DeleteRemovedEventInstances).
@@ -194,19 +194,19 @@ export const protobufPackage = "rellm";
  *
  * ##### Custom Tabs
  * [`CustomNavigationTabSet`](#rellm-CustomNavigationTabSet) (`custom_tabs`) lets a server admin override the Elm
- * UI's default navigation. `home` (a [`CustomHomePage`](#rellm-CustomHomePage)) replaces `/` itself -- a
+ * UI's default navigation. `home` (a [`CustomHomePage`](#rellm-CustomHomePage)) replaces `/` itself - a
  * predefined tab or a specific Post, optionally with Posts pinned above its content and/or an Events strip shown
  * above it; `tabs` (repeated [`CustomNavigationTab`](#rellm-CustomNavigationTab)) replaces the
  * `EVENTS_TAB`/`POSTS_TAB`/`PEOPLE_TAB`/`ABOUT_TAB` set entirely, each pinned to its own custom URL (`path`). Each
  * `CustomNavigationTab` targets either a predefined [`NavigationTab`](#rellm-NavigationTab), a Post ID, or
  * (path-only) a user profile, with its own emoji- or Media-backed icon and optional title override. `path` is
- * fully live -- the Elm SPA actually routes it (`Pages.UsernameOrCustomTab_`), not just previews it -- except for
+ * fully live - the Elm SPA actually routes it (`Pages.UsernameOrCustomTab_`), not just previews it - except for
  * the built-in `/events`, `/posts`, `/people`, and `/about` paths themselves, which stay reserved for their own
  * matching predefined tab and can't be remapped elsewhere.
  *
  * ##### Anonymous, Default, and Basic User Permission Sets
  * Three [`Permission`](#rellm-Permission) lists set the server's baseline access, each enforced independently of
- * any per-User/per-Group grants: `anonymous_user_permissions` (what a logged-out visitor may do -- only the
+ * any per-User/per-Group grants: `anonymous_user_permissions` (what a logged-out visitor may do - only the
  * `VIEW_*` permissions are valid here), `default_user_permissions` (what every new account starts with), and
  * `basic_user_permissions` (the superset a user holding `GRANT_BASIC_PERMISSIONS` may hand out to others). Granting
  * `GLOBAL_PUBLIC` as a feature's `default_visibility` (see `people_settings`/`group_settings`/`post_settings`/
@@ -224,10 +224,10 @@ export const protobufPackage = "rellm";
  *
  * ###### Mastodon/ActivityPub servers
  * `mastodon_servers` (repeated [`MastodonServer`](#rellm-MastodonServer)) plays a similar role to
- * `servers` above, but for Mastodon instances instead of other Rellm servers -- see
+ * `servers` above, but for Mastodon instances instead of other Rellm servers - see
  * [Cross-Protocol Federation](#cross-protocol-federation) for the client-side feature this backs.
  * Unlike a real `FederatedServer`, though, an entry here is *not* required just to browse an
- * instance's public timeline read-only -- that's already a public, unauthenticated Mastodon REST
+ * instance's public timeline read-only - that's already a public, unauthenticated Mastodon REST
  * endpoint any client can call directly. It's only needed to let a user *connect their own*
  * Mastodon account (OAuth + PKCE), since Mastodon has no single central OAuth authority the way
  * Facebook/X do: every instance is its own separate OAuth provider, so an admin has to register an
@@ -240,26 +240,26 @@ export const protobufPackage = "rellm";
  * A Mastodon instance functions like a much thinner version of a federated Rellm server in the
  * UI: its public posts appear in the same multi-server feed, translated into Rellm's own
  * [`Post`](#rellm-Post) shape, but it has no equivalent of Rellm's Events, Groups, Media
- * library, or People/Follows -- just posts and their authors.
+ * library, or People/Follows - just posts and their authors.
  *
  * ###### Facebook API Keys
  * `facebook_auth_config` (a [`FacebookAuthConfig`](#rellm-FacebookAuthConfig), `app_id`/`app_secret`) registers
  * this server's Facebook App, enabling users to connect Facebook Page and Instagram Business
  * [`SyncDestination`](#rellm-SyncDestination)s. `app_secret` is write-only/never serialized back to clients;
  * admins set/rotate it via [`ConfigureServer`](#grpc-api-ConfigureServer) (i.e. the same admin UI form that
- * manages the rest of [`ServerConfiguration`](#rellm-ServerConfiguration)) -- the secret is simply never echoed
+ * manages the rest of [`ServerConfiguration`](#rellm-ServerConfiguration)) - the secret is simply never echoed
  * back in subsequent [`GetServerConfiguration`](#grpc-api-GetServerConfiguration) responses.
  *
  * ###### X (Twitter) API Keys
  * `x_twitter_auth_config` (an [`XTwitterAuthConfig`](#rellm-XTwitterAuthConfig), `client_id`/`client_secret`)
  * registers this server's X Developer App, enabling users to connect X [`SyncDestination`](#rellm-SyncDestination)s
- * -- until set, X SyncDestinations fail with `x_twitter_app_not_configured`. `client_secret` is write-only/never
+ * - until set, X SyncDestinations fail with `x_twitter_app_not_configured`. `client_secret` is write-only/never
  * serialized back to clients, set/rotated the same way as the Facebook API keys above.
  *
  * ##### Web Push Configuration
  * [`WebPushConfig`](#rellm-WebPushConfig) (`web_push_config`) holds the server's VAPID keypair for Web Push
  * notifications: `public_vapid_key` is served to clients so they can subscribe, while `private_vapid_key` signs
- * outgoing pushes and is *never* serialized to clients -- like the federation secrets above, admins set/rotate it
+ * outgoing pushes and is *never* serialized to clients - like the federation secrets above, admins set/rotate it
  * via [`ConfigureServer`](#grpc-api-ConfigureServer), not by editing the database directly.
  *
  * ##### CDN Configuration
@@ -295,15 +295,15 @@ export const protobufPackage = "rellm";
  * subscription URL (`configuration.ics_subscription_url`, syncing in [`Event`](#rellm-Event)s/
  * [`EventInstance`](#rellm-EventInstance)s), or an RSS/Atom subscription URL (`configuration.rss_subscription_url`/
  * `configuration.atom_subscription_url`, syncing in plain [`Post`](#rellm-Post)s). Every kind of synced content is
- * tagged via its own `Post.sync_source` -- an [`Event`](#rellm-Event)'s own Post, each of its
- * [`EventInstance`](#rellm-EventInstance)s' own Post, or a plain synced Post -- since a single source can back many
+ * tagged via its own `Post.sync_source` - an [`Event`](#rellm-Event)'s own Post, each of its
+ * [`EventInstance`](#rellm-EventInstance)s' own Post, or a plain synced Post - since a single source can back many
  * synced Posts but each Post has at most one source it came from; see the Event and Post sections below for how
  * these attach. A background job re-pulls each source on its own `sync_interval_seconds` cadence, recomputing
  * `event_count`/`event_instance_count` (iCal) or `post_count` (RSS/Atom) on every sync.
  *
  * Sources are managed via [`GetSyncSources`](#grpc-api-GetSyncSources), [`CreateSyncSource`](#grpc-api-CreateSyncSource)
- * (requires `SYNC_EVENTS_FROM_ICS`/`SYNC_POSTS_FROM_RSS`/`SYNC_POSTS_FROM_ATOM` -- whichever matches
- * the source's own configuration -- or Admin), [`UpdateSyncSource`](#grpc-api-UpdateSyncSource), and
+ * (requires `SYNC_EVENTS_FROM_ICS`/`SYNC_POSTS_FROM_RSS`/`SYNC_POSTS_FROM_ATOM` - whichever matches
+ * the source's own configuration - or Admin), [`UpdateSyncSource`](#grpc-api-UpdateSyncSource), and
  * [`DeleteSyncSource`](#grpc-api-DeleteSyncSource).
  *
  * See also: [`SyncDestination`](#rellm-SyncDestination)
@@ -311,20 +311,20 @@ export const protobufPackage = "rellm";
  * ###### iCal
  * `configuration.ics_subscription_url` is a plain iCal (`.ics`) subscription URL. The background job fetches and
  * parses it on each sync, creating/updating one [`Event`](#rellm-Event) (and one [`EventInstance`](#rellm-EventInstance)
- * per occurrence) per iCal `VEVENT` -- each occurrence's own Post is keyed by `(sync_source_id, sync_source_uid,
+ * per occurrence) per iCal `VEVENT` - each occurrence's own Post is keyed by `(sync_source_id, sync_source_uid,
  * sync_source_recurrence_anchor)`, the iCal UID plus that occurrence's stable identity within its series (its own
- * start time, or its original scheduled time if since rescheduled) -- and recomputing `event_count`/
+ * start time, or its original scheduled time if since rescheduled) - and recomputing `event_count`/
  * `event_instance_count`. An `EventInstance`'s `sync_missing_since` is set the first time it stops appearing in
  * the feed, letting the owner decide whether that means it should be deleted. No auth/credentials are supported
- * yet -- only public iCal URLs.
+ * yet - only public iCal URLs.
  *
  * ###### RSS
  * `configuration.rss_subscription_url` is a plain RSS 2.0 subscription URL. The background job fetches and parses
- * it on each sync, creating/updating one plain [`Post`](#rellm-Post) per RSS `<item>` -- each Post is keyed by
+ * it on each sync, creating/updating one plain [`Post`](#rellm-Post) per RSS `<item>` - each Post is keyed by
  * `(sync_source_id, sync_source_uid)`, `sync_source_uid` being the item's own `<guid>` (or a hash of its `<link>`
- * if it has none) -- and recomputing `post_count`. Unlike iCal, a `<item>` that stops appearing in the feed is left
+ * if it has none) - and recomputing `post_count`. Unlike iCal, a `<item>` that stops appearing in the feed is left
  * alone rather than pruned: RSS feeds are commonly truncated to their most recent N items by the publisher, so
- * "no longer in the feed" doesn't mean "was retracted". No auth/credentials are supported yet -- only public RSS
+ * "no longer in the feed" doesn't mean "was retracted". No auth/credentials are supported yet - only public RSS
  * URLs.
  *
  * ###### Atom
@@ -332,7 +332,7 @@ export const protobufPackage = "rellm";
  * one plain [`Post`](#rellm-Post) per `<entry>`, keyed by `(sync_source_id, sync_source_uid)` with `sync_source_uid`
  * being the entry's own `<id>`, recomputing `post_count`, missing entries left alone rather than pruned. RSS and
  * Atom feeds are parsed via the same underlying library into one unified shape, so both formats share this exact
- * behavior -- pick whichever a given source actually publishes.
+ * behavior - pick whichever a given source actually publishes.
  *
  * ##### SyncDestinations
  * A [`User`](#rellm-User) can also own many [`SyncDestination`](#rellm-SyncDestination)s - user-owned external
@@ -349,7 +349,7 @@ export const protobufPackage = "rellm";
  *
  * Destinations are managed via [`GetSyncDestinations`](#grpc-api-GetSyncDestinations),
  * [`CreateSyncDestination`](#grpc-api-CreateSyncDestination), [`UpdateSyncDestination`](#grpc-api-UpdateSyncDestination),
- * and [`DeleteSyncDestination`](#grpc-api-DeleteSyncDestination) -- each gated on the `SYNC_EVENTS_TO_*`/
+ * and [`DeleteSyncDestination`](#grpc-api-DeleteSyncDestination) - each gated on the `SYNC_EVENTS_TO_*`/
  * `SYNC_POSTS_TO_*` permission pair matching the destination's own platform (or Admin; see each platform's own
  * section below). Actually syncing (or un-syncing) a given [`EventInstance`](#rellm-EventInstance) or [`Post`](#rellm-Post) to a destination is a separate
  * step, via [`SyncEventInstance`](#grpc-api-SyncEventInstance)/
@@ -369,7 +369,7 @@ export const protobufPackage = "rellm";
  * ###### Instagram
  * `configuration.instagram_account` (an [`InstagramAccount`](#rellm-InstagramAccount)) is a connected Instagram
  * Business/Creator account. Instagram posting is only possible for an account linked to a Facebook Page, so
- * connecting one reuses the exact same Facebook Login flow/app credentials as Facebook above -- the server exchanges
+ * connecting one reuses the exact same Facebook Login flow/app credentials as Facebook above - the server exchanges
  * the token for the chosen Page's access token, then looks up that Page's linked Instagram Business account
  * (`instagram_business_account_id`). Unlike Facebook, Instagram's Graph API has no text-only post type; syncing a
  * [`Post`](#rellm-Post)/[`EventInstance`](#rellm-EventInstance) with no attached media fails with `instagram_requires_media`. Gated on
@@ -377,7 +377,7 @@ export const protobufPackage = "rellm";
  *
  * ###### Mastodon
  * `configuration.mastodon_account` (a [`MastodonAccount`](#rellm-MastodonAccount)) is a connected Mastodon
- * account, on any instance the user names (`instance_host`) -- there's no single app to register the way
+ * account, on any instance the user names (`instance_host`) - there's no single app to register the way
  * Facebook/Instagram have one, so connecting one is a user-pasted Personal Access Token
  * (`MastodonAccount.access_token`, generated on the user's own instance under Preferences > Development) rather than
  * an OAuth popup. Gated on `SYNC_EVENTS_TO_MASTODON`/`SYNC_POSTS_TO_MASTODON`.
@@ -385,15 +385,15 @@ export const protobufPackage = "rellm";
  * ###### Bluesky
  * `configuration.bluesky_account` (a [`BlueskyAccount`](#rellm-BlueskyAccount)) is a connected Bluesky (AT
  * Protocol) account. Connecting one is a user-supplied "App Password" (`BlueskyAccount.app_password`, generated at
- * Settings > App Passwords -- not the account's main password) rather than an OAuth popup. Gated on
+ * Settings > App Passwords - not the account's main password) rather than an OAuth popup. Gated on
  * `SYNC_EVENTS_TO_BLUESKY`/`SYNC_POSTS_TO_BLUESKY`.
  *
  * ###### X (Twitter)
  * `configuration.x_twitter_account` (an [`XTwitterAccount`](#rellm-XTwitterAccount)) is a connected X account. Requires this
- * server to have a registered X Developer App configured (`FederationInfo.x_twitter_auth_config`) -- until an admin
+ * server to have a registered X Developer App configured (`FederationInfo.x_twitter_auth_config`) - until an admin
  * sets one, every RPC touching an [`XTwitterAccount`](#rellm-XTwitterAccount) destination fails with `x_twitter_app_not_configured`. Once
  * configured, connecting is an OAuth 2.0 Authorization Code + PKCE flow at x.com (`response_type=code`, like
- * Threads, but with a `code_challenge`/`code_verifier` pair X requires and Threads doesn't) -- the server exchanges
+ * Threads, but with a `code_challenge`/`code_verifier` pair X requires and Threads doesn't) - the server exchanges
  * the code for a short-lived access token (2 hour expiry) plus a refresh token, transparently refreshing before
  * each post. Only image media is uploaded today; video is not yet supported (see `XTwitterAccount`'s own doc).
  * Gated on `SYNC_EVENTS_TO_X_TWITTER`/`SYNC_POSTS_TO_X_TWITTER`.
@@ -403,8 +403,8 @@ export const protobufPackage = "rellm";
  * Threads API is a product added to this server's *existing* Facebook App (see [`FacebookAuthConfig`](#rellm-FacebookAuthConfig)) rather than a
  * separately-registered app, but its OAuth flow is otherwise its own: authorization happens at threads.net (not
  * facebook.com) using `response_type=code` rather than Facebook's implicit `response_type=token`, with no "choose a
- * Page" step -- it directly authorizes the user's own Threads account. The server exchanges the code for a
- * short-lived token, then a long-lived one (~60 day expiry, refreshable via `grant_type=th_refresh_token` -- not yet
+ * Page" step - it directly authorizes the user's own Threads account. The server exchanges the code for a
+ * short-lived token, then a long-lived one (~60 day expiry, refreshable via `grant_type=th_refresh_token` - not yet
  * implemented, so a connected destination needs reconnecting after ~60 days). Unlike Instagram, Threads supports
  * text-only posts. Gated on `SYNC_EVENTS_TO_THREADS`/`SYNC_POSTS_TO_THREADS`.
  *
@@ -420,17 +420,17 @@ export const protobufPackage = "rellm";
  *
  * #### AIModelProvider
  * An [`AIModelProvider`](#rellm-AIModelProvider) is a user-owned connection to an external AI model API (e.g. a
- * Gemini API key), via a `oneof provider` naming which service it is -- structurally similar to
+ * Gemini API key), via a `oneof provider` naming which service it is - structurally similar to
  * [`SyncDestination`](#rellm-SyncDestination)/[`SyncSource`](#rellm-SyncSource), but rather than pushing/pulling
  * content, it's metered *access* an owner can share out to other users of this server. As with
- * [`SyncDestination`](#rellm-SyncDestination)'s platform credentials, the actual API key is write-only -- accepted
+ * [`SyncDestination`](#rellm-SyncDestination)'s platform credentials, the actual API key is write-only - accepted
  * on [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider)/[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider)
  * but never populated back in a response.
  *
  * Providers are managed via [`GetAIModelProviders`](#grpc-api-GetAIModelProviders),
  * [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider) (requires `CREATE_AI_MODEL_PROVIDERS`, or Admin),
  * [`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider), and [`DeleteAIModelProvider`](#grpc-api-DeleteAIModelProvider)
- * -- each gated self-or-Admin, the same shape as [`SyncDestination`](#rellm-SyncDestination)'s RPCs.
+ * - each gated self-or-Admin, the same shape as [`SyncDestination`](#rellm-SyncDestination)'s RPCs.
  *
  * ##### Gemini
  * `provider.gemini_credentials` (a [`GeminiCredentials`](#rellm-GeminiCredentials)) is a Google Gemini API
@@ -444,13 +444,13 @@ export const protobufPackage = "rellm";
  *
  * ##### Anthropic
  * `provider.anthropic_credentials` (an [`AnthropicCredentials`](#rellm-AnthropicCredentials)) is reserved for a
- * connected Anthropic API, but **not yet creatable** -- Anthropic doesn't offer an image generation API, so it's
+ * connected Anthropic API, but **not yet creatable** - Anthropic doesn't offer an image generation API, so it's
  * defined only for forward compatibility.
  *
  * ##### DigitalOcean
  * `provider.digitalocean_credentials` (a [`DigitalOceanCredentials`](#rellm-DigitalOceanCredentials)) is a
  * DigitalOcean Gradient AI Platform / Serverless Inference connection (`docs.digitalocean.com/products/inference`),
- * used for image *generation only* (no editing -- DigitalOcean's Serverless Inference API has no
+ * used for image *generation only* (no editing - DigitalOcean's Serverless Inference API has no
  * `/v1/images/edits`-equivalent endpoint) via its OpenAI-Images-API-shaped `/v1/images/generations` endpoint (GPT
  * Image and Stable Diffusion models, re-hosted under DigitalOcean's own billing).
  *
@@ -458,9 +458,9 @@ export const protobufPackage = "rellm";
  * A provider's owner may share metered access to it with other users via
  * [`AIModelProviderGrant`](#rellm-AIModelProviderGrant)s, each carrying a `tokens_remaining` budget for that grantee.
  * Granted/reset via [`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider) (upserted on the unique
- * `(ai_model_provider_id, grantee)` pair -- granting again *resets*, rather than adds to, `tokens_remaining`) and
+ * `(ai_model_provider_id, grantee)` pair - granting again *resets*, rather than adds to, `tokens_remaining`) and
  * removed via [`RevokeAIModelProvider`](#grpc-api-RevokeAIModelProvider). Unlike every other RPC pair in this section,
- * these two are **owner-only, with no Admin override** -- an Admin may manage the provider record itself, but only
+ * these two are **owner-only, with no Admin override** - an Admin may manage the provider record itself, but only
  * its owner may hand out access to it.
  *
  * #### Media
@@ -572,7 +572,7 @@ export const protobufPackage = "rellm";
  * [`/auth/from/...`](#authfromencrypted_account_auth_tokens-receiving-side)) exchange
  * an encrypted pair of tokens via a full-page redirect; no gRPC/HTTP endpoint on either backend is involved beyond
  * the [`Login`](#grpc-api-Login) RPC itself (plus [`GetCurrentUser`](#grpc-api-GetCurrentUser) on the receiving side,
- * to hydrate everything else -- see step 6).
+ * to hydrate everything else - see step 6).
  *
  * 1. Say a user is on `jonline.io`, adding a new account, and enters `bullcity.social` as the server. Since that
  * isn't the current host, the Accounts panel offers a "Sign in via bullcity.social" button instead of (or alongside)
@@ -582,19 +582,19 @@ export const protobufPackage = "rellm";
  * 3. `bullcity.social` shows its own sign-in form (or, if already signed in there, a badge to reuse that session),
  * plus a "Sign back in here" checkbox, checked by default.
  * 4. The user authenticates via the [`Login`](#grpc-api-Login) RPC. This always issues a *fresh* `refresh_token`/
- * `access_token` pair, reserved purely for transfer back to `jonline.io` -- it's never used to sign the browser into
+ * `access_token` pair, reserved purely for transfer back to `jonline.io` - it's never used to sign the browser into
  * `bullcity.social` itself. If "Sign back in here" is checked, a **second**, independent [`Login`](#grpc-api-Login)
  * call also runs, so `bullcity.social` gets its own local session too, and the two servers never end up sharing a
  * token pair. (Hence "1-2 refresh tokens.")
  * 5. Only `bullcity.social`'s hostname and that fresh `refresh_token`/`access_token` pair are JSON-encoded and
- * encrypted to `jonline.io`'s public key from step 2 (ephemeral ECDH + HKDF + AES-GCM -- see below) -- nothing else
+ * encrypted to `jonline.io`'s public key from step 2 (ephemeral ECDH + HKDF + AES-GCM - see below) - nothing else
  * about the account travels in the payload. The browser is then redirected back to `jonline.io` at
  * `/auth/from/{ciphertext}`.
  * 6. `jonline.io` decrypts the payload with the private key it generated in step 2, calls
  * [`GetCurrentUser`](#grpc-api-GetCurrentUser) against `bullcity.social` with the decrypted `access_token` to hydrate
  * the rest of the account (user ID, username, avatar, permissions, etc. straight from `bullcity.social` itself
  * rather than trusting a client-supplied copy of them), then adds it to its Accounts panel and navigates the user
- * onward -- no confirmation step. Either way, the one-time keypair generated in step 2 is discarded and a fresh one
+ * onward - no confirmation step. Either way, the one-time keypair generated in step 2 is discarded and a fresh one
  * generated in its place, so it can't be reused for a second transfer.
  *
  * See the two [Web UI](#authtopublic_keyrequesting_host-and-authfromencrypted_account_auth_tokens-receiving-side)
@@ -641,11 +641,11 @@ export const protobufPackage = "rellm";
  * [README](https://github.com/JonLatane/rellm/blob/main/deploys/email/README.md) for setup/architecture) once it
  * accepts an inbound message addressed to one of this Rellm instance's onboarded domains, turning it into a
  * [`Message`](#rellm-Message). It is **internal-only**: mounted solely on the unsecured 27705 server (never on
- * 80/8000/443), has no authentication of its own, and trusts its caller completely -- that trust boundary is
+ * 80/8000/443), has no authentication of its own, and trusts its caller completely - that trust boundary is
  * expected to be enforced at the network layer (e.g. a `NetworkPolicy` restricting port 27705 to Stalwart's pod).
  *
  * * **Request**: the body is Stalwart's `data`-stage [MTA Hook](https://stalw.art/docs/mta/filter/mtahooks/) JSON
- * payload (up to 50 MiB), not a raw MIME stream -- only the fields below are read, the rest of Stalwart's payload
+ * payload (up to 50 MiB), not a raw MIME stream - only the fields below are read, the rest of Stalwart's payload
  * (`context`, `envelope.from`, `message.serverHeaders`, `message.size`, ...) is ignored:
  * ```json
  * {
@@ -656,10 +656,10 @@ export const protobufPackage = "rellm";
  *   }
  * }
  * ```
- * Recipients come from `envelope.to[].address` -- deliberately the SMTP envelope, not the message's `To`/`Cc`
+ * Recipients come from `envelope.to[].address` - deliberately the SMTP envelope, not the message's `To`/`Cc`
  * headers, since that's the only place Bcc'd recipients show up at all. The message itself is reconstructed by
  * concatenating `message.headers` (each an unfolded `[name, value]` pair) with `message.contents` across a blank
- * line, which `mail_parser` then parses as the RFC822 message -- Stalwart only splits at the top-level header/body
+ * line, which `mail_parser` then parses as the RFC822 message - Stalwart only splits at the top-level header/body
  * boundary, so this still captures multipart bodies and attachments intact within `contents`. A body that isn't
  * valid JSON in this shape, or that doesn't reconstruct into a parseable MIME message, returns `400 Bad Request`;
  * an oversized body returns `413 Payload Too Large`.
@@ -668,13 +668,13 @@ export const protobufPackage = "rellm";
  * confirmed deliverability before calling this endpoint. If none match, the whole message is dropped and the
  * endpoint returns `404 Not Found`.
  * * **Storage**: matched recipients become a [`Message`](#rellm-Message) addressed to a
- * [`MessagingGroup`](#rellm-MessagingGroup) keyed on the `To`/`Cc` recipients only -- Bcc'd recipients are excluded
+ * [`MessagingGroup`](#rellm-MessagingGroup) keyed on the `To`/`Cc` recipients only - Bcc'd recipients are excluded
  * from the group (so they stay invisible to everyone else on the thread) and instead recorded individually as `Bcc`
  * rows on the [`Message`](#rellm-Message). The [`Message`](#rellm-Message) has no `from_user_id`, since inbound email never has a local sender; its
  * parsed `from`/`to`/`cc` headers are stored alongside it, and the raw `.eml` is uploaded to the same MinIO store
  * used for [`Media`](#rellm-Media). Duplicate deliveries of the same `Message-ID` (Stalwart retries on transient failure) reuse the
  * existing [`Message`](#rellm-Message) row rather than storing/uploading a duplicate.
- * * **Response**: `200 OK` with a body of `{"action": "accept"}` on success -- Stalwart's MTA Hook protocol parses
+ * * **Response**: `200 OK` with a body of `{"action": "accept"}` on success - Stalwart's MTA Hook protocol parses
  * the response *body*, not just the status code, so this has to be the exact shape it expects
  * (see <https://stalw.art/docs/mta/filter/mtahooks/>) or Stalwart treats the call as a hook failure regardless of
  * status; combined with the `MtaHook`'s `tempFailOnError: true`, that surfaces to the sending client as a
@@ -708,8 +708,8 @@ export const protobufPackage = "rellm";
  *
  * ##### `GET /sitemap.xml`: Sitemap
  * Generated on the fly (not a static file) from the request's `Host` header, publicly cacheable for 1 hour. Lists a
- * fixed set of top-level, server-wide pages -- `/`, `/posts`, `/events`, `/people`, `/about`, `/about_rellm`,
- * `/flutter`, `/tamagui`, `/elm` -- plus any `CustomNavigationTabSet.tabs` paths configured on the server (excluding
+ * fixed set of top-level, server-wide pages - `/`, `/posts`, `/events`, `/people`, `/about`, `/about_rellm`,
+ * `/flutter`, `/tamagui`, `/elm` - plus any `CustomNavigationTabSet.tabs` paths configured on the server (excluding
  * the reserved `posts`/`events`/`people`/`about` paths, which are always included above), each qualified with the
  * request's `Host`. It also enumerates individual pages: every [`Post`](#rellm-Post) from an unauthenticated [`GetPosts`](#grpc-api-GetPosts) (the same
  * "first page" an anonymous visitor sees) as `/post/{id}`, and every [`Event`](#rellm-Event) instance from an unauthenticated
@@ -731,16 +731,16 @@ export const protobufPackage = "rellm";
  * See the [Media](#rellm-Media) section for the [`Media`](#rellm-Media) type itself; this is how its bytes actually get in
  * (an `OPTIONS /media` variant also exists, solely to satisfy CORS preflight requests). *Authenticated* (via
  * `Authorization` header or a `rellm_access_token` cookie). Requires `Content-Type` and `Filename` headers; the
- * body is streamed directly to the object store, capped at 250 MiB -- note that a larger upload is silently
+ * body is streamed directly to the object store, capped at 250 MiB - note that a larger upload is silently
  * truncated to that cap rather than rejected, since nothing checks for completeness the way `POST /email` does --
  * at a path namespaced by uploader and request host (`user/{user_id}@{host}-{username}/{uuid}-{filename}`). A
  * [`Media`](#rellm-Media) row is created immediately at `GLOBAL_PUBLIC` visibility (video content types also get
- * a default `video_preview_time_ms`) and its ID returned as plain text -- there's no separate "confirm" step, and
+ * a default `video_preview_time_ms`) and its ID returned as plain text - there's no separate "confirm" step, and
  * no image/video conversion happens synchronously on this request (see the background media-conversion job).
  *
  * ##### `GET /media/{id}?size={original|small|medium|large}`: Download Media
  * (An `OPTIONS /media/{id}` variant also exists, solely to satisfy CORS preflight requests.) Publicly downloadable
- * -- **moderation/visibility/permission checks on read are not yet enforced** (a `TODO` in `media_file`'s
+ * - **moderation/visibility/permission checks on read are not yet enforced** (a `TODO` in `media_file`'s
  * implementation), so a [`Media`](#rellm-Media) ID is currently a bearer capability. `size` (default `medium`) selects a converted
  * rendition, falling back to the original upload if that conversion doesn't exist. The first request for a given
  * rendition lazily downloads it from the object store into a local on-disk cache; subsequent requests are served
@@ -760,7 +760,7 @@ export const protobufPackage = "rellm";
  * The reverse direction of a `SyncSource`'s own RSS/Atom subscription (see the SyncSources section above): serves
  * Rellm's own [`Post`](#rellm-Post)s back out as a feed, only public Posts included. "Subscribe" to a Rellm server
  * at, for instance, `https://jonline.io/rss.xml` (or `/atom.xml`) to get a feed of all public posts on the server,
- * in whichever of the two formats a given feed reader prefers -- both endpoints serve the same underlying Posts.
+ * in whichever of the two formats a given feed reader prefers - both endpoints serve the same underlying Posts.
  * In the Elm frontend, links to these endpoints are provided next to the Posts page's own search controls, and on
  * the home page and user profile pages' embedded posts lists.
  *
@@ -774,14 +774,14 @@ export const protobufPackage = "rellm";
  * Tamagui and Elm share one page structure (below) and are always *both* reachable, explicitly, at `/tamagui/*`
  * and `/elm/*` respectively; unprefixed requests (`/`, `/posts`, `/post/{postId}`, etc.) render whichever of the
  * two the server's `ServerConfiguration.server_info.web_user_interface` selects (`ELM_SPA` picks Elm; every other
- * setting, including no preference at all, picks Tamagui). Elm is a genuine single-page app -- every Elm-served
+ * setting, including no preference at all, picks Tamagui). Elm is a genuine single-page app - every Elm-served
  * path, prefixed or not, resolves to the same `index.html`, with in-app (client-side) routing taking over from
- * there -- whereas Tamagui's Next.js build is statically exported one HTML file per route, so the server picks
+ * there - whereas Tamagui's Next.js build is statically exported one HTML file per route, so the server picks
  * between actual distinct files below, each enriched with server-rendered, per-route social-preview
  * (`<title>`/`og:*`) tags before being served.
  *
  * **Flutter does not participate in any of this.** It has no page structure of its own to speak of: no per-route
- * pages, no server-rendered social-preview metadata, and no unprefixed presence at all -- a server configured to
+ * pages, no server-rendered social-preview metadata, and no unprefixed presence at all - a server configured to
  * prefer it doesn't route "/" through the Tamagui/Elm machinery below and then render Flutter, it instead serves
  * Flutter's own `index.html` directly, bypassing that machinery entirely. Flutter is otherwise reached only at the
  * literal `/flutter` and `/flutter/*` paths, which serve its compiled static assets; from there, all further
@@ -799,7 +799,7 @@ export const protobufPackage = "rellm";
  * The Posts listing.
  *
  * ##### `/post/{postId}[@{host}]`: Post
- * An individual [`Post`](#rellm-Post) -- including [`Event`](#rellm-Event)/[`EventInstance`](#rellm-EventInstance) posts and replies, which are [`Post`](#rellm-Post)s
+ * An individual [`Post`](#rellm-Post) - including [`Event`](#rellm-Event)/[`EventInstance`](#rellm-EventInstance) posts and replies, which are [`Post`](#rellm-Post)s
  * themselves (see [Post](#post) above).
  *
  * #### `/events`: Events
@@ -809,9 +809,9 @@ export const protobufPackage = "rellm";
  * A [`Post`](#rellm-Post) or [`Event`](#rellm-Event)/[`EventInstance`](#rellm-EventInstance), reached at its own `post.id` prefixed
  * with any single character a username/custom tab path could never legally start with (see
  * [`validate_username`](https://github.com/JonLatane/rellm/blob/main/backend/src/rpcs/validations/validate_fields.rs)'s
- * own reserved-lead-character check) -- e.g. `jonline.io/:4rAfoSKAuJo` or `ato.band/~4rAfoSKAuJo`.
+ * own reserved-lead-character check) - e.g. `jonline.io/:4rAfoSKAuJo` or `ato.band/~4rAfoSKAuJo`.
  * This is purely a shorter, friendlier alias for `/post/{postId}[@{host}]` or
- * `/event/{postId}[@{host}]` (whichever the id turns out to belong to) -- it renders exactly that
+ * `/event/{postId}[@{host}]` (whichever the id turns out to belong to) - it renders exactly that
  * same content in place, without redirecting the address bar away from the short URL. `#` is
  * deliberately excluded from the reserved set: URL fragments never reach the server, so they
  * can't be used for this.
@@ -820,7 +820,7 @@ export const protobufPackage = "rellm";
  * An individual [`Event`](#rellm-Event), looked up by its own `post.id` or any of its [`EventInstance`](#rellm-EventInstance)s' `post.id`s.
  *
  * ##### `/event_ai`: AI Event Importer
- * Tamagui-only, for now -- an AI-assisted bulk [`Event`](#rellm-Event) importer. Elm doesn't have this page yet.
+ * Tamagui-only, for now - an AI-assisted bulk [`Event`](#rellm-Event) importer. Elm doesn't have this page yet.
  *
  * #### `/people`: People
  * The People listing.
@@ -833,12 +833,12 @@ export const protobufPackage = "rellm";
  *
  * #### `/{custom_tab_or_username}`: User pages by username, or a custom tab
  * The same [`User`](#rellm-User) profile (and its Posts/Friends/Followers/Following sub-pages) as `/user/{userId}` above, but
- * looked up by the current `username` instead -- lighter-weight to link to, but less stable than `/user/{userId}`
+ * looked up by the current `username` instead - lighter-weight to link to, but less stable than `/user/{userId}`
  * since a username can change. This single path segment is also the server's last-resort catch-all, resolved in
  * order: first any actual matching build asset or other explicit route above (e.g. `/posts`, `/user/{userId}`)
  * wins outright; then, if none matched, an admin-configured custom tab path (see
- * [`CustomNavigationTab`](#rellm-CustomNavigationTab).path) -- e.g. a band mounting their Events
- * listing at `/gigs` -- wins over a same-named user; only then, last, is it looked up as a plain username. A small
+ * [`CustomNavigationTab`](#rellm-CustomNavigationTab).path) - e.g. a band mounting their Events
+ * listing at `/gigs` - wins over a same-named user; only then, last, is it looked up as a plain username. A small
  * set of reserved names can never be reached this way, only via `/user/{userId}`.
  *
  * ##### `/{username}/posts`: Posts
@@ -847,7 +847,7 @@ export const protobufPackage = "rellm";
  * ##### `/{username}/following`: Following
  *
  * #### `/g/{shortname}`: Groups
- * A [`Group`](#rellm-Group)'s pages. Tamagui-only for now -- the Elm frontend doesn't have Group pages yet.
+ * A [`Group`](#rellm-Group)'s pages. Tamagui-only for now - the Elm frontend doesn't have Group pages yet.
  *
  * ##### `/g/{shortname}`: Home
  * ##### `/g/{shortname}/posts`: Posts
@@ -867,8 +867,8 @@ export const protobufPackage = "rellm";
  * This server's own About page, and a general "what is Rellm" page.
  *
  * #### `/auth/to/{public_key}@{requesting_host}` and `/auth/from/{encrypted_account_auth_tokens}`: Federated Sign-In
- * **Elm-only** -- unlike everything else in this section, these two paths have no Tamagui equivalent. They're Elm
- * SPA pages (served like any other SPA route -- under the `/elm` base path when the Elm frontend isn't the one
+ * **Elm-only** - unlike everything else in this section, these two paths have no Tamagui equivalent. They're Elm
+ * SPA pages (served like any other SPA route - under the `/elm` base path when the Elm frontend isn't the one
  * mounted at `/`) rather than backend/gRPC handlers, driving the
  * [Federated Authentication](#federated-authentication) flow entirely in-browser via a pair of full-page redirects
  * carrying an encrypted payload.
@@ -881,7 +881,7 @@ export const protobufPackage = "rellm";
  * (chosen because `@` never appears in the base64url/dot-joined ciphertext the
  * [`/auth/from`](#authfromencrypted_account_auth_tokens-receiving-side) page below expects, so the split is
  * unambiguous).
- * * **Query params**: `start_path` -- the app-relative path the user was on when they clicked "Sign in via ...", so
+ * * **Query params**: `start_path` - the app-relative path the user was on when they clicked "Sign in via ...", so
  * they can be dropped back there after the round trip. Percent-encoded; passed through unchanged to the eventual
  * [`/auth/from`](#authfromencrypted_account_auth_tokens-receiving-side) redirect.
  * * **Behavior**: shows a sign-in form for *this* server (or a "currently signed in as ..." badge, if already
@@ -904,7 +904,7 @@ export const protobufPackage = "rellm";
  * built the [`/auth/to`](#authtopublic_keyrequesting_host-sending-side) link (same ECDH + HKDF-SHA256 + AES-GCM
  * derivation, in reverse), yielding `bullcity.social`'s hostname and its `refresh_token`/`access_token`. Calls
  * [`GetCurrentUser`](#grpc-api-GetCurrentUser) against that server with the decrypted `access_token` to hydrate the
- * rest of the account, then adds it straight to the local Accounts panel and navigates to `start_path` -- no
+ * rest of the account, then adds it straight to the local Accounts panel and navigates to `start_path` - no
  * confirmation step (decryption succeeding is itself the authenticity check: the ciphertext is AEAD-encrypted to
  * this origin's own one-time private key, so a forged or replayed payload just fails to decrypt rather than
  * producing a wrong-but-valid account). If either step fails (bad decrypt, or the `GetCurrentUser` call itself),
@@ -1069,7 +1069,7 @@ export const RellmDefinition = {
     /**
      * Marks one or more Messages as read (or unread) by the current user, e.g. every message in a
      * thread once it's been opened. *Authenticated.* Only needs the recipient/sender access
-     * [`GetMessages`](#grpc-api-GetMessages) already requires for each Message -- no separate permission. Atomic: if the
+     * [`GetMessages`](#grpc-api-GetMessages) already requires for each Message - no separate permission. Atomic: if the
      * caller lacks access to *any* of `message_ids`, none of them are marked (matching
      * `MarkMessagesReadRequest.message_ids`' own doc), so a client never has to reconcile a
      * partially-applied batch.
@@ -1088,7 +1088,7 @@ export const RellmDefinition = {
      * browser tab is closed. *Authenticated.* Re-registering an already-registered `endpoint` (e.g.
      * because `PushManager.subscribe()` refreshed its keys) updates it in place rather than erroring.
      * No-ops (server-side; not surfaced as an error to the caller) if the server has no
-     * [`WebPushConfig`](#rellm-WebPushConfig) configured -- there's nothing to push notifications *with*.
+     * [`WebPushConfig`](#rellm-WebPushConfig) configured - there's nothing to push notifications *with*.
      */
     registerPushSubscription: {
       name: "RegisterPushSubscription",
@@ -1115,7 +1115,7 @@ export const RellmDefinition = {
      * Checks whether the calling user specifically (not just "some account on this browser") has a
      * [`PushSubscription`](#rellm-PushSubscription) registered for `endpoint`. *Authenticated.* Exists because a browser only
      * ever exposes its own subscription's `endpoint`/keys, never *who* on the server side is
-     * registered against it -- multiple local accounts on the same server can share one browser
+     * registered against it - multiple local accounts on the same server can share one browser
      * subscription (see [`RegisterPushSubscription`](#grpc-api-RegisterPushSubscription)'s own doc comment), so knowing the endpoint alone
      * isn't enough to know which of them are actually notified by it.
      */
@@ -1466,7 +1466,7 @@ export const RellmDefinition = {
     /**
      * Updates a SyncSource. *Authenticated* (owner, or Admin for any user's), requires
      * `SYNC_EVENTS_FROM_ICS`/`SYNC_POSTS_FROM_RSS`/`SYNC_POSTS_FROM_ATOM` (whichever matches the
-     * effective `configuration` -- the request's own if set, else the existing source's -- or Admin).
+     * effective `configuration` - the request's own if set, else the existing source's - or Admin).
      */
     updateSyncSource: {
       name: "UpdateSyncSource",
@@ -1595,10 +1595,10 @@ export const RellmDefinition = {
     },
     /**
      * Generates (or edits, given reference `media_ids`) an image via one of the current user's AvailableAIModels,
-     * storing it as a new Media and, if `target` is set, attaching it to that Post/Event. *Authenticated* -- caller
+     * storing it as a new Media and, if `target` is set, attaching it to that Post/Event. *Authenticated* - caller
      * must own or have been granted access to the chosen AIModelProvider, and (if `target` is set) have edit access
      * to that Post/Event. A grantee (never the provider's own owner) spends real
-     * AIModelProviderGrant.tokens_remaining on every call -- the provider's own reported token usage once generation
+     * AIModelProviderGrant.tokens_remaining on every call - the provider's own reported token usage once generation
      * succeeds, or (rejected before any request is even sent to the provider) a rough pre-flight estimate of the
      * request's input cost alone, whichever catches an insufficient balance first.
      */
@@ -1664,7 +1664,7 @@ export const RellmDefinition = {
     /**
      * Configure the server (i.e. the response to GetServerConfiguration). *Authenticated.*
      * Requires `ADMIN` permissions. Editing `cluster_resources` additionally requires
-     * `EDIT_CLUSTER_SETTINGS` -- see that field's own doc.
+     * `EDIT_CLUSTER_SETTINGS` - see that field's own doc.
      */
     configureServer: {
       name: "ConfigureServer",
@@ -1676,10 +1676,10 @@ export const RellmDefinition = {
     },
     /**
      * Attempts to acquire one or more `ClusterResource` locks on behalf of `namespace_id`. *Not
-     * part of the authenticated-user auth system* -- this is server-to-server, cluster-internal
+     * part of the authenticated-user auth system* - this is server-to-server, cluster-internal
      * coordination, authorized *entirely* by the `cluster-shared-secret` gRPC metadata header
      * matching this server's own stored
-     * [`ClusterResources.cluster_shared_secret`](#rellm-ClusterResources) -- knowing the secret is
+     * [`ClusterResources.cluster_shared_secret`](#rellm-ClusterResources) - knowing the secret is
      * what makes a caller entitled to treat this server as the conductor, regardless of what this
      * server's own `ClusterResources.namespace_id`/`conductor_host` happen to say. Fails with
      * `FAILED_PRECONDITION` if this server has no `cluster_resources` configured at all (nothing to
@@ -1698,10 +1698,10 @@ export const RellmDefinition = {
     /**
      * Releases resources previously acquired via
      * [`LockClusterResources`](#grpc-api-LockClusterResources). *Publicly accessible **or**
-     * Authenticated* -- unlike `LockClusterResources`, this accepts *either* the
+     * Authenticated* - unlike `LockClusterResources`, this accepts *either* the
      * `cluster-shared-secret` header (same as `LockClusterResources`) *or* normal per-user auth, in
      * which case the caller needs `EDIT_CLUSTER_SETTINGS` (see that permission's own doc) and the
-     * header is ignored entirely -- this is what lets an admin free a stuck lock straight from the
+     * header is ignored entirely - this is what lets an admin free a stuck lock straight from the
      * Cluster tab UI rather than needing shell access to the cluster's shared secret. See
      * [`FreeClusterResourcesRequest`](#rellm-FreeClusterResourcesRequest)'s own doc for its
      * no-op-if-not-held behavior.
@@ -1808,7 +1808,7 @@ export interface RellmServiceImplementation<CallContextExt = {}> {
   /**
    * Marks one or more Messages as read (or unread) by the current user, e.g. every message in a
    * thread once it's been opened. *Authenticated.* Only needs the recipient/sender access
-   * [`GetMessages`](#grpc-api-GetMessages) already requires for each Message -- no separate permission. Atomic: if the
+   * [`GetMessages`](#grpc-api-GetMessages) already requires for each Message - no separate permission. Atomic: if the
    * caller lacks access to *any* of `message_ids`, none of them are marked (matching
    * `MarkMessagesReadRequest.message_ids`' own doc), so a client never has to reconcile a
    * partially-applied batch.
@@ -1823,7 +1823,7 @@ export interface RellmServiceImplementation<CallContextExt = {}> {
    * browser tab is closed. *Authenticated.* Re-registering an already-registered `endpoint` (e.g.
    * because `PushManager.subscribe()` refreshed its keys) updates it in place rather than erroring.
    * No-ops (server-side; not surfaced as an error to the caller) if the server has no
-   * [`WebPushConfig`](#rellm-WebPushConfig) configured -- there's nothing to push notifications *with*.
+   * [`WebPushConfig`](#rellm-WebPushConfig) configured - there's nothing to push notifications *with*.
    */
   registerPushSubscription(
     request: RegisterPushSubscriptionRequest,
@@ -1842,7 +1842,7 @@ export interface RellmServiceImplementation<CallContextExt = {}> {
    * Checks whether the calling user specifically (not just "some account on this browser") has a
    * [`PushSubscription`](#rellm-PushSubscription) registered for `endpoint`. *Authenticated.* Exists because a browser only
    * ever exposes its own subscription's `endpoint`/keys, never *who* on the server side is
-   * registered against it -- multiple local accounts on the same server can share one browser
+   * registered against it - multiple local accounts on the same server can share one browser
    * subscription (see [`RegisterPushSubscription`](#grpc-api-RegisterPushSubscription)'s own doc comment), so knowing the endpoint alone
    * isn't enough to know which of them are actually notified by it.
    */
@@ -1967,7 +1967,7 @@ export interface RellmServiceImplementation<CallContextExt = {}> {
   /**
    * Updates a SyncSource. *Authenticated* (owner, or Admin for any user's), requires
    * `SYNC_EVENTS_FROM_ICS`/`SYNC_POSTS_FROM_RSS`/`SYNC_POSTS_FROM_ATOM` (whichever matches the
-   * effective `configuration` -- the request's own if set, else the existing source's -- or Admin).
+   * effective `configuration` - the request's own if set, else the existing source's - or Admin).
    */
   updateSyncSource(request: SyncSource, context: CallContext & CallContextExt): Promise<DeepPartial<SyncSource>>;
   /** Deletes a SyncSource. *Authenticated* (owner, or Admin). */
@@ -2037,10 +2037,10 @@ export interface RellmServiceImplementation<CallContextExt = {}> {
   ): Promise<DeepPartial<Empty>>;
   /**
    * Generates (or edits, given reference `media_ids`) an image via one of the current user's AvailableAIModels,
-   * storing it as a new Media and, if `target` is set, attaching it to that Post/Event. *Authenticated* -- caller
+   * storing it as a new Media and, if `target` is set, attaching it to that Post/Event. *Authenticated* - caller
    * must own or have been granted access to the chosen AIModelProvider, and (if `target` is set) have edit access
    * to that Post/Event. A grantee (never the provider's own owner) spends real
-   * AIModelProviderGrant.tokens_remaining on every call -- the provider's own reported token usage once generation
+   * AIModelProviderGrant.tokens_remaining on every call - the provider's own reported token usage once generation
    * succeeds, or (rejected before any request is even sent to the provider) a rough pre-flight estimate of the
    * request's input cost alone, whichever catches an insufficient balance first.
    */
@@ -2073,7 +2073,7 @@ export interface RellmServiceImplementation<CallContextExt = {}> {
   /**
    * Configure the server (i.e. the response to GetServerConfiguration). *Authenticated.*
    * Requires `ADMIN` permissions. Editing `cluster_resources` additionally requires
-   * `EDIT_CLUSTER_SETTINGS` -- see that field's own doc.
+   * `EDIT_CLUSTER_SETTINGS` - see that field's own doc.
    */
   configureServer(
     request: ServerConfiguration,
@@ -2081,10 +2081,10 @@ export interface RellmServiceImplementation<CallContextExt = {}> {
   ): Promise<DeepPartial<ServerConfiguration>>;
   /**
    * Attempts to acquire one or more `ClusterResource` locks on behalf of `namespace_id`. *Not
-   * part of the authenticated-user auth system* -- this is server-to-server, cluster-internal
+   * part of the authenticated-user auth system* - this is server-to-server, cluster-internal
    * coordination, authorized *entirely* by the `cluster-shared-secret` gRPC metadata header
    * matching this server's own stored
-   * [`ClusterResources.cluster_shared_secret`](#rellm-ClusterResources) -- knowing the secret is
+   * [`ClusterResources.cluster_shared_secret`](#rellm-ClusterResources) - knowing the secret is
    * what makes a caller entitled to treat this server as the conductor, regardless of what this
    * server's own `ClusterResources.namespace_id`/`conductor_host` happen to say. Fails with
    * `FAILED_PRECONDITION` if this server has no `cluster_resources` configured at all (nothing to
@@ -2099,10 +2099,10 @@ export interface RellmServiceImplementation<CallContextExt = {}> {
   /**
    * Releases resources previously acquired via
    * [`LockClusterResources`](#grpc-api-LockClusterResources). *Publicly accessible **or**
-   * Authenticated* -- unlike `LockClusterResources`, this accepts *either* the
+   * Authenticated* - unlike `LockClusterResources`, this accepts *either* the
    * `cluster-shared-secret` header (same as `LockClusterResources`) *or* normal per-user auth, in
    * which case the caller needs `EDIT_CLUSTER_SETTINGS` (see that permission's own doc) and the
-   * header is ignored entirely -- this is what lets an admin free a stuck lock straight from the
+   * header is ignored entirely - this is what lets an admin free a stuck lock straight from the
    * Cluster tab UI rather than needing shell access to the cluster's shared secret. See
    * [`FreeClusterResourcesRequest`](#rellm-FreeClusterResourcesRequest)'s own doc for its
    * no-op-if-not-held behavior.
@@ -2190,7 +2190,7 @@ export interface RellmClient<CallOptionsExt = {}> {
   /**
    * Marks one or more Messages as read (or unread) by the current user, e.g. every message in a
    * thread once it's been opened. *Authenticated.* Only needs the recipient/sender access
-   * [`GetMessages`](#grpc-api-GetMessages) already requires for each Message -- no separate permission. Atomic: if the
+   * [`GetMessages`](#grpc-api-GetMessages) already requires for each Message - no separate permission. Atomic: if the
    * caller lacks access to *any* of `message_ids`, none of them are marked (matching
    * `MarkMessagesReadRequest.message_ids`' own doc), so a client never has to reconcile a
    * partially-applied batch.
@@ -2205,7 +2205,7 @@ export interface RellmClient<CallOptionsExt = {}> {
    * browser tab is closed. *Authenticated.* Re-registering an already-registered `endpoint` (e.g.
    * because `PushManager.subscribe()` refreshed its keys) updates it in place rather than erroring.
    * No-ops (server-side; not surfaced as an error to the caller) if the server has no
-   * [`WebPushConfig`](#rellm-WebPushConfig) configured -- there's nothing to push notifications *with*.
+   * [`WebPushConfig`](#rellm-WebPushConfig) configured - there's nothing to push notifications *with*.
    */
   registerPushSubscription(
     request: DeepPartial<RegisterPushSubscriptionRequest>,
@@ -2224,7 +2224,7 @@ export interface RellmClient<CallOptionsExt = {}> {
    * Checks whether the calling user specifically (not just "some account on this browser") has a
    * [`PushSubscription`](#rellm-PushSubscription) registered for `endpoint`. *Authenticated.* Exists because a browser only
    * ever exposes its own subscription's `endpoint`/keys, never *who* on the server side is
-   * registered against it -- multiple local accounts on the same server can share one browser
+   * registered against it - multiple local accounts on the same server can share one browser
    * subscription (see [`RegisterPushSubscription`](#grpc-api-RegisterPushSubscription)'s own doc comment), so knowing the endpoint alone
    * isn't enough to know which of them are actually notified by it.
    */
@@ -2349,7 +2349,7 @@ export interface RellmClient<CallOptionsExt = {}> {
   /**
    * Updates a SyncSource. *Authenticated* (owner, or Admin for any user's), requires
    * `SYNC_EVENTS_FROM_ICS`/`SYNC_POSTS_FROM_RSS`/`SYNC_POSTS_FROM_ATOM` (whichever matches the
-   * effective `configuration` -- the request's own if set, else the existing source's -- or Admin).
+   * effective `configuration` - the request's own if set, else the existing source's - or Admin).
    */
   updateSyncSource(request: DeepPartial<SyncSource>, options?: CallOptions & CallOptionsExt): Promise<SyncSource>;
   /** Deletes a SyncSource. *Authenticated* (owner, or Admin). */
@@ -2419,10 +2419,10 @@ export interface RellmClient<CallOptionsExt = {}> {
   ): Promise<Empty>;
   /**
    * Generates (or edits, given reference `media_ids`) an image via one of the current user's AvailableAIModels,
-   * storing it as a new Media and, if `target` is set, attaching it to that Post/Event. *Authenticated* -- caller
+   * storing it as a new Media and, if `target` is set, attaching it to that Post/Event. *Authenticated* - caller
    * must own or have been granted access to the chosen AIModelProvider, and (if `target` is set) have edit access
    * to that Post/Event. A grantee (never the provider's own owner) spends real
-   * AIModelProviderGrant.tokens_remaining on every call -- the provider's own reported token usage once generation
+   * AIModelProviderGrant.tokens_remaining on every call - the provider's own reported token usage once generation
    * succeeds, or (rejected before any request is even sent to the provider) a rough pre-flight estimate of the
    * request's input cost alone, whichever catches an insufficient balance first.
    */
@@ -2455,7 +2455,7 @@ export interface RellmClient<CallOptionsExt = {}> {
   /**
    * Configure the server (i.e. the response to GetServerConfiguration). *Authenticated.*
    * Requires `ADMIN` permissions. Editing `cluster_resources` additionally requires
-   * `EDIT_CLUSTER_SETTINGS` -- see that field's own doc.
+   * `EDIT_CLUSTER_SETTINGS` - see that field's own doc.
    */
   configureServer(
     request: DeepPartial<ServerConfiguration>,
@@ -2463,10 +2463,10 @@ export interface RellmClient<CallOptionsExt = {}> {
   ): Promise<ServerConfiguration>;
   /**
    * Attempts to acquire one or more `ClusterResource` locks on behalf of `namespace_id`. *Not
-   * part of the authenticated-user auth system* -- this is server-to-server, cluster-internal
+   * part of the authenticated-user auth system* - this is server-to-server, cluster-internal
    * coordination, authorized *entirely* by the `cluster-shared-secret` gRPC metadata header
    * matching this server's own stored
-   * [`ClusterResources.cluster_shared_secret`](#rellm-ClusterResources) -- knowing the secret is
+   * [`ClusterResources.cluster_shared_secret`](#rellm-ClusterResources) - knowing the secret is
    * what makes a caller entitled to treat this server as the conductor, regardless of what this
    * server's own `ClusterResources.namespace_id`/`conductor_host` happen to say. Fails with
    * `FAILED_PRECONDITION` if this server has no `cluster_resources` configured at all (nothing to
@@ -2481,10 +2481,10 @@ export interface RellmClient<CallOptionsExt = {}> {
   /**
    * Releases resources previously acquired via
    * [`LockClusterResources`](#grpc-api-LockClusterResources). *Publicly accessible **or**
-   * Authenticated* -- unlike `LockClusterResources`, this accepts *either* the
+   * Authenticated* - unlike `LockClusterResources`, this accepts *either* the
    * `cluster-shared-secret` header (same as `LockClusterResources`) *or* normal per-user auth, in
    * which case the caller needs `EDIT_CLUSTER_SETTINGS` (see that permission's own doc) and the
-   * header is ignored entirely -- this is what lets an admin free a stuck lock straight from the
+   * header is ignored entirely - this is what lets an admin free a stuck lock straight from the
    * Cluster tab UI rather than needing shell access to the cluster's shared secret. See
    * [`FreeClusterResourcesRequest`](#rellm-FreeClusterResourcesRequest)'s own doc for its
    * no-op-if-not-held behavior.

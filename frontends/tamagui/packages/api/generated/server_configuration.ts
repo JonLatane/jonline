@@ -27,7 +27,7 @@ export const protobufPackage = "rellm";
  */
 export enum ClusterResource {
   /**
-   * CLUSTER_RESOURCE_BROWSER - The ability to launch a headless Chrome/Brave browser -- see `ClusterResources`'s own doc for
+   * CLUSTER_RESOURCE_BROWSER - The ability to launch a headless Chrome/Brave browser - see `ClusterResources`'s own doc for
    * why more than one running at once across a cluster's instances can be a problem.
    */
   CLUSTER_RESOURCE_BROWSER = 0,
@@ -408,7 +408,7 @@ export interface ServerConfiguration {
     | ExternalCDNConfig
     | undefined;
   /**
-   * Cluster-internal coordination state -- see `ClusterResources`'s own doc. Visible to any
+   * Cluster-internal coordination state - see `ClusterResources`'s own doc. Visible to any
    * logged-in admin (unlike most fields here, this describes infrastructure topology rather than
    * anything end users need, so it's stripped entirely from
    * [`GetServerConfiguration`](#grpc-api-GetServerConfiguration) for non-admins/anonymous
@@ -440,45 +440,45 @@ export interface ServerConfiguration {
  * `conductor_host`) and brokers locks via
  * [`LockClusterResources`](#grpc-api-LockClusterResources)/
  * [`FreeClusterResources`](#grpc-api-FreeClusterResources); every instance in the cluster --
- * including the conductor itself -- sets its own `ClusterResources` pointing at whichever host
+ * including the conductor itself - sets its own `ClusterResources` pointing at whichever host
  * that is.
  *
  * See `ServerConfiguration.cluster_resources`'s own doc for who can see/edit this.
  */
 export interface ClusterResources {
   /**
-   * Identifies this instance to the conductor -- e.g. its Kubernetes namespace. Passed as
+   * Identifies this instance to the conductor - e.g. its Kubernetes namespace. Passed as
    * `LockClusterResourcesRequest.namespace_id`/`FreeClusterResourcesRequest.namespace_id` so the
    * conductor knows who's asking, and echoed back as `ClusterResourceLock.lock_holder_namespace_id`
-   * while this instance holds a lock. By convention (not enforced -- see `cluster_shared_secret`'s
+   * while this instance holds a lock. By convention (not enforced - see `cluster_shared_secret`'s
    * own doc), the conductor sets its own `namespace_id` equal to its own `conductor_host`; clients
    * (e.g. the Elm `ClusterTab`) use that convention purely for display, to tell "this instance is
    * the conductor" from "some other instance is."
    */
   namespaceId: string;
   /**
-   * DNS hostname of whichever instance in the cluster is the "conductor" -- the single instance
+   * DNS hostname of whichever instance in the cluster is the "conductor" - the single instance
    * that actually brokers [`LockClusterResources`](#grpc-api-LockClusterResources)/
    * [`FreeClusterResources`](#grpc-api-FreeClusterResources) calls for every other instance
-   * (including, by convention, itself -- see `conductor_state`). Every instance in the cluster
+   * (including, by convention, itself - see `conductor_state`). Every instance in the cluster
    * points this at the same host.
    *
    * Note: callers should resolve this the same way any other cross-server Rellm call does --
    * via [`GET {conductor_host}/backend_host`](#http-based-client-host-negotiation-for-external-cdns-get-backend_host)
-   * first, falling back to `conductor_host` itself -- rather than connecting to it directly, in
+   * first, falling back to `conductor_host` itself - rather than connecting to it directly, in
    * case the conductor sits behind an [`ExternalCDNConfig`](#rellm-ExternalCDNConfig).
    */
   conductorHost: string;
   /**
    * Shared secret proving a `LockClusterResources`/`FreeClusterResources` caller is a legitimate
    * member of this cluster, passed as the `cluster-shared-secret` gRPC metadata header (not a
-   * request field -- there's no per-user auth involved in these calls at all, just this secret).
-   * The receiving server checks it against its own stored `cluster_shared_secret` -- that's the
+   * request field - there's no per-user auth involved in these calls at all, just this secret).
+   * The receiving server checks it against its own stored `cluster_shared_secret` - that's the
    * *entire* authorization check: knowing the secret is what makes a caller entitled to treat that
    * server as the conductor, regardless of what that server's own `namespace_id`/`conductor_host`
    * happen to say (see `namespace_id`'s own doc on that being a display-only convention). Write-only, like
    * [`FacebookAuthConfig.app_secret`](#rellm-FacebookAuthConfig)/
-   * [`WebPushConfig.private_vapid_key`](#rellm-WebPushConfig) -- `GetServerConfiguration` never
+   * [`WebPushConfig.private_vapid_key`](#rellm-WebPushConfig) - `GetServerConfiguration` never
    * sends the real value back to *any* client (not even an admin), and an empty incoming value on
    * `ConfigureServer` means "leave the stored secret alone," not "clear it." Should never be
    * transmitted over a non-TLS connection.
@@ -490,7 +490,7 @@ export interface ClusterResources {
    * in a correctly configured cluster, that's the one instance every participant points
    * `conductor_host` at (see that field's own doc), but nothing server-side enforces that; every
    * other instance simply never gets asked to hold this state. Reflects the database directly, updated in place by
-   * `LockClusterResources`/`FreeClusterResources` -- unlike the rest of `ServerConfiguration`,
+   * `LockClusterResources`/`FreeClusterResources` - unlike the rest of `ServerConfiguration`,
    * [`ConfigureServer`](#grpc-api-ConfigureServer) never lets a caller change this, and it isn't
    * versioned the way other `ConfigureServer` changes are.
    */
@@ -498,10 +498,10 @@ export interface ClusterResources {
 }
 
 /**
- * The conductor's live view of currently-held locks -- one `ClusterResourceLock` per distinct
- * holder (a given namespace can appear at most once here -- `LockClusterResources` never grants a
+ * The conductor's live view of currently-held locks - one `ClusterResourceLock` per distinct
+ * holder (a given namespace can appear at most once here - `LockClusterResources` never grants a
  * `ClusterResource` it's already granted that same `namespace_id`, and folds any additional
- * resources into that namespace's existing entry rather than creating a second one -- see that
+ * resources into that namespace's existing entry rather than creating a second one - see that
  * RPC's own doc). With a `limits` entry above `1` (see `ClusterResourceLimit`'s own doc), more than
  * one distinct namespace can hold the *same* `ClusterResource` at once, so there can be more
  * entries here than there are `ClusterResource` values.
@@ -515,10 +515,10 @@ export interface ClusterConductorState {
    */
   locks: ClusterResourceLock[];
   /**
-   * How many distinct namespaces may concurrently hold each `ClusterResource`'s lock -- e.g. only
+   * How many distinct namespaces may concurrently hold each `ClusterResource`'s lock - e.g. only
    * one headless browser at a time, but a handful of `ffmpeg`/ImageMagick conversions in parallel
    * across the cluster, since those are far lighter-weight. Any `ClusterResource` not present here
-   * -- including on a cluster that's never had `ConfigureServer` touch `limits` at all -- defaults
+   * - including on a cluster that's never had `ConfigureServer` touch `limits` at all - defaults
    * to `1` (see `ClusterTab.elm`'s matching client-side default, shown/edited there as "Browser
    * Instance Limit"/"FFMPEG Process Limit"/"ImageMagick Process Limit"). These are changed by
    * `ConfigureServer` (gated on `EDIT_CLUSTER_SETTINGS`, like the rest of `cluster_resources`) and
@@ -529,9 +529,9 @@ export interface ClusterConductorState {
 
 /**
  * One namespace's currently-held lock on one or more `ClusterResource`s, and when it acquired
- * them -- shown in `ClusterTab`'s Elm UI so an admin can tell a genuinely stuck lock (acquired
+ * them - shown in `ClusterTab`'s Elm UI so an admin can tell a genuinely stuck lock (acquired
  * long ago, its holder's job surely long dead) from one just in normal, brief use, and reach for
- * `free_all_cluster_resources` (a `bin/` admin tool -- see its own doc) accordingly.
+ * `free_all_cluster_resources` (a `bin/` admin tool - see its own doc) accordingly.
  */
 export interface ClusterResourceLock {
   /** The `namespace_id` (see `ClusterResources.namespace_id`) holding this lock. */
@@ -543,7 +543,7 @@ export interface ClusterResourceLock {
 }
 
 /**
- * One `ClusterResource`'s configured concurrency limit -- a single `resource`/`limit` pairing per
+ * One `ClusterResource`'s configured concurrency limit - a single `resource`/`limit` pairing per
  * message (both fields are singleton lists in practice; see `ClusterConductorState.limits`'s own
  * doc for why a `ClusterResource` missing from every `ClusterResourceLimit` here defaults to `1`
  * rather than `0`).
@@ -558,7 +558,7 @@ export interface ClusterResourceLimit {
 export interface LockClusterResourcesRequest {
   /** This instance's own `ClusterResources.namespace_id`. */
   namespaceId: string;
-  /** Which resources to lock -- see the `ClusterResource` enum for what exists. */
+  /** Which resources to lock - see the `ClusterResource` enum for what exists. */
   resources: ClusterResource[];
 }
 
@@ -566,7 +566,7 @@ export interface LockClusterResourcesRequest {
 export interface LockClusterResourcesResponse {
   /**
    * Whether every requested resource was successfully locked for `namespace_id`. `false` means
-   * none were locked (never a partial grant) -- at least one of them is already held, by
+   * none were locked (never a partial grant) - at least one of them is already held, by
    * namespaces other than this one, by as many distinct holders as its configured
    * `ClusterResourceLimit` allows (see that message's own doc); see `holder`. There's no
    * server-side wait/queueing: a caller that gets `false` should back off and call
@@ -583,12 +583,12 @@ export interface LockClusterResourcesResponse {
 /**
  * Releases resources this `namespace_id` previously locked via
  * [`LockClusterResources`](#grpc-api-LockClusterResources). A no-op (not an error) for any
- * resource `namespace_id` doesn't currently hold -- e.g. safe to call unconditionally during
+ * resource `namespace_id` doesn't currently hold - e.g. safe to call unconditionally during
  * cleanup even if the matching lock attempt itself failed or was never confirmed.
  */
 export interface FreeClusterResourcesRequest {
   /**
-   * This instance's own `ClusterResources.namespace_id` -- must match whichever `namespace_id`
+   * This instance's own `ClusterResources.namespace_id` - must match whichever `namespace_id`
    * is recorded as the current holder for a resource to actually be released.
    */
   namespaceId: string;
@@ -860,7 +860,7 @@ export interface CustomNavigationTabSet {
   /**
    * Overrides the default tab set (`EVENTS_TAB`, `POSTS_TAB`, `PEOPLE_TAB`, `ABOUT_TAB`) entirely.
    * Note: existing `/events`, `/posts`, `/people`, and `/about` paths are reserved for their
-   * matching predefined tab -- see [`CustomNavigationTab`](#rellm-CustomNavigationTab).path's own doc.
+   * matching predefined tab - see [`CustomNavigationTab`](#rellm-CustomNavigationTab).path's own doc.
    * `/` itself is overridden via `home` above instead.
    */
   tabs: CustomNavigationTab[];
@@ -874,7 +874,7 @@ export interface CustomNavigationTabSet {
 export interface CustomHomePage {
   /**
    * What `/` renders. Only `HOME_TAB` (the default, combined Events+Posts feed), `EVENTS_TAB`,
-   * or `POSTS_TAB` are valid here -- never `PEOPLE_TAB`/`ABOUT_TAB`.
+   * or `POSTS_TAB` are valid here - never `PEOPLE_TAB`/`ABOUT_TAB`.
    */
   tab?:
     | NavigationTab
@@ -898,8 +898,8 @@ export interface CustomHomePage {
    */
   showEventsStrip: boolean;
   /**
-   * Whenever an Events strip is shown above other content -- `show_events_strip` is set, or
-   * `target` is unset/`HOME_TAB` (whose strip is always shown) -- whether it defaults to its
+   * Whenever an Events strip is shown above other content - `show_events_strip` is set, or
+   * `target` is unset/`HOME_TAB` (whose strip is always shown) - whether it defaults to its
    * row/list layout instead of a calendar. Unset defaults to the calendar layout.
    */
   defaultEventsStripToRow: boolean;
@@ -911,7 +911,7 @@ export interface CustomHomePage {
   defaultEventsStripCalendarDisplayMode: CalendarDisplayMode;
 }
 
-/** Either one of the app's predefined tabs, a Post, or a user profile -- reachable at `path`. */
+/** Either one of the app's predefined tabs, a Post, or a user profile - reachable at `path`. */
 export interface CustomNavigationTab {
   /** Links to one of the app's predefined tabs/pages. */
   tab?:
@@ -922,7 +922,7 @@ export interface CustomNavigationTab {
     | string
     | undefined;
   /**
-   * Indicates the custom tab is for an actual user profile -- `path` is that user's username.
+   * Indicates the custom tab is for an actual user profile - `path` is that user's username.
    * Ultimately this isn't very "custom" in terms of the URL scheme, just it being a navigation tab.
    */
   isProfile?:
@@ -945,7 +945,7 @@ export interface CustomNavigationTab {
    * or `weddings` for a Post about wedding offerings. Must be distinct across every entry in
    * `CustomNavigationTabSet.tabs`. Note: `events`, `posts`, `people`, and `about` are reserved --
    * each may only be used to (redundantly) point back at its own matching predefined tab, never
-   * remapped to a different tab or a Post. `/` itself is never reachable this way -- it's
+   * remapped to a different tab or a Post. `/` itself is never reachable this way - it's
    * overridden via `CustomNavigationTabSet.home` instead.
    */
   path: string;

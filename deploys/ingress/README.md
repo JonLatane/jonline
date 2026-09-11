@@ -10,19 +10,19 @@ Your `rellm` backend already terminates its own TLS (see `create_internal_backen
 
 Plain HTTP (ports 80 and 8000) is routed the normal way, by `Host` header.
 
-This controller also carries a plain TCP passthrough entrypoint on port 25 for the shared Stalwart mail server (see [`../email/README.md`](../email/README.md)) -- unlike the ports above, there's nothing to route *between* there (Stalwart is cluster-wide, not per-namespace), so its `IngressRouteTCP` just catches everything with ``HostSNI(`*`)`` and forwards it straight through.
+This controller also carries a plain TCP passthrough entrypoint on port 25 for the shared Stalwart mail server (see [`../email/README.md`](../email/README.md)) - unlike the ports above, there's nothing to route *between* there (Stalwart is cluster-wide, not per-namespace), so its `IngressRouteTCP` just catches everything with ``HostSNI(`*`)`` and forwards it straight through.
 
-Because of this, a domain's routing config is a handful of small `IngressRoute`/`IngressRouteTCP` objects that live in *that domain's own namespace* (see `k8s/rellm-routes.template.yaml`), right next to its `rellm` Service -- not in some central config. Traefik discovers them across every namespace automatically.
+Because of this, a domain's routing config is a handful of small `IngressRoute`/`IngressRouteTCP` objects that live in *that domain's own namespace* (see `k8s/rellm-routes.template.yaml`), right next to its `rellm` Service - not in some central config. Traefik discovers them across every namespace automatically.
 
 ## One-time setup: install the shared controller
 
-From this directory (or `deploys`, since the root `Makefile` has passthroughs -- see below):
+From this directory (or `deploys`, since the root `Makefile` has passthroughs - see below):
 
 ```bash
 make create_ingress
 ```
 
-This installs Traefik's CRDs (pinned to `TRAEFIK_VERSION` at the top of the `Makefile`) and the Traefik `Deployment`/`Service` itself, in the `traefik-ingress` namespace. It's completely generic -- run it once per cluster, regardless of how many domains you plan to host.
+This installs Traefik's CRDs (pinned to `TRAEFIK_VERSION` at the top of the `Makefile`) and the Traefik `Deployment`/`Service` itself, in the `traefik-ingress` namespace. It's completely generic - run it once per cluster, regardless of how many domains you plan to host.
 
 Get its external IP with:
 
@@ -30,7 +30,7 @@ Get its external IP with:
 make get_ingress_external_ip
 ```
 
-To tear the shared controller back down (leaving any per-domain routes in place, harmlessly inert, and without touching the Traefik CRDs -- deleting those would delete every domain's routes across the whole cluster, not just the controller):
+To tear the shared controller back down (leaving any per-domain routes in place, harmlessly inert, and without touching the Traefik CRDs - deleting those would delete every domain's routes across the whole cluster, not just the controller):
 
 ```bash
 make remove_ingress
@@ -58,17 +58,17 @@ Once that all looks right, point `my.domain.example.com`'s DNS A record at the s
 NAMESPACE=mynamespace make update_internal_backend
 ```
 
-Doing this out of order -- switching off the old LoadBalancer before DNS has actually moved -- will take the site down until DNS propagates, so don't skip the validation step above.
+Doing this out of order - switching off the old LoadBalancer before DNS has actually moved - will take the site down until DNS propagates, so don't skip the validation step above.
 
 ### Fronting a domain with a CDN/proxy (e.g. Cloudflare)
 
-If something sits in front of Traefik and connects to it under a *different* hostname than `DOMAIN` -- e.g. Cloudflare proxying `jonline.io` to an origin that's actually `jonline.io.getj.online` -- you need to tell Traefik about that extra hostname too, or it won't recognize the connection (SNI passthrough on 443/27707 and Host-routing on 80/8000 both key off whatever hostname is presented *to Traefik*, not the one your Cert-Manager certs were issued for). Pass it via `EXTRA_DOMAINS` (space-separated if there's more than one):
+If something sits in front of Traefik and connects to it under a *different* hostname than `DOMAIN` - e.g. Cloudflare proxying `jonline.io` to an origin that's actually `jonline.io.getj.online` - you need to tell Traefik about that extra hostname too, or it won't recognize the connection (SNI passthrough on 443/27707 and Host-routing on 80/8000 both key off whatever hostname is presented *to Traefik*, not the one your Cert-Manager certs were issued for). Pass it via `EXTRA_DOMAINS` (space-separated if there's more than one):
 
 ```bash
 NAMESPACE=mynamespace DOMAIN=my.domain.example.com EXTRA_DOMAINS=my.cdn-fronted-domain.com make add_ingress_domain
 ```
 
-This is unrelated to TLS certs -- your origin keeps presenting its one Cert-Manager cert for `DOMAIN` regardless of which hostname was used to reach it, so a CDN validating that cert against its own hostname (e.g. Cloudflare's "Full (Strict)" mode) will see a mismatch and fail; using the CDN's "Full" (encrypt, don't validate) mode, or otherwise letting the CDN accept a non-matching origin cert, is the expected way to run this setup.
+This is unrelated to TLS certs - your origin keeps presenting its one Cert-Manager cert for `DOMAIN` regardless of which hostname was used to reach it, so a CDN validating that cert against its own hostname (e.g. Cloudflare's "Full (Strict)" mode) will see a mismatch and fail; using the CDN's "Full" (encrypt, don't validate) mode, or otherwise letting the CDN accept a non-matching origin cert, is the expected way to run this setup.
 
 To see every namespace/domain currently wired up to the shared ingress (queried live from the cluster, not from local files):
 

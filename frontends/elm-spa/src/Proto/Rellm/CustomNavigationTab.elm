@@ -48,7 +48,7 @@ type alias Icon =
 
 ### IsProfile
 
- Indicates the custom tab is for an actual user profile -- `path` is that user's username.
+ Indicates the custom tab is for an actual user profile - `path` is that user's username.
  Ultimately this isn't very "custom" in terms of the URL scheme, just it being a navigation tab.
 
 

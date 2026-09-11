@@ -201,7 +201,7 @@ class GetEventsRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(11)
   void clearSearchText() => clearField(11);
 
-  /// Loads multiple events by their event instances' Post IDs -- returns one
+  /// Loads multiple events by their event instances' Post IDs - returns one
   /// Event per matching EventInstance (see GetEventsResponse's own doc), not
   /// the requested EventInstance's whole parent Event's full instance list.
   @$pb.TagNumber(12)
@@ -439,7 +439,7 @@ class Event extends $pb.GeneratedMessage {
   static Event? _defaultInstance;
 
   /// The Post containing the underlying data for the event (title, content, moderation, visibility, etc.). Its [`PostContext`](#rellm-PostContext) should be `EVENT`.
-  /// An `Event`'s ID *is* its `post.id` -- there is no separate surrogate ID.
+  /// An `Event`'s ID *is* its `post.id` - there is no separate surrogate ID.
   @$pb.TagNumber(2)
   $8.Post get post => $_getN(0);
   @$pb.TagNumber(2)
@@ -535,7 +535,7 @@ class SyncEventInstanceRequest extends $pb.GeneratedMessage {
   void clearSyncDestinationId() => clearField(2);
 }
 
-/// Removes a single EventInstance's sync (cross-post) to one SyncDestination -- the reverse of [`SyncEventInstance`](#grpc-api-SyncEventInstance).
+/// Removes a single EventInstance's sync (cross-post) to one SyncDestination - the reverse of [`SyncEventInstance`](#grpc-api-SyncEventInstance).
 /// Does not delete the post already made on the destination (e.g. the Facebook Page post), only the local sync record.
 class DeleteEventInstanceSyncDestinationRequest extends $pb.GeneratedMessage {
   factory DeleteEventInstanceSyncDestinationRequest({
@@ -824,7 +824,7 @@ class EventInstance extends $pb.GeneratedMessage {
   void clearEventId() => clearField(2);
 
   /// Optional [`Post`](#rellm-Post) containing alternate title/link/description for this particular instance. Its [`PostContext`](#rellm-PostContext) should be `EVENT_INSTANCE`.
-  /// An `EventInstance`'s ID *is* its `post.id` -- there is no separate surrogate ID.
+  /// An `EventInstance`'s ID *is* its `post.id` - there is no separate surrogate ID.
   @$pb.TagNumber(3)
   $8.Post get post => $_getN(1);
   @$pb.TagNumber(3)

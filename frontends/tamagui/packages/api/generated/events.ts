@@ -223,7 +223,7 @@ export interface GetEventsRequest {
     | string
     | undefined;
   /**
-   * Loads multiple events by their event instances' Post IDs -- returns one
+   * Loads multiple events by their event instances' Post IDs - returns one
    * Event per matching EventInstance (see GetEventsResponse's own doc), not
    * the requested EventInstance's whole parent Event's full instance list.
    */
@@ -286,7 +286,7 @@ export interface GetEventsResponse {
 export interface Event {
   /**
    * The Post containing the underlying data for the event (title, content, moderation, visibility, etc.). Its [`PostContext`](#rellm-PostContext) should be `EVENT`.
-   * An `Event`'s ID *is* its `post.id` -- there is no separate surrogate ID.
+   * An `Event`'s ID *is* its `post.id` - there is no separate surrogate ID.
    */
   post:
     | Post
@@ -308,7 +308,7 @@ export interface SyncEventInstanceRequest {
 }
 
 /**
- * Removes a single EventInstance's sync (cross-post) to one SyncDestination -- the reverse of [`SyncEventInstance`](#grpc-api-SyncEventInstance).
+ * Removes a single EventInstance's sync (cross-post) to one SyncDestination - the reverse of [`SyncEventInstance`](#grpc-api-SyncEventInstance).
  * Does not delete the post already made on the destination (e.g. the Facebook Page post), only the local sync record.
  */
 export interface DeleteEventInstanceSyncDestinationRequest {
@@ -361,7 +361,7 @@ export interface EventInstance {
   eventId: string;
   /**
    * Optional [`Post`](#rellm-Post) containing alternate title/link/description for this particular instance. Its [`PostContext`](#rellm-PostContext) should be `EVENT_INSTANCE`.
-   * An `EventInstance`'s ID *is* its `post.id` -- there is no separate surrogate ID.
+   * An `EventInstance`'s ID *is* its `post.id` - there is no separate surrogate ID.
    */
   post:
     | Post

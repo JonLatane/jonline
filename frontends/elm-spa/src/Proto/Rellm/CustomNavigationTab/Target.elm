@@ -29,7 +29,7 @@ To run it, add a dependency via `elm install` on [`elm-protocol-buffers`](https:
 
 ### IsProfile
 
- Indicates the custom tab is for an actual user profile -- `path` is that user's username.
+ Indicates the custom tab is for an actual user profile - `path` is that user's username.
  Ultimately this isn't very "custom" in terms of the URL scheme, just it being a navigation tab.
 
 

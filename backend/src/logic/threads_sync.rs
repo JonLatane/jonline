@@ -34,9 +34,9 @@ const DEFAULT_BASE_URL: &str = "https://graph.threads.net";
 const API_VERSION: &str = "v1.0";
 
 /// Derives the Threads OAuth popup's `redirect_uri` -- the frontend's popup sends this exact
-/// string to Threads' authorize endpoint (reusing the same `facebook-callback.html` page
+/// string to Threads' authorize endpoint (reusing the same `oauth-callback.html` page
 /// Facebook/Instagram's OAuth popup already redirects to, at `window.location.origin +
-/// rellmBasePath + "/facebook-callback.html"`), and this server's own token-exchange call
+/// rellmBasePath + "/oauth-callback.html"`), and this server's own token-exchange call
 /// (`exchange_code_for_token`) has to send back the identical string -- OAuth requires an exact
 /// match between the authorize and token-exchange calls' `redirect_uri`.
 ///
@@ -58,7 +58,7 @@ pub fn threads_redirect_uri(conn: &mut PgPooledConnection) -> Result<String, Sta
         .ok_or_else(|| {
             Status::new(Code::FailedPrecondition, "threads_redirect_uri_not_configured")
         })?;
-    Ok(format!("https://{frontend_host}/facebook-callback.html"))
+    Ok(format!("https://{frontend_host}/oauth-callback.html"))
 }
 
 /// Exchanges the OAuth authorization `code` from the Threads login popup for a short-lived access
