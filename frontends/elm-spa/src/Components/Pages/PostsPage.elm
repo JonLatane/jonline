@@ -2,6 +2,7 @@ module Components.Pages.PostsPage exposing
     ( FeedSource(..)
     , Model
     , Msg
+    , exportButtonView
     , fromShared
     , init
     , searchTextChanged
@@ -1502,11 +1503,20 @@ syncAnimations model =
 -- VIEW
 
 
-{-| `showSearchRow` hides `searchRowView` (the search box + POST/REPLY context chooser together)
-when `False` -- used by `Pages.Home_`, which shows its own `EventsPage`'s search box instead and
-keeps this module's `model.searchText` in sync with it behind the scenes (see
-`Pages.Home_.update`'s cross-sync) rather than showing two redundant boxes. Every other caller
-passes `True`, preserving the previous always-shown behavior.
+{-| `showSearchRow` hides `searchRowView` (the search box + POST/REPLY context chooser together,
+including its own trailing `exportButtonView`) when `False` -- used by `Pages.Home_`, which shows
+its own `EventsPage`'s search box instead and keeps this module's `model.searchText` in sync with
+it behind the scenes (see `Pages.Home_.update`'s cross-sync) rather than showing two redundant
+boxes. Every other caller passes `True`, preserving the previous always-shown behavior.
+
+A "Subscribe" link is exactly as useful without the search row as with it, though -- both
+`Pages.Home_`'s embedded feed and `Components.Pages.UserProfilePage`'s own embedded posts list
+(where `model.author` is already set, so `feedUrl` comes out `user_id`-scoped for free) still
+want one. Since `showSearchRow = False` callers already render their own static heading
+(`Pages.Home_.heading`/`Components.Pages.UserProfilePage.postsHeading`, both external to this
+module -- see `recentPostsTabsView`'s own doc), `exportButtonView` is exposed for them to place
+directly beside their own heading rather than this module inserting an otherwise-empty row of
+its own for just that one button.
 
 `showAuthorHeading` hides `authorHeadingView` (the "Posts | <name>" heading) when `False`
 -- used by `Components.Pages.UserProfilePage`, which embeds this module a level below its own
@@ -1723,8 +1733,11 @@ feedUrl shared model kind =
             "https://" ++ shared.accounts.mainFrontendHost ++ feedKindPath kind
 
 
-{-| The "Export" icon button at the end of `searchRowView`'s `.filter-controls-trailing` --
-mirrors `Components.Pages.EventsPage.exportButtonView` almost exactly (same
+{-| The "Export" icon button -- sits at the end of `searchRowView`'s `.filter-controls-trailing`
+when that's shown (`showSearchRow = True`), or is placed directly by an embedding caller
+(`Pages.Home_`/`Components.Pages.UserProfilePage`, see `view`'s own doc) beside their own static
+heading when it's not. Exposed from this module for exactly that second case. Mirrors
+`Components.Pages.EventsPage.exportButtonView` almost exactly (same
 `popover-anchor`/`popover-toggle`/`popover`/`popover-backdrop` structure from `ui/popover.css`),
 just offering both RSS and Atom links/copy buttons side by side instead of one ICS link, since a
 Posts feed can be subscribed to as either format (see `logic::sync_sources::feed_sync`'s own
@@ -1766,13 +1779,15 @@ exportButtonView shared model =
                             , type_ "button"
                             ]
                             [ span [ class "posts-export-popover-copy-icon" ] [ text "⎘" ]
-                            , text
-                                (if model.copyLinkCopied == Just kind then
-                                    "Copied!"
+                            , span [ class "posts-export-popover-copy-label" ]
+                                [ text
+                                    (if model.copyLinkCopied == Just kind then
+                                        "Copied!"
 
-                                 else
-                                    "Copy " ++ feedKindLabel kind ++ " Link"
-                                )
+                                     else
+                                        "Copy " ++ feedKindLabel kind ++ " Link"
+                                    )
+                                ]
                             ]
                     )
                     [ Rss, Atom ]

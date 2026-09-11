@@ -3728,7 +3728,15 @@ profileDetail shared model server maybeAccount user =
         , syncDestinationsSection shared model maybeAccount user
         , aiModelProvidersSection model canEdit (isOwnProfile maybeAccount user) user
         , aiModelProviderGrantedSection model canEdit user
-        , h3 [] [ text (postsHeading model.posts) ]
+        , case model.posts of
+            Just postsModel ->
+                div [ class "posts-embedded-heading-row" ]
+                    [ h3 [] [ text (postsHeading model.posts) ]
+                    , Html.map PostsMsg (PostsPage.exportButtonView shared postsModel)
+                    ]
+
+            Nothing ->
+                h3 [] [ text (postsHeading model.posts) ]
         , case model.posts of
             Just postsModel ->
                 Html.map PostsMsg (PostsPage.view shared False False postsModel)

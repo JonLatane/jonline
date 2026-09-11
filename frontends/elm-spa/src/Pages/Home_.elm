@@ -72,7 +72,8 @@ import Components.Pages.PostsPage as PostsPage
 import Dict exposing (Dict)
 import Effect exposing (Effect)
 import Gen.Params.Home_ exposing (Params)
-import Html exposing (h3, text)
+import Html exposing (div, h3, text)
+import Html.Attributes exposing (class)
 import Page
 import Proto.Rellm.CalendarDisplayMode exposing (CalendarDisplayMode)
 import Proto.Rellm.NavigationTab exposing (NavigationTab(..))
@@ -528,7 +529,10 @@ view shared req model =
             (case model of
                 Feed feed ->
                     [ Html.map EventsMsg (EventsPage.view shared True feed.events)
-                    , h3 [] [ text (heading feed.posts.context) ]
+                    , div [ class "posts-embedded-heading-row" ]
+                        [ h3 [] [ text (heading feed.posts.context) ]
+                        , Html.map PostsMsg (PostsPage.exportButtonView shared feed.posts)
+                        ]
                     , Html.map PostsMsg (PostsPage.view shared False True feed.posts)
                     ]
 
