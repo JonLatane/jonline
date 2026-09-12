@@ -12,15 +12,15 @@ use crate::{marshaling::ToProtoAuthor, models};
 
 use super::{load_sync_source_lookup, MarshalablePost, SyncSourceLookup};
 
-pub type EventInstanceSyncLookup = HashMap<i64, Vec<models::EventInstanceSyncDestination>>;
+pub type OccasionSyncLookup = HashMap<i64, Vec<models::OccasionSyncDestination>>;
 
-pub fn load_event_instance_sync_lookup(
-    event_instance_ids: Vec<i64>,
+pub fn load_occasion_sync_lookup(
+    occasion_ids: Vec<i64>,
     conn: &mut PgPooledConnection,
-) -> EventInstanceSyncLookup {
-    let mut lookup: EventInstanceSyncLookup = HashMap::new();
-    for row in models::get_event_instance_sync_destinations(event_instance_ids, conn) {
-        lookup.entry(row.event_instance_id).or_default().push(row);
+) -> OccasionSyncLookup {
+    let mut lookup: OccasionSyncLookup = HashMap::new();
+    for row in models::get_occasion_sync_destinations(occasion_ids, conn) {
+        lookup.entry(row.occasion_id).or_default().push(row);
     }
     lookup
 }
@@ -29,10 +29,10 @@ pub fn load_event_instance_sync_lookup(
 pub struct MarshalableEvent(
     pub models::Event,
     pub MarshalablePost,
-    pub Vec<MarshalableEventInstance>,
+    pub Vec<MarshalableOccasion>,
 );
 #[derive(Debug, Clone)]
-pub struct MarshalableEventInstance(pub models::EventInstance, pub MarshalablePost);
+pub struct MarshalableOccasion(pub models::Occasion, pub MarshalablePost);
 
 pub fn convert_events(data: &Vec<MarshalableEvent>, conn: &mut PgPooledConnection) -> Vec<Event> {
     let media_ids: Vec<i64> = data
@@ -70,30 +70,30 @@ pub fn convert_events(data: &Vec<MarshalableEvent>, conn: &mut PgPooledConnectio
                 marshalable_event
                     .2
                     .iter()
-                    .filter_map(|MarshalableEventInstance(_, post)| post.0.sync_source_id),
+                    .filter_map(|MarshalableOccasion(_, post)| post.0.sync_source_id),
             );
             ids
         })
         .collect();
     let sync_source_lookup = load_sync_source_lookup(sync_source_ids, conn);
 
-    let event_instance_ids: Vec<i64> = data
+    let occasion_ids: Vec<i64> = data
         .iter()
         .flat_map(|marshalable_event| {
             marshalable_event
                 .2
                 .iter()
-                .map(|MarshalableEventInstance(instance, _)| instance.post_id)
+                .map(|MarshalableOccasion(occasion, _)| occasion.post_id)
         })
         .collect();
-    let instance_sync_lookup = load_event_instance_sync_lookup(event_instance_ids, conn);
+    let occasion_sync_lookup = load_occasion_sync_lookup(occasion_ids, conn);
 
     data.iter()
         .map(|marshalable_event| {
             marshalable_event.to_proto(
                 lookup.as_ref(),
                 sync_source_lookup.as_ref(),
-                Some(&instance_sync_lookup),
+                Some(&occasion_sync_lookup),
             )
         })
         .collect()
@@ -103,7 +103,7 @@ pub trait ToProtoMarshalableEvent {
         &self,
         media_lookup: Option<&MediaLookup>,
         sync_source_lookup: Option<&SyncSourceLookup>,
-        instance_sync_lookup: Option<&EventInstanceSyncLookup>,
+        occasion_sync_lookup: Option<&OccasionSyncLookup>,
     ) -> Event;
 }
 
@@ -112,11 +112,11 @@ impl ToProtoMarshalableEvent for MarshalableEvent {
         &self,
         media_lookup: Option<&MediaLookup>,
         sync_source_lookup: Option<&SyncSourceLookup>,
-        instance_sync_lookup: Option<&EventInstanceSyncLookup>,
+        occasion_sync_lookup: Option<&OccasionSyncLookup>,
     ) -> Event {
         let event = self.0.to_owned();
         let post = self.1.to_owned();
-        let instances = self.2.to_owned();
+        let occasions = self.2.to_owned();
         let hide_location = event.info["hide_location_until_rsvp_approved"]
             .as_bool()
             .unwrap_or(false);
@@ -128,13 +128,13 @@ impl ToProtoMarshalableEvent for MarshalableEvent {
         // self.to_proto(username, None)
         Event {
             post: Some(post.to_proto(media_lookup, None, sync_source_lookup)),
-            instances: instances
+            occasions: occasions
                 .iter()
                 .map(|i| {
                     i.to_proto(
                         media_lookup,
                         hide_location,
-                        instance_sync_lookup,
+                        occasion_sync_lookup,
                         sync_source_lookup,
                     )
                 })
@@ -145,45 +145,45 @@ impl ToProtoMarshalableEvent for MarshalableEvent {
     }
 }
 
-pub trait ToProtoMarshalableEventInstance {
+pub trait ToProtoMarshalableOccasion {
     fn to_proto(
         &self,
         media_lookup: Option<&MediaLookup>,
         hide_location: bool,
-        instance_sync_lookup: Option<&EventInstanceSyncLookup>,
+        occasion_sync_lookup: Option<&OccasionSyncLookup>,
         sync_source_lookup: Option<&SyncSourceLookup>,
-    ) -> EventInstance;
+    ) -> Occasion;
 }
 
-impl ToProtoMarshalableEventInstance for MarshalableEventInstance {
+impl ToProtoMarshalableOccasion for MarshalableOccasion {
     fn to_proto(
         &self,
         media_lookup: Option<&MediaLookup>,
         hide_location: bool,
-        instance_sync_lookup: Option<&EventInstanceSyncLookup>,
+        occasion_sync_lookup: Option<&OccasionSyncLookup>,
         sync_source_lookup: Option<&SyncSourceLookup>,
-    ) -> EventInstance {
-        let event_instance = self.0.to_owned();
+    ) -> Occasion {
+        let occasion = self.0.to_owned();
         let marshalable_post = self.1.to_owned();
         let location: Option<Location> = if hide_location {
             None
         } else {
-            event_instance.location.map(|c| c.to_proto_location())
+            occasion.location.map(|c| c.to_proto_location())
         };
-        let sync_destinations = instance_sync_lookup
-            .and_then(|lookup| lookup.get(&event_instance.post_id))
+        let sync_destinations = occasion_sync_lookup
+            .and_then(|lookup| lookup.get(&occasion.post_id))
             .map(|rows| rows.iter().map(|row| row.to_proto()).collect())
             .unwrap_or_default();
-        EventInstance {
-            event_id: event_instance.event_id.to_proto_id(),
+        Occasion {
+            event_id: occasion.event_id.to_proto_id(),
             post: Some(marshalable_post.to_proto(media_lookup, None, sync_source_lookup)),
-            starts_at: Some(event_instance.starts_at.to_proto()),
-            ends_at: Some(event_instance.ends_at.to_proto()),
-            info: Some(EventInstanceInfo {
+            starts_at: Some(occasion.starts_at.to_proto()),
+            ends_at: Some(occasion.ends_at.to_proto()),
+            info: Some(OccasionInfo {
                 ..Default::default()
             }),
             location,
-            timezone: event_instance.timezone,
+            timezone: occasion.timezone,
             sync_destinations,
             ..Default::default()
         }
@@ -218,7 +218,7 @@ impl ToProtoEventAttendance for (models::EventAttendance, Option<models::Author>
     ) -> EventAttendance {
         EventAttendance {
             id: self.0.id.to_proto_id(),
-            event_instance_id: self.0.event_instance_id.to_proto_id(),
+            occasion_id: self.0.occasion_id.to_proto_id(),
             attendee: match (&self.1, &self.0.anonymous_attendee) {
                 (Some(author), _) => Some(Attendee::UserAttendee(
                     author.to_proto_user_attendee(media_lookup),

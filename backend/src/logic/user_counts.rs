@@ -1,6 +1,6 @@
 //! Single source of truth for how each of `users`' denormalized counters (`follower_count`,
 //! `following_count`, `friend_count`, `group_count`, `post_count`, `response_count`,
-//! `event_count`, `event_instance_count`) is *defined* -- each `*_count` function below computes
+//! `event_count`, `occasion_count`) is *defined* -- each `*_count` function below computes
 //! a fresh, correct value via `COUNT(*)`, rather than trusting an incrementally maintained one.
 //!
 //! Used both by RPC handlers (via the `update_*` functions, to refresh just the counters a
@@ -12,7 +12,7 @@ use diesel::*;
 
 use crate::db_connection::PgPooledConnection;
 use crate::rpcs::validations::PASSING_MODERATIONS;
-use crate::schema::{event_instances, events, follows, memberships, posts, users};
+use crate::schema::{occasions, events, follows, memberships, posts, users};
 
 pub fn follower_count(user_id: i64, conn: &mut PgPooledConnection) -> QueryResult<i32> {
     let count: i64 = follows::table
@@ -68,8 +68,8 @@ pub fn group_count(user_id: i64, conn: &mut PgPooledConnection) -> QueryResult<i
     Ok(count as i32)
 }
 
-/// Top-level `Post`s (`PostContext::Post`) authored by `user_id`. Excludes replies, events, event
-/// instances -- see [`response_count`]/[`event_count`].
+/// Top-level `Post`s (`PostContext::Post`) authored by `user_id`. Excludes replies, events,
+/// occasions -- see [`response_count`]/[`event_count`].
 pub fn post_count(user_id: i64, conn: &mut PgPooledConnection) -> QueryResult<i32> {
     let count: i64 = posts::table
         .filter(posts::user_id.eq(user_id))
@@ -80,7 +80,7 @@ pub fn post_count(user_id: i64, conn: &mut PgPooledConnection) -> QueryResult<i3
 }
 
 /// Replies (`PostContext::Reply`/`FederatedReply`) authored by `user_id`, to `Post`s, `Event`s,
-/// or `EventInstance`s.
+/// or `Occasion`s.
 pub fn response_count(user_id: i64, conn: &mut PgPooledConnection) -> QueryResult<i32> {
     let count: i64 = posts::table
         .filter(posts::user_id.eq(user_id))
@@ -102,13 +102,13 @@ pub fn event_count(user_id: i64, conn: &mut PgPooledConnection) -> QueryResult<i
     Ok(count as i32)
 }
 
-/// `EventInstance`s across all of `user_id`'s events. `event_instances::user_id` is denormalized
-/// (by DB trigger) from the instance's own Post's author -- see
-/// `2026-07-30-170000_add_search_text_to_event_instances` -- and always matches the parent
+/// `Occasion`s across all of `user_id`'s events. `occasions::user_id` is denormalized
+/// (by DB trigger) from the Occasion's own Post's author -- see
+/// `2026-07-30-170000_add_search_text_to_occasions` -- and always matches the parent
 /// Event's author in this codebase.
-pub fn event_instance_count(user_id: i64, conn: &mut PgPooledConnection) -> QueryResult<i32> {
-    let count: i64 = event_instances::table
-        .filter(event_instances::user_id.eq(user_id))
+pub fn occasion_count(user_id: i64, conn: &mut PgPooledConnection) -> QueryResult<i32> {
+    let count: i64 = occasions::table
+        .filter(occasions::user_id.eq(user_id))
         .count()
         .get_result(conn)?;
     Ok(count as i32)
@@ -168,12 +168,12 @@ pub fn update_post_counts(user_id: i64, conn: &mut PgPooledConnection) -> QueryR
 
 pub fn update_event_counts(user_id: i64, conn: &mut PgPooledConnection) -> QueryResult<()> {
     let events = event_count(user_id, conn)?;
-    let instances = event_instance_count(user_id, conn)?;
+    let occasions = occasion_count(user_id, conn)?;
     update(users::table)
         .filter(users::id.eq(user_id))
         .set((
             users::event_count.eq(events),
-            users::event_instance_count.eq(instances),
+            users::occasion_count.eq(occasions),
         ))
         .execute(conn)?;
     Ok(())
@@ -191,7 +191,7 @@ pub fn update_all_counts(user_id: i64, conn: &mut PgPooledConnection) -> QueryRe
     let posts = post_count(user_id, conn)?;
     let responses = response_count(user_id, conn)?;
     let events = event_count(user_id, conn)?;
-    let instances = event_instance_count(user_id, conn)?;
+    let occasions = occasion_count(user_id, conn)?;
     update(users::table)
         .filter(users::id.eq(user_id))
         .set((
@@ -202,7 +202,7 @@ pub fn update_all_counts(user_id: i64, conn: &mut PgPooledConnection) -> QueryRe
             users::post_count.eq(posts),
             users::response_count.eq(responses),
             users::event_count.eq(events),
-            users::event_instance_count.eq(instances),
+            users::occasion_count.eq(occasions),
         ))
         .execute(conn)?;
     Ok(())

@@ -96,8 +96,8 @@ async fn sitemap(state: &State<RocketState>, host: &Host<'_>) -> CacheResponse<R
     };
     if let Ok(events_response) = get_events(events_request, &None, &mut conn) {
         for event in events_response.events {
-            for instance in event.instances {
-                if let Some(post) = &instance.post {
+            for occasion in event.occasions {
+                if let Some(post) = &occasion.post {
                     urls.push(format!("https://{}/event/{}", domain, post.id));
                 }
             }

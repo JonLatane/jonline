@@ -122,7 +122,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
 
   const [pageLoadTime] = useState<string>(moment(Date.now()).toISOString(true));
   const allEventsWithNonBigCalendarUpcomingFilter = displayMode === 'upcoming' && !bigCalendar
-    ? allEventsUnfiltered.filter(e => moment(e.instances[0]?.endsAt).isAfter(pageLoadTime))
+    ? allEventsUnfiltered.filter(e => moment(e.occasions[0]?.endsAt).isAfter(pageLoadTime))
     : allEventsUnfiltered
 
   const allEvents = useMemo(

@@ -1,0 +1,19 @@
+-- Renames `ai_model_providers`/`ai_model_provider_grants` to `ai_providers`/`ai_provider_grants`
+-- (see protos/ai_providers.proto's AIModelProvider -> AIProvider rename). Purely a naming change --
+-- no behavior change.
+
+ALTER TABLE ai_model_provider_grants RENAME CONSTRAINT ai_model_provider_grants_pkey TO ai_provider_grants_pkey;
+ALTER TABLE ai_model_provider_grants RENAME CONSTRAINT ai_model_provider_grants_ai_model_provider_id_fkey TO ai_provider_grants_ai_provider_id_fkey;
+ALTER TABLE ai_model_provider_grants RENAME CONSTRAINT ai_model_provider_grants_grantee_id_fkey TO ai_provider_grants_grantee_id_fkey;
+ALTER TABLE ai_model_provider_grants RENAME CONSTRAINT ai_model_provider_grants_ai_model_provider_id_grantee_id_key TO ai_provider_grants_ai_provider_id_grantee_id_key;
+ALTER INDEX idx_ai_model_provider_grants_provider_id RENAME TO idx_ai_provider_grants_provider_id;
+ALTER INDEX idx_ai_model_provider_grants_grantee_id RENAME TO idx_ai_provider_grants_grantee_id;
+ALTER SEQUENCE ai_model_provider_grants_id_seq RENAME TO ai_provider_grants_id_seq;
+ALTER TABLE ai_model_provider_grants RENAME COLUMN ai_model_provider_id TO ai_provider_id;
+ALTER TABLE ai_model_provider_grants RENAME TO ai_provider_grants;
+
+ALTER TABLE ai_model_providers RENAME CONSTRAINT ai_model_providers_pkey TO ai_providers_pkey;
+ALTER TABLE ai_model_providers RENAME CONSTRAINT ai_model_providers_user_id_fkey TO ai_providers_user_id_fkey;
+ALTER INDEX idx_ai_model_providers_user_id RENAME TO idx_ai_providers_user_id;
+ALTER SEQUENCE ai_model_providers_id_seq RENAME TO ai_providers_id_seq;
+ALTER TABLE ai_model_providers RENAME TO ai_providers;

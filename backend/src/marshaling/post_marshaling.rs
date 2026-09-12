@@ -20,8 +20,8 @@ use crate::schema::{group_posts, groups, posts};
 
 pub type PostSyncLookup = HashMap<i64, Vec<models::PostSyncDestination>>;
 
-/// Mirrors `event_marshaling::load_event_instance_sync_lookup`, batched for Posts instead of
-/// EventInstances.
+/// Mirrors `event_marshaling::load_occasion_sync_lookup`, batched for Posts instead of
+/// Occasions.
 pub fn load_post_sync_lookup(post_ids: Vec<i64>, conn: &mut PgPooledConnection) -> PostSyncLookup {
     let mut lookup: PostSyncLookup = HashMap::new();
     for row in models::get_post_sync_destinations(post_ids, conn) {
@@ -235,7 +235,7 @@ pub const ALL_POST_CONTEXTS: [PostContext; 4] = [
     PostContext::Post,
     PostContext::Reply,
     PostContext::Event,
-    PostContext::EventInstance,
+    PostContext::Occasion,
 ];
 pub trait ToStringPostContext {
     fn to_string_post_context(&self) -> String;

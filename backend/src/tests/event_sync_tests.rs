@@ -9,20 +9,20 @@ use diesel::Connection;
 
 use crate::logic::{sync_source, sync_source_text};
 use crate::models;
-use crate::schema::{event_instances, events, posts};
+use crate::schema::{occasions, events, posts};
 use crate::tests::factories::*;
 use diesel::prelude::*;
 
 const ICS_FORMAT: &str = "%Y%m%dT%H%M%SZ";
 
-fn instances_for(
+fn occasions_for(
     conn: &mut crate::db_connection::PgPooledConnection,
     event_id: i64,
-) -> Vec<models::EventInstance> {
-    event_instances::table
-        .select(models::EVENT_INSTANCE_COLUMNS)
-        .filter(event_instances::event_id.eq(event_id))
-        .load::<models::EventInstance>(conn)
+) -> Vec<models::Occasion> {
+    occasions::table
+        .select(models::OCCASION_COLUMNS)
+        .filter(occasions::event_id.eq(event_id))
+        .load::<models::Occasion>(conn)
         .unwrap()
 }
 
@@ -31,9 +31,9 @@ fn synced_event(
     source_id: i64,
     uid: &str,
 ) -> Option<models::Event> {
-    let event_id: Option<i64> = event_instances::table
-        .inner_join(posts::table.on(posts::id.eq(event_instances::post_id)))
-        .select(event_instances::event_id)
+    let event_id: Option<i64> = occasions::table
+        .inner_join(posts::table.on(posts::id.eq(occasions::post_id)))
+        .select(occasions::event_id)
         .filter(posts::sync_source_id.eq(source_id))
         .filter(posts::sync_source_uid.eq(uid))
         .first(conn)
@@ -56,7 +56,7 @@ fn post_of(conn: &mut crate::db_connection::PgPooledConnection, post_id: i64) ->
 }
 
 #[test]
-fn single_vevent_creates_event_and_instance() {
+fn single_vevent_creates_event_and_occasion() {
     let mut conn = test_conn();
     conn.test_transaction::<_, tonic::Status, _>(|conn| {
         let user = create_user(conn, "est_single_owner");
@@ -77,21 +77,21 @@ fn single_vevent_creates_event_and_instance() {
         assert_eq!(post.title, Some("Single Event".to_string()));
         assert_eq!(post.content, Some("Single description".to_string()));
 
-        let instances = instances_for(conn, event.post_id);
-        assert_eq!(instances.len(), 1);
-        let instance_post = post_of(conn, instances[0].post_id);
-        assert!(instance_post.sync_source_uid.is_some());
-        assert!(instance_post.sync_source_recurrence_anchor.is_some());
+        let occasions = occasions_for(conn, event.post_id);
+        assert_eq!(occasions.len(), 1);
+        let occasion_post = post_of(conn, occasions[0].post_id);
+        assert!(occasion_post.sync_source_uid.is_some());
+        assert!(occasion_post.sync_source_recurrence_anchor.is_some());
 
         Ok(())
     });
 }
 
-/// `DTSTART`'s `TZID` parameter (RFC 5545 §3.3.5) should populate `EventInstance.timezone`
+/// `DTSTART`'s `TZID` parameter (RFC 5545 §3.3.5) should populate `Occasion.timezone`
 /// straight from the feed, without needing `logic::resolve_timezone`'s Nominatim geocoding or a
 /// hand-picked selector value at all.
 #[test]
-fn vevent_with_tzid_dtstart_populates_instance_timezone() {
+fn vevent_with_tzid_dtstart_populates_occasion_timezone() {
     let mut conn = test_conn();
     conn.test_transaction::<_, tonic::Status, _>(|conn| {
         let user = create_user(conn, "est_tzid_owner");
@@ -108,18 +108,18 @@ fn vevent_with_tzid_dtstart_populates_instance_timezone() {
         sync_source_text(&source, &ics, conn).expect("sync should succeed");
 
         let event = synced_event(conn, source.id, "tzid-1").expect("event should have been created");
-        let instances = instances_for(conn, event.post_id);
-        assert_eq!(instances.len(), 1);
-        assert_eq!(instances[0].timezone.as_deref(), Some("America/New_York"));
+        let occasions = occasions_for(conn, event.post_id);
+        assert_eq!(occasions.len(), 1);
+        assert_eq!(occasions[0].timezone.as_deref(), Some("America/New_York"));
 
         Ok(())
     });
 }
 
-/// Deploying this feature doesn't retroactively touch instances a `SyncSource` already synced
+/// Deploying this feature doesn't retroactively touch occasions a `SyncSource` already synced
 /// under the old (pre-`timezone`-column) code -- they simply have `timezone = NULL` until
 /// something re-syncs them. This proves that happens automatically, with no backfill script
-/// needed: `reconcile_instances`' change-detection compares `timezone` alongside
+/// needed: `reconcile_occasions`' change-detection compares `timezone` alongside
 /// `starts_at`/`ends_at`/`location`, so the very next scheduled sync after deploy updates a
 /// stale `NULL` row from the feed's own `TZID` even though nothing else about the occurrence
 /// changed.
@@ -142,18 +142,18 @@ fn resyncing_backfills_a_timezone_that_was_null_before_this_feature_shipped() {
         let event = synced_event(conn, source.id, "backfill-1").expect("event should exist");
 
         // Simulate a pre-deploy row by nulling out the timezone this first sync just set -- what
-        // an instance synced by the old code would actually look like.
-        diesel::update(event_instances::table.filter(event_instances::event_id.eq(event.post_id)))
-            .set(event_instances::timezone.eq(None::<String>))
+        // an occasion synced by the old code would actually look like.
+        diesel::update(occasions::table.filter(occasions::event_id.eq(event.post_id)))
+            .set(occasions::timezone.eq(None::<String>))
             .execute(conn)
             .unwrap();
-        assert_eq!(instances_for(conn, event.post_id)[0].timezone, None);
+        assert_eq!(occasions_for(conn, event.post_id)[0].timezone, None);
 
         sync_source_text(&source, &ics, conn).expect("resync should succeed");
 
-        let instances = instances_for(conn, event.post_id);
-        assert_eq!(instances.len(), 1, "resync must update the existing instance in place, not duplicate it");
-        assert_eq!(instances[0].timezone.as_deref(), Some("America/New_York"));
+        let occasions = occasions_for(conn, event.post_id);
+        assert_eq!(occasions.len(), 1, "resync must update the existing occasion in place, not duplicate it");
+        assert_eq!(occasions[0].timezone.as_deref(), Some("America/New_York"));
 
         Ok(())
     });
@@ -161,7 +161,7 @@ fn resyncing_backfills_a_timezone_that_was_null_before_this_feature_shipped() {
 
 /// Regression test for the 2026-09-04 duplicate-events incident: re-syncing the exact same feed
 /// twice in a row (e.g. two runs of the background job before anything upstream changes) must
-/// match every existing Event/EventInstance by `(sync_source_id, sync_source_uid,
+/// match every existing Event/Occasion by `(sync_source_id, sync_source_uid,
 /// sync_source_recurrence_anchor)` rather than silently creating a second copy of everything.
 #[test]
 fn resyncing_the_same_feed_twice_creates_no_duplicates() {
@@ -193,11 +193,11 @@ fn resyncing_the_same_feed_twice_creates_no_duplicates() {
             "expected exactly one Event after syncing the same feed twice"
         );
 
-        let instances = instances_for(conn, matching_events[0].post_id);
+        let occasions = occasions_for(conn, matching_events[0].post_id);
         assert_eq!(
-            instances.len(),
+            occasions.len(),
             1,
-            "expected exactly one EventInstance after syncing the same feed twice"
+            "expected exactly one Occasion after syncing the same feed twice"
         );
 
         Ok(())
@@ -224,8 +224,8 @@ fn duplicate_recurrence_anchor_is_rejected_by_db_unique_constraint() {
         sync_source_text(&source, &ics, conn).expect("sync should succeed");
 
         let event = synced_event(conn, source.id, "dbconstraint-1").expect("event should exist");
-        let existing_instance = &instances_for(conn, event.post_id)[0];
-        let existing_instance_post = post_of(conn, existing_instance.post_id);
+        let existing_occasion = &occasions_for(conn, event.post_id)[0];
+        let existing_occasion_post = post_of(conn, existing_occasion.post_id);
 
         let duplicate_post: models::Post = diesel::insert_into(posts::table)
             .values(&models::NewPost {
@@ -236,7 +236,7 @@ fn duplicate_recurrence_anchor_is_rejected_by_db_unique_constraint() {
                 content: None,
                 visibility: "GLOBAL_PUBLIC".to_string(),
                 embed_link: false,
-                context: "EVENT_INSTANCE".to_string(),
+                context: "OCCASION".to_string(),
                 moderation: "UNMODERATED".to_string(),
                 media: vec![],
             })
@@ -244,28 +244,28 @@ fn duplicate_recurrence_anchor_is_rejected_by_db_unique_constraint() {
             .get_result(conn)
             .unwrap();
 
-        diesel::insert_into(event_instances::table)
-            .values(&models::NewEventInstance {
+        diesel::insert_into(occasions::table)
+            .values(&models::NewOccasion {
                 event_id: event.post_id,
                 post_id: duplicate_post.id,
                 info: serde_json::json!({}),
-                starts_at: existing_instance.starts_at,
-                ends_at: existing_instance.ends_at,
+                starts_at: existing_occasion.starts_at,
+                ends_at: existing_occasion.ends_at,
                 location: None,
-                timezone: existing_instance.timezone.clone(),
+                timezone: existing_occasion.timezone.clone(),
             })
             .execute(conn)
-            .expect("event_instances insert itself no longer carries the unique constraint");
+            .expect("occasions insert itself no longer carries the unique constraint");
 
         // The unique constraint now lives on `posts` (see migration
         // 2026-09-11-000000_move_sync_source_to_posts), so it's this follow-up UPDATE --
         // mirroring `event_sync.rs`'s own insert-then-update pattern -- that must be rejected.
         let insert_result = diesel::update(posts::table.filter(posts::id.eq(duplicate_post.id)))
             .set((
-                posts::sync_source_id.eq(existing_instance_post.sync_source_id),
-                posts::sync_source_uid.eq(existing_instance_post.sync_source_uid.clone()),
+                posts::sync_source_id.eq(existing_occasion_post.sync_source_id),
+                posts::sync_source_uid.eq(existing_occasion_post.sync_source_uid.clone()),
                 posts::sync_source_recurrence_anchor
-                    .eq(existing_instance_post.sync_source_recurrence_anchor),
+                    .eq(existing_occasion_post.sync_source_recurrence_anchor),
             ))
             .execute(conn);
 
@@ -358,7 +358,7 @@ fn duplicate_non_recurring_sync_source_uid_is_rejected_by_db_unique_constraint()
 }
 
 #[test]
-fn recurring_vevent_expands_into_multiple_instances() {
+fn recurring_vevent_expands_into_multiple_occasions() {
     let mut conn = test_conn();
     conn.test_transaction::<_, tonic::Status, _>(|conn| {
         let user = create_user(conn, "est_recur_owner");
@@ -375,8 +375,8 @@ fn recurring_vevent_expands_into_multiple_instances() {
         sync_source_text(&source, &ics, conn).expect("sync should succeed");
 
         let event = synced_event(conn, source.id, "recur-1").expect("event should have been created");
-        let instances = instances_for(conn, event.post_id);
-        assert_eq!(instances.len(), 5, "RRULE COUNT=5 should expand to 5 instances");
+        let occasions = occasions_for(conn, event.post_id);
+        assert_eq!(occasions.len(), 5, "RRULE COUNT=5 should expand to 5 occasions");
 
         Ok(())
     });
@@ -406,16 +406,16 @@ fn recurrence_id_override_changes_one_occurrence() {
         sync_source_text(&source, &ics, conn).expect("sync should succeed");
 
         let event = synced_event(conn, source.id, "override-1").expect("event should have been created");
-        let instances = instances_for(conn, event.post_id);
-        assert_eq!(instances.len(), 3);
+        let occasions = occasions_for(conn, event.post_id);
+        assert_eq!(occasions.len(), 3);
 
-        let overridden_post_titles: Vec<Option<String>> = instances
+        let overridden_post_titles: Vec<Option<String>> = occasions
             .iter()
             .map(|i| post_of(conn, i.post_id).title)
             .collect();
         assert!(
             overridden_post_titles.contains(&Some("Moved Occurrence".to_string())),
-            "one instance should carry the RECURRENCE-ID override's own title, got {:?}",
+            "one occasion should carry the RECURRENCE-ID override's own title, got {:?}",
             overridden_post_titles
         );
 
@@ -450,7 +450,7 @@ fn occurrence_more_than_a_year_in_the_past_is_not_created() {
 }
 
 #[test]
-fn resync_removes_instances_no_longer_in_feed_but_leaves_old_ones_alone() {
+fn resync_removes_occasions_no_longer_in_feed_but_leaves_old_ones_alone() {
     let mut conn = test_conn();
     conn.test_transaction::<_, tonic::Status, _>(|conn| {
         let user = create_user(conn, "est_prune_owner");
@@ -472,17 +472,17 @@ fn resync_removes_instances_no_longer_in_feed_but_leaves_old_ones_alone() {
         );
         sync_source_text(&source, &ics_v1, conn).expect("initial sync should succeed");
         let event = synced_event(conn, source.id, "prune-1").expect("event should exist after first sync");
-        assert_eq!(instances_for(conn, event.post_id).len(), 1);
+        assert_eq!(occasions_for(conn, event.post_id).len(), 1);
 
-        // Manually backdate that instance to simulate a pre-existing old occurrence, and insert
-        // an extra manually-tagged "old" instance under the same event/source to prove old rows
+        // Manually backdate that occasion to simulate a pre-existing old occurrence, and insert
+        // an extra manually-tagged "old" occasion under the same event/source to prove old rows
         // aren't deleted by resync even when absent from the feed.
         let old_start_db: std::time::SystemTime = old_start.into();
         let old_end_db: std::time::SystemTime = old_end.into();
-        diesel::update(event_instances::table.filter(event_instances::event_id.eq(event.post_id)))
+        diesel::update(occasions::table.filter(occasions::event_id.eq(event.post_id)))
             .set((
-                event_instances::starts_at.eq(old_start_db),
-                event_instances::ends_at.eq(old_end_db),
+                occasions::starts_at.eq(old_start_db),
+                occasions::ends_at.eq(old_end_db),
             ))
             .execute(conn)
             .unwrap();
@@ -493,20 +493,20 @@ fn resync_removes_instances_no_longer_in_feed_but_leaves_old_ones_alone() {
         sync_source_text(&source, ics_v2, conn).expect("second sync should succeed");
 
         assert_eq!(
-            instances_for(conn, event.post_id).len(),
+            occasions_for(conn, event.post_id).len(),
             1,
-            "an instance older than the 1-year lookback should survive even after it drops out of the feed"
+            "an occasion older than the 1-year lookback should survive even after it drops out of the feed"
         );
 
         Ok(())
     });
 }
 
-/// A single missing sync shouldn't nuke the event: the instance (and its Post, which may be
+/// A single missing sync shouldn't nuke the event: the occasion (and its Post, which may be
 /// carrying a comment thread/media the user attached) is only marked missing, not deleted, and
 /// the event survives right along with it.
 #[test]
-fn resync_marks_recent_instance_missing_instead_of_deleting_it_immediately() {
+fn resync_marks_recent_occasion_missing_instead_of_deleting_it_immediately() {
     let mut conn = test_conn();
     conn.test_transaction::<_, tonic::Status, _>(|conn| {
         let user = create_user(conn, "est_prune2_owner");
@@ -521,29 +521,29 @@ fn resync_marks_recent_instance_missing_instead_of_deleting_it_immediately() {
         );
         sync_source_text(&source, &ics_v1, conn).expect("initial sync should succeed");
         let event = synced_event(conn, source.id, "prune-2").expect("event should exist after first sync");
-        let original_instance_id = instances_for(conn, event.post_id)[0].post_id;
+        let original_occasion_id = occasions_for(conn, event.post_id)[0].post_id;
 
         let ics_v2 = "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//test//\r\nEND:VCALENDAR\r\n";
         sync_source_text(&source, ics_v2, conn).expect("second sync should succeed");
 
         assert!(
             events::table.filter(events::post_id.eq(event.post_id)).first::<models::Event>(conn).optional().unwrap().is_some(),
-            "an event whose only instance just went missing this sync should not be deleted yet"
+            "an event whose only occasion just went missing this sync should not be deleted yet"
         );
-        let instances = instances_for(conn, event.post_id);
-        assert_eq!(instances.len(), 1, "the instance should still exist, just marked missing");
-        assert_eq!(instances[0].post_id, original_instance_id);
-        assert!(instances[0].sync_missing_since.is_some());
+        let occasions = occasions_for(conn, event.post_id);
+        assert_eq!(occasions.len(), 1, "the occasion should still exist, just marked missing");
+        assert_eq!(occasions[0].post_id, original_occasion_id);
+        assert!(occasions[0].sync_missing_since.is_some());
 
         Ok(())
     });
 }
 
 /// If the feed goes back to reporting the occurrence before the grace period elapses, the exact
-/// same EventInstance row (and its Post, i.e. any comment thread/media on it) is reused rather
+/// same Occasion row (and its Post, i.e. any comment thread/media on it) is reused rather
 /// than deleted-then-recreated.
 #[test]
-fn instance_reappearing_before_grace_period_elapses_reuses_the_same_row() {
+fn occasion_reappearing_before_grace_period_elapses_reuses_the_same_row() {
     let mut conn = test_conn();
     conn.test_transaction::<_, tonic::Status, _>(|conn| {
         let user = create_user(conn, "est_reappear_owner");
@@ -558,29 +558,29 @@ fn instance_reappearing_before_grace_period_elapses_reuses_the_same_row() {
         );
         sync_source_text(&source, &ics_v1, conn).expect("initial sync should succeed");
         let event = synced_event(conn, source.id, "reappear-1").expect("event should exist after first sync");
-        let original_instance = instances_for(conn, event.post_id).into_iter().next().unwrap();
+        let original_occasion = occasions_for(conn, event.post_id).into_iter().next().unwrap();
 
         // Simulates a transient/partial upstream response that momentarily drops the occurrence.
         let ics_empty = "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//test//\r\nEND:VCALENDAR\r\n";
         sync_source_text(&source, ics_empty, conn).expect("second sync should succeed");
-        assert!(instances_for(conn, event.post_id)[0].sync_missing_since.is_some());
+        assert!(occasions_for(conn, event.post_id)[0].sync_missing_since.is_some());
 
         // The feed recovers before the grace period elapses.
         sync_source_text(&source, &ics_v1, conn).expect("third sync should succeed");
-        let instances = instances_for(conn, event.post_id);
-        assert_eq!(instances.len(), 1);
-        assert_eq!(instances[0].post_id, original_instance.post_id, "should reuse the same instance/Post, not recreate it");
-        assert_eq!(instances[0].post_id, original_instance.post_id);
-        assert!(instances[0].sync_missing_since.is_none(), "reappearing should clear the missing marker");
+        let occasions = occasions_for(conn, event.post_id);
+        assert_eq!(occasions.len(), 1);
+        assert_eq!(occasions[0].post_id, original_occasion.post_id, "should reuse the same occasion/Post, not recreate it");
+        assert_eq!(occasions[0].post_id, original_occasion.post_id);
+        assert!(occasions[0].sync_missing_since.is_none(), "reappearing should clear the missing marker");
 
         Ok(())
     });
 }
 
-/// Once an instance has genuinely been missing for longer than the grace period, it (and the
+/// Once an occasion has genuinely been missing for longer than the grace period, it (and the
 /// emptied event) are pruned for real.
 #[test]
-fn instance_missing_past_grace_period_is_deleted_and_emptied_event_is_removed() {
+fn occasion_missing_past_grace_period_is_deleted_and_emptied_event_is_removed() {
     let mut conn = test_conn();
     conn.test_transaction::<_, tonic::Status, _>(|conn| {
         let user = create_user(conn, "est_expire_owner");
@@ -601,14 +601,14 @@ fn instance_missing_past_grace_period_is_deleted_and_emptied_event_is_removed() 
 
         // Simulate the grace period having elapsed by backdating the missing-since stamp.
         let long_ago: std::time::SystemTime = (Utc::now() - Duration::days(4)).into();
-        diesel::update(event_instances::table.filter(event_instances::event_id.eq(event.post_id)))
-            .set(event_instances::sync_missing_since.eq(long_ago))
+        diesel::update(occasions::table.filter(occasions::event_id.eq(event.post_id)))
+            .set(occasions::sync_missing_since.eq(long_ago))
             .execute(conn)
             .unwrap();
 
         sync_source_text(&source, ics_empty, conn).expect("third sync should succeed");
 
-        assert_eq!(instances_for(conn, event.post_id).len(), 0);
+        assert_eq!(occasions_for(conn, event.post_id).len(), 0);
         assert!(
             events::table
                 .filter(events::post_id.eq(event.post_id))
@@ -616,7 +616,7 @@ fn instance_missing_past_grace_period_is_deleted_and_emptied_event_is_removed() 
                 .optional()
                 .unwrap()
                 .is_none(),
-            "an event whose only instance stayed missing past the grace period should be deleted"
+            "an event whose only occasion stayed missing past the grace period should be deleted"
         );
 
         Ok(())

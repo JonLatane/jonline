@@ -1,4 +1,4 @@
-import { Event, EventInstance, EventListingType, Group, Location, Permission, Post, TimeFilter } from '@rellm/api';
+import { Event, Occasion, EventListingType, Group, Location, Permission, Post, TimeFilter } from '@rellm/api';
 import { Button, DateTimePicker, Heading, Paragraph, XStack, YStack, getThemes, supportDateInput, toProtoISOString, useTheme } from '@rellm/ui';
 import { FederatedGroup, createEvent, createGroupPost, federatedEntity, identifyEvent, useServerTheme, loadEventsPage, loadGroupEventsPage, resetEvents } from 'app/store';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -15,7 +15,7 @@ import { themedButtonBackground } from 'app/utils';
 import { EventsFullCalendar } from './events_full_calendar';
 import { useUpcomingEventsFilter } from 'app/hooks/use_upcoming_events_filter';
 
-export const defaultEventInstance: () => EventInstance = () => EventInstance.create({ startsAt: moment().toISOString(), endsAt: moment().add(1, 'hour').toISOString() });
+export const defaultOccasion: () => Occasion = () => Occasion.create({ startsAt: moment().toISOString(), endsAt: moment().add(1, 'hour').toISOString() });
 
 export type CreateEventSheetProps = {
   selectedGroup?: FederatedGroup;
@@ -55,8 +55,8 @@ export function CreateEventSheet({ selectedGroup, button }: CreateEventSheetProp
   const previewEvent = useCallback((post: Post) => {
     const event = Event.create({
       post: post,
-      instances: [
-        EventInstance.create({
+      occasions: [
+        Occasion.create({
           location,
           startsAt: toProtoISOString(startsAt),
           endsAt: toProtoISOString(endsAt),
@@ -123,7 +123,7 @@ export function CreateEventSheet({ selectedGroup, button }: CreateEventSheetProp
   // const { eventPagesOnHome } = useLocalConfiguration();
   const allEvents = useMemo(() => bigCalendar
     ? eventResults
-    : eventResults.filter(e => moment(e.instances[0]?.endsAt).isAfter(pageLoadTime)),
+    : eventResults.filter(e => moment(e.occasions[0]?.endsAt).isAfter(pageLoadTime)),
     [bigCalendar, eventResults, pageLoadTime])
 
   const preview = useCallback((post: Post, group: Group | undefined) => {
@@ -145,7 +145,7 @@ export function CreateEventSheet({ selectedGroup, button }: CreateEventSheetProp
       />
       {bigCalendar
         ? <EventsFullCalendar events={[event, ...allEvents]}
-          scrollToTime={event.instances[0]?.startsAt} weeklyOnly width='100%' />
+          scrollToTime={event.occasions[0]?.startsAt} weeklyOnly width='100%' />
         : <EventCard event={event} isPreview hideEditControls />}
       {/* <EventCard event={previewEvent(post)} isPreview hideEditControls /> */}
     </YStack>

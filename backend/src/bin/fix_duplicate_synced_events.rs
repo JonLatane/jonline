@@ -5,7 +5,7 @@ use std::collections::HashMap;
 
 use diesel::result::{DatabaseErrorKind, Error as DieselError};
 use diesel::*;
-use rellm::models::{Event, EventInstance, EVENT_INSTANCE_COLUMNS};
+use rellm::models::{Event, Occasion, OCCASION_COLUMNS};
 use rellm::schema::*;
 use rellm::{db_connection, init_bin_logging, init_crypto};
 
@@ -20,7 +20,7 @@ use rellm::{db_connection, init_bin_logging, init_crypto};
 /// the old key persisted as data. That made `sync_source_text`'s `existing_by_uid` map silently
 /// drop every pre-existing synced Event when built (`.get("sync_source_uid")` returned `None` for
 /// all of them, so `filter_map` excluded them entirely), so the very next sync treated every
-/// still-current iCal UID as brand new and created a full duplicate Event/EventInstance/Post
+/// still-current iCal UID as brand new and created a full duplicate Event/Occasion/Post
 /// chain for it, alongside the untouched original -- the *duplicate* uses the new key, so it's
 /// matched correctly on every subsequent sync; only the original is (silently, harmlessly)
 /// invisible to sync from then on, without this repair.
@@ -32,13 +32,13 @@ use rellm::{db_connection, init_bin_logging, init_crypto};
 ///    `events.info`, so future syncs match existing rows correctly again.
 /// 2. Finds duplicate Events (same UID, multiple `events` rows) created by that bug and collapses
 ///    each group down to its oldest ("keeper") Event -- matching up each duplicate's
-///    EventInstance(s) to the keeper's by `sync_source_recurrence_anchor` and, for every relation a real
-///    user (not the iCal sync itself, which never touches Media and only ever updates instance
+///    Occasion(s) to the keeper's by `sync_source_recurrence_anchor` and, for every relation a real
+///    user (not the iCal sync itself, which never touches Media and only ever updates occasion
 ///    times/text) could have created against the *newer* duplicate in the meantime -- Media,
 ///    replies, RSVPs (`event_attendances`), cross-posts (`group_posts`/`user_posts`), and sync-out
 ///    records (`*_sync_destinations`) -- reassigns it onto the keeper before deleting the
-///    duplicate. `posts.media` arrays are unioned rather than overwritten. A duplicate's instance
-///    with no matching keeper instance (shouldn't happen in practice, but not impossible if the
+///    duplicate. `posts.media` arrays are unioned rather than overwritten. A duplicate's occasion
+///    with no matching keeper occasion (shouldn't happen in practice, but not impossible if the
 ///    feed changed between the two syncs) is adopted by the keeper Event rather than deleted.
 pub fn main() {
     init_crypto();
@@ -115,11 +115,11 @@ pub fn main() {
 
     log::info!(
         "Done. {} UID group(s) had duplicates; deleted {} duplicate Event(s) and {} duplicate \
-         EventInstance(s); merged {} Media reference(s); reassigned {} other relation(s) \
+         Occasion(s); merged {} Media reference(s); reassigned {} other relation(s) \
          (deleting {} that would've collided with the keeper's own).",
         stats.groups_collapsed,
         stats.events_deleted,
-        stats.instances_deleted,
+        stats.occasions_deleted,
         stats.media_merged,
         stats.relations_reassigned,
         stats.relations_dropped_as_duplicate,
@@ -130,7 +130,7 @@ pub fn main() {
 struct Stats {
     groups_collapsed: usize,
     events_deleted: usize,
-    instances_deleted: usize,
+    occasions_deleted: usize,
     media_merged: usize,
     relations_reassigned: usize,
     relations_dropped_as_duplicate: usize,
@@ -142,62 +142,62 @@ fn collapse_duplicate_event(
     duplicate_event_id: i64,
     stats: &mut Stats,
 ) -> Result<(), DieselError> {
-    // `sync_source_recurrence_anchor` moved from `event_instances` to `posts`
+    // `sync_source_recurrence_anchor` moved from `occasions` to `posts`
     // (2026-09-11-000000_move_sync_source_to_posts, after this tool was written) -- join through
-    // each instance's own Post to find it.
-    let keeper_instances: Vec<(EventInstance, Option<std::time::SystemTime>)> = event_instances::table
-        .inner_join(posts::table.on(posts::id.eq(event_instances::post_id)))
-        .select((EVENT_INSTANCE_COLUMNS, posts::sync_source_recurrence_anchor))
-        .filter(event_instances::event_id.eq(keeper_event_id))
+    // each occasion's own Post to find it.
+    let keeper_occasions: Vec<(Occasion, Option<std::time::SystemTime>)> = occasions::table
+        .inner_join(posts::table.on(posts::id.eq(occasions::post_id)))
+        .select((OCCASION_COLUMNS, posts::sync_source_recurrence_anchor))
+        .filter(occasions::event_id.eq(keeper_event_id))
         .load(conn)?;
-    let mut keeper_by_anchor: HashMap<std::time::SystemTime, i64> = keeper_instances
+    let mut keeper_by_anchor: HashMap<std::time::SystemTime, i64> = keeper_occasions
         .into_iter()
         .filter_map(|(i, anchor)| anchor.map(|anchor| (anchor, i.post_id)))
         .collect();
 
-    let duplicate_instances: Vec<(EventInstance, Option<std::time::SystemTime>)> = event_instances::table
-        .inner_join(posts::table.on(posts::id.eq(event_instances::post_id)))
-        .select((EVENT_INSTANCE_COLUMNS, posts::sync_source_recurrence_anchor))
-        .filter(event_instances::event_id.eq(duplicate_event_id))
+    let duplicate_occasions: Vec<(Occasion, Option<std::time::SystemTime>)> = occasions::table
+        .inner_join(posts::table.on(posts::id.eq(occasions::post_id)))
+        .select((OCCASION_COLUMNS, posts::sync_source_recurrence_anchor))
+        .filter(occasions::event_id.eq(duplicate_event_id))
         .load(conn)?;
 
-    for (duplicate_instance, anchor) in duplicate_instances {
+    for (duplicate_occasion, anchor) in duplicate_occasions {
         let Some(anchor) = anchor else {
             continue;
         };
         match keeper_by_anchor.get(&anchor) {
-            Some(&keeper_instance_post_id) => {
-                reassign_instance_relations(
+            Some(&keeper_occasion_post_id) => {
+                reassign_occasion_relations(
                     conn,
-                    keeper_instance_post_id,
-                    duplicate_instance.post_id,
+                    keeper_occasion_post_id,
+                    duplicate_occasion.post_id,
                     stats,
                 )?;
                 merge_and_delete_post(
                     conn,
-                    keeper_instance_post_id,
-                    duplicate_instance.post_id,
+                    keeper_occasion_post_id,
+                    duplicate_occasion.post_id,
                     stats,
                 )?;
-                stats.instances_deleted += 1;
+                stats.occasions_deleted += 1;
             }
             None => {
-                // No matching keeper instance -- adopt this occurrence into the keeper Event
+                // No matching keeper occasion -- adopt this occurrence into the keeper Event
                 // rather than lose it.
                 log::warn!(
-                    "Duplicate Event {}'s instance {} (sync_source_recurrence_anchor {:?}) has no \
-                     matching keeper instance under Event {}; adopting it instead of deleting.",
+                    "Duplicate Event {}'s occasion {} (sync_source_recurrence_anchor {:?}) has no \
+                     matching keeper occasion under Event {}; adopting it instead of deleting.",
                     duplicate_event_id,
-                    duplicate_instance.post_id,
+                    duplicate_occasion.post_id,
                     anchor,
                     keeper_event_id,
                 );
                 diesel::update(
-                    event_instances::table.filter(event_instances::post_id.eq(duplicate_instance.post_id)),
+                    occasions::table.filter(occasions::post_id.eq(duplicate_occasion.post_id)),
                 )
-                .set(event_instances::event_id.eq(keeper_event_id))
+                .set(occasions::event_id.eq(keeper_event_id))
                 .execute(conn)?;
-                keeper_by_anchor.insert(anchor, duplicate_instance.post_id);
+                keeper_by_anchor.insert(anchor, duplicate_occasion.post_id);
             }
         }
     }
@@ -208,18 +208,18 @@ fn collapse_duplicate_event(
     Ok(())
 }
 
-/// Relations keyed by `event_instance_id` (the instance's own `post_id`) -- only applicable when
-/// merging two EventInstances, not the top-level Event posts.
-fn reassign_instance_relations(
+/// Relations keyed by `occasion_id` (the occasion's own `post_id`) -- only applicable when
+/// merging two Occasions, not the top-level Event posts.
+fn reassign_occasion_relations(
     conn: &mut PgConnection,
     keeper_post_id: i64,
     duplicate_post_id: i64,
     stats: &mut Stats,
 ) -> Result<(), DieselError> {
     let attendances_moved = diesel::update(
-        event_attendances::table.filter(event_attendances::event_instance_id.eq(duplicate_post_id)),
+        event_attendances::table.filter(event_attendances::occasion_id.eq(duplicate_post_id)),
     )
-    .set(event_attendances::event_instance_id.eq(keeper_post_id))
+    .set(event_attendances::occasion_id.eq(keeper_post_id))
     .execute(conn)?;
     stats.relations_reassigned += attendances_moved;
 
@@ -230,16 +230,16 @@ fn reassign_instance_relations(
         stats,
         |conn, from, to| {
             diesel::update(
-                event_instance_sync_destinations::table
-                    .filter(event_instance_sync_destinations::event_instance_id.eq(from)),
+                occasion_sync_destinations::table
+                    .filter(occasion_sync_destinations::occasion_id.eq(from)),
             )
-            .set(event_instance_sync_destinations::event_instance_id.eq(to))
+            .set(occasion_sync_destinations::occasion_id.eq(to))
             .execute(conn)
         },
         |conn, from| {
             diesel::delete(
-                event_instance_sync_destinations::table
-                    .filter(event_instance_sync_destinations::event_instance_id.eq(from)),
+                occasion_sync_destinations::table
+                    .filter(occasion_sync_destinations::occasion_id.eq(from)),
             )
             .execute(conn)
         },
@@ -248,7 +248,7 @@ fn reassign_instance_relations(
     Ok(())
 }
 
-/// Relations keyed by plain `post_id` -- applicable to both EventInstance and top-level Event
+/// Relations keyed by plain `post_id` -- applicable to both Occasion and top-level Event
 /// posts.
 fn reassign_post_relations(
     conn: &mut PgConnection,
@@ -334,10 +334,10 @@ fn reassign_or_drop_composite(
 }
 
 /// Unions `duplicate_post_id`'s `media` into `keeper_post_id`'s, then deletes the duplicate Post
-/// (cascading its `events`/`event_instances` row, whichever applies). Must run *after* every
+/// (cascading its `events`/`occasions` row, whichever applies). Must run *after* every
 /// other relation pointing at `duplicate_post_id` has already been reassigned/dropped above --
-/// `group_posts`/`user_posts`/`event_instances`.`post_id` cascade on Post delete, but
-/// `post_sync_destinations`/`event_instance_sync_destinations`.`event_instance_id` restrict it.
+/// `group_posts`/`user_posts`/`occasions`.`post_id` cascade on Post delete, but
+/// `post_sync_destinations`/`occasion_sync_destinations`.`occasion_id` restrict it.
 fn merge_and_delete_post(
     conn: &mut PgConnection,
     keeper_post_id: i64,

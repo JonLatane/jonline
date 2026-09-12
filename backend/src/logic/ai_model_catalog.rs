@@ -1,17 +1,17 @@
-//! A static, hand-maintained catalog of the models each `AIModelProvider.provider` variant
-//! supports, and what each one can actually do (see `protos/ai_model_providers.proto`'s
+//! A static, hand-maintained catalog of the models each `AIProvider.provider` variant
+//! supports, and what each one can actually do (see `protos/ai_providers.proto`'s
 //! `AIModelCapability`). None of Anthropic/OpenAI/Gemini/DigitalOcean expose a "list models"
-//! endpoint stable/simple enough to build `AvailableAIModel`s from at request time, so this list is
-//! updated by hand as new models ship -- see `models_for_provider`, used by `rpcs::ai_model_providers`
-//! to expand a provider (or a grant's `model_names`) into the `AvailableAIModel`s a user can
+//! endpoint stable/simple enough to build `AIModel`s from at request time, so this list is
+//! updated by hand as new models ship -- see `models_for_provider`, used by `rpcs::ai_providers`
+//! to expand a provider (or a grant's `model_names`) into the `AIModel`s a user can
 //! actually see.
 
-use crate::protos::ai_model_provider::Provider;
+use crate::protos::ai_provider::Provider;
 use crate::protos::AiModelCapability;
 
 /// One model in the catalog -- a name plus what it can actually do, per `AIModelCapability`'s own
-/// doc. `name` is the exact string sent to the provider's own API (`AvailableAIModel.model_name`);
-/// `capabilities` is what feature gating (e.g. `rpcs::ai_model_providers::generate_media`, which
+/// doc. `name` is the exact string sent to the provider's own API (`AIModel.model_name`);
+/// `capabilities` is what feature gating (e.g. `rpcs::ai_providers::generate_media`, which
 /// requires `ImageEditing`) actually checks, rather than hardcoding model names of its own.
 pub struct ModelInfo {
     pub name: &'static str,
@@ -62,7 +62,7 @@ pub const DIGITALOCEAN_MODELS: &[ModelInfo] = &[
 ];
 
 /// Anthropic models -- empty for now, since `AnthropicCredentials` isn't yet accepted by
-/// `CreateAIModelProvider` (see that message's own proto doc).
+/// `CreateAIProvider` (see that message's own proto doc).
 pub const ANTHROPIC_MODELS: &[ModelInfo] = &[];
 
 /// Every model `provider`'s external service supports, regardless of any grant -- the full set an
@@ -79,8 +79,8 @@ pub fn models_for_provider(provider: &Option<Provider>) -> &'static [ModelInfo] 
 
 /// `capabilities` for one named model of `provider`'s catalog -- empty if `provider`/`model_name`
 /// don't match anything known (e.g. a grant's `model_names` naming a model that's since been
-/// dropped from the catalog). Used by `rpcs::ai_model_providers::generate_media` to check
-/// `AiModelCapability::ImageEditing` without re-deriving a whole `AvailableAIModel` first.
+/// dropped from the catalog). Used by `rpcs::ai_providers::generate_media` to check
+/// `AiModelCapability::ImageEditing` without re-deriving a whole `AIModel` first.
 pub fn capabilities_for_model(provider: &Option<Provider>, model_name: &str) -> &'static [AiModelCapability] {
     models_for_provider(provider)
         .iter()

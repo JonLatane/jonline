@@ -7,8 +7,8 @@ use tonic::{Code, Status};
 
 use crate::db_connection::PgPooledConnection;
 use crate::logic::{
-    build_event_instance_message, build_post_message, capabilities_for_model, generate_image,
-    models_for_provider, openai_generate_image, EventInstanceMessageInput, GeminiImageInput,
+    build_occasion_message, build_post_message, capabilities_for_model, generate_image,
+    models_for_provider, openai_generate_image, OccasionMessageInput, GeminiImageInput,
     OpenAiImageInput, PostMessageInput,
 };
 use crate::marshaling::*;
@@ -16,7 +16,7 @@ use crate::models;
 use crate::models::POST_COLUMNS;
 use crate::protos::*;
 use crate::rpcs::{get_server_configuration_proto, validate_any_permission, validate_permission};
-use crate::schema::{ai_model_provider_grants, media, posts};
+use crate::schema::{ai_provider_grants, media, posts};
 
 const OPENAI_BASE_URL: &str = "https://api.openai.com";
 const DIGITALOCEAN_BASE_URL: &str = "https://inference.do-ai.run";
@@ -26,7 +26,7 @@ const CHARS_PER_TOKEN_ESTIMATE: usize = 4;
 const IMAGE_TOKEN_ESTIMATE: i64 = 258;
 
 /// Generates (or edits, given reference `media_ids`) an image via one of the current user's
-/// [`AvailableAIModel`](#rellm-AvailableAIModel)s, stores it as a new `Media`, and -- if `target`
+/// [`AIModel`](#rellm-AIModel)s, stores it as a new `Media`, and -- if `target`
 /// is set -- prepends it to that Post's (or Event's own Post's) `media`. See `GenerateMediaRequest`'s
 /// own doc for the full shape.
 pub async fn generate_media(
@@ -60,7 +60,7 @@ pub async fn generate_media(
         .map(|id| id.to_db_id_or_err("media_ids"))
         .collect::<Result<_, _>>()?;
 
-    let provider = models::get_ai_model_provider(provider_id, conn)?;
+    let provider = models::get_ai_provider(provider_id, conn)?;
     let provider_proto = provider_configuration_to_proto(&provider.configuration);
     if !models_for_provider(&provider_proto).iter().any(|m| m.name == model_name) {
         return Err(Status::new(
@@ -90,22 +90,22 @@ pub async fn generate_media(
         ));
     }
     let api_key = match &provider_proto {
-        Some(ai_model_provider::Provider::GeminiCredentials(_)) => {
+        Some(ai_provider::Provider::GeminiCredentials(_)) => {
             gemini_api_key_from_configuration(&provider.configuration)
                 .ok_or_else(|| Status::new(Code::Internal, "invalid_provider_configuration"))?
         }
-        Some(ai_model_provider::Provider::OpenaiCredentials(_)) => {
+        Some(ai_provider::Provider::OpenaiCredentials(_)) => {
             openai_api_key_from_configuration(&provider.configuration)
                 .ok_or_else(|| Status::new(Code::Internal, "invalid_provider_configuration"))?
         }
-        Some(ai_model_provider::Provider::DigitaloceanCredentials(_)) => {
+        Some(ai_provider::Provider::DigitaloceanCredentials(_)) => {
             digitalocean_api_key_from_configuration(&provider.configuration)
                 .ok_or_else(|| Status::new(Code::Internal, "invalid_provider_configuration"))?
         }
         _ => {
             return Err(Status::new(
                 Code::InvalidArgument,
-                "ai_model_provider_not_yet_supported",
+                "ai_provider_not_yet_supported",
             ))
         }
     };
@@ -113,15 +113,15 @@ pub async fn generate_media(
     // Re-derives the caller's actual access from `provider_id` + `current_user`, rather than
     // trusting anything else the request sent under `model` (see `GenerateMediaRequest.model`'s
     // own doc) -- the provider's owner always has full, ungated access; anyone else needs an
-    // `AIModelProviderGrant` actually covering `model_name`, with tokens left to spend.
+    // `AIProviderGrant` actually covering `model_name`, with tokens left to spend.
     let is_owner = provider.user_id == current_user.id;
-    let grant: Option<models::AIModelProviderGrant> = if is_owner {
+    let grant: Option<models::AIProviderGrant> = if is_owner {
         None
     } else {
-        let grant = ai_model_provider_grants::table
-            .filter(ai_model_provider_grants::ai_model_provider_id.eq(provider.id))
-            .filter(ai_model_provider_grants::grantee_id.eq(current_user.id))
-            .first::<models::AIModelProviderGrant>(conn)
+        let grant = ai_provider_grants::table
+            .filter(ai_provider_grants::ai_provider_id.eq(provider.id))
+            .filter(ai_provider_grants::grantee_id.eq(current_user.id))
+            .first::<models::AIProviderGrant>(conn)
             .optional()
             .map_err(|e| {
                 log::error!("Failed to load AI model provider grant: {:?}", e);
@@ -165,32 +165,32 @@ pub async fn generate_media(
             });
             (Some(post.id), Some(message.text))
         }
-        // Named by EventInstance, not Event, since that's what a caller is actually looking at (and
+        // Named by Occasion, not Event, since that's what a caller is actually looking at (and
         // what supplies the prompt's own date/time/location context) -- see
-        // `GenerateMediaRequest.target`'s own proto doc. Each EventInstance's own Post can carry its
+        // `GenerateMediaRequest.target`'s own proto doc. Each Occasion's own Post can carry its
         // own ownership/moderation/visibility independent of the parent Event's (a single
         // "repetition" of a recurring Event may be reassigned/moderated on its own), so both
-        // `event_post`/`instance_post` are loaded and their title/content combined -- mirroring
-        // `rpcs::events::sync_event_instance`'s own `combine_title`/`combine_content`/
-        // `build_event_instance_message` call exactly (down to the Event-first title/content
+        // `event_post`/`occasion_post` are loaded and their title/content combined -- mirroring
+        // `rpcs::events::sync_occasion`'s own `combine_title`/`combine_content`/
+        // `build_occasion_message` call exactly (down to the Event-first title/content
         // ordering), just duplicated locally rather than reused cross-module (those helpers are
         // private to that RPC).
-        Some(generate_media_request::Target::EventInstanceId(id)) => {
-            let instance_id = id.to_owned().to_db_id_or_err("event_instance_id")?;
-            let instance = models::get_event_instance(instance_id, &Some(current_user), conn)?;
-            let event = models::get_event(instance.event_id, &Some(current_user), conn)?;
+        Some(generate_media_request::Target::OccasionId(id)) => {
+            let occasion_id = id.to_owned().to_db_id_or_err("occasion_id")?;
+            let occasion = models::get_occasion(occasion_id, &Some(current_user), conn)?;
+            let event = models::get_event(occasion.event_id, &Some(current_user), conn)?;
             let event_post: models::Post = posts::table
                 .select(POST_COLUMNS)
                 .filter(posts::id.eq(event.post_id))
                 .first(conn)
                 .map_err(|_| Status::new(Code::NotFound, "event_post_not_found"))?;
-            let instance_post: models::Post = posts::table
+            let occasion_post: models::Post = posts::table
                 .select(POST_COLUMNS)
-                .filter(posts::id.eq(instance.post_id))
+                .filter(posts::id.eq(occasion.post_id))
                 .first(conn)
-                .map_err(|_| Status::new(Code::NotFound, "event_instance_post_not_found"))?;
+                .map_err(|_| Status::new(Code::NotFound, "occasion_post_not_found"))?;
             // The generated image is always attached to the Event's own Post (see this match arm's
-            // own doc/`GenerateMediaRequest.target`'s), so that -- not the instance's own, separate
+            // own doc/`GenerateMediaRequest.target`'s), so that -- not the occasion's own, separate
             // ownership -- is what actually gates this.
             if event_post.user_id != Some(current_user.id) && !admin {
                 validate_any_permission(
@@ -199,11 +199,11 @@ pub async fn generate_media(
                 )?;
             }
 
-            let title = combine_title_or_content(&event_post.title, &instance_post.title, ": ");
-            let content = combine_title_or_content(&event_post.content, &instance_post.content, "\n\n---\n\n");
-            let starts_at: DateTime<Utc> = instance.starts_at.into();
-            let ends_at: DateTime<Utc> = instance.ends_at.into();
-            let location = instance
+            let title = combine_title_or_content(&event_post.title, &occasion_post.title, ": ");
+            let content = combine_title_or_content(&event_post.content, &occasion_post.content, "\n\n---\n\n");
+            let starts_at: DateTime<Utc> = occasion.starts_at.into();
+            let ends_at: DateTime<Utc> = occasion.ends_at.into();
+            let location = occasion
                 .location
                 .as_ref()
                 .and_then(|l| l.get("uniformly_formatted_address"))
@@ -211,11 +211,11 @@ pub async fn generate_media(
                 .filter(|a| !a.trim().is_empty())
                 .map(str::to_string);
             let timezone = location.as_deref().and_then(crate::logic::resolve_timezone);
-            let event_url = frontend_url(conn, "event", instance.post_id)?;
-            let message = build_event_instance_message(EventInstanceMessageInput {
+            let event_url = frontend_url(conn, "event", occasion.post_id)?;
+            let message = build_occasion_message(OccasionMessageInput {
                 title: &title,
                 content: &content,
-                link: &instance_post.link,
+                link: &occasion_post.link,
                 starts_at,
                 ends_at,
                 location: &location,
@@ -267,7 +267,7 @@ pub async fn generate_media(
     // is `None` for models that don't report `usage.total_tokens` at all (see `openai_media`'s own
     // doc on `OpenAiGeneratedImage.tokens_used`) -- falls back to a flat 1-token charge below.
     let (generated_content_type, generated_bytes, tokens_used) = match &provider_proto {
-        Some(ai_model_provider::Provider::GeminiCredentials(_)) => {
+        Some(ai_provider::Provider::GeminiCredentials(_)) => {
             let gemini_reference_images: Vec<GeminiImageInput> = reference_images
                 .iter()
                 .map(|(content_type, bytes)| GeminiImageInput {
@@ -278,7 +278,7 @@ pub async fn generate_media(
             let generated = generate_image(&api_key, &model_name, &prompt, &gemini_reference_images)?;
             (generated.content_type, generated.bytes, generated.tokens_used)
         }
-        Some(ai_model_provider::Provider::OpenaiCredentials(_)) => {
+        Some(ai_provider::Provider::OpenaiCredentials(_)) => {
             let openai_reference_images: Vec<OpenAiImageInput> = reference_images
                 .iter()
                 .map(|(content_type, bytes)| OpenAiImageInput {
@@ -297,7 +297,7 @@ pub async fn generate_media(
         // already rejects any request naming `media_ids` for one of its models before this point is
         // ever reached), but `openai_generate_image` handles a non-empty list correctly regardless
         // (it would just 404/error against DigitalOcean's own API, which has no edits endpoint).
-        Some(ai_model_provider::Provider::DigitaloceanCredentials(_)) => {
+        Some(ai_provider::Provider::DigitaloceanCredentials(_)) => {
             let digitalocean_reference_images: Vec<OpenAiImageInput> = reference_images
                 .iter()
                 .map(|(content_type, bytes)| OpenAiImageInput {
@@ -314,7 +314,7 @@ pub async fn generate_media(
             )?;
             (generated.content_type, generated.bytes, generated.tokens_used)
         }
-        _ => return Err(Status::new(Code::InvalidArgument, "ai_model_provider_not_yet_supported")),
+        _ => return Err(Status::new(Code::InvalidArgument, "ai_provider_not_yet_supported")),
     };
 
     // Only actually spent once generation succeeds -- `tokens_used` is this call's real cost (the
@@ -325,14 +325,14 @@ pub async fn generate_media(
     // clamps the new balance at 0 rather than going negative (`tokens_remaining` is unsigned in the
     // proto, `BIGINT` but never actually negative in the DB either), and
     // `GREATEST($1 - tokens_remaining, 0)` records the shortfall as `overage` whenever this single
-    // call costs more than what was left -- see `AIModelProviderGrant.overage`'s own proto doc.
+    // call costs more than what was left -- see `AIProviderGrant.overage`'s own proto doc.
     // Still guarded on `tokens_remaining > 0` (a grant already fully at 0/in overage can't spend
     // further at all -- see `GenerateMediaRequest`'s own doc on why), so a race with another
     // concurrent generation can't double-spend the same tokens.
     if let Some(grant) = &grant {
         let tokens_used = tokens_used.unwrap_or(1).max(1);
         let updated = diesel::sql_query(
-            "UPDATE ai_model_provider_grants \
+            "UPDATE ai_provider_grants \
              SET tokens_remaining = GREATEST(tokens_remaining - $1, 0), \
                  overage = GREATEST($1 - tokens_remaining, 0), \
                  updated_at = NOW() \
@@ -419,7 +419,7 @@ const REFERENCE_IMAGE_SIZE_PREFERENCE: [models::ConvertedSizeSpec; 3] = [
 /// -- see `REFERENCE_IMAGE_SIZE_PREFERENCE` for which converted size (or the original, as a last
 /// resort) each one is actually fetched at. Returned as plain `(content_type, bytes)` pairs,
 /// provider-agnostic, since the caller wraps each into whichever provider-specific input type
-/// (`GeminiImageInput`/`OpenAiImageInput`) the chosen `AIModelProvider` variant actually needs.
+/// (`GeminiImageInput`/`OpenAiImageInput`) the chosen `AIProvider` variant actually needs.
 ///
 /// Every id must resolve to a `Media` row owned by `current_user_id` (or `admin` must be `true`) --
 /// unlike the target Post/Event, this is arbitrary media named by id, so ownership isn't implied by
@@ -468,16 +468,16 @@ async fn load_reference_images(
     Ok(images)
 }
 
-/// `"{event_title}: {instance_title}"`/`"{event_content}\n\n---\n\n{instance_content}"`-shaped
-/// combination of an EventInstance's own title/content override with its parent Event's, in that
-/// order -- mirrors `rpcs::events::sync_event_instance`'s own `combine`/`combine_title`/
+/// `"{event_title}: {occasion_title}"`/`"{event_content}\n\n---\n\n{occasion_content}"`-shaped
+/// combination of an Occasion's own title/content override with its parent Event's, in that
+/// order -- mirrors `rpcs::events::sync_occasion`'s own `combine`/`combine_title`/
 /// `combine_content` exactly (down to falling back to whichever side is actually set, and `None`
 /// when neither is); duplicated locally since those are private to that module. `separator` is `": "`
 /// for titles, `"\n\n---\n\n"` for content -- see this function's two call sites.
-fn combine_title_or_content(event_side: &Option<String>, instance_side: &Option<String>, separator: &str) -> Option<String> {
+fn combine_title_or_content(event_side: &Option<String>, occasion_side: &Option<String>, separator: &str) -> Option<String> {
     let event_side = event_side.as_deref().map(str::trim).filter(|s| !s.is_empty());
-    let instance_side = instance_side.as_deref().map(str::trim).filter(|s| !s.is_empty());
-    match (event_side, instance_side) {
+    let occasion_side = occasion_side.as_deref().map(str::trim).filter(|s| !s.is_empty());
+    match (event_side, occasion_side) {
         (Some(e), Some(i)) => Some(format!("{e}{separator}{i}")),
         (Some(e), None) => Some(e.to_string()),
         (None, Some(i)) => Some(i.to_string()),
@@ -486,7 +486,7 @@ fn combine_title_or_content(event_side: &Option<String>, instance_side: &Option<
 }
 
 /// Best-effort `https://{frontend_host}/{kind}/{id}` link back to this Rellm server's own
-/// frontend, mirroring `sync_post`/`sync_event_instance`'s own `post_url`/`event_url` -- `None` if
+/// frontend, mirroring `sync_post`/`sync_occasion`'s own `post_url`/`event_url` -- `None` if
 /// `external_cdn_config.frontend_host` isn't configured (this RPC has no HTTP `Host` header to fall
 /// back on).
 fn frontend_url(conn: &mut PgPooledConnection, kind: &str, id: i64) -> Result<Option<String>, Status> {

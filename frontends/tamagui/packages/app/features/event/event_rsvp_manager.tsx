@@ -1,4 +1,4 @@
-import { FederatedEvent, IdentifiedEventInstance, RootState, accountOrServerId, federateId, getCredentialClient, loadRsvpData, useServerTheme } from "app/store";
+import { FederatedEvent, IdentifiedOccasion, RootState, accountOrServerId, federateId, getCredentialClient, loadRsvpData, useServerTheme } from "app/store";
 import React, { useEffect, useState } from "react";
 
 import { AttendanceStatus, EventAttendance, Permission } from "@rellm/api";
@@ -9,7 +9,7 @@ import { useGroupContext } from "app/contexts/group_context";
 import { useAnonymousAuthToken, useComponentKey, useCurrentServer, useFederatedDispatch, useLocalConfiguration } from "app/hooks";
 import { passes, pending, rejected } from "app/utils/moderation_utils";
 import { hasPermission } from "app/utils/permission_utils";
-import { isPastInstance } from "app/utils/time";
+import { isPastOccasion } from "app/utils/time";
 import { useSelector } from 'react-redux';
 import { createParam } from "solito";
 import { useLink } from "solito/link";
@@ -20,7 +20,7 @@ import { on } from '../../hooks/use_hash';
 
 export interface EventRsvpManagerProps {
   event: FederatedEvent;
-  instance: IdentifiedEventInstance;
+  occasion: IdentifiedOccasion;
   newRsvpMode?: RsvpMode;
   setNewRsvpMode?: (mode: RsvpMode) => void;
   isPreview?: boolean;
@@ -32,14 +32,14 @@ export type RsvpMode = 'anonymous' | 'user' | undefined;
 
 const { useParam: useSectionParam } = createParam<{ section: string }>()
 
-export const selectRsvpData = (instanceId: string) =>
+export const selectRsvpData = (occasionId: string) =>
   createSelector(
-    (state: RootState) => state.events.rsvpData[instanceId],
+    (state: RootState) => state.events.rsvpData[occasionId],
     (rsvpData) => rsvpData
   );
 export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
   event,
-  instance,
+  occasion,
   newRsvpMode: givenNewRsvpMode,
   setNewRsvpMode: givenSetNewRsvpMode,
   isPreview,
@@ -56,7 +56,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
 
   const isEventOwner = account && account?.user?.id === event?.post?.author?.userId;
 
-  const { anonymousAuthToken, setAnonymousAuthToken, removeAnonymousAuthToken } = useAnonymousAuthToken(instance.id);
+  const { anonymousAuthToken, setAnonymousAuthToken, removeAnonymousAuthToken } = useAnonymousAuthToken(occasion.id);
   const [querySection, setQuerySection] = useSectionParam('section');
 
   const [selfNewRsvpMode, setSelfNewRsvpMode] = useState(undefined as RsvpMode);
@@ -108,9 +108,9 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
     }
   }, [newRsvpMode, currentAnonRsvp, currentRsvp]);
 
-  const className = `event-rsvp-manager-${instance.id}`;
-  const showRsvpCardsButtonClassName = `event-rsvp-card-button-${instance.id}`;
-  const formClassName = `event-rsvp-form-${instance.id}`;
+  const className = `event-rsvp-manager-${occasion.id}`;
+  const showRsvpCardsButtonClassName = `event-rsvp-card-button-${occasion.id}`;
+  const formClassName = `event-rsvp-form-${occasion.id}`;
   const topButtonsClassName = 'rsvp-manager-buttons';
 
   const scrollToRsvps = () => document.querySelectorAll(`.${topButtonsClassName}`)
@@ -163,36 +163,36 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
     }
   }, [newRsvpMode, canRsvpNonAnonymously, canRsvpAnonymously]);
 
-  const rsvpData = useSelector(selectRsvpData(federateId(instance.id, event.serverHost)));
+  const rsvpData = useSelector(selectRsvpData(federateId(occasion.id, event.serverHost)));
   useEffect(() => {
-    if (instance && !loading && !loaded && !rsvpData) {
+    if (occasion && !loading && !loaded && !rsvpData) {
       setLoading(true);
-      dispatch(loadRsvpData({ eventInstanceId: instance.id, anonymousAttendeeAuthToken: anonymousAuthToken, ...accountOrServer }))
+      dispatch(loadRsvpData({ occasionId: occasion.id, anonymousAttendeeAuthToken: anonymousAuthToken, ...accountOrServer }))
         .finally(() => {
           setLoaded(true);
           setLoading(false);
         });
     }
-  }, [rsvpData, accountOrServerId(accountOrServer), event?.id, instance?.id, loading, anonymousAuthToken]);
+  }, [rsvpData, accountOrServerId(accountOrServer), event?.id, occasion?.id, loading, anonymousAuthToken]);
   useEffect(() => {
     setAttendances(rsvpData?.attendances ?? []);
   }, [rsvpData]);
 
   // useEffect(() => {
-  //   if (instance && !loading && !loaded) {
+  //   if (occasion && !loading && !loaded) {
   //     setLoading(true);
   //     setTimeout(async () => {
   //       try {
   //         // console.log('loading attendance data with auth token', anonymousAuthToken);
   //         // const client = await getCredentialClient(accountOrServer);
   //         // const eventAttendancesResponse = await client.getEventAttendances({
-  //         //   eventInstanceId: instance?.id,
+  //         //   occasionId: occasion?.id,
   //         //   anonymousAttendeeAuthToken: anonymousAuthToken
   //         // }, client.credential);
   //         // setAttendances(eventAttendancesResponse.attendances);
-  //         // if (event.info?.hideLocationUntilRsvpApproved && !instance.location && eventAttendancesResponse.hiddenLocation) {
+  //         // if (event.info?.hideLocationUntilRsvpApproved && !occasion.location && eventAttendancesResponse.hiddenLocation) {
   //         //   // debugger;
-  //         //   setTimeout(() => dispatch(saveHiddenLocation({ location: eventAttendancesResponse.hiddenLocation!, event, instance })), 1000);
+  //         //   setTimeout(() => dispatch(saveHiddenLocation({ location: eventAttendancesResponse.hiddenLocation!, event, occasion })), 1000);
   //         // }
   //       } catch (e) {
   //         console.error('Failed to load event attendances', e)
@@ -205,12 +205,12 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
 
   //     // setLoaded(true);
   //   }
-  // }, [accountOrServerId(accountOrServer), event?.id, instance?.id, loading, anonymousAuthToken]);
+  // }, [accountOrServerId(accountOrServer), event?.id, occasion?.id, loading, anonymousAuthToken]);
 
   useEffect(() => {
     setLoaded(false);
     // setAttendances([]);
-  }, [accountOrServerId(accountOrServer), anonymousAuthToken, event?.id, instance?.id]);
+  }, [accountOrServerId(accountOrServer), anonymousAuthToken, event?.id, occasion?.id]);
 
   const [rsvpStatus, setRsvpStatus] = useState(AttendanceStatus.INTERESTED);
   const [anonymousRsvpName, setAnonymousRsvpName] = useState('');
@@ -233,8 +233,8 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
   // const canRsvp = editingRsvp
   //   && rsvpValid;
 
-  const upsertableAttendance = instance ? {
-    eventInstanceId: instance.id,
+  const upsertableAttendance = occasion ? {
+    occasionId: occasion.id,
     userAttendee: newRsvpMode === 'user'
       ? { userId: account?.user?.id }
       : undefined,
@@ -305,7 +305,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
 
     const client = await getCredentialClient(accountOrServer);
     client.deleteEventAttendance({
-      eventInstanceId: instance.id,
+      occasionId: occasion.id,
       userAttendee: newRsvpMode === 'user'
         ? { userId: account?.user?.id }
         : undefined,
@@ -372,21 +372,21 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
   const { selectedGroup } = useGroupContext();
 
   const linkToDetailsPageRsvps = isPreview && !browseRsvpsFromPreviews;
-  const linkInstanceId = isPrimaryServer
-    ? instance.id
-    : federateId(instance.id, server);
+  const linkOccasionId = isPrimaryServer
+    ? occasion.id
+    : federateId(occasion.id, server);
   const linkGroupShortname = isPrimaryServer
     ? selectedGroup?.shortname
     : federateId(selectedGroup?.shortname ?? '', server);
   const rsvpDetailsBaseLink = selectedGroup
-    ? `/g/${linkGroupShortname}/e/${linkInstanceId}?section=rsvp`
-    : `/event/${linkInstanceId}?section=rsvp`;
+    ? `/g/${linkGroupShortname}/e/${linkOccasionId}?section=rsvp`
+    : `/event/${linkOccasionId}?section=rsvp`;
   const rsvpDetailsLinkWithToken = currentAnonRsvp
     ? `${rsvpDetailsBaseLink}&anonymousAuthToken=${currentAnonRsvp.anonymousAttendee?.authToken}`
     : rsvpDetailsBaseLink;
   const rsvpDetailsLink = useLink({ href: rsvpDetailsLinkWithToken });
-  const anonymousRsvpPath = `/event/${linkInstanceId}?anonymousAuthToken=${anonymousAuthToken}`;
-  const isPast = isPastInstance(instance);
+  const anonymousRsvpPath = `/event/${linkOccasionId}?anonymousAuthToken=${anonymousAuthToken}`;
+  const isPast = isPastOccasion(occasion);
 
   function formatCount(rsvpCount: number, attendeeCount: number,) {
     if (rsvpCount === attendeeCount) {
@@ -397,7 +397,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
     </>;
   }
 
-  if (!instance) {
+  if (!occasion) {
     return <></>;
   }
 
@@ -696,7 +696,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
                   Save <Anchor href={anonymousRsvpPath} color={navAnchorColor} target='_blank'>this private RSVP link</Anchor> to update your RSVP later.
                 </Paragraph>
                 <XStack mx='auto'>
-                  <EventCalendarExporter event={event} instance={instance} tiny={false} />
+                  <EventCalendarExporter event={event} occasion={occasion} tiny={false} />
                 </XStack>
               </YStack>
               : undefined}
@@ -901,7 +901,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
                 <RsvpCard key={`current-anon-rsvp-${currentAnonRsvp.anonymousAttendee?.authToken}`}
                   attendance={currentAnonRsvp}
                   event={event}
-                  instance={instance}
+                  occasion={occasion}
                   onPressEdit={() => {
                     setNewRsvpMode?.('anonymous');
                     // setTimeout(() => scrollToRsvpForm(), 1000);
@@ -916,7 +916,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
                 <RsvpCard key={`current-rsvp-${currentRsvp.userAttendee?.userId}`}
                   attendance={currentRsvp}
                   event={event}
-                  instance={instance}
+                  occasion={occasion}
                   onPressEdit={() => {
                     setNewRsvpMode?.('user');
                     // setTimeout(() => scrollToRsvpForm(), 1000);
@@ -934,7 +934,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
                 return <RsvpCard key={`pending-rsvp-${attendance.userAttendee?.userId ?? index}`}
                   attendance={attendance}
                   event={event}
-                  instance={instance}
+                  occasion={occasion}
                   onModerated={updateAttendance}
                 />;
               })}
@@ -947,7 +947,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
                 return <RsvpCard key={`non-pending-rsvp-${attendance.userAttendee?.userId ?? index}`}
                   attendance={attendance}
                   event={event}
-                  instance={instance}
+                  occasion={occasion}
                   onModerated={updateAttendance}
                 />;
               })}
@@ -959,7 +959,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
                 return <RsvpCard key={`rejected-rsvp-${attendance.userAttendee?.userId ?? index}`}
                   attendance={attendance}
                   event={event}
-                  instance={instance}
+                  occasion={occasion}
                   onModerated={updateAttendance}
                 />;
               })}

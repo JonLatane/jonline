@@ -136,7 +136,7 @@ update shared req msg model =
                     , sortOrder = 0
                     , syncDestinations = user.syncDestinations
                     , syncSources = user.syncSources
-                    , availableAiModels = user.availableAiModels
+                    , aiModels = user.aiModels
                     }
             in
             ( { model | status = Accepted }

@@ -254,7 +254,7 @@ export function SettingsSheet({ }: SettingsSheetProps) {
                           post: {
                             title: 'Example Event'
                           },
-                          instances: [
+                          occasions: [
                             {
                               startsAt: moment().toISOString(),
                               endsAt: moment().add(1, 'hour').toISOString()

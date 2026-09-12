@@ -35,7 +35,7 @@ import Json.Encode as Encode
 import Ports
 import Process
 import Proto.Google.Protobuf
-import Proto.Rellm exposing (Event, EventInstance, SyncSource, Media, Post, User)
+import Proto.Rellm exposing (Event, Occasion, SyncSource, Media, Post, User)
 import Request exposing (Request)
 import Shared.AccountsPanel as AccountsPanel
 import Shared.AccountsPanel.RellmAccounts as RellmAccounts exposing (RellmAccount)
@@ -148,23 +148,23 @@ type Msg
     | GotSyncSourceDeleteResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, () ))
     | GotPostDeleteResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, Post ))
     | GotEventDeleteResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, Event ))
-      -- `ConfirmEventInstanceDelete`'s own result -- unlike `GotEventDeleteResult`
+      -- `ConfirmOccasionDelete`'s own result -- unlike `GotEventDeleteResult`
       -- (after which nothing about the deleted `Event` is left to look at, so
       -- `Pages.Event.PostId_` just navigates Home), the `Event` here is the
-      -- *survivor*: `DeleteRemovedEventInstances`'s own return value, still
-      -- carrying every other `EventInstance` that wasn't deleted -- letting
+      -- *survivor*: `DeleteRemovedOccasions`'s own return value, still
+      -- carrying every other `Occasion` that wasn't deleted -- letting
       -- that page navigate to one of those instead, keeping the viewer on the
       -- same Event rather than bouncing them away from it entirely.
-    | GotEventInstanceDeleteResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, Event ))
-      -- `ConfirmEventInstanceSyncDestinationDelete`'s own result -- `host`
+    | GotOccasionDeleteResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, Event ))
+      -- `ConfirmOccasionSyncDestinationDelete`'s own result -- `host`
       -- mirrors `Components.Pages.EventsPage.GotPushResult`'s own (this is
       -- the Delete button's counterpart to that Push button's result), so
       -- whichever page is active (currently only
       -- `Components.Pages.UserProfilePage`'s embedded `EventsPage` copy) can
       -- re-scope its refetch to just `host`'s server the same way.
-    | GotEventInstanceSyncDestinationDeleteResult String (Result Grpc.Error ( Maybe AccountsPanel.Msg, () ))
+    | GotOccasionSyncDestinationDeleteResult String (Result Grpc.Error ( Maybe AccountsPanel.Msg, () ))
       -- `ConfirmPostSyncDestinationDelete`'s own result -- mirrors
-      -- `GotEventInstanceSyncDestinationDeleteResult`'s own doc exactly, just
+      -- `GotOccasionSyncDestinationDeleteResult`'s own doc exactly, just
       -- for `Components.Pages.PostPage`/`Components.Pages.UserProfilePage`'s
       -- embedded `PostsPage` copy instead of `EventsPage`.
     | GotPostSyncDestinationDeleteResult String (Result Grpc.Error ( Maybe AccountsPanel.Msg, () ))
@@ -277,17 +277,17 @@ type DeleteConfirmation
     | ConfirmSyncSourceDelete SyncSource Bool String
     | ConfirmPostDelete Post String
     | ConfirmEventDelete Event String
-      -- Deletes just `instance` from `event` (every other `EventInstance` is
+      -- Deletes just `occasion` from `event` (every other `Occasion` is
       -- kept) rather than the whole `Event` -- `ConfirmDelete` fires
-      -- `DeleteRemovedEventInstances` with `event.instances` minus `instance`
+      -- `DeleteRemovedOccasions` with `event.occasions` minus `occasion`
       -- as the "keep" list, same "no Shared-owned home needed" shape as
       -- `ConfirmPostDelete`/`ConfirmEventDelete` above. Shown by
-      -- `Pages.Event.PostId_`'s "Delete Instance" button, next to "Delete
-      -- Event", only once an `Event` has more than one `EventInstance` (with
+      -- `Pages.Event.PostId_`'s "Delete Occasion" button, next to "Delete
+      -- Event", only once an `Event` has more than one `Occasion` (with
       -- exactly one, deleting it *is* deleting the Event -- see
       -- `backend/src/rpcs/events/get_events.rs`'s own `INNER JOIN`, which
-      -- makes a zero-instance Event unretrievable anyway).
-    | ConfirmEventInstanceDelete EventInstance Event String
+      -- makes a zero-occasion Event unretrievable anyway).
+    | ConfirmOccasionDelete Occasion Event String
     | ConfirmUserDelete User String
       -- Un-syncs `instance` from the `SyncDestination` (`String`) whose
       -- display name is the trailing-but-one `String` (for the confirmation
@@ -297,14 +297,14 @@ type DeleteConfirmation
       -- again" button (`Components.Events.eventSyncDestinationsView`'s
       -- `onDelete`) -- follows the same "list of deletable things shown on
       -- one page" shape as the four above: `ConfirmDelete` fires
-      -- `DeleteEventInstanceSyncDestination` directly, and the result
-      -- (`GotEventInstanceSyncDestinationDeleteResult`) is forwarded to
+      -- `DeleteOccasionSyncDestination` directly, and the result
+      -- (`GotOccasionSyncDestinationDeleteResult`) is forwarded to
       -- whichever page is active the same as any other `Shared.Msg`.
-    | ConfirmEventInstanceSyncDestinationDelete EventInstance String String String
-      -- `ConfirmEventInstanceSyncDestinationDelete`'s counterpart for a
+    | ConfirmOccasionSyncDestinationDelete Occasion String String String
+      -- `ConfirmOccasionSyncDestinationDelete`'s counterpart for a
       -- `Post` -- same shape (destination id, display name, acting host),
       -- just un-syncing `post` (`Components.Posts.deletePostSyncDestination`)
-      -- instead of an `EventInstance`. Fired from a card's Delete button
+      -- instead of an `Occasion`. Fired from a card's Delete button
       -- beside its "Push again" button
       -- (`Components.Posts.postSyncDestinationsView`'s `onDelete`), on both
       -- `Components.Pages.PostPage`'s detail view and
@@ -1532,17 +1532,17 @@ sharedUpdate req msg model =
                         |> Task.attempt GotEventDeleteResult
                     )
 
-                Just (ConfirmEventInstanceDelete instance event host) ->
+                Just (ConfirmOccasionDelete occasion event host) ->
                     ( { model | panels = { panels | confirmingDeleteFor = Nothing } }
-                    , Events.deleteRemovedEventInstances
+                    , Events.deleteRemovedOccasions
                         model.accounts
                         ( RellmAccounts.enabledRellmAccountForServer model.accounts.accounts host |> Maybe.map .userId, host )
                         { event
-                            | instances =
-                                event.instances
-                                    |> List.filter (\other -> (other.post |> Maybe.map .id) /= (instance.post |> Maybe.map .id))
+                            | occasions =
+                                event.occasions
+                                    |> List.filter (\other -> (other.post |> Maybe.map .id) /= (occasion.post |> Maybe.map .id))
                         }
-                        |> Task.attempt GotEventInstanceDeleteResult
+                        |> Task.attempt GotOccasionDeleteResult
                     )
 
                 Just (ConfirmUserDelete user host) ->
@@ -1554,14 +1554,14 @@ sharedUpdate req msg model =
                         |> Task.attempt (GotUserDeleteResult user host)
                     )
 
-                Just (ConfirmEventInstanceSyncDestinationDelete instance eventSyncDestinationId _ host) ->
+                Just (ConfirmOccasionSyncDestinationDelete occasion eventSyncDestinationId _ host) ->
                     ( { model | panels = { panels | confirmingDeleteFor = Nothing } }
-                    , Events.deleteEventInstanceSyncDestination
+                    , Events.deleteOccasionSyncDestination
                         model.accounts
                         ( RellmAccounts.enabledRellmAccountForServer model.accounts.accounts host |> Maybe.map .userId, host )
-                        (instance.post |> Maybe.map .id |> Maybe.withDefault "")
+                        (occasion.post |> Maybe.map .id |> Maybe.withDefault "")
                         eventSyncDestinationId
-                        |> Task.attempt (GotEventInstanceSyncDestinationDeleteResult host)
+                        |> Task.attempt (GotOccasionSyncDestinationDeleteResult host)
                     )
 
                 Just (ConfirmPostSyncDestinationDelete post syncDestinationId _ host) ->
@@ -1592,7 +1592,7 @@ sharedUpdate req msg model =
         GotSyncSourceDeleteResult (Err _) ->
             ( model, Cmd.none )
 
-        GotEventInstanceSyncDestinationDeleteResult _ (Ok ( maybeAccountsPanelMsg, _ )) ->
+        GotOccasionSyncDestinationDeleteResult _ (Ok ( maybeAccountsPanelMsg, _ )) ->
             let
                 ( accountsPanelModel, accountsPanelCmd ) =
                     case maybeAccountsPanelMsg of
@@ -1604,7 +1604,7 @@ sharedUpdate req msg model =
             in
             ( { model | accounts = accountsPanelModel }, Cmd.map AccountsPanelMsg accountsPanelCmd )
 
-        GotEventInstanceSyncDestinationDeleteResult _ (Err _) ->
+        GotOccasionSyncDestinationDeleteResult _ (Err _) ->
             ( model, Cmd.none )
 
         GotPostSyncDestinationDeleteResult _ (Ok ( maybeAccountsPanelMsg, _ )) ->
@@ -1652,7 +1652,7 @@ sharedUpdate req msg model =
         GotEventDeleteResult (Err _) ->
             ( model, Cmd.none )
 
-        GotEventInstanceDeleteResult (Ok ( maybeAccountsPanelMsg, _ )) ->
+        GotOccasionDeleteResult (Ok ( maybeAccountsPanelMsg, _ )) ->
             let
                 ( accountsPanelModel, accountsPanelCmd ) =
                     case maybeAccountsPanelMsg of
@@ -1664,7 +1664,7 @@ sharedUpdate req msg model =
             in
             ( { model | accounts = accountsPanelModel }, Cmd.map AccountsPanelMsg accountsPanelCmd )
 
-        GotEventInstanceDeleteResult (Err _) ->
+        GotOccasionDeleteResult (Err _) ->
             ( model, Cmd.none )
 
         GotUserDeleteResult deletedUser host (Ok ( maybeAccountsPanelMsg, _ )) ->
@@ -1947,13 +1947,13 @@ normalizeUrl basePath url =
 {-| The browser's local `Time.Zone`, DST-aware -- unlike plain `Time.here`
 (which just snapshots `new Date().getTimezoneOffset()` for the _current_
 instant into a fixed-offset `Time.customZone` with no era table, so every
-other instant it's ever asked to convert -- e.g. an `EventInstance` months
+other instant it's ever asked to convert -- e.g. an `Occasion` months
 away, on the other side of a DST transition -- gets rendered with today's
 offset instead of its own). This instead reads the browser's actual IANA
 zone name (e.g. "America/New\_York", via `elm/time`'s `Time.getZoneName`)
 and looks up its real transition history/future in
-`justinmimbs/timezone-data`, so `Components.Events.instanceWhenText`/
-`siblingInstanceWhenText` show a recurring weekly event's fixed local time
+`justinmimbs/timezone-data`, so `Components.Events.occasionWhenText`/
+`siblingOccasionWhenText` show a recurring weekly event's fixed local time
 (e.g. "6-7PM") as the same "6-7PM" on both sides of a DST change, rather
 than drifting an hour. Falls back to plain `Time.here` if the zone name
 can't be read or isn't in `timezone-data` (e.g. an unusual environment

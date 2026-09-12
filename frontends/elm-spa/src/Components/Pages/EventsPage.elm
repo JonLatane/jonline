@@ -13,18 +13,18 @@ module Components.Pages.EventsPage exposing
     )
 
 {-| The shared guts of an "upcoming events" page: fetching upcoming
-`EventInstance`s from every enabled server and rendering them with fade
+`Occasion`s from every enabled server and rendering them with fade
 in/out animations -- mirrors `Components.Pages.PostsPage` almost exactly
 (`ServerFeed`/`fetchNewServers`/`refetchServers`/`syncAnimations`/
 `setBreadcrumbsRoot` all follow the same shape, just over
-`(Event, EventInstance)` pairs instead of `Post`s), reused by `Pages.Events`
+`(Event, Occasion)` pairs instead of `Post`s), reused by `Pages.Events`
 (which passes `author = Nothing`) and `Pages.UsernameOrCustomTab_.Events`/
 `Pages.User.UserId_.Events` (which pass the already-resolved profile `User`,
 restricting the feed to that user's own events), same as `PostsPage` is
 reused by `Pages.Home_`/`Pages.UsernameOrCustomTab_.Posts`/`Pages.User.UserId_.Posts`.
 
 The one real departure from `PostsPage`: this listing is itself centered on
-the `EventInstance` (every `Event` can have many, see `Components.Events`'
+the `Occasion` (every `Event` can have many, see `Components.Events`'
 own module doc), and it supports three interchangeable layouts
 (`EventsDisplayMode`) with a smooth FLIP-animated transition _between_
 layouts, not just item enter/exit -- `VerticalList`'s cards are full-width
@@ -59,7 +59,7 @@ import Json.Encode as Encode
 import Ports
 import Process
 import Proto.Google.Protobuf exposing (Timestamp)
-import Proto.Rellm exposing (Event, EventInstance, SyncDestination, User)
+import Proto.Rellm exposing (Event, Occasion, SyncDestination, User)
 import Proto.Rellm.CalendarDisplayMode as CalendarDisplayMode exposing (CalendarDisplayMode(..))
 import Shared
 import Shared.AccountsPanel as AccountsPanel
@@ -96,7 +96,7 @@ type alias Model =
     -- since there's no per-item data to thread through here) whenever
     -- `mode` changes. Kept as its own dict (rather than folded into
     -- `eventAnimations`) because `EventAnimation` is typed around a real
-    -- `(Event, EventInstance)` pair, which a calendar view has none of --
+    -- `(Event, Occasion)` pair, which a calendar view has none of --
     -- see `eventsListView`'s own doc for how the two dicts render as one
     -- combined list regardless.
     , calendarAnimations : Dict String CalendarAnimation
@@ -233,13 +233,13 @@ type alias Model =
     , copyLinkCopied : Bool
     , copyLinkGeneration : Int
 
-    -- Whether `syncAnimations` should hide `UpcomingEvents`-tab instances
+    -- Whether `syncAnimations` should hide `UpcomingEvents`-tab occasions
     -- that have already started (see `hiddenAsStarted`) -- defaults (`init`)
     -- to `not (showStartedOrLongEventsByDefault shared)`, i.e. `True` unless
     -- `mainFrontendHost`'s own `EventSettings.show_started_or_long_events_by_default`
     -- is set, and has no effect on `EventsAfterDate`. Means something
     -- different while `model.mode == Calendar`, though: there, it instead
-    -- hides instances spanning more than `longEventThresholdHours` (see
+    -- hides occasions spanning more than `longEventThresholdHours` (see
     -- `hiddenAsLong`) -- a multi-day event is exactly what makes `Calendar`'s
     -- day-by-day grid unreadable, with no equivalent problem in any card
     -- layout, and "already started" has no such problem there either. The
@@ -278,9 +278,9 @@ type alias Model =
     -- setting. Read only by `calendarRenderEffect`.
     , calendarDisplayModeOverride : Maybe CalendarDisplayMode
 
-    -- `Submitting`/`SubmitFailed` push status per `instanceId ++ "|" ++
-    -- destinationId` (many instances on screen at once, unlike
-    -- `Pages.Event.PostId_`'s own single-instance `pushStatuses`, which
+    -- `Submitting`/`SubmitFailed` push status per `occasionId ++ "|" ++
+    -- destinationId` (many occasions on screen at once, unlike
+    -- `Pages.Event.PostId_`'s own single-occasion `pushStatuses`, which
     -- only needs to key by `destinationId`) -- drives the `isPushing`/
     -- `pushError` closures `eventCardView` builds for `Events.eventCard`.
     , pushStatuses : Dict String SubmitStatus
@@ -306,7 +306,7 @@ type Msg
       -- `Msg`'s own (untargeted, port-delivered) payload. A payload that
       -- fails to decode is treated the same as `measurementPhase` already
       -- being `NotMeasuring` -- give up silently, same fallback
-      -- `PostId_.scrollToInstance` already relies on for its own
+      -- `PostId_.scrollToOccasion` already relies on for its own
       -- `Dom`-adjacent calls.
     | GotMeasuredRects Decode.Value
       -- One deliberate `requestAnimationFrame` wait (via a throwaway
@@ -384,10 +384,10 @@ type Msg
     | CopyLinkCopyTimeoutElapsed Int
       -- The Push button on a card's `Events.eventCard`-rendered sync
       -- destination row (see `Model.availableSyncDestinations`'s own doc) --
-      -- host/eventInstanceId/eventSyncDestinationId, keyed into
+      -- host/occasionId/eventSyncDestinationId, keyed into
       -- `Model.pushStatuses` via `pushStatusKey`.
-    | PushEventInstanceToDestination String String String
-    | GotPushResult String String String (Result Grpc.Error ( Maybe AccountsPanel.Msg, EventInstance ))
+    | PushOccasionToDestination String String String
+    | GotPushResult String String String (Result Grpc.Error ( Maybe AccountsPanel.Msg, Occasion ))
       -- FullCalendar's own `eventClick` firing over `Ports.calendarEventClicked`
       -- -- opens `calendarPreviewModalView`'s modal (`model.calendarPreview`)
       -- to the tapped event's key and kicks off `scrollToCalendarPreviewCard`.
@@ -466,7 +466,7 @@ type EventsDisplayMode
 
 type ServerEvents
     = Loading
-    | Loaded (List ( Event, EventInstance ))
+    | Loaded (List ( Event, Occasion ))
     | Failed
 
 
@@ -493,7 +493,7 @@ translate renders on a nested inner one.
 type alias EventAnimation =
     { host : String
     , event : Event
-    , instance : EventInstance
+    , occasion : Occasion
     , flip : UI.Flip.State Msg
     , move : UI.Flip.MoveState Msg
     }
@@ -504,7 +504,7 @@ type alias EventAnimation =
 the way a card layout switch does, it only ever fades in/out, see
 `eventsListView`'s own doc) and none of `EventAnimation`'s per-card data,
 since there's only ever at most one entry (keyed `calendarAnimationKey`) and
-nothing about it varies per-instance.
+nothing about it varies per-occasion.
 -}
 type alias CalendarAnimation =
     { flip : UI.Flip.State Msg
@@ -769,7 +769,7 @@ updateInner shared msg model =
             ( { model
                 | eventsByServer =
                     Dict.update frontendHost
-                        (Maybe.map (\feed -> { feed | status = Loaded (Events.eventInstancePairs response) }))
+                        (Maybe.map (\feed -> { feed | status = Loaded (Events.occasionPairs response) }))
                         model.eventsByServer
               }
                 |> syncAnimations
@@ -868,13 +868,13 @@ updateInner shared msg model =
                             fetchNewServers shared model
 
                         -- The Delete button on a card's sync destination row
-                        -- (`Shared.RequestDelete`/`Shared.ConfirmEventInstanceSyncDestinationDelete`,
+                        -- (`Shared.RequestDelete`/`Shared.ConfirmOccasionSyncDestinationDelete`,
                         -- see `eventCardView`'s own `onDelete`) resolving --
                         -- mirrors `GotPushResult`'s own Ok branch (re-scoped
                         -- refetch of just `host`'s server), since a
-                        -- successful un-sync changes `instance.syncDestinations`
+                        -- successful un-sync changes `occasion.syncDestinations`
                         -- behind this already-fetched copy's back the same way.
-                        Shared.GotEventInstanceSyncDestinationDeleteResult host (Ok _) ->
+                        Shared.GotOccasionSyncDestinationDeleteResult host (Ok _) ->
                             case RellmServers.rellmServerForHost shared.accounts.servers host of
                                 Just server ->
                                     refetchServers shared model [ server ]
@@ -1167,27 +1167,27 @@ updateInner shared msg model =
             else
                 ( model, Effect.none )
 
-        PushEventInstanceToDestination host eventInstanceId eventSyncDestinationId ->
+        PushOccasionToDestination host occasionId eventSyncDestinationId ->
             let
                 key : String
                 key =
-                    pushStatusKey eventInstanceId eventSyncDestinationId
+                    pushStatusKey occasionId eventSyncDestinationId
 
                 maybeAccountServer : ( Maybe String, String )
                 maybeAccountServer =
                     ( RellmAccounts.enabledRellmAccountForServer shared.accounts.accounts host |> Maybe.map .userId, host )
             in
             ( { model | pushStatuses = Dict.insert key Submitting model.pushStatuses }
-            , Events.syncEventInstance shared.accounts maybeAccountServer eventInstanceId eventSyncDestinationId
-                |> Task.attempt (GotPushResult host eventInstanceId eventSyncDestinationId)
+            , Events.syncOccasion shared.accounts maybeAccountServer occasionId eventSyncDestinationId
+                |> Task.attempt (GotPushResult host occasionId eventSyncDestinationId)
                 |> Effect.fromCmd
             )
 
-        GotPushResult host eventInstanceId eventSyncDestinationId result ->
+        GotPushResult host occasionId eventSyncDestinationId result ->
             let
                 key : String
                 key =
-                    pushStatusKey eventInstanceId eventSyncDestinationId
+                    pushStatusKey occasionId eventSyncDestinationId
 
                 clearedModel : Model
                 clearedModel =
@@ -1532,7 +1532,7 @@ just `Calendar`-mode-only would leave `Calendar` with nothing to show for the
 days before today until the next unrelated refetch happened to land after
 the switch. Querying this broadly at all times instead means `Calendar` can
 show its lookback the instant it's switched to -- see `hiddenAsEnded` for the
-client-side filter that keeps those extra past instances out of every
+client-side filter that keeps those extra past occasions out of every
 non-`Calendar` layout in the meantime. `EventsAfterDate`'s own fixed,
 user-picked cutoff is never widened -- "look back from today" has no meaning
 against a cutoff that isn't "today" to begin with.
@@ -1663,7 +1663,7 @@ event immediately, no round-trip needed) rather than waiting on the next
 `Poll`/account-change refetch to surface it -- `syncAnimations` still applies
 its usual `hiddenAsStarted`/`hiddenAsLong` filtering on top, same as any other
 fetch result. Mirrors `Components.Pages.PostsPage.applyCreatedItem` exactly,
-just over `(Event, EventInstance)` pairs instead of `Post`s: ignored entirely
+just over `(Event, Occasion)` pairs instead of `Post`s: ignored entirely
 for a `CreatedPost` (irrelevant here -- `PostsPage` handles that half), a host
 that isn't one of `relevantServers`, or `model.tab == EventsAfterDate` (an
 explicit past-cutoff view a just-created "now" event has no business
@@ -1699,7 +1699,7 @@ prependEvent : Event -> ServerEvents -> ServerEvents
 prependEvent event status =
     case status of
         Loaded pairs ->
-            Loaded (List.map (\instance -> ( event, instance )) event.instances ++ pairs)
+            Loaded (List.map (\occasion -> ( event, occasion )) event.occasions ++ pairs)
 
         _ ->
             status
@@ -1763,16 +1763,16 @@ setBreadcrumbsRoot shared model =
 -- ANIMATION
 
 
-{-| Identifies one `(host, EventInstance)` pair independently of which server
+{-| Identifies one `(host, Occasion)` pair independently of which server
 fetched it, for `eventAnimations` -- also used verbatim (prefixed) as the
 card's DOM `id`, so `DisplayModeChanged`'s FLIP measurement can look the same
 element back up after a layout switch. Mirrors `PostsPage.postAnimationKey`,
-just keyed on the `EventInstance`'s own `Post` id (this listing's own unit,
+just keyed on the `Occasion`'s own `Post` id (this listing's own unit,
 see the module doc) rather than `Post.id` directly.
 -}
-eventAnimationKey : String -> EventInstance -> String
-eventAnimationKey host instance =
-    host ++ "@" ++ (instance.post |> Maybe.map .id |> Maybe.withDefault "")
+eventAnimationKey : String -> Occasion -> String
+eventAnimationKey host occasion =
+    host ++ "@" ++ (occasion.post |> Maybe.map .id |> Maybe.withDefault "")
 
 
 eventCardDomId : String -> String
@@ -1781,24 +1781,24 @@ eventCardDomId key =
 
 
 pushStatusKey : String -> String -> String
-pushStatusKey eventInstanceId eventSyncDestinationId =
-    eventInstanceId ++ "|" ++ eventSyncDestinationId
+pushStatusKey occasionId eventSyncDestinationId =
+    occasionId ++ "|" ++ eventSyncDestinationId
 
 
-{-| Whether `instance` has already started as of `model.endsAfter` -- only
+{-| Whether `occasion` has already started as of `model.endsAfter` -- only
 ever `True` while `UpcomingEvents` is the active tab, since that's the only
 tab whose `endsAfter` _is_ the live "now" (kept fresh by `GotNow`/`Poll`, see
 their own docs); `EventsAfterDate`'s fixed cutoff isn't "now" in that sense,
-so this is unconditionally `False` there regardless of `instance`'s own
-timing. Compares `instance`'s own start time via `Events.instanceStartsOrEndsAt`
+so this is unconditionally `False` there regardless of `occasion`'s own
+timing. Compares `occasion`'s own start time via `Events.occasionStartsOrEndsAt`
 (the same field `visibleAnimations` already sorts by). Independent of
 `Model.hideStartedUpcomingOrLongEvents` itself -- see `hiddenAsStarted` (the actual
 filter predicate) and `anyStartedEvents` (whether `hideStartedOrLongButtonView` has
 anything to offer at all) for the two things that flag/count actually feed.
 -}
-instanceHasStarted : Model -> EventInstance -> Bool
-instanceHasStarted model instance =
-    case ( model.endsAfter, Events.instanceStartsOrEndsAt instance ) of
+occasionHasStarted : Model -> Occasion -> Bool
+occasionHasStarted model occasion =
+    case ( model.endsAfter, Events.occasionStartsOrEndsAt occasion ) of
         ( Just now, Just startsAt ) ->
             Time.posixToMillis startsAt <= Time.posixToMillis now
 
@@ -1806,18 +1806,18 @@ instanceHasStarted model instance =
             False
 
 
-{-| Whether `instance` has already ended as of `model.endsAfter` -- mirrors
-`instanceHasStarted` exactly, just against `Events.instanceEndsOrStartsAt`
-(the field that prefers `endsAt`) instead of `instanceStartsOrEndsAt`. Only
+{-| Whether `occasion` has already ended as of `model.endsAfter` -- mirrors
+`occasionHasStarted` exactly, just against `Events.occasionEndsOrStartsAt`
+(the field that prefers `endsAt`) instead of `occasionStartsOrEndsAt`. Only
 ever relevant while `UpcomingEvents` is active: `queryEndsAfter` is the only
-thing that ever asks a server for an already-ended instance in the first
+thing that ever asks a server for an already-ended occasion in the first
 place (widening that tab's query back `calendarLookbackDays` for `Calendar`
 mode's sake), so this is what `hiddenAsEnded` reads to keep those extra
-instances out of every other layout.
+occasions out of every other layout.
 -}
-instanceHasEnded : Model -> EventInstance -> Bool
-instanceHasEnded model instance =
-    case ( model.endsAfter, Events.instanceEndsOrStartsAt instance ) of
+occasionHasEnded : Model -> Occasion -> Bool
+occasionHasEnded model occasion =
+    case ( model.endsAfter, Events.occasionEndsOrStartsAt occasion ) of
         ( Just now, Just endsAt ) ->
             Time.posixToMillis endsAt <= Time.posixToMillis now
 
@@ -1825,43 +1825,43 @@ instanceHasEnded model instance =
             False
 
 
-{-| Whether `instance` should be treated as absent from `syncAnimations`' own
+{-| Whether `occasion` should be treated as absent from `syncAnimations`' own
 `currentEvents` by the "hide started events" filter (see
 `Model.hideStartedUpcomingOrLongEvents`/`hideStartedOrLongButtonView`) --
-`instanceHasStarted`, gated on the filter actually being on, so an event
+`occasionHasStarted`, gated on the filter actually being on, so an event
 crossing its own start time mid-session fades out on the very next poll
 (`refetchServers` already calls `syncAnimations`), same as
 `HideStartedEventsToggled` fades the whole already-started set out/in on
 toggle. Only ever called from `syncAnimations`' own non-`Calendar` branch --
 `calendarEvents` deliberately never calls this (see its own doc): in
-`Calendar` mode the same toggle means "hide long instances" (`hiddenAsLong`)
+`Calendar` mode the same toggle means "hide long occasions" (`hiddenAsLong`)
 instead, a genuinely different filter, not this one extended to cover
 `Calendar` too.
 -}
-hiddenAsStarted : Model -> EventInstance -> Bool
-hiddenAsStarted model instance =
-    model.hideStartedOrLongEvents && instanceHasStarted model instance
+hiddenAsStarted : Model -> Occasion -> Bool
+hiddenAsStarted model occasion =
+    model.hideStartedOrLongEvents && occasionHasStarted model occasion
 
 
-{-| Whether `instance` should be treated as absent from `syncAnimations`' own
+{-| Whether `occasion` should be treated as absent from `syncAnimations`' own
 `currentEvents` because it's already ended -- unlike `hiddenAsStarted`, not
 gated on any toggle: `queryEndsAfter` widens every `UpcomingEvents`-tab query
 `calendarLookbackDays` back regardless of `model.mode` (see its own doc for
 why), so every non-`Calendar` layout needs this to claw back out the past,
-already-ended instances that widening pulled in purely for `Calendar` mode's
+already-ended occasions that widening pulled in purely for `Calendar` mode's
 benefit -- restoring the pre-lookback "only ever shows events that haven't
 ended" behavior everywhere except `Calendar` itself.
 -}
-hiddenAsEnded : Model -> EventInstance -> Bool
-hiddenAsEnded model instance =
-    model.mode /= Calendar && instanceHasEnded model instance
+hiddenAsEnded : Model -> Occasion -> Bool
+hiddenAsEnded model occasion =
+    model.mode /= Calendar && occasionHasEnded model occasion
 
 
-{-| Whether any currently `Loaded` instance is something
+{-| Whether any currently `Loaded` occasion is something
 `model.hideStartedUpcomingOrLongEvents` could actually hide -- what that
 means depends on `model.mode`, same as the toggle itself (see
-`hiddenAsStarted`/`hiddenAsLong`'s own docs): `instanceIsLong` while
-`model.mode == Calendar`, `instanceHasStarted` without already being
+`hiddenAsStarted`/`hiddenAsLong`'s own docs): `occasionIsLong` while
+`model.mode == Calendar`, `occasionHasStarted` without already being
 `hiddenAsEnded` everywhere else. `view` only renders
 `hideStartedOrLongButtonView` when this is `True` (on top of its own
 `UpcomingEvents`-only gate), so the button itself never appears with nothing
@@ -1869,14 +1869,14 @@ for it to actually hide -- without the `Calendar`-mode branch, a listing made
 up entirely of not-yet-started multi-day events would hide the button and
 leave the toggle permanently stuck on its `init` default, with no way to turn
 it off. The `hiddenAsEnded` exclusion on the non-`Calendar` branch keeps
-`queryEndsAfter`'s lookback instances that are _only_ ever shown to
+`queryEndsAfter`'s lookback occasions that are _only_ ever shown to
 `Calendar` mode (already long since started, and already unconditionally
 filtered from every non-`Calendar` layout regardless of this toggle -- see
 `hiddenAsEnded`'s own doc) from making the button falsely claim there's
 something left to hide while looking at, say, `Grid`. Deliberately reads
 straight off `model.eventsByServer` rather than
 `model.eventAnimations`/`visibleAnimations` -- once the filter is on, a
-started instance is exactly what `syncAnimations` excludes from (or fades out
+started occasion is exactly what `syncAnimations` excludes from (or fades out
 of) that dict, so checking there instead would make the button disappear the
 moment it successfully hid everything, rather than staying available to
 toggle back.
@@ -1890,12 +1890,12 @@ anyStartedEvents model =
                 case feed.status of
                     Loaded pairs ->
                         List.any
-                            (\( _, instance ) ->
+                            (\( _, occasion ) ->
                                 if model.mode == Calendar then
-                                    instanceIsLong instance
+                                    occasionIsLong occasion
 
                                 else
-                                    instanceHasStarted model instance && not (hiddenAsEnded model instance)
+                                    occasionHasStarted model occasion && not (hiddenAsEnded model occasion)
                             )
                             pairs
 
@@ -1904,12 +1904,12 @@ anyStartedEvents model =
             )
 
 
-{-| Reconciles `eventAnimations` with the `(Event, EventInstance)` pairs
+{-| Reconciles `eventAnimations` with the `(Event, Occasion)` pairs
 currently `Loaded` in `eventsByServer` -- mirrors
 `Components.Pages.PostsPage.syncAnimations` exactly (starts a fade-in for
-newly-seen instances, a fade-out for ones that dropped out, leaves `move`
+newly-seen occasions, a fade-out for ones that dropped out, leaves `move`
 alone either way -- a content refresh never needs a position slide, only
-`DisplayModeChanged` does), with two additions: an instance `hiddenAsStarted`
+`DisplayModeChanged` does), with two additions: an occasion `hiddenAsStarted`
 or `hiddenAsEnded` is treated the same as one the server stopped returning --
 excluded from `currentEvents`, so it fades out (or, symmetrically, fades back
 in via `reappear` if both stop being true for it before its fade-out
@@ -1925,7 +1925,7 @@ fade-out finished).
 syncAnimations : Model -> Model
 syncAnimations model =
     let
-        currentEvents : Dict String ( String, Event, EventInstance )
+        currentEvents : Dict String ( String, Event, Occasion )
         currentEvents =
             if model.mode == Calendar then
                 Dict.empty
@@ -1938,8 +1938,8 @@ syncAnimations model =
                             case feed.status of
                                 Loaded pairs ->
                                     pairs
-                                        |> List.filter (\( _, instance ) -> not (hiddenAsStarted model instance) && not (hiddenAsEnded model instance))
-                                        |> List.map (\( event, instance ) -> ( eventAnimationKey host instance, ( host, event, instance ) ))
+                                        |> List.filter (\( _, occasion ) -> not (hiddenAsStarted model occasion) && not (hiddenAsEnded model occasion))
+                                        |> List.map (\( event, occasion ) -> ( eventAnimationKey host occasion, ( host, event, occasion ) ))
 
                                 _ ->
                                     []
@@ -1950,8 +1950,8 @@ syncAnimations model =
         | eventAnimations =
             UI.Flip.syncAnimations
                 RemoveEvent
-                (\( host, event, instance ) -> { host = host, event = event, instance = instance, flip = UI.Flip.enter, move = UI.Flip.atRestScaled })
-                (\( host, event, instance ) anim -> { anim | host = host, event = event, instance = instance })
+                (\( host, event, occasion ) -> { host = host, event = event, occasion = occasion, flip = UI.Flip.enter, move = UI.Flip.atRestScaled })
+                (\( host, event, occasion ) anim -> { anim | host = host, event = event, occasion = occasion })
                 currentEvents
                 model.eventAnimations
     }
@@ -1993,7 +1993,7 @@ syncCalendarAnimations model =
 
 {-| The most events `eventsListView` ever renders (and the only ones
 `DisplayModeChanged` ever measures/animates) -- a long recurring `Event` can
-rack up hundreds of future instances (`Pages.Event.PostId_` has the same
+rack up hundreds of future occasions (`Pages.Event.PostId_` has the same
 concern for its own date-picker strip), and rendering/measuring/sliding all
 of them at once on every mode switch is both wasteful and, empirically, the
 reason a switch into `HorizontalList` could visibly "glitch" -- a card whose
@@ -2022,7 +2022,7 @@ animated either.
 Only sorted soonest-to-start (mirrors `PostsPage.postsListView`'s own per-item
 sort key) when `model.searchText` is empty -- an active text search's results
 come back relevance-ranked, and re-sorting by start time here would throw
-that ranking away. Sorts by `Events.instanceStartsAtOrEndsAt`, not `instanceMoment`
+that ranking away. Sorts by `Events.occasionStartsAtOrEndsAt`, not `occasionMoment`
 -- the latter prefers `endsAt` (its own "is this still current" reasoning),
 which would order this list by end time instead.
 
@@ -2034,7 +2034,7 @@ visibleAnimations model =
         |> (if String.isEmpty (String.trim model.searchText) then
                 List.sortBy
                     (\( _, anim ) ->
-                        Events.instanceStartsOrEndsAt anim.instance
+                        Events.occasionStartsOrEndsAt anim.occasion
                             |> Maybe.withDefault (Time.millisToPosix 0)
                             |> Time.posixToMillis
                     )
@@ -2100,14 +2100,14 @@ calendarContainerId =
 {-| `Model.calendarAnimations`' one and only possible key -- mirrors
 `eventAnimationKey`'s role for `eventAnimations`, just constant rather than
 derived, since `Calendar` mode has exactly one "item" to animate (the whole
-calendar view), not one per `(host, EventInstance)`.
+calendar view), not one per `(host, Occasion)`.
 -}
 calendarAnimationKey : String
 calendarAnimationKey =
     "calendar"
 
 
-{-| How many hours long `instanceIsLong` treats as the threshold for "too
+{-| How many hours long `occasionIsLong` treats as the threshold for "too
 long to usefully show on `Calendar` mode's day-by-day grid" -- a plain `Int`
 (hours, not milliseconds) so it reads as the one obviously-adjustable knob
 here, mirroring `calendarLookbackDaysDefault`.
@@ -2117,13 +2117,13 @@ longEventThresholdHours =
     24
 
 
-{-| Whether `instance` spans more than `longEventThresholdHours` -- `False`
+{-| Whether `occasion` spans more than `longEventThresholdHours` -- `False`
 (never "long") unless both `startsAt`/`endsAt` are set, since there's no
 duration to measure otherwise.
 -}
-instanceIsLong : EventInstance -> Bool
-instanceIsLong instance =
-    case ( instance.startsAt, instance.endsAt ) of
+occasionIsLong : Occasion -> Bool
+occasionIsLong occasion =
+    case ( occasion.startsAt, occasion.endsAt ) of
         ( Just startsAt, Just endsAt ) ->
             Time.posixToMillis (Conversions.timestampToPosix endsAt)
                 - Time.posixToMillis (Conversions.timestampToPosix startsAt)
@@ -2136,38 +2136,38 @@ instanceIsLong instance =
             False
 
 
-{-| Whether `instance` should be treated as absent from `calendarEvents` for
-being `instanceIsLong` -- gated on `model.hideStartedUpcomingOrLongEvents`
+{-| Whether `occasion` should be treated as absent from `calendarEvents` for
+being `occasionIsLong` -- gated on `model.hideStartedUpcomingOrLongEvents`
 (the same toggle `hiddenAsStarted` reads) _and_ `model.mode == Calendar`: a
 multi-day event is exactly what makes `Calendar`'s day-by-day grid
 unreadable, but has no equivalent problem in any card layout, so this never
 hides anything outside `Calendar` mode.
 -}
-hiddenAsLong : Model -> EventInstance -> Bool
-hiddenAsLong model instance =
-    model.hideStartedOrLongEvents && model.mode == Calendar && instanceIsLong instance
+hiddenAsLong : Model -> Occasion -> Bool
+hiddenAsLong model occasion =
+    model.hideStartedOrLongEvents && model.mode == Calendar && occasionIsLong occasion
 
 
-{-| Every `(host, Event, EventInstance)` `Calendar` mode should plot -- reads
+{-| Every `(host, Event, Occasion)` `Calendar` mode should plot -- reads
 straight off `model.eventsByServer` (unlike `visibleAnimations`, this has no
 `eventAnimations`/FLIP dict to go through, since `Calendar` isn't a card
 layout -- see `EventsDisplayMode`'s own doc) and, unlike `visibleAnimations`'
 own `maxDisplayedEvents` cap (a FLIP measurement/render cost concern that
-doesn't apply here), includes every currently `Loaded` instance -- "show all
-events", per this mode's own purpose. Filters out `hiddenAsLong` instances --
+doesn't apply here), includes every currently `Loaded` occasion -- "show all
+events", per this mode's own purpose. Filters out `hiddenAsLong` occasions --
 `model.hideStartedUpcomingOrLongEvents` means something different in
 `Calendar` mode than everywhere else: `syncAnimations`' own `currentEvents`
-reads it (via `hiddenAsStarted`) as "hide already-started instances", but
+reads it (via `hiddenAsStarted`) as "hide already-started occasions", but
 `calendarEvents` deliberately never calls `hiddenAsStarted` at all -- a
 day-by-day grid has no readability problem with an already-started event the
 way a card listing arguably does, so here the same toggle means "hide
-instances spanning more than `longEventThresholdHours`" instead. Also
+occasions spanning more than `longEventThresholdHours`" instead. Also
 deliberately doesn't filter `hiddenAsEnded`, which is unconditionally `False`
 while `model.mode == Calendar` anyway (see its own doc): `Calendar` is meant
 to show its whole `queryEndsAfter`/`calendarLookbackDays` window, including
-already-ended instances, regardless of anything else on screen.
+already-ended occasions, regardless of anything else on screen.
 -}
-calendarEvents : Model -> List ( String, Event, EventInstance )
+calendarEvents : Model -> List ( String, Event, Occasion )
 calendarEvents model =
     model.eventsByServer
         |> Dict.toList
@@ -2176,8 +2176,8 @@ calendarEvents model =
                 case feed.status of
                     Loaded pairs ->
                         pairs
-                            |> List.filter (\( _, instance ) -> not (hiddenAsLong model instance))
-                            |> List.map (\( event, instance ) -> ( host, event, instance ))
+                            |> List.filter (\( _, occasion ) -> not (hiddenAsLong model occasion))
+                            |> List.map (\( event, occasion ) -> ( host, event, occasion ))
 
                     _ ->
                         []
@@ -2190,10 +2190,10 @@ calendarEvents model =
 id convention), `title` is `event.post`'s own display title (via
 `Posts.postTitleText`, same title the card layouts show as
 `.event-card-title` -- see `eventCardView`'s doc for why that's `event.post`,
-not `instance.post`), falling back to a plain "Event" for the
+not `occasion.post`), falling back to a plain "Event" for the
 practically-never case `event.post` is unset. `start`/`end` are ISO 8601 UTC
 strings (via `Conversions.isoUtcString`), omitted individually when unset --
-at least one of `instance.startsAt`/`instance.endsAt` should always be set in
+at least one of `occasion.startsAt`/`occasion.endsAt` should always be set in
 practice, but neither is required by FullCalendar itself.
 
 `classNames` is `[ hostnameToCSSClass host, "background-color-primary" ]` --
@@ -2213,8 +2213,8 @@ actually visible -- FullCalendar's default month-view style is a small
 wouldn't paint.
 
 -}
-calendarEventEncoder : ( String, Event, EventInstance ) -> Encode.Value
-calendarEventEncoder ( host, event, instance ) =
+calendarEventEncoder : ( String, Event, Occasion ) -> Encode.Value
+calendarEventEncoder ( host, event, occasion ) =
     let
         title : String
         title =
@@ -2229,12 +2229,12 @@ calendarEventEncoder ( host, event, instance ) =
         timeFields : List ( String, Encode.Value )
         timeFields =
             List.filterMap identity
-                [ instance.startsAt |> isoField "start"
-                , instance.endsAt |> isoField "end"
+                [ occasion.startsAt |> isoField "start"
+                , occasion.endsAt |> isoField "end"
                 ]
     in
     Encode.object
-        ([ ( "id", Encode.string (eventAnimationKey host instance) )
+        ([ ( "id", Encode.string (eventAnimationKey host occasion) )
          , ( "title", Encode.string title )
          , ( "classNames", Encode.list Encode.string [ hostnameToCSSClass host, "background-color-primary" ] )
          ]
@@ -2363,7 +2363,7 @@ pendingCalendarPreviewScrollEffect oldModel newModel =
             if oldModel.eventsByServer == newModel.eventsByServer then
                 Effect.none
 
-            else if List.any (\( host, _, instance ) -> eventAnimationKey host instance == key) (calendarPreviewEvents newModel) then
+            else if List.any (\( host, _, occasion ) -> eventAnimationKey host occasion == key) (calendarPreviewEvents newModel) then
                 scrollToCalendarPreviewCard 60 key
 
             else
@@ -2412,7 +2412,7 @@ calendarView embeddedPage =
 
 {-| The DOM id `calendarPreviewModalView`'s horizontal strip is rendered with
 -- paired with `calendarPreviewCardDomId` by `scrollToCalendarPreviewCard`,
-mirroring `Pages.Event.PostId_.instanceStripDomId`/`instanceChipDomId`
+mirroring `Pages.Event.PostId_.occasionStripDomId`/`occasionChipDomId`
 exactly.
 -}
 calendarPreviewStripDomId : String
@@ -2428,7 +2428,7 @@ calendarPreviewCardDomId key =
 {-| Scrolls `calendarPreviewStripDomId`'s strip horizontally so `key`'s own
 card is centered in view -- fired whenever `CalendarEventClicked` opens the
 modal (or re-targets it to a different event while already open). Mirrors
-`Pages.Event.PostId_.scrollToInstance` exactly (see its own doc for why this
+`Pages.Event.PostId_.scrollToOccasion` exactly (see its own doc for why this
 measures via `Dom.getElement`/`Dom.getViewportOf` then applies the result via
 `Ports.scrollElementLeft` rather than `Browser.Dom.setViewportOf`), just with
 a much shorter delay: `PostId_`'s own delay is there to let a FLIP
@@ -2534,7 +2534,7 @@ modal is closed (`Nothing`) or, in the practically-never case the tapped
 event isn't found in the current fetch anymore, empty too (nothing sensible
 to center a window on).
 -}
-calendarPreviewEvents : Model -> List ( String, Event, EventInstance )
+calendarPreviewEvents : Model -> List ( String, Event, Occasion )
 calendarPreviewEvents model =
     case model.calendarPreview of
         Nothing ->
@@ -2542,12 +2542,12 @@ calendarPreviewEvents model =
 
         Just key ->
             let
-                sorted : List ( String, Event, EventInstance )
+                sorted : List ( String, Event, Occasion )
                 sorted =
                     calendarEvents model
                         |> List.sortBy
-                            (\( _, _, instance ) ->
-                                Events.instanceStartsOrEndsAt instance
+                            (\( _, _, occasion ) ->
+                                Events.occasionStartsOrEndsAt occasion
                                     |> Maybe.withDefault (Time.millisToPosix 0)
                                     |> Time.posixToMillis
                             )
@@ -2555,7 +2555,7 @@ calendarPreviewEvents model =
                 targetIndex : Maybe Int
                 targetIndex =
                     sorted
-                        |> List.indexedMap (\i ( host, _, instance ) -> ( i, eventAnimationKey host instance ))
+                        |> List.indexedMap (\i ( host, _, occasion ) -> ( i, eventAnimationKey host occasion ))
                         |> List.filter (\( _, k ) -> k == key)
                         |> List.head
                         |> Maybe.map Tuple.first
@@ -2575,19 +2575,19 @@ calendarPreviewEvents model =
 card, not just its own inner nav-overlay link, and deliberately fires on
 `mousedown` rather than `click` -- see that `Msg`'s own doc for why.
 -}
-calendarPreviewCardView : Shared.Model -> Model -> ( String, Event, EventInstance ) -> Html Msg
-calendarPreviewCardView shared model ( host, event, instance ) =
+calendarPreviewCardView : Shared.Model -> Model -> ( String, Event, Occasion ) -> Html Msg
+calendarPreviewCardView shared model ( host, event, occasion ) =
     let
         key : String
         key =
-            eventAnimationKey host instance
+            eventAnimationKey host occasion
 
         current : Bool
         current =
             model.calendarPreview == Just key
     in
     div [ id (calendarPreviewCardDomId key), class "calendar-preview-card", onMouseDown (CalendarPreviewCardNavigated key) ]
-        [ eventCardView shared False current model.showSyncSources model.showSyncDestinations model.availableSyncDestinations model.pushStatuses ( host, event, instance ) ]
+        [ eventCardView shared False current model.showSyncSources model.showSyncDestinations model.availableSyncDestinations model.pushStatuses ( host, event, occasion ) ]
 
 
 
@@ -2695,8 +2695,8 @@ nothing to toggle when nothing's started yet). Toggles
 `model.hideStartedUpcomingOrLongEvents` (see `HideStartedEventsToggled`), but
 what that toggle actually hides depends on `model.mode` -- outside
 `Calendar`, `hiddenAsStarted`/`syncAnimations` read it to fade already-started
-instances out of the listing; while `model.mode == Calendar`, `hiddenAsLong`
-reads it instead, hiding instances spanning more than
+occasions out of the listing; while `model.mode == Calendar`, `hiddenAsLong`
+reads it instead, hiding occasions spanning more than
 `longEventThresholdHours` -- a genuinely different filter, not an addition to
 the "started" one (see `calendarEvents`' own doc). The `title` text below is
 worded to match whichever one is actually in effect. Styled as a circular
@@ -3029,7 +3029,7 @@ exportButtonView shared model =
 {-| `model.mode`'s own container class + `UI.Flip.Axis` -- `VerticalList`
 collapses/reflows vertically (mirrors `PostsPage.postsListView`'s own
 `.flip-animated-column`), `Grid`/`HorizontalList` both collapse/reflow
-horizontally (mirrors `PostId_.instanceContainerAttributes`' own choice for
+horizontally (mirrors `PostId_.occasionContainerAttributes`' own choice for
 its strip/grid).
 
 While any card is still mid `DisplayModeChanged` slide (`anim.move.moving`),
@@ -3201,22 +3201,22 @@ eventAnimationView shared embeddedPage showSyncSources showSyncDestinations avai
     ( key
     , div (id (eventCardDomId key) :: UI.Flip.itemAttributes axis anim.flip anim.move.moving)
         [ div (class "event-card-move" :: pointerEventsAttr ++ UI.Flip.moveAttributes anim.move)
-            [ eventCardView shared embeddedPage False showSyncSources showSyncDestinations availableSyncDestinations pushStatuses ( anim.host, anim.event, anim.instance ) ]
+            [ eventCardView shared embeddedPage False showSyncSources showSyncDestinations availableSyncDestinations pushStatuses ( anim.host, anim.event, anim.occasion ) ]
         ]
     )
 
 
-{-| The instance's own comment/star count is based on `instance.post`, not
+{-| The occasion's own comment/star count is based on `occasion.post`, not
 `event.post` (see `Components.Events.eventCard`'s own doc) -- swaps in
 `StarredPanel.freshestPost`'s copy of it (same "the freshest known copy always
 wins" convention `Components.Pages.PostsPage.postCardView` uses for a plain
-`Post`) before handing `instance` to `eventCard`, so both the star button's
+`Post`) before handing `occasion` to `eventCard`, so both the star button's
 `starred` state and the count it (and the comment count) displays come from
 the same post, rather than `starred` alone reflecting a just-toggled state
 the rendered count doesn't yet.
 -}
-eventCardView : Shared.Model -> Bool -> Bool -> Bool -> Bool -> Maybe (List SyncDestination) -> Dict String SubmitStatus -> ( String, Event, EventInstance ) -> Html Msg
-eventCardView shared embeddedPage current showSyncSources showSyncDestinations availableSyncDestinations pushStatuses ( host, event, instance ) =
+eventCardView : Shared.Model -> Bool -> Bool -> Bool -> Bool -> Maybe (List SyncDestination) -> Dict String SubmitStatus -> ( String, Event, Occasion ) -> Html Msg
+eventCardView shared embeddedPage current showSyncSources showSyncDestinations availableSyncDestinations pushStatuses ( host, event, occasion ) =
     let
         maybeServer : Maybe RellmServer
         maybeServer =
@@ -3235,27 +3235,27 @@ eventCardView shared embeddedPage current showSyncSources showSyncDestinations a
                 Nothing ->
                     SharedMsg Shared.NoOp
 
-        displayInstance : EventInstance
-        displayInstance =
-            case instance.post of
-                Just instancePost ->
-                    { instance | post = Just (StarredPanel.freshestPost host instancePost shared.panels.starredPanel) }
+        displayOccasion : Occasion
+        displayOccasion =
+            case occasion.post of
+                Just occasionPost ->
+                    { occasion | post = Just (StarredPanel.freshestPost host occasionPost shared.panels.starredPanel) }
 
                 Nothing ->
-                    instance
+                    occasion
 
         starred : Bool
         starred =
-            case displayInstance.post of
-                Just instancePost ->
-                    StarredPanel.isStarred host instancePost shared.panels.starredPanel
+            case displayOccasion.post of
+                Just occasionPost ->
+                    StarredPanel.isStarred host occasionPost shared.panels.starredPanel
 
                 Nothing ->
                     False
 
         onStarClicked : Maybe Msg
         onStarClicked =
-            displayInstance.post
+            displayOccasion.post
                 |> Maybe.andThen (StarredPanel.toggleStarMsg shared.accounts host)
                 |> Maybe.map (Shared.StarredPanelMsg >> SharedMsg)
 
@@ -3267,17 +3267,17 @@ eventCardView shared embeddedPage current showSyncSources showSyncDestinations a
             else
                 MediaRenderer.Small
 
-        instancePostId : String
-        instancePostId =
-            instance.post |> Maybe.map .id |> Maybe.withDefault ""
+        occasionPostId : String
+        occasionPostId =
+            occasion.post |> Maybe.map .id |> Maybe.withDefault ""
 
         isPushing : String -> Bool
         isPushing destinationId =
-            Dict.get (pushStatusKey instancePostId destinationId) pushStatuses == Just Submitting
+            Dict.get (pushStatusKey occasionPostId destinationId) pushStatuses == Just Submitting
 
         pushError : String -> Maybe String
         pushError destinationId =
-            case Dict.get (pushStatusKey instancePostId destinationId) pushStatuses of
+            case Dict.get (pushStatusKey occasionPostId destinationId) pushStatuses of
                 Just (SubmitFailed err) ->
                     Just err
 
@@ -3286,11 +3286,11 @@ eventCardView shared embeddedPage current showSyncSources showSyncDestinations a
 
         onPush : String -> Msg
         onPush destinationId =
-            PushEventInstanceToDestination host instancePostId destinationId
+            PushOccasionToDestination host occasionPostId destinationId
 
         onDelete : String -> String -> Msg
         onDelete destinationId destinationLabel =
-            SharedMsg (Shared.RequestDelete (Shared.ConfirmEventInstanceSyncDestinationDelete instance destinationId destinationLabel host))
+            SharedMsg (Shared.RequestDelete (Shared.ConfirmOccasionSyncDestinationDelete occasion destinationId destinationLabel host))
     in
     Events.eventCard
         shared.time
@@ -3312,4 +3312,4 @@ eventCardView shared embeddedPage current showSyncSources showSyncDestinations a
         onPush
         onDelete
         event
-        displayInstance
+        displayOccasion

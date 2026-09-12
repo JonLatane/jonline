@@ -9,7 +9,7 @@ use crate::models;
 use crate::models::AUTHOR_COLUMNS;
 use crate::protos::*;
 use crate::schema::users;
-use crate::schema::{event_attendances, event_instances, events, posts};
+use crate::schema::{event_attendances, occasions, events, posts};
 
 use crate::rpcs::validations::*;
 
@@ -18,20 +18,20 @@ pub fn get_event_attendances(
     user: &Option<&models::User>,
     conn: &mut PgPooledConnection,
 ) -> Result<EventAttendances, Status> {
-    let event_instance_id = request.event_instance_id.to_db_id_or_err("id")?;
+    let occasion_id = request.occasion_id.to_db_id_or_err("id")?;
 
-    let (event, event_post, event_instance): (models::Event, models::Post, models::EventInstance) =
-        event_instances::table
-            .inner_join(events::table.on(event_instances::event_id.eq(events::post_id)))
+    let (event, event_post, occasion): (models::Event, models::Post, models::Occasion) =
+        occasions::table
+            .inner_join(events::table.on(occasions::event_id.eq(events::post_id)))
             .inner_join(posts::table.on(events::post_id.eq(posts::id)))
-            .filter(event_instances::post_id.eq(event_instance_id))
+            .filter(occasions::post_id.eq(occasion_id))
             .select((
                 events::all_columns,
                 models::POST_COLUMNS,
-                models::EVENT_INSTANCE_COLUMNS,
+                models::OCCASION_COLUMNS,
             ))
-            .first::<(models::Event, models::Post, models::EventInstance)>(conn)
-            .map_err(|_e| Status::new(Code::Internal, "invalid_event_instance_id"))?;
+            .first::<(models::Event, models::Post, models::Occasion)>(conn)
+            .map_err(|_e| Status::new(Code::Internal, "invalid_occasion_id"))?;
 
     let is_event_owner = user.is_some()
         && event_post.user_id.is_some()
@@ -56,7 +56,7 @@ pub fn get_event_attendances(
     let mut event_attendances_query = event_attendances::table
         .left_join(users::table.on(event_attendances::user_id.eq(users::id.nullable())))
         .select((event_attendances::all_columns, AUTHOR_COLUMNS.nullable()))
-        .filter(event_attendances::event_instance_id.eq(event_instance_id))
+        .filter(event_attendances::occasion_id.eq(occasion_id))
         .into_boxed();
 
     if !is_event_owner {
@@ -75,8 +75,8 @@ pub fn get_event_attendances(
             .load::<(models::EventAttendance, Option<models::Author>)>(conn)
             .map_err(|e| {
                 log::error!(
-                    "Failed to load event attendances for event_instance_id={}: {:?}",
-                    event_instance_id,
+                    "Failed to load event attendances for occasion_id={}: {:?}",
+                    occasion_id,
                     e
                 );
                 Status::new(Code::Internal, "failed_to_load_event_attendances")
@@ -99,7 +99,7 @@ pub fn get_event_attendances(
             .as_bool()
             .unwrap_or(false)
     {
-        event_instance.location.map(|l| l.to_proto_location())
+        occasion.location.map(|l| l.to_proto_location())
     } else {
         None
     };

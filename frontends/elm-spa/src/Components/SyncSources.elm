@@ -18,8 +18,8 @@ token refresh mid-request can still be forwarded on by the caller (see
 `User.sync_sources`, already carried by the resolved `User`), and every mutation now triggers
 a full `refetch` of that `User`. `getSyncSources` is still used, though -- by that section's
 manual "Refresh" button (`SyncSourcesRefreshClicked`), which overlays just the fresh `sources`
-onto the resolved `User` without a whole-profile refetch -- see `Components.AIModelProviders`' own
-matching doc comment on `getAIModelProviders`.
+onto the resolved `User` without a whole-profile refetch -- see `Components.AIProviders`' own
+matching doc comment on `getAIProviders`.
 -}
 
 import Grpc
@@ -32,9 +32,9 @@ import Shared.Conversions as Conversions
 import Task exposing (Task)
 
 
-{-| An ICS source's "N events" alone when every event has exactly one instance
+{-| An ICS source's "N events" alone when every event has exactly one occasion
 (the common non-recurring case, where naming both is redundant) -- otherwise
-"N events and M instances". An RSS/Atom source (which syncs plain Posts, not
+"N events and M occasions". An RSS/Atom source (which syncs plain Posts, not
 Events -- see `posts.proto`'s `Post.sync_source`) instead shows "N posts",
 read off `source.postCount`. Used by both `Components.Pages.UserProfilePage`
 (each row's "delete along with its events/posts" button) and `UI`'s shared
@@ -50,17 +50,17 @@ syncedCountsLabel source =
                 eventCount =
                     Conversions.int64ToInt source.eventCount
 
-                instanceCount : Int
-                instanceCount =
-                    Conversions.int64ToInt source.eventInstanceCount
+                occasionCount : Int
+                occasionCount =
+                    Conversions.int64ToInt source.occasionCount
             in
-            if eventCount == instanceCount then
+            if eventCount == occasionCount then
                 pluralCount eventCount "event"
 
             else
                 pluralCount eventCount "event"
                     ++ " and "
-                    ++ pluralCount instanceCount "instance"
+                    ++ pluralCount occasionCount "occasion"
 
         _ ->
             pluralCount (Conversions.int64ToInt source.postCount) "post"

@@ -1,6 +1,6 @@
 //! Calls the Gemini API's Interactions endpoint (`ai.google.dev/gemini-api/docs/image-generation`)
 //! to generate (or edit, given reference images) an image. Used by
-//! `rpcs::ai_model_providers::generate_media`.
+//! `rpcs::ai_providers::generate_media`.
 
 use base64::engine::general_purpose::STANDARD;
 use base64::Engine;
@@ -21,8 +21,8 @@ pub struct GeneratedImage {
     pub content_type: String,
     pub bytes: Vec<u8>,
     /// This call's `usage.total_tokens`, if the response reported one -- what
-    /// `rpcs::ai_model_providers::generate_media` actually deducts from a grantee's
-    /// `AIModelProviderGrant.tokens_remaining`. `None` if the response had no `usage` object at
+    /// `rpcs::ai_providers::generate_media` actually deducts from a grantee's
+    /// `AIProviderGrant.tokens_remaining`. `None` if the response had no `usage` object at
     /// all (defensive -- every request we've seen has one, but this shouldn't hard-fail generation
     /// itself if a future response ever omits it).
     pub tokens_used: Option<i64>,

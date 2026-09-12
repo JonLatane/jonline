@@ -3116,16 +3116,16 @@ deleteConfirmationModal shared =
 
                         Shared.ConfirmEventDelete event _ ->
                             let
-                                instanceCount : Int
-                                instanceCount =
-                                    List.length event.instances
+                                occasionCount : Int
+                                occasionCount =
+                                    List.length event.occasions
                             in
                             ( "Delete Event?"
                             , "Delete \""
                                 ++ (event.post |> Maybe.map Posts.postTitleText |> Maybe.withDefault "this event")
                                 ++ "\""
-                                ++ (if instanceCount > 1 then
-                                        " and all " ++ String.fromInt instanceCount ++ " of its dates"
+                                ++ (if occasionCount > 1 then
+                                        " and all " ++ String.fromInt occasionCount ++ " of its dates"
 
                                     else
                                         ""
@@ -3134,10 +3134,10 @@ deleteConfirmationModal shared =
                             , "Delete"
                             )
 
-                        Shared.ConfirmEventInstanceDelete instance event _ ->
+                        Shared.ConfirmOccasionDelete occasion event _ ->
                             ( "Delete This Date?"
                             , "Delete "
-                                ++ Events.instanceWhenText shared.time instance
+                                ++ Events.occasionWhenText shared.time occasion
                                 ++ " from \""
                                 ++ (event.post |> Maybe.map Posts.postTitleText |> Maybe.withDefault "this event")
                                 ++ "\"? This can't be undone."
@@ -3152,7 +3152,7 @@ deleteConfirmationModal shared =
                             , "Delete"
                             )
 
-                        Shared.ConfirmEventInstanceSyncDestinationDelete _ _ destinationLabel _ ->
+                        Shared.ConfirmOccasionSyncDestinationDelete _ _ destinationLabel _ ->
                             ( "Delete Sync?"
                             , "Stop syncing this event to "
                                 ++ destinationLabel
@@ -3302,7 +3302,7 @@ starredPanel shared currentRoute =
             shared.basePath
             shared.accounts
             (currentStarredPostKey shared currentRoute)
-            (currentStarredEventInstanceKey shared currentRoute)
+            (currentStarredOccasionKey shared currentRoute)
             shared.panels.starredPanel
         )
 
@@ -3327,20 +3327,20 @@ currentStarredPostKey shared currentRoute =
             Nothing
 
 
-{-| The currently-viewed `EventInstance`'s own `Post` id (see
+{-| The currently-viewed `Occasion`'s own `Post` id (see
 `Pages.Event.PostId_`), if `currentRoute` is that page -- mirrors
 `currentStarredPostKey` exactly, just for `Shared.StarredPanel`'s Event
 highlighting (see `Components.Events.eventCard`'s own `current` param).
 -}
-currentStarredEventInstanceKey : Shared.Model -> Route -> Maybe String
-currentStarredEventInstanceKey shared currentRoute =
+currentStarredOccasionKey : Shared.Model -> Route -> Maybe String
+currentStarredOccasionKey shared currentRoute =
     case currentRoute of
         Route.Event__PostId_ params ->
             let
-                ( instancePostId, _ ) =
+                ( occasionPostId, _ ) =
                     Events.parseEventRouteId shared.accounts.mainFrontendHost params.postId
             in
-            Just instancePostId
+            Just occasionPostId
 
         _ ->
             Nothing

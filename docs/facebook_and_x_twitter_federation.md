@@ -1,9 +1,9 @@
 # Facebook and X (Twitter) Sync
 
 Rellm's "Sync Destinations" feature lets a user connect one of their Facebook Pages as a
-[`SyncDestination`](https://jonline.io/docs/protocol#rellm-SyncDestination), so calling [`SyncEventInstance`](https://jonline.io/docs/protocol#grpc-api-SyncEventInstance) or [`SyncPost`](https://jonline.io/docs/protocol#grpc-api-SyncPost) posts the [`EventInstance`](https://jonline.io/docs/protocol#rellm-EventInstance)/[`Post`](https://jonline.io/docs/protocol#rellm-Post) to
+[`SyncDestination`](https://jonline.io/docs/protocol#rellm-SyncDestination), so calling [`SyncOccasion`](https://jonline.io/docs/protocol#grpc-api-SyncOccasion) or [`SyncPost`](https://jonline.io/docs/protocol#grpc-api-SyncPost) posts the [`Occasion`](https://jonline.io/docs/protocol#rellm-Occasion)/[`Post`](https://jonline.io/docs/protocol#rellm-Post) to
 that Page. Implementation: [`backend/src/logic/facebook_sync.rs`](../backend/src/logic/facebook_sync.rs),
-invoked from [`SyncEventInstance`](../backend/src/rpcs/events/sync_event_instance.rs) and
+invoked from [`SyncOccasion`](../backend/src/rpcs/events/sync_occasion.rs) and
 [`SyncPost`](../backend/src/rpcs/posts/sync_post.rs) alike (both dispatch through the same
 `post_to_facebook_page`, sharing every Facebook-specific detail below regardless of content type).
 
@@ -16,7 +16,7 @@ section for the rest.)
 
 ## It posts to the Page's feed, not a real Facebook Event
 
-Posting an [`EventInstance`](https://jonline.io/docs/protocol#rellm-EventInstance) creates a Facebook **Page post** (`POST /{page-id}/feed`) formatted to
+Posting an [`Occasion`](https://jonline.io/docs/protocol#rellm-Occasion) creates a Facebook **Page post** (`POST /{page-id}/feed`) formatted to
 read like an event announcement, or attaches its media (see "What's in the post" below) - it does
 **not** create an actual Facebook **Event** object (the kind users can RSVP to natively on
 Facebook), because the Graph API no longer allows that for ordinary third-party apps:
@@ -42,23 +42,23 @@ so its Page post is simply the whole feature for Posts.)
 
 ## What's in the post
 
-`logic::sync_message::build_event_instance_message`/`build_post_message` build one
+`logic::sync_message::build_occasion_message`/`build_post_message` build one
 platform-agnostic `SyncMessage` per sync (shared by every [`SyncDestination`](https://jonline.io/docs/protocol#rellm-SyncDestination) platform, not just
-Facebook) from the content's own [`Post`](https://jonline.io/docs/protocol#rellm-Post) (`title`/`content`/`link`) and, for an [`EventInstance`](https://jonline.io/docs/protocol#rellm-EventInstance),
+Facebook) from the content's own [`Post`](https://jonline.io/docs/protocol#rellm-Post) (`title`/`content`/`link`) and, for an [`Occasion`](https://jonline.io/docs/protocol#rellm-Occasion),
 also its `starts_at`/`ends_at`/`location`:
 
-1. Title - for an EventInstance, `rpcs::events::sync_event_instance` combines the parent Event's
-   own title with the instance's own (only if the instance actually overrides it) as
-   `"{event_title}: {instance_title}"`, e.g. "Run Club" or "Run Club: Special Holiday Edition" (see
+1. Title - for an Occasion, `rpcs::events::sync_occasion` combines the parent Event's
+   own title with the Occasion's own (only if the Occasion actually overrides it) as
+   `"{event_title}: {occasion_title}"`, e.g. "Run Club" or "Run Club: Special Holiday Edition" (see
    `combine_title`/`combine_content` in that file)
-2. *(EventInstance only)* Date/time range (single timestamp if `ends_at` isn't after `starts_at`,
+2. *(Occasion only)* Date/time range (single timestamp if `ends_at` isn't after `starts_at`,
    otherwise a friendly `start-end` range mirroring the Elm UI's own `Shared.Time.formatRange`;
    shown in the event location's local timezone if it could be resolved, else UTC - see below)
-3. *(EventInstance only)* Location (`EventInstance.location.uniformly_formatted_address`), if set,
+3. *(Occasion only)* Location (`Occasion.location.uniformly_formatted_address`), if set,
    prefixed with 📍
-4. Content/description - for an EventInstance, the same combine-with-a-`---`-separator treatment
-   as the title (`"{event_content}\n\n---\n\n{instance_content}"`)
-5. The Rellm link (`event_url`/`post_url`), bare (EventInstance) or prefixed `View post:` (Post),
+4. Content/description - for an Occasion, the same combine-with-a-`---`-separator treatment
+   as the title (`"{event_content}\n\n---\n\n{occasion_content}"`)
+5. The Rellm link (`event_url`/`post_url`), bare (Occasion) or prefixed `View post:` (Post),
    if one could be built (see below)
 
 `post_to_facebook_page` (in `facebook_sync.rs`) then decides how to send that `SyncMessage` to the
@@ -71,7 +71,7 @@ external `link` the author/organizer set on the [`Post`](https://jonline.io/docs
 
 ## Local-timezone times via free-text address geocoding
 
-`EventInstance.location` only stores a free-text `uniformly_formatted_address` (no lat/lng --
+`Occasion.location` only stores a free-text `uniformly_formatted_address` (no lat/lng --
 see `protos/location.proto`), so showing times in the event's local timezone instead of UTC needs
 resolving that address to a timezone first. `logic::geocoding` (`resolve_timezone`) does this in
 two keyless, free steps, chained on every sync (never cached/persisted - see "future work"
@@ -102,10 +102,10 @@ address picker (today Elm's location field is plain free text with no geocoding 
 
 ## The Rellm link needs CDN/frontend config
 
-The `event_url`/`post_url` (`https://{frontend_host}/event/{instance_id}` or
+The `event_url`/`post_url` (`https://{frontend_host}/event/{occasion_id}` or
 `https://{frontend_host}/post/{post_id}`) is only built when this server has
 `ServerConfiguration.external_cdn_config.frontend_host` configured. Unlike Rocket web routes
-(`configured_frontend_domain` in `backend/src/web/external_cdn.rs`), the [`SyncEventInstance`](https://jonline.io/docs/protocol#grpc-api-SyncEventInstance)/
+(`configured_frontend_domain` in `backend/src/web/external_cdn.rs`), the [`SyncOccasion`](https://jonline.io/docs/protocol#grpc-api-SyncOccasion)/
 [`SyncPost`](https://jonline.io/docs/protocol#grpc-api-SyncPost) RPCs have no HTTP `Host` header to fall back on, so on servers without `frontend_host`
 set, the post simply omits the Rellm link (falling back to the author's own `Post.link`, if any)
 rather than guessing a domain. This is an accepted current limitation, not a bug - set
@@ -168,7 +168,7 @@ URL and re-uploaded as raw bytes to `/2/media/upload`, mirroring `mastodon_sync`
 reupload shape since X's media endpoint also takes bytes, not a remote URL like Facebook/
 Instagram/Threads'). Video/GIF is not yet supported - X's video upload requires a chunked
 INIT/APPEND/FINALIZE-plus-processing-status-poll flow (mirrors `bluesky_sync`'s own documented
-video gap) not yet built; a video attachment on a synced Post/EventInstance is silently skipped.
+video gap) not yet built; a video attachment on a synced Post/Occasion is silently skipped.
 
 ## Testing
 

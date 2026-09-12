@@ -47,7 +47,7 @@ export enum EventListingType {
   GROUP_EVENTS_PENDING_MODERATION = 11,
   /**
    * NEWLY_ADDED_EVENTS - Returns events from either `ALL_ACCESSIBLE_EVENTS` or a specific author (with optional author_user_id parameter).
-   * Returned EventInstances will be ordered by creation time rather than start time.
+   * Returned Occasions will be ordered by creation time rather than start time.
    */
   NEWLY_ADDED_EVENTS = 20,
   UNRECOGNIZED = -1,
@@ -116,11 +116,11 @@ export function eventListingTypeToJSON(object: EventListingType): string {
 }
 
 /**
- * EventInstance attendance statuses. State transitions may generally happen
+ * Occasion attendance statuses. State transitions may generally happen
  * in any direction, but:
  * * `REQUESTED` can only be selected if another user invited the user whose attendance is being described.
- * * `GOING` and `NOT_GOING` cannot be selected if the EventInstance has ended (end time is in the past).
- * * `WENT` and `DID_NOT_GO` cannot be selected if the EventInstance has not started (start time is in the future).
+ * * `GOING` and `NOT_GOING` cannot be selected if the Occasion has ended (end time is in the past).
+ * * `WENT` and `DID_NOT_GO` cannot be selected if the Occasion has not started (start time is in the future).
  * `INTERESTED` and `REQUESTED` can apply regardless of whether an event has started or ended.
  */
 export enum AttendanceStatus {
@@ -173,15 +173,15 @@ export function attendanceStatusToJSON(object: AttendanceStatus): string {
 }
 
 /**
- * Request to get Events in a formatted *per-EventInstance* structure. i.e. the response will carry duplicate [`Event`](#rellm-Event)s with the same ID
- * if that [`Event`](#rellm-Event) has multiple [`EventInstance`](#rellm-EventInstance)s in the time frame the client asked for.
+ * Request to get Events in a formatted *per-Occasion* structure. i.e. the response will carry duplicate [`Event`](#rellm-Event)s with the same ID
+ * if that [`Event`](#rellm-Event) has multiple [`Occasion`](#rellm-Occasion)s in the time frame the client asked for.
  *
- * These structured EventInstances are ordered by start time unless otherwise specified (specifically, `EventListingType.NEWLY_ADDED_EVENTS`).
+ * These structured Occasions are ordered by start time unless otherwise specified (specifically, `EventListingType.NEWLY_ADDED_EVENTS`).
  *
  * Valid GetEventsRequest formats:
  * - `{[listing_type: PublicEvents]}`                 (TODO: get ServerPublic/GlobalPublic events you can see)
  * - `{listing_type:MyGroupsEvents|FollowingEvents}`  (TODO: get events for groups joined or user followed; auth required)
- * - `{post_id:}`                                     (get a single event, by its own Post ID or one of its EventInstances' Post IDs)
+ * - `{post_id:}`                                     (get a single event, by its own Post ID or one of its Occasions' Post IDs)
  * - `{listing_type: GroupEvents| GroupEventsPendingModeration, group_id:}`
  *                                                    (TODO: get events/events needing moderation for a group)
  * - `{author_user_id:, group_id:}`                   (TODO: get events by a user for a group)
@@ -196,7 +196,7 @@ export interface GetEventsRequest {
   groupId?:
     | string
     | undefined;
-  /** Filters returned [`EventInstance`](#rellm-EventInstance)s by time. */
+  /** Filters returned [`Occasion`](#rellm-Occasion)s by time. */
   timeFilter?:
     | TimeFilter
     | undefined;
@@ -212,7 +212,7 @@ export interface GetEventsRequest {
    * only returns events where the given user's status matches one of the given statuses.
    */
   attendanceStatuses: AttendanceStatus[];
-  /** Finds Events for the Post with the given ID. The Post should have a [`PostContext`](#rellm-PostContext) of `EVENT` or `EVENT_INSTANCE`. */
+  /** Finds Events for the Post with the given ID. The Post should have a [`PostContext`](#rellm-PostContext) of `EVENT` or `OCCASION`. */
   postId?:
     | string
     | undefined;
@@ -223,24 +223,24 @@ export interface GetEventsRequest {
     | string
     | undefined;
   /**
-   * Loads multiple events by their event instances' Post IDs - returns one
-   * Event per matching EventInstance (see GetEventsResponse's own doc), not
-   * the requested EventInstance's whole parent Event's full instance list.
+   * Loads multiple events by their occasions' Post IDs - returns one
+   * Event per matching Occasion (see GetEventsResponse's own doc), not
+   * the requested Occasion's whole parent Event's full occasion list.
    */
-  eventInstancePostIds: string[];
+  occasionPostIds: string[];
   /**
    * Auth token proving ownership of an anonymous RSVP, mirroring
    * `GetEventAttendancesRequest.anonymous_attendee_auth_token`. Lets an anonymous attendee's own
-   * (possibly still-`PENDING`) [`EventAttendance`](#rellm-EventAttendance) and its `EventInstance.location` (when
+   * (possibly still-`PENDING`) [`EventAttendance`](#rellm-EventAttendance) and its `Occasion.location` (when
    * `EventInfo.hide_location_until_rsvp_approved` is set) surface via each returned
-   * `EventInstance.attendances`/`current_user_attendance`, same as a logged-in user's own RSVP
+   * `Occasion.attendances`/`current_user_attendance`, same as a logged-in user's own RSVP
    * does automatically.
    */
   anonymousAttendeeAuthToken?: string | undefined;
 }
 
 /**
- * Time filter that works on the `starts_at` and `ends_at` fields of [`EventInstance`](#rellm-EventInstance).
+ * Time filter that works on the `starts_at` and `ends_at` fields of [`Occasion`](#rellm-Occasion).
  * API currently only supports `ends_after`.
  */
 export interface TimeFilter {
@@ -261,16 +261,16 @@ export interface TimeFilter {
 }
 
 /**
- * A list of [`Event`](#rellm-Event)s with a maybe-incomplete (see [`GetEventsRequest`](#rellm-GetEventsRequest)) set of their [`EventInstance`](#rellm-EventInstance)s.
+ * A list of [`Event`](#rellm-Event)s with a maybe-incomplete (see [`GetEventsRequest`](#rellm-GetEventsRequest)) set of their [`Occasion`](#rellm-Occasion)s.
  *
  * Note that `GetEventsResponse` may often include duplicate Events with the same ID.
- * I.E. something like: `{events: [{id: a, instances: [{id: x}]}, {id: a, instances: [{id: y}]}, ]}` is a valid response.
- * This semantically means: "Event A has both instances X and Y in the time frame the client asked for."
+ * I.E. something like: `{events: [{id: a, occasions: [{id: x}]}, {id: a, occasions: [{id: y}]}, ]}` is a valid response.
+ * This semantically means: "Event A has both occasions X and Y in the time frame the client asked for."
  * The client should be able to handle this.
  *
  * In the React/Tamagui client, this is handled by the Redux store, which
  * effectively "compacts" all response into its own internal Events store, in a form something like:
- * `{events: {a: {id: a, instances: [{id: x}, {id: y}]}, ...}, instanceEventIds: {x:a, y:a}}`.
+ * `{events: {a: {id: a, occasions: [{id: x}, {id: y}]}, ...}, occasionEventIds: {x:a, y:a}}`.
  * (In reality it uses `EntityAdapter` which is a bit more complicated, but the idea is the same.)
  */
 export interface GetEventsResponse {
@@ -279,7 +279,7 @@ export interface GetEventsResponse {
 
 /**
  * An `Event` is a top-level type used to organize calendar events, RSVPs, and messaging/posting
- * about the `Event`. Actual time data lies in its `EventInstances`.
+ * about the `Event`. Actual time data lies in its `Occasions`.
  *
  * (Eventually, Rellm Events should also support ticketing.)
  */
@@ -295,25 +295,25 @@ export interface Event {
   info:
     | EventInfo
     | undefined;
-  /** A list of instances for the Event. *Events will only include all instances if the request is for a single event.* */
-  instances: EventInstance[];
+  /** A list of occasions for the Event. *Events will only include all occasions if the request is for a single event.* */
+  occasions: Occasion[];
 }
 
-/** Syncs (cross-posts) a single EventInstance to one SyncDestination. */
-export interface SyncEventInstanceRequest {
-  /** The EventInstance to sync. */
-  eventInstanceId: string;
+/** Syncs (cross-posts) a single Occasion to one SyncDestination. */
+export interface SyncOccasionRequest {
+  /** The Occasion to sync. */
+  occasionId: string;
   /** The SyncDestination to sync it to. */
   syncDestinationId: string;
 }
 
 /**
- * Removes a single EventInstance's sync (cross-post) to one SyncDestination - the reverse of [`SyncEventInstance`](#grpc-api-SyncEventInstance).
+ * Removes a single Occasion's sync (cross-post) to one SyncDestination - the reverse of [`SyncOccasion`](#grpc-api-SyncOccasion).
  * Does not delete the post already made on the destination (e.g. the Facebook Page post), only the local sync record.
  */
-export interface DeleteEventInstanceSyncDestinationRequest {
-  /** The EventInstance to un-sync. */
-  eventInstanceId: string;
+export interface DeleteOccasionSyncDestinationRequest {
+  /** The Occasion to un-sync. */
+  occasionId: string;
   /** The SyncDestination to un-sync it from. */
   syncDestinationId: string;
 }
@@ -354,21 +354,21 @@ export interface EventInfo {
 /**
  * The time-based component of an [`Event`](#rellm-Event). Has a `starts_at` and `ends_at` time,
  * a [`Location`](#rellm-Location), and an optional [`Post`](#rellm-Post) (and discussion thread) specific to this particular
- * `EventInstance` in addition to the parent [`Event`](#rellm-Event).
+ * `Occasion` in addition to the parent [`Event`](#rellm-Event).
  */
-export interface EventInstance {
+export interface Occasion {
   /** ID of the parent [`Event`](#rellm-Event) (i.e. the parent `Event.post.id`). */
   eventId: string;
   /**
-   * Optional [`Post`](#rellm-Post) containing alternate title/link/description for this particular instance. Its [`PostContext`](#rellm-PostContext) should be `EVENT_INSTANCE`.
-   * An `EventInstance`'s ID *is* its `post.id` - there is no separate surrogate ID.
+   * Optional [`Post`](#rellm-Post) containing alternate title/link/description for this particular Occasion. Its [`PostContext`](#rellm-PostContext) should be `OCCASION`.
+   * An `Occasion`'s ID *is* its `post.id` - there is no separate surrogate ID.
    */
   post:
     | Post
     | undefined;
-  /** Additional configuration for this instance of this [`EventInstance`](#rellm-EventInstance) beyond the [`EventInfo`](#rellm-EventInfo) in its parent [`Event`](#rellm-Event). */
+  /** Additional configuration for this [`Occasion`](#rellm-Occasion) beyond the [`EventInfo`](#rellm-EventInfo) in its parent [`Event`](#rellm-Event). */
   info:
-    | EventInstanceInfo
+    | OccasionInfo
     | undefined;
   /** The time the event starts (UTC/Timestamp format). */
   startsAt:
@@ -389,18 +389,18 @@ export interface EventInstance {
   syncMissingSince?:
     | string
     | undefined;
-  /** RSVP + invite data for this instance. */
+  /** RSVP + invite data for this Occasion. */
   attendances?:
     | EventAttendances
     | undefined;
-  /** If the request was made by a logged-in user, this is the current user's attendance for this instance. */
+  /** If the request was made by a logged-in user, this is the current user's attendance for this Occasion. */
   currentUserAttendance?:
     | EventAttendance
     | undefined;
-  /** SyncDestinations this instance has been synced (cross-posted) to, and their status. */
+  /** SyncDestinations this Occasion has been synced (cross-posted) to, and their status. */
   syncDestinations: SyncDestinationStatus[];
   /**
-   * A time zone for the event instance. Used when serializing it for,
+   * A time zone for the Occasion. Used when serializing it for,
    * e.g., Facebook or Instagram posts, or generating media.
    */
   timezone?: string | undefined;
@@ -410,25 +410,25 @@ export interface EventInstance {
  * To be used for ticketing, RSVPs, etc.
  * Stored as JSON in the database.
  */
-export interface EventInstanceInfo {
-  /** RSVP configuration and metadata for the event instance. */
-  rsvpInfo?: EventInstanceRsvpInfo | undefined;
+export interface OccasionInfo {
+  /** RSVP configuration and metadata for the Occasion. */
+  rsvpInfo?: OccasionRsvpInfo | undefined;
 }
 
 /**
- * Consolidated type for RSVP info for an [`EventInstance`](#rellm-EventInstance).
+ * Consolidated type for RSVP info for an [`Occasion`](#rellm-Occasion).
  * Curently, the `optional` counts below are *never* returned by the API.
  */
-export interface EventInstanceRsvpInfo {
-  /** Overrides `EventInfo.allows_rsvps`, if set, for this instance. */
+export interface OccasionRsvpInfo {
+  /** Overrides `EventInfo.allows_rsvps`, if set, for this Occasion. */
   allowsRsvps?:
     | boolean
     | undefined;
-  /** Overrides `EventInfo.allows_anonymous_rsvps`, if set, for this instance. */
+  /** Overrides `EventInfo.allows_anonymous_rsvps`, if set, for this Occasion. */
   allowsAnonymousRsvps?:
     | boolean
     | undefined;
-  /** Overrides `EventInfo.max_attendees`, if set, for this instance. Not yet supported. */
+  /** Overrides `EventInfo.max_attendees`, if set, for this Occasion. Not yet supported. */
   maxAttendees?:
     | number
     | undefined;
@@ -459,7 +459,7 @@ export interface EventInstanceRsvpInfo {
 /** Request to get RSVP data for an event. */
 export interface GetEventAttendancesRequest {
   /** The ID of the event to get RSVP data for. */
-  eventInstanceId: string;
+  occasionId: string;
   /**
    * If set, and if the token has an RSVP for this even, request that RSVP data
    * in addition to the rest of the RSVP data. (The event creator can always
@@ -477,16 +477,16 @@ export interface EventAttendances {
 }
 
 /**
- * Could be called an "RSVP." Describes the attendance of a user at an [`EventInstance`](#rellm-EventInstance). Such as:
- * * A user's RSVP to an [`EventInstance`](#rellm-EventInstance) (one of `INTERESTED`, `GOING`, `NOT_GOING`, or , `REQUESTED` (i.e. invited)).
- * * Invitation status of a user to an [`EventInstance`](#rellm-EventInstance).
- * * [`ContactMethod`](#rellm-ContactMethod)-driven management for anonymous RSVPs to an [`EventInstance`](#rellm-EventInstance).
+ * Could be called an "RSVP." Describes the attendance of a user at an [`Occasion`](#rellm-Occasion). Such as:
+ * * A user's RSVP to an [`Occasion`](#rellm-Occasion) (one of `INTERESTED`, `GOING`, `NOT_GOING`, or , `REQUESTED` (i.e. invited)).
+ * * Invitation status of a user to an [`Occasion`](#rellm-Occasion).
+ * * [`ContactMethod`](#rellm-ContactMethod)-driven management for anonymous RSVPs to an [`Occasion`](#rellm-Occasion).
  */
 export interface EventAttendance {
   /** Unique server-generated ID for the attendance. */
   id: string;
-  /** ID of the [`EventInstance`](#rellm-EventInstance) the attendance is for. */
-  eventInstanceId: string;
+  /** ID of the [`Occasion`](#rellm-Occasion) the attendance is for. */
+  occasionId: string;
   /** If the attendance is non-anonymous, core data about the user. */
   userAttendee?:
     | UserAttendee
@@ -497,7 +497,7 @@ export interface EventAttendance {
     | undefined;
   /** Number of guests including the RSVPing user. (Minimum 1). */
   numberOfGuests: number;
-  /** The user's RSVP to an [`EventInstance`](#rellm-EventInstance) (one of `INTERESTED`, `REQUESTED` (i.e. invited), `GOING`, `NOT_GOING`) */
+  /** The user's RSVP to an [`Occasion`](#rellm-Occasion) (one of `INTERESTED`, `REQUESTED` (i.e. invited), `GOING`, `NOT_GOING`) */
   status: AttendanceStatus;
   /** User who invited the attendee. (Not yet used.) */
   invitingUserId?:
@@ -507,7 +507,7 @@ export interface EventAttendance {
   privateNote: string;
   /** Private note for the event owner. */
   publicNote: string;
-  /** Moderation status for the attendance. Moderated by the [`Event`](#rellm-Event) owner (or [`EventInstance`](#rellm-EventInstance) owner if applicable). */
+  /** Moderation status for the attendance. Moderated by the [`Event`](#rellm-Event) owner (or [`Occasion`](#rellm-Occasion) owner if applicable). */
   moderation: Moderation;
   /** The time the attendance was created. */
   createdAt:
@@ -518,7 +518,7 @@ export interface EventAttendance {
 }
 
 /**
- * An anonymous internet user who has RSVP'd to an [`EventInstance`](#rellm-EventInstance).
+ * An anonymous internet user who has RSVP'd to an [`Occasion`](#rellm-Occasion).
  *
  * (TODO:) The visibility on `AnonymousAttendee` [`ContactMethod`](#rellm-ContactMethod)s should support the `LIMITED` visibility, which will
  * make them visible to the event creator.
@@ -531,7 +531,7 @@ export interface AnonymousAttendee {
   /**
    * Used to allow anonymous users to RSVP to an event. Generated by the server
    * when an event attendance is upserted for the first time. Subsequent attendance
-   * upserts, with the same event_instance_id and anonymous_attendee.auth_token,
+   * upserts, with the same occasion_id and anonymous_attendee.auth_token,
    * will update existing anonymous attendance records. Invalid auth tokens used during upserts will always create a new [`EventAttendance`](#rellm-EventAttendance).
    */
   authToken?: string | undefined;
@@ -561,7 +561,7 @@ function createBaseGetEventsRequest(): GetEventsRequest {
     postId: undefined,
     listingType: 0,
     searchText: undefined,
-    eventInstancePostIds: [],
+    occasionPostIds: [],
     anonymousAttendeeAuthToken: undefined,
   };
 }
@@ -594,7 +594,7 @@ export const GetEventsRequest: MessageFns<GetEventsRequest> = {
     if (message.searchText !== undefined) {
       writer.uint32(90).string(message.searchText);
     }
-    for (const v of message.eventInstancePostIds) {
+    for (const v of message.occasionPostIds) {
       writer.uint32(98).string(v!);
     }
     if (message.anonymousAttendeeAuthToken !== undefined) {
@@ -689,7 +689,7 @@ export const GetEventsRequest: MessageFns<GetEventsRequest> = {
             break;
           }
 
-          message.eventInstancePostIds.push(reader.string());
+          message.occasionPostIds.push(reader.string());
           continue;
         }
         case 13: {
@@ -721,8 +721,8 @@ export const GetEventsRequest: MessageFns<GetEventsRequest> = {
       postId: isSet(object.postId) ? globalThis.String(object.postId) : undefined,
       listingType: isSet(object.listingType) ? eventListingTypeFromJSON(object.listingType) : 0,
       searchText: isSet(object.searchText) ? globalThis.String(object.searchText) : undefined,
-      eventInstancePostIds: globalThis.Array.isArray(object?.eventInstancePostIds)
-        ? object.eventInstancePostIds.map((e: any) => globalThis.String(e))
+      occasionPostIds: globalThis.Array.isArray(object?.occasionPostIds)
+        ? object.occasionPostIds.map((e: any) => globalThis.String(e))
         : [],
       anonymousAttendeeAuthToken: isSet(object.anonymousAttendeeAuthToken)
         ? globalThis.String(object.anonymousAttendeeAuthToken)
@@ -756,8 +756,8 @@ export const GetEventsRequest: MessageFns<GetEventsRequest> = {
     if (message.searchText !== undefined) {
       obj.searchText = message.searchText;
     }
-    if (message.eventInstancePostIds?.length) {
-      obj.eventInstancePostIds = message.eventInstancePostIds;
+    if (message.occasionPostIds?.length) {
+      obj.occasionPostIds = message.occasionPostIds;
     }
     if (message.anonymousAttendeeAuthToken !== undefined) {
       obj.anonymousAttendeeAuthToken = message.anonymousAttendeeAuthToken;
@@ -780,7 +780,7 @@ export const GetEventsRequest: MessageFns<GetEventsRequest> = {
     message.postId = object.postId ?? undefined;
     message.listingType = object.listingType ?? 0;
     message.searchText = object.searchText ?? undefined;
-    message.eventInstancePostIds = object.eventInstancePostIds?.map((e) => e) || [];
+    message.occasionPostIds = object.occasionPostIds?.map((e) => e) || [];
     message.anonymousAttendeeAuthToken = object.anonymousAttendeeAuthToken ?? undefined;
     return message;
   },
@@ -953,7 +953,7 @@ export const GetEventsResponse: MessageFns<GetEventsResponse> = {
 };
 
 function createBaseEvent(): Event {
-  return { post: undefined, info: undefined, instances: [] };
+  return { post: undefined, info: undefined, occasions: [] };
 }
 
 export const Event: MessageFns<Event> = {
@@ -964,8 +964,8 @@ export const Event: MessageFns<Event> = {
     if (message.info !== undefined) {
       EventInfo.encode(message.info, writer.uint32(26).fork()).join();
     }
-    for (const v of message.instances) {
-      EventInstance.encode(v!, writer.uint32(34).fork()).join();
+    for (const v of message.occasions) {
+      Occasion.encode(v!, writer.uint32(34).fork()).join();
     }
     return writer;
   },
@@ -998,7 +998,7 @@ export const Event: MessageFns<Event> = {
             break;
           }
 
-          message.instances.push(EventInstance.decode(reader, reader.uint32()));
+          message.occasions.push(Occasion.decode(reader, reader.uint32()));
           continue;
         }
       }
@@ -1014,8 +1014,8 @@ export const Event: MessageFns<Event> = {
     return {
       post: isSet(object.post) ? Post.fromJSON(object.post) : undefined,
       info: isSet(object.info) ? EventInfo.fromJSON(object.info) : undefined,
-      instances: globalThis.Array.isArray(object?.instances)
-        ? object.instances.map((e: any) => EventInstance.fromJSON(e))
+      occasions: globalThis.Array.isArray(object?.occasions)
+        ? object.occasions.map((e: any) => Occasion.fromJSON(e))
         : [],
     };
   },
@@ -1028,8 +1028,8 @@ export const Event: MessageFns<Event> = {
     if (message.info !== undefined) {
       obj.info = EventInfo.toJSON(message.info);
     }
-    if (message.instances?.length) {
-      obj.instances = message.instances.map((e) => EventInstance.toJSON(e));
+    if (message.occasions?.length) {
+      obj.occasions = message.occasions.map((e) => Occasion.toJSON(e));
     }
     return obj;
   },
@@ -1041,19 +1041,19 @@ export const Event: MessageFns<Event> = {
     const message = createBaseEvent();
     message.post = (object.post !== undefined && object.post !== null) ? Post.fromPartial(object.post) : undefined;
     message.info = (object.info !== undefined && object.info !== null) ? EventInfo.fromPartial(object.info) : undefined;
-    message.instances = object.instances?.map((e) => EventInstance.fromPartial(e)) || [];
+    message.occasions = object.occasions?.map((e) => Occasion.fromPartial(e)) || [];
     return message;
   },
 };
 
-function createBaseSyncEventInstanceRequest(): SyncEventInstanceRequest {
-  return { eventInstanceId: "", syncDestinationId: "" };
+function createBaseSyncOccasionRequest(): SyncOccasionRequest {
+  return { occasionId: "", syncDestinationId: "" };
 }
 
-export const SyncEventInstanceRequest: MessageFns<SyncEventInstanceRequest> = {
-  encode(message: SyncEventInstanceRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.eventInstanceId !== "") {
-      writer.uint32(10).string(message.eventInstanceId);
+export const SyncOccasionRequest: MessageFns<SyncOccasionRequest> = {
+  encode(message: SyncOccasionRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.occasionId !== "") {
+      writer.uint32(10).string(message.occasionId);
     }
     if (message.syncDestinationId !== "") {
       writer.uint32(18).string(message.syncDestinationId);
@@ -1061,10 +1061,10 @@ export const SyncEventInstanceRequest: MessageFns<SyncEventInstanceRequest> = {
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): SyncEventInstanceRequest {
+  decode(input: BinaryReader | Uint8Array, length?: number): SyncOccasionRequest {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseSyncEventInstanceRequest();
+    const message = createBaseSyncOccasionRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -1073,7 +1073,7 @@ export const SyncEventInstanceRequest: MessageFns<SyncEventInstanceRequest> = {
             break;
           }
 
-          message.eventInstanceId = reader.string();
+          message.occasionId = reader.string();
           continue;
         }
         case 2: {
@@ -1093,17 +1093,17 @@ export const SyncEventInstanceRequest: MessageFns<SyncEventInstanceRequest> = {
     return message;
   },
 
-  fromJSON(object: any): SyncEventInstanceRequest {
+  fromJSON(object: any): SyncOccasionRequest {
     return {
-      eventInstanceId: isSet(object.eventInstanceId) ? globalThis.String(object.eventInstanceId) : "",
+      occasionId: isSet(object.occasionId) ? globalThis.String(object.occasionId) : "",
       syncDestinationId: isSet(object.syncDestinationId) ? globalThis.String(object.syncDestinationId) : "",
     };
   },
 
-  toJSON(message: SyncEventInstanceRequest): unknown {
+  toJSON(message: SyncOccasionRequest): unknown {
     const obj: any = {};
-    if (message.eventInstanceId !== "") {
-      obj.eventInstanceId = message.eventInstanceId;
+    if (message.occasionId !== "") {
+      obj.occasionId = message.occasionId;
     }
     if (message.syncDestinationId !== "") {
       obj.syncDestinationId = message.syncDestinationId;
@@ -1111,25 +1111,25 @@ export const SyncEventInstanceRequest: MessageFns<SyncEventInstanceRequest> = {
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<SyncEventInstanceRequest>, I>>(base?: I): SyncEventInstanceRequest {
-    return SyncEventInstanceRequest.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<SyncOccasionRequest>, I>>(base?: I): SyncOccasionRequest {
+    return SyncOccasionRequest.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<SyncEventInstanceRequest>, I>>(object: I): SyncEventInstanceRequest {
-    const message = createBaseSyncEventInstanceRequest();
-    message.eventInstanceId = object.eventInstanceId ?? "";
+  fromPartial<I extends Exact<DeepPartial<SyncOccasionRequest>, I>>(object: I): SyncOccasionRequest {
+    const message = createBaseSyncOccasionRequest();
+    message.occasionId = object.occasionId ?? "";
     message.syncDestinationId = object.syncDestinationId ?? "";
     return message;
   },
 };
 
-function createBaseDeleteEventInstanceSyncDestinationRequest(): DeleteEventInstanceSyncDestinationRequest {
-  return { eventInstanceId: "", syncDestinationId: "" };
+function createBaseDeleteOccasionSyncDestinationRequest(): DeleteOccasionSyncDestinationRequest {
+  return { occasionId: "", syncDestinationId: "" };
 }
 
-export const DeleteEventInstanceSyncDestinationRequest: MessageFns<DeleteEventInstanceSyncDestinationRequest> = {
-  encode(message: DeleteEventInstanceSyncDestinationRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.eventInstanceId !== "") {
-      writer.uint32(10).string(message.eventInstanceId);
+export const DeleteOccasionSyncDestinationRequest: MessageFns<DeleteOccasionSyncDestinationRequest> = {
+  encode(message: DeleteOccasionSyncDestinationRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.occasionId !== "") {
+      writer.uint32(10).string(message.occasionId);
     }
     if (message.syncDestinationId !== "") {
       writer.uint32(18).string(message.syncDestinationId);
@@ -1137,10 +1137,10 @@ export const DeleteEventInstanceSyncDestinationRequest: MessageFns<DeleteEventIn
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): DeleteEventInstanceSyncDestinationRequest {
+  decode(input: BinaryReader | Uint8Array, length?: number): DeleteOccasionSyncDestinationRequest {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseDeleteEventInstanceSyncDestinationRequest();
+    const message = createBaseDeleteOccasionSyncDestinationRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -1149,7 +1149,7 @@ export const DeleteEventInstanceSyncDestinationRequest: MessageFns<DeleteEventIn
             break;
           }
 
-          message.eventInstanceId = reader.string();
+          message.occasionId = reader.string();
           continue;
         }
         case 2: {
@@ -1169,17 +1169,17 @@ export const DeleteEventInstanceSyncDestinationRequest: MessageFns<DeleteEventIn
     return message;
   },
 
-  fromJSON(object: any): DeleteEventInstanceSyncDestinationRequest {
+  fromJSON(object: any): DeleteOccasionSyncDestinationRequest {
     return {
-      eventInstanceId: isSet(object.eventInstanceId) ? globalThis.String(object.eventInstanceId) : "",
+      occasionId: isSet(object.occasionId) ? globalThis.String(object.occasionId) : "",
       syncDestinationId: isSet(object.syncDestinationId) ? globalThis.String(object.syncDestinationId) : "",
     };
   },
 
-  toJSON(message: DeleteEventInstanceSyncDestinationRequest): unknown {
+  toJSON(message: DeleteOccasionSyncDestinationRequest): unknown {
     const obj: any = {};
-    if (message.eventInstanceId !== "") {
-      obj.eventInstanceId = message.eventInstanceId;
+    if (message.occasionId !== "") {
+      obj.occasionId = message.occasionId;
     }
     if (message.syncDestinationId !== "") {
       obj.syncDestinationId = message.syncDestinationId;
@@ -1187,16 +1187,16 @@ export const DeleteEventInstanceSyncDestinationRequest: MessageFns<DeleteEventIn
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<DeleteEventInstanceSyncDestinationRequest>, I>>(
+  create<I extends Exact<DeepPartial<DeleteOccasionSyncDestinationRequest>, I>>(
     base?: I,
-  ): DeleteEventInstanceSyncDestinationRequest {
-    return DeleteEventInstanceSyncDestinationRequest.fromPartial(base ?? ({} as any));
+  ): DeleteOccasionSyncDestinationRequest {
+    return DeleteOccasionSyncDestinationRequest.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<DeleteEventInstanceSyncDestinationRequest>, I>>(
+  fromPartial<I extends Exact<DeepPartial<DeleteOccasionSyncDestinationRequest>, I>>(
     object: I,
-  ): DeleteEventInstanceSyncDestinationRequest {
-    const message = createBaseDeleteEventInstanceSyncDestinationRequest();
-    message.eventInstanceId = object.eventInstanceId ?? "";
+  ): DeleteOccasionSyncDestinationRequest {
+    const message = createBaseDeleteOccasionSyncDestinationRequest();
+    message.occasionId = object.occasionId ?? "";
     message.syncDestinationId = object.syncDestinationId ?? "";
     return message;
   },
@@ -1338,7 +1338,7 @@ export const EventInfo: MessageFns<EventInfo> = {
   },
 };
 
-function createBaseEventInstance(): EventInstance {
+function createBaseOccasion(): Occasion {
   return {
     eventId: "",
     post: undefined,
@@ -1354,8 +1354,8 @@ function createBaseEventInstance(): EventInstance {
   };
 }
 
-export const EventInstance: MessageFns<EventInstance> = {
-  encode(message: EventInstance, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const Occasion: MessageFns<Occasion> = {
+  encode(message: Occasion, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.eventId !== "") {
       writer.uint32(18).string(message.eventId);
     }
@@ -1363,7 +1363,7 @@ export const EventInstance: MessageFns<EventInstance> = {
       Post.encode(message.post, writer.uint32(26).fork()).join();
     }
     if (message.info !== undefined) {
-      EventInstanceInfo.encode(message.info, writer.uint32(34).fork()).join();
+      OccasionInfo.encode(message.info, writer.uint32(34).fork()).join();
     }
     if (message.startsAt !== undefined) {
       Timestamp.encode(toTimestamp(message.startsAt), writer.uint32(42).fork()).join();
@@ -1392,10 +1392,10 @@ export const EventInstance: MessageFns<EventInstance> = {
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): EventInstance {
+  decode(input: BinaryReader | Uint8Array, length?: number): Occasion {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseEventInstance();
+    const message = createBaseOccasion();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -1420,7 +1420,7 @@ export const EventInstance: MessageFns<EventInstance> = {
             break;
           }
 
-          message.info = EventInstanceInfo.decode(reader, reader.uint32());
+          message.info = OccasionInfo.decode(reader, reader.uint32());
           continue;
         }
         case 5: {
@@ -1496,11 +1496,11 @@ export const EventInstance: MessageFns<EventInstance> = {
     return message;
   },
 
-  fromJSON(object: any): EventInstance {
+  fromJSON(object: any): Occasion {
     return {
       eventId: isSet(object.eventId) ? globalThis.String(object.eventId) : "",
       post: isSet(object.post) ? Post.fromJSON(object.post) : undefined,
-      info: isSet(object.info) ? EventInstanceInfo.fromJSON(object.info) : undefined,
+      info: isSet(object.info) ? OccasionInfo.fromJSON(object.info) : undefined,
       startsAt: isSet(object.startsAt) ? globalThis.String(object.startsAt) : undefined,
       endsAt: isSet(object.endsAt) ? globalThis.String(object.endsAt) : undefined,
       location: isSet(object.location) ? Location.fromJSON(object.location) : undefined,
@@ -1516,7 +1516,7 @@ export const EventInstance: MessageFns<EventInstance> = {
     };
   },
 
-  toJSON(message: EventInstance): unknown {
+  toJSON(message: Occasion): unknown {
     const obj: any = {};
     if (message.eventId !== "") {
       obj.eventId = message.eventId;
@@ -1525,7 +1525,7 @@ export const EventInstance: MessageFns<EventInstance> = {
       obj.post = Post.toJSON(message.post);
     }
     if (message.info !== undefined) {
-      obj.info = EventInstanceInfo.toJSON(message.info);
+      obj.info = OccasionInfo.toJSON(message.info);
     }
     if (message.startsAt !== undefined) {
       obj.startsAt = message.startsAt;
@@ -1554,15 +1554,15 @@ export const EventInstance: MessageFns<EventInstance> = {
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<EventInstance>, I>>(base?: I): EventInstance {
-    return EventInstance.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<Occasion>, I>>(base?: I): Occasion {
+    return Occasion.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<EventInstance>, I>>(object: I): EventInstance {
-    const message = createBaseEventInstance();
+  fromPartial<I extends Exact<DeepPartial<Occasion>, I>>(object: I): Occasion {
+    const message = createBaseOccasion();
     message.eventId = object.eventId ?? "";
     message.post = (object.post !== undefined && object.post !== null) ? Post.fromPartial(object.post) : undefined;
     message.info = (object.info !== undefined && object.info !== null)
-      ? EventInstanceInfo.fromPartial(object.info)
+      ? OccasionInfo.fromPartial(object.info)
       : undefined;
     message.startsAt = object.startsAt ?? undefined;
     message.endsAt = object.endsAt ?? undefined;
@@ -1583,22 +1583,22 @@ export const EventInstance: MessageFns<EventInstance> = {
   },
 };
 
-function createBaseEventInstanceInfo(): EventInstanceInfo {
+function createBaseOccasionInfo(): OccasionInfo {
   return { rsvpInfo: undefined };
 }
 
-export const EventInstanceInfo: MessageFns<EventInstanceInfo> = {
-  encode(message: EventInstanceInfo, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const OccasionInfo: MessageFns<OccasionInfo> = {
+  encode(message: OccasionInfo, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.rsvpInfo !== undefined) {
-      EventInstanceRsvpInfo.encode(message.rsvpInfo, writer.uint32(10).fork()).join();
+      OccasionRsvpInfo.encode(message.rsvpInfo, writer.uint32(10).fork()).join();
     }
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): EventInstanceInfo {
+  decode(input: BinaryReader | Uint8Array, length?: number): OccasionInfo {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseEventInstanceInfo();
+    const message = createBaseOccasionInfo();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -1607,7 +1607,7 @@ export const EventInstanceInfo: MessageFns<EventInstanceInfo> = {
             break;
           }
 
-          message.rsvpInfo = EventInstanceRsvpInfo.decode(reader, reader.uint32());
+          message.rsvpInfo = OccasionRsvpInfo.decode(reader, reader.uint32());
           continue;
         }
       }
@@ -1619,31 +1619,31 @@ export const EventInstanceInfo: MessageFns<EventInstanceInfo> = {
     return message;
   },
 
-  fromJSON(object: any): EventInstanceInfo {
-    return { rsvpInfo: isSet(object.rsvpInfo) ? EventInstanceRsvpInfo.fromJSON(object.rsvpInfo) : undefined };
+  fromJSON(object: any): OccasionInfo {
+    return { rsvpInfo: isSet(object.rsvpInfo) ? OccasionRsvpInfo.fromJSON(object.rsvpInfo) : undefined };
   },
 
-  toJSON(message: EventInstanceInfo): unknown {
+  toJSON(message: OccasionInfo): unknown {
     const obj: any = {};
     if (message.rsvpInfo !== undefined) {
-      obj.rsvpInfo = EventInstanceRsvpInfo.toJSON(message.rsvpInfo);
+      obj.rsvpInfo = OccasionRsvpInfo.toJSON(message.rsvpInfo);
     }
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<EventInstanceInfo>, I>>(base?: I): EventInstanceInfo {
-    return EventInstanceInfo.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<OccasionInfo>, I>>(base?: I): OccasionInfo {
+    return OccasionInfo.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<EventInstanceInfo>, I>>(object: I): EventInstanceInfo {
-    const message = createBaseEventInstanceInfo();
+  fromPartial<I extends Exact<DeepPartial<OccasionInfo>, I>>(object: I): OccasionInfo {
+    const message = createBaseOccasionInfo();
     message.rsvpInfo = (object.rsvpInfo !== undefined && object.rsvpInfo !== null)
-      ? EventInstanceRsvpInfo.fromPartial(object.rsvpInfo)
+      ? OccasionRsvpInfo.fromPartial(object.rsvpInfo)
       : undefined;
     return message;
   },
 };
 
-function createBaseEventInstanceRsvpInfo(): EventInstanceRsvpInfo {
+function createBaseOccasionRsvpInfo(): OccasionRsvpInfo {
   return {
     allowsRsvps: undefined,
     allowsAnonymousRsvps: undefined,
@@ -1657,8 +1657,8 @@ function createBaseEventInstanceRsvpInfo(): EventInstanceRsvpInfo {
   };
 }
 
-export const EventInstanceRsvpInfo: MessageFns<EventInstanceRsvpInfo> = {
-  encode(message: EventInstanceRsvpInfo, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const OccasionRsvpInfo: MessageFns<OccasionRsvpInfo> = {
+  encode(message: OccasionRsvpInfo, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.allowsRsvps !== undefined) {
       writer.uint32(8).bool(message.allowsRsvps);
     }
@@ -1689,10 +1689,10 @@ export const EventInstanceRsvpInfo: MessageFns<EventInstanceRsvpInfo> = {
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): EventInstanceRsvpInfo {
+  decode(input: BinaryReader | Uint8Array, length?: number): OccasionRsvpInfo {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseEventInstanceRsvpInfo();
+    const message = createBaseOccasionRsvpInfo();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -1777,7 +1777,7 @@ export const EventInstanceRsvpInfo: MessageFns<EventInstanceRsvpInfo> = {
     return message;
   },
 
-  fromJSON(object: any): EventInstanceRsvpInfo {
+  fromJSON(object: any): OccasionRsvpInfo {
     return {
       allowsRsvps: isSet(object.allowsRsvps) ? globalThis.Boolean(object.allowsRsvps) : undefined,
       allowsAnonymousRsvps: isSet(object.allowsAnonymousRsvps)
@@ -1795,7 +1795,7 @@ export const EventInstanceRsvpInfo: MessageFns<EventInstanceRsvpInfo> = {
     };
   },
 
-  toJSON(message: EventInstanceRsvpInfo): unknown {
+  toJSON(message: OccasionRsvpInfo): unknown {
     const obj: any = {};
     if (message.allowsRsvps !== undefined) {
       obj.allowsRsvps = message.allowsRsvps;
@@ -1827,11 +1827,11 @@ export const EventInstanceRsvpInfo: MessageFns<EventInstanceRsvpInfo> = {
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<EventInstanceRsvpInfo>, I>>(base?: I): EventInstanceRsvpInfo {
-    return EventInstanceRsvpInfo.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<OccasionRsvpInfo>, I>>(base?: I): OccasionRsvpInfo {
+    return OccasionRsvpInfo.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<EventInstanceRsvpInfo>, I>>(object: I): EventInstanceRsvpInfo {
-    const message = createBaseEventInstanceRsvpInfo();
+  fromPartial<I extends Exact<DeepPartial<OccasionRsvpInfo>, I>>(object: I): OccasionRsvpInfo {
+    const message = createBaseOccasionRsvpInfo();
     message.allowsRsvps = object.allowsRsvps ?? undefined;
     message.allowsAnonymousRsvps = object.allowsAnonymousRsvps ?? undefined;
     message.maxAttendees = object.maxAttendees ?? undefined;
@@ -1846,13 +1846,13 @@ export const EventInstanceRsvpInfo: MessageFns<EventInstanceRsvpInfo> = {
 };
 
 function createBaseGetEventAttendancesRequest(): GetEventAttendancesRequest {
-  return { eventInstanceId: "", anonymousAttendeeAuthToken: undefined };
+  return { occasionId: "", anonymousAttendeeAuthToken: undefined };
 }
 
 export const GetEventAttendancesRequest: MessageFns<GetEventAttendancesRequest> = {
   encode(message: GetEventAttendancesRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.eventInstanceId !== "") {
-      writer.uint32(10).string(message.eventInstanceId);
+    if (message.occasionId !== "") {
+      writer.uint32(10).string(message.occasionId);
     }
     if (message.anonymousAttendeeAuthToken !== undefined) {
       writer.uint32(18).string(message.anonymousAttendeeAuthToken);
@@ -1872,7 +1872,7 @@ export const GetEventAttendancesRequest: MessageFns<GetEventAttendancesRequest> 
             break;
           }
 
-          message.eventInstanceId = reader.string();
+          message.occasionId = reader.string();
           continue;
         }
         case 2: {
@@ -1894,7 +1894,7 @@ export const GetEventAttendancesRequest: MessageFns<GetEventAttendancesRequest> 
 
   fromJSON(object: any): GetEventAttendancesRequest {
     return {
-      eventInstanceId: isSet(object.eventInstanceId) ? globalThis.String(object.eventInstanceId) : "",
+      occasionId: isSet(object.occasionId) ? globalThis.String(object.occasionId) : "",
       anonymousAttendeeAuthToken: isSet(object.anonymousAttendeeAuthToken)
         ? globalThis.String(object.anonymousAttendeeAuthToken)
         : undefined,
@@ -1903,8 +1903,8 @@ export const GetEventAttendancesRequest: MessageFns<GetEventAttendancesRequest> 
 
   toJSON(message: GetEventAttendancesRequest): unknown {
     const obj: any = {};
-    if (message.eventInstanceId !== "") {
-      obj.eventInstanceId = message.eventInstanceId;
+    if (message.occasionId !== "") {
+      obj.occasionId = message.occasionId;
     }
     if (message.anonymousAttendeeAuthToken !== undefined) {
       obj.anonymousAttendeeAuthToken = message.anonymousAttendeeAuthToken;
@@ -1917,7 +1917,7 @@ export const GetEventAttendancesRequest: MessageFns<GetEventAttendancesRequest> 
   },
   fromPartial<I extends Exact<DeepPartial<GetEventAttendancesRequest>, I>>(object: I): GetEventAttendancesRequest {
     const message = createBaseGetEventAttendancesRequest();
-    message.eventInstanceId = object.eventInstanceId ?? "";
+    message.occasionId = object.occasionId ?? "";
     message.anonymousAttendeeAuthToken = object.anonymousAttendeeAuthToken ?? undefined;
     return message;
   },
@@ -2006,7 +2006,7 @@ export const EventAttendances: MessageFns<EventAttendances> = {
 function createBaseEventAttendance(): EventAttendance {
   return {
     id: "",
-    eventInstanceId: "",
+    occasionId: "",
     userAttendee: undefined,
     anonymousAttendee: undefined,
     numberOfGuests: 0,
@@ -2025,8 +2025,8 @@ export const EventAttendance: MessageFns<EventAttendance> = {
     if (message.id !== "") {
       writer.uint32(10).string(message.id);
     }
-    if (message.eventInstanceId !== "") {
-      writer.uint32(18).string(message.eventInstanceId);
+    if (message.occasionId !== "") {
+      writer.uint32(18).string(message.occasionId);
     }
     if (message.userAttendee !== undefined) {
       UserAttendee.encode(message.userAttendee, writer.uint32(26).fork()).join();
@@ -2081,7 +2081,7 @@ export const EventAttendance: MessageFns<EventAttendance> = {
             break;
           }
 
-          message.eventInstanceId = reader.string();
+          message.occasionId = reader.string();
           continue;
         }
         case 3: {
@@ -2176,7 +2176,7 @@ export const EventAttendance: MessageFns<EventAttendance> = {
   fromJSON(object: any): EventAttendance {
     return {
       id: isSet(object.id) ? globalThis.String(object.id) : "",
-      eventInstanceId: isSet(object.eventInstanceId) ? globalThis.String(object.eventInstanceId) : "",
+      occasionId: isSet(object.occasionId) ? globalThis.String(object.occasionId) : "",
       userAttendee: isSet(object.userAttendee) ? UserAttendee.fromJSON(object.userAttendee) : undefined,
       anonymousAttendee: isSet(object.anonymousAttendee)
         ? AnonymousAttendee.fromJSON(object.anonymousAttendee)
@@ -2197,8 +2197,8 @@ export const EventAttendance: MessageFns<EventAttendance> = {
     if (message.id !== "") {
       obj.id = message.id;
     }
-    if (message.eventInstanceId !== "") {
-      obj.eventInstanceId = message.eventInstanceId;
+    if (message.occasionId !== "") {
+      obj.occasionId = message.occasionId;
     }
     if (message.userAttendee !== undefined) {
       obj.userAttendee = UserAttendee.toJSON(message.userAttendee);
@@ -2239,7 +2239,7 @@ export const EventAttendance: MessageFns<EventAttendance> = {
   fromPartial<I extends Exact<DeepPartial<EventAttendance>, I>>(object: I): EventAttendance {
     const message = createBaseEventAttendance();
     message.id = object.id ?? "";
-    message.eventInstanceId = object.eventInstanceId ?? "";
+    message.occasionId = object.occasionId ?? "";
     message.userAttendee = (object.userAttendee !== undefined && object.userAttendee !== null)
       ? UserAttendee.fromPartial(object.userAttendee)
       : undefined;

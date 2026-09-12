@@ -23,7 +23,7 @@ pub fn delete_sync_source(
         validate_permission(&Some(current_user), Permission::Admin)?;
     }
 
-    // Every kind of synced Post -- an Event's own Post, an EventInstance's own Post, or (once
+    // Every kind of synced Post -- an Event's own Post, an Occasion's own Post, or (once
     // RSS/Atom SyncSources exist) a plain synced Post -- carries `sync_source_id` directly now
     // (see migration 2026-09-11-000000_move_sync_source_to_posts), so this single
     // delete/detach on `posts` handles all of them uniformly instead of needing a separate pass

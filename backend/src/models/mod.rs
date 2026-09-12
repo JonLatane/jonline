@@ -31,5 +31,5 @@ pub use push_subscription_models::*;
 mod federation_models;
 pub use federation_models::*;
 
-mod ai_model_provider_models;
-pub use ai_model_provider_models::*;
+mod ai_provider_models;
+pub use ai_provider_models::*;

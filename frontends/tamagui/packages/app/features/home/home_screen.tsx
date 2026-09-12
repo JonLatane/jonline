@@ -89,7 +89,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
   const { eventPagesOnHome } = useLocalConfiguration();
   const allEvents = useMemo(() => bigCalendar
     ? eventResults
-    : eventResults.filter(e => moment(e.instances[0]?.endsAt).isAfter(pageLoadTime)),
+    : eventResults.filter(e => moment(e.occasions[0]?.endsAt).isAfter(pageLoadTime)),
     [bigCalendar, eventResults, pageLoadTime]);
   const eventPagination = usePaginatedRendering(allEvents, 7, {
     pageParamHook: useEventPageParam,
@@ -221,8 +221,8 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
                         //                        </div>
                         : undefined}
                       {paginatedEvents.map((event) =>
-                        //<div key={`event-preview-${federatedId(event)}-${event.instances[0]!.id}`}>
-                        <XStack key={`event-preview-${federatedId(event)}-${event.instances[0]!.id}`} mx='$1' px='$1' pb='$5'>
+                        //<div key={`event-preview-${federatedId(event)}-${event.occasions[0]!.id}`}>
+                        <XStack key={`event-preview-${federatedId(event)}-${event.occasions[0]!.id}`} mx='$1' px='$1' pb='$5'>
                           <EventCard event={event} isPreview horizontal xs />
                         </XStack>
                         //                        </div>

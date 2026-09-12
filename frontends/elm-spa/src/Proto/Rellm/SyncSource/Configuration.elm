@@ -19,7 +19,7 @@ To run it, add a dependency via `elm install` on [`elm-protocol-buffers`](https:
 
 ### IcsSubscriptionUrl
 
- The iCal subscription URL for the calendar sync. Creates/updates Events/EventInstances.
+ The iCal subscription URL for the calendar sync. Creates/updates Events/Occasions.
 
 
 ### RssSubscriptionUrl

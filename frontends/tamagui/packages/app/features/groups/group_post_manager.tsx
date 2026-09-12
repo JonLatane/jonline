@@ -197,25 +197,25 @@ export const GroupPostChrome: React.FC<GroupPostChromeProps> = ({ group, groupPo
 
   const detailsEventId = useAppSelector(state => state.events.postEvents[federatedId(post)]);
 
-  const detailsEventInstanceId = useAppSelector(state =>
+  const detailsOccasionId = useAppSelector(state =>
     detailsEventId
-      ? state.events.entities[detailsEventId]?.instances.filter(
+      ? state.events.entities[detailsEventId]?.occasions.filter(
         i => moment(i.endsAt).isAfter(moment())
       )[0]?.id
       : undefined);
   // useAppSelector(state => {
-  //   const instanceId = state.events.postInstances[federatedId(post)];
-  //   post.context === PostContext.EVENT_INSTANCE && instanceId
+  //   const occasionId = state.events.postOccasions[federatedId(post)];
+  //   post.context === PostContext.OCCASION && occasionId
   //     ? !isPrimaryServer
-  //       ? instanceId
-  //       : parseFederatedId(instanceId)?.id
+  //       ? occasionId
+  //       : parseFederatedId(occasionId)?.id
   //     : undefined
   // });
 
-  // console.log('GroupPostChrome post.context', post.context, 'detailsEventInstanceId', detailsEventInstanceId)
+  // console.log('GroupPostChrome post.context', post.context, 'detailsOccasionId', detailsOccasionId)
   const viewLink = useLink({
-    href: post.context === PostContext.EVENT && detailsEventInstanceId
-      ? `/g/${detailsGroupShortname}/e/${detailsEventInstanceId}`
+    href: post.context === PostContext.EVENT && detailsOccasionId
+      ? `/g/${detailsGroupShortname}/e/${detailsOccasionId}`
       : `/g/${detailsGroupShortname}/p/${detailsPostId}`
   });
 

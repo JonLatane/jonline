@@ -1,5 +1,5 @@
 //! Pulls items from a `SyncSource`'s RSS or Atom feed and upserts them into plain `posts` --
-//! the flat counterpart to `event_sync`'s Event/EventInstance handling. `feed-rs` parses both
+//! the flat counterpart to `event_sync`'s Event/Occasion handling. `feed-rs` parses both
 //! formats (plus JSON Feed) into one unified `model::Feed`/`model::Entry` shape, so unlike
 //! `event_sync` there's no format-specific branching here at all: whichever subscription URL is
 //! configured, the fetched text goes through the same parse-and-upsert path.

@@ -370,18 +370,18 @@ digraph G {
             <tr><td>+content</td></tr>
             </table>
             >;];
-          event_instances [shape = cylinder;label = <
+          occasions [shape = cylinder;label = <
             <table border="0">
-            <tr><td><b>EventInstances</b></td></tr>
+            <tr><td><b>Occasions</b></td></tr>
             <tr><td>+starts_at</td></tr>
             <tr><td>+ends_at</td></tr>
             </table>
             >;];
-          event_instances -> events [style = dashed; label = "+event_id";];
+          occasions -> events [style = dashed; label = "+event_id";];
         }
 
         events->posts [style = dashed; label = "+post_id";];
-        event_instances->posts [style = dotted; label = <+<i>(optional/unused)</i>&nbsp;post_id>;];
+        occasions->posts [style = dotted; label = <+<i>(optional/unused)</i>&nbsp;post_id>;];
       }
 
 

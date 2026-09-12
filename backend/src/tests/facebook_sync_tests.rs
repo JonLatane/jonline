@@ -9,7 +9,7 @@ use chrono::{TimeZone, Utc};
 use tonic::Code;
 
 use crate::logic::{
-    connect_facebook_page_at, get_linked_instagram_business_account_at, post_event_instance_at,
+    connect_facebook_page_at, get_linked_instagram_business_account_at, post_occasion_at,
     post_post_at, post_to_instagram_at, MediaAttachment, SyncMessage,
 };
 use crate::models;
@@ -79,7 +79,7 @@ fn connect_fails_when_user_manages_no_pages() {
 }
 
 #[test]
-fn post_event_instance_returns_the_new_posts_id_and_url() {
+fn post_occasion_returns_the_new_posts_id_and_url() {
     let base_url = serve_facebook_graph_api(None, "123_456");
     let destination = models::SyncDestination {
         id: 1,
@@ -94,7 +94,7 @@ fn post_event_instance_returns_the_new_posts_id_and_url() {
     let ends_at = Utc.with_ymd_and_hms(2099, 1, 1, 11, 0, 0).unwrap();
     let _ = (starts_at, ends_at); // formatting itself is covered by `sync_message_tests`.
 
-    let (post_id, post_url) = post_event_instance_at(
+    let (post_id, post_url) = post_occasion_at(
         &base_url,
         &destination,
         &message("Test Event\n\nCome join us!", Some("https://example.com/event/abc")),
@@ -105,7 +105,7 @@ fn post_event_instance_returns_the_new_posts_id_and_url() {
 }
 
 #[test]
-fn post_event_instance_fails_when_destination_is_not_configured() {
+fn post_occasion_fails_when_destination_is_not_configured() {
     let destination = models::SyncDestination {
         id: 1,
         user_id: 1,
@@ -114,7 +114,7 @@ fn post_event_instance_fails_when_destination_is_not_configured() {
         updated_at: None,
     };
 
-    let err = post_event_instance_at("http://127.0.0.1:1", &destination, &message("", None))
+    let err = post_occasion_at("http://127.0.0.1:1", &destination, &message("", None))
         .unwrap_err();
     assert_eq!(err.code(), Code::FailedPrecondition);
     assert_eq!(err.message(), "sync_destination_not_configured");

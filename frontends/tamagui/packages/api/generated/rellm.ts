@@ -7,14 +7,14 @@
 /* eslint-disable */
 import type { CallContext, CallOptions } from "nice-grpc-common";
 import {
-  AIModelProvider,
-  AIModelProviderGrant,
-  DeleteAIModelProviderRequest,
+  AIProvider,
+  AIProviderGrant,
+  DeleteAIProviderRequest,
   GenerateMediaRequest,
-  GetAIModelProvidersResponse,
-  GrantAIModelProviderRequest,
-  RevokeAIModelProviderRequest,
-} from "./ai_model_providers";
+  GetAIProvidersResponse,
+  GrantAIProviderRequest,
+  RevokeAIProviderRequest,
+} from "./ai_providers";
 import {
   AccessTokenRequest,
   AccessTokenResponse,
@@ -24,15 +24,15 @@ import {
   ResetPasswordRequest,
 } from "./authentication";
 import {
-  DeleteEventInstanceSyncDestinationRequest,
+  DeleteOccasionSyncDestinationRequest,
   Event,
   EventAttendance,
   EventAttendances,
-  EventInstance,
   GetEventAttendancesRequest,
   GetEventsRequest,
   GetEventsResponse,
-  SyncEventInstanceRequest,
+  Occasion,
+  SyncOccasionRequest,
 } from "./events";
 import { FederatedAccount, GetServiceVersionResponse } from "./federation";
 import { Empty } from "./google/protobuf/empty";
@@ -164,16 +164,16 @@ export const protobufPackage = "rellm";
  * The use of composition over inheritance also means that Rellm APIs can be *predictably* non-atomic based on their compositional structure.
  * For instance, [`UpdatePost`](#grpc-api-UpdatePost) is fully atomic.
  *
- * [`UpdateEvent`](#grpc-api-UpdateEvent), however, is non-atomic. Given that an [`Event`](#rellm-Event) has a [`Post`](#rellm-Post) and many [`EventInstance`](#rellm-EventInstance)s,
+ * [`UpdateEvent`](#grpc-api-UpdateEvent), however, is non-atomic. Given that an [`Event`](#rellm-Event) has a [`Post`](#rellm-Post) and many [`Occasion`](#rellm-Occasion)s,
  * [`UpdateEvent`](#grpc-api-UpdateEvent) is implemented as a composition of four other RPCs - each independently callable and individually atomic --
  * run in a fixed order: [`UpdateEventDetails`](#grpc-api-UpdateEventDetails) (which itself first updates the [`Event`](#rellm-Event)'s own [`Post`](#rellm-Post)
- * atomically, literally calling the [`UpdatePost`](#grpc-api-UpdatePost) RPC), then [`CreateNewEventInstances`](#grpc-api-CreateNewEventInstances),
- * [`UpdateEventInstances`](#grpc-api-UpdateEventInstances), and finally [`DeleteRemovedEventInstances`](#grpc-api-DeleteRemovedEventInstances).
- * Create must run before Delete so that a request which both drops an old [`EventInstance`](#rellm-EventInstance) and adds a new one never transiently
- * leaves the [`Event`](#rellm-Event) with zero instances.
+ * atomically, literally calling the [`UpdatePost`](#grpc-api-UpdatePost) RPC), then [`CreateNewOccasions`](#grpc-api-CreateNewOccasions),
+ * [`UpdateOccasions`](#grpc-api-UpdateOccasions), and finally [`DeleteRemovedOccasions`](#grpc-api-DeleteRemovedOccasions).
+ * Create must run before Delete so that a request which both drops an old [`Occasion`](#rellm-Occasion) and adds a new one never transiently
+ * leaves the [`Event`](#rellm-Event) with zero Occasions.
  *
  * Because moderation/visibility lives at the [`Post`](#rellm-Post) level, and [`UpdateEventDetails`](#grpc-api-UpdateEventDetails) runs first, this means that a developer error in the
- * later [`EventInstance`](#rellm-EventInstance)-processing steps cannot prevent visibility and moderation changes from being made in Events, even if there are errors elsewhere.
+ * later [`Occasion`](#rellm-Occasion)-processing steps cannot prevent visibility and moderation changes from being made in Events, even if there are errors elsewhere.
  * This should prove a robust pattern for any future entities intended to be shareable at a Group level with visibility and
  * moderation controls (for instance, `Sheet`, `SharedExpenseReport`, `SharedCalendar`, etc.). The entire architecture should promote this
  * approach to predictable atomicity.
@@ -301,13 +301,13 @@ export const protobufPackage = "rellm";
  * [`SyncSource`](#rellm-SyncSource)s - server-owned external origins to sync [`Post`](#rellm-Post)s in from other
  * fediverse and less-open platforms, via a `oneof configuration` naming which source type it is: an iCal
  * subscription URL (`configuration.ics_subscription_url`, syncing in [`Event`](#rellm-Event)s/
- * [`EventInstance`](#rellm-EventInstance)s), or an RSS/Atom subscription URL (`configuration.rss_subscription_url`/
+ * [`Occasion`](#rellm-Occasion)s), or an RSS/Atom subscription URL (`configuration.rss_subscription_url`/
  * `configuration.atom_subscription_url`, syncing in plain [`Post`](#rellm-Post)s). Every kind of synced content is
  * tagged via its own `Post.sync_source` - an [`Event`](#rellm-Event)'s own Post, each of its
- * [`EventInstance`](#rellm-EventInstance)s' own Post, or a plain synced Post - since a single source can back many
+ * [`Occasion`](#rellm-Occasion)s' own Post, or a plain synced Post - since a single source can back many
  * synced Posts but each Post has at most one source it came from; see the Event and Post sections below for how
  * these attach. A background job re-pulls each source on its own `sync_interval_seconds` cadence, recomputing
- * `event_count`/`event_instance_count` (iCal) or `post_count` (RSS/Atom) on every sync.
+ * `event_count`/`occasion_count` (iCal) or `post_count` (RSS/Atom) on every sync.
  *
  * Sources are managed via [`GetSyncSources`](#grpc-api-GetSyncSources), [`CreateSyncSource`](#grpc-api-CreateSyncSource)
  * (requires `SYNC_EVENTS_FROM_ICS`/`SYNC_POSTS_FROM_RSS`/`SYNC_POSTS_FROM_ATOM` - whichever matches
@@ -318,11 +318,11 @@ export const protobufPackage = "rellm";
  *
  * ###### iCal
  * `configuration.ics_subscription_url` is a plain iCal (`.ics`) subscription URL. The background job fetches and
- * parses it on each sync, creating/updating one [`Event`](#rellm-Event) (and one [`EventInstance`](#rellm-EventInstance)
+ * parses it on each sync, creating/updating one [`Event`](#rellm-Event) (and one [`Occasion`](#rellm-Occasion)
  * per occurrence) per iCal `VEVENT` - each occurrence's own Post is keyed by `(sync_source_id, sync_source_uid,
  * sync_source_recurrence_anchor)`, the iCal UID plus that occurrence's stable identity within its series (its own
  * start time, or its original scheduled time if since rescheduled) - and recomputing `event_count`/
- * `event_instance_count`. An `EventInstance`'s `sync_missing_since` is set the first time it stops appearing in
+ * `occasion_count`. An `Occasion`'s `sync_missing_since` is set the first time it stops appearing in
  * the feed, letting the owner decide whether that means it should be deleted. No auth/credentials are supported
  * yet - only public iCal URLs.
  *
@@ -344,14 +344,14 @@ export const protobufPackage = "rellm";
  *
  * ##### SyncDestinations
  * A [`User`](#rellm-User) can also own many [`SyncDestination`](#rellm-SyncDestination)s - user-owned external
- * targets to push [`EventInstance`](#rellm-EventInstance)s and [`Post`](#rellm-Post)s out to (see the Event and
+ * targets to push [`Occasion`](#rellm-Occasion)s and [`Post`](#rellm-Post)s out to (see the Event and
  * Post sections below for how these attach), via a `oneof configuration` naming which platform it is. This is a
- * many-to-many relationship: it's each [`EventInstance`](#rellm-EventInstance) or [`Post`](#rellm-Post) (not,
+ * many-to-many relationship: it's each [`Occasion`](#rellm-Occasion) or [`Post`](#rellm-Post) (not,
  * say, the parent [`Event`](#rellm-Event)) that syncs out, and each may push to several destinations at once,
- * tracked per-destination via the repeated `EventInstance.sync_destinations`/`Post.sync_destinations` (each a
+ * tracked per-destination via the repeated `Occasion.sync_destinations`/`Post.sync_destinations` (each a
  * [`SyncDestinationStatus`](#rellm-SyncDestinationStatus), carrying the destination's resulting post ID/URL and
  * last-synced time). Destinations are pushed to on demand rather than synced in bulk on an interval, so
- * `synced_event_instance_count`/`synced_post_count` are computed with a `COUNT` at request time instead of being
+ * `synced_occasion_count`/`synced_post_count` are computed with a `COUNT` at request time instead of being
  * recomputed-and-stored. All API keys for these external platforms are stored in
  * [`ServerConfiguration`](#rellm-ServerConfiguration)'s `federation_info`.
  *
@@ -359,9 +359,9 @@ export const protobufPackage = "rellm";
  * [`CreateSyncDestination`](#grpc-api-CreateSyncDestination), [`UpdateSyncDestination`](#grpc-api-UpdateSyncDestination),
  * and [`DeleteSyncDestination`](#grpc-api-DeleteSyncDestination) - each gated on the `SYNC_EVENTS_TO_*`/
  * `SYNC_POSTS_TO_*` permission pair matching the destination's own platform (or Admin; see each platform's own
- * section below). Actually syncing (or un-syncing) a given [`EventInstance`](#rellm-EventInstance) or [`Post`](#rellm-Post) to a destination is a separate
- * step, via [`SyncEventInstance`](#grpc-api-SyncEventInstance)/
- * [`DeleteEventInstanceSyncDestination`](#grpc-api-DeleteEventInstanceSyncDestination) and
+ * section below). Actually syncing (or un-syncing) a given [`Occasion`](#rellm-Occasion) or [`Post`](#rellm-Post) to a destination is a separate
+ * step, via [`SyncOccasion`](#grpc-api-SyncOccasion)/
+ * [`DeleteOccasionSyncDestination`](#grpc-api-DeleteOccasionSyncDestination) and
  * [`SyncPost`](#grpc-api-SyncPost)/[`DeletePostSyncDestination`](#grpc-api-DeletePostSyncDestination), gated the same
  * way (the `_EVENTS_`/`_POSTS_` half matching which RPC).
  *
@@ -380,7 +380,7 @@ export const protobufPackage = "rellm";
  * connecting one reuses the exact same Facebook Login flow/app credentials as Facebook above - the server exchanges
  * the token for the chosen Page's access token, then looks up that Page's linked Instagram Business account
  * (`instagram_business_account_id`). Unlike Facebook, Instagram's Graph API has no text-only post type; syncing a
- * [`Post`](#rellm-Post)/[`EventInstance`](#rellm-EventInstance) with no attached media fails with `instagram_requires_media`. Gated on
+ * [`Post`](#rellm-Post)/[`Occasion`](#rellm-Occasion) with no attached media fails with `instagram_requires_media`. Gated on
  * `SYNC_EVENTS_TO_INSTAGRAM`/`SYNC_POSTS_TO_INSTAGRAM`.
  *
  * ###### Mastodon
@@ -416,28 +416,28 @@ export const protobufPackage = "rellm";
  * implemented, so a connected destination needs reconnecting after ~60 days). Unlike Instagram, Threads supports
  * text-only posts. Gated on `SYNC_EVENTS_TO_THREADS`/`SYNC_POSTS_TO_THREADS`.
  *
- * ##### AIModelProviders
- * A [`User`](#rellm-User) can also own many [`AIModelProvider`](#rellm-AIModelProvider)s -
+ * ##### AIProviders
+ * A [`User`](#rellm-User) can also own many [`AIProvider`](#rellm-AIProvider)s -
  * connections to external AI model APIs (e.g. a Gemini or OpenAI API key) - and grant other users metered access to
- * them via [`AIModelProviderGrant`](#rellm-AIModelProviderGrant)s. See `ai_model_providers.proto` and the
- * AIModelProvider section below. Which models are actually available, and what each can do
+ * them via [`AIProviderGrant`](#rellm-AIProviderGrant)s. See `ai_providers.proto` and the
+ * AIProvider section below. Which models are actually available, and what each can do
  * ([`AIModelCapability`](#rellm-AIModelCapability)), is a hand-maintained catalog (no provider exposes a stable
  * "list models" API to build this from at request time) - see
  * [`backend/src/logic/ai_model_catalog.rs`](https://github.com/JonLatane/rellm/blob/main/backend/src/logic/ai_model_catalog.rs)
  * on GitHub for the actual source of truth.
  *
- * #### AIModelProvider
- * An [`AIModelProvider`](#rellm-AIModelProvider) is a user-owned connection to an external AI model API (e.g. a
+ * #### AIProvider
+ * An [`AIProvider`](#rellm-AIProvider) is a user-owned connection to an external AI model API (e.g. a
  * Gemini API key), via a `oneof provider` naming which service it is - structurally similar to
  * [`SyncDestination`](#rellm-SyncDestination)/[`SyncSource`](#rellm-SyncSource), but rather than pushing/pulling
  * content, it's metered *access* an owner can share out to other users of this server. As with
  * [`SyncDestination`](#rellm-SyncDestination)'s platform credentials, the actual API key is write-only - accepted
- * on [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider)/[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider)
+ * on [`CreateAIProvider`](#grpc-api-CreateAIProvider)/[`UpdateAIProvider`](#grpc-api-UpdateAIProvider)
  * but never populated back in a response.
  *
- * Providers are managed via [`GetAIModelProviders`](#grpc-api-GetAIModelProviders),
- * [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider) (requires `CREATE_AI_MODEL_PROVIDERS`, or Admin),
- * [`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider), and [`DeleteAIModelProvider`](#grpc-api-DeleteAIModelProvider)
+ * Providers are managed via [`GetAIProviders`](#grpc-api-GetAIProviders),
+ * [`CreateAIProvider`](#grpc-api-CreateAIProvider) (requires `CREATE_AI_PROVIDERS`, or Admin),
+ * [`UpdateAIProvider`](#grpc-api-UpdateAIProvider), and [`DeleteAIProvider`](#grpc-api-DeleteAIProvider)
  * - each gated self-or-Admin, the same shape as [`SyncDestination`](#rellm-SyncDestination)'s RPCs.
  *
  * ##### Gemini
@@ -462,12 +462,12 @@ export const protobufPackage = "rellm";
  * `/v1/images/edits`-equivalent endpoint) via its OpenAI-Images-API-shaped `/v1/images/generations` endpoint (GPT
  * Image and Stable Diffusion models, re-hosted under DigitalOcean's own billing).
  *
- * ##### AIModelProviderGrants
+ * ##### AIProviderGrants
  * A provider's owner may share metered access to it with other users via
- * [`AIModelProviderGrant`](#rellm-AIModelProviderGrant)s, each carrying a `tokens_remaining` budget for that grantee.
- * Granted/reset via [`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider) (upserted on the unique
- * `(ai_model_provider_id, grantee)` pair - granting again *resets*, rather than adds to, `tokens_remaining`) and
- * removed via [`RevokeAIModelProvider`](#grpc-api-RevokeAIModelProvider). Unlike every other RPC pair in this section,
+ * [`AIProviderGrant`](#rellm-AIProviderGrant)s, each carrying a `tokens_remaining` budget for that grantee.
+ * Granted/reset via [`GrantAIProvider`](#grpc-api-GrantAIProvider) (upserted on the unique
+ * `(ai_provider_id, grantee)` pair - granting again *resets*, rather than adds to, `tokens_remaining`) and
+ * removed via [`RevokeAIProvider`](#grpc-api-RevokeAIProvider). Unlike every other RPC pair in this section,
  * these two are **owner-only, with no Admin override** - an Admin may manage the provider record itself, but only
  * its owner may hand out access to it.
  *
@@ -480,7 +480,7 @@ export const protobufPackage = "rellm";
  * #### Post
  * [`Post`](#rellm-Post) is Rellm's fundamental content/building-block type: it's what actually carries a
  * title/link/content body, visibility, and moderation, and is reused (via [`PostContext`](#rellm-PostContext)) as the backing data for
- * replies, [`Event`](#rellm-Event)s, and [`EventInstance`](#rellm-EventInstance)s alike. Posts can be replied to (threaded via
+ * replies, [`Event`](#rellm-Event)s, and [`Occasion`](#rellm-Occasion)s alike. Posts can be replied to (threaded via
  * `reply_to_post_id`), cross-posted to [`Group`](#rellm-Group)s ([`GroupPost`](#rellm-GroupPost)), and shared directly with users ([`UserPost`](#rellm-UserPost)).
  *
  * ##### GroupPosts
@@ -494,37 +494,37 @@ export const protobufPackage = "rellm";
  * ##### SyncDestinations
  * A [`Post`](#rellm-Post) may also be synced (cross-posted) out to a user-owned
  * [`SyncDestination`](#rellm-SyncDestination) (e.g. a connected Facebook Page), the same mechanism
- * [`EventInstance`](#rellm-EventInstance)s use (see below) - each Post may push to several destinations at once, tracked via the
+ * [`Occasion`](#rellm-Occasion)s use (see below) - each Post may push to several destinations at once, tracked via the
  * repeated `Post.sync_destinations` (each a [`SyncDestinationStatus`](#rellm-SyncDestinationStatus)).
  *
  * #### Event
  * An [`Event`](#rellm-Event) is a wrapper for *at least two* [`Post`](#rellm-Post)s. It always has its own top-level [`Post`](#rellm-Post)
  * (`PostContext.EVENT`, holding the event's overall title/description) *and* it must have at least one
- * [`EventInstance`](#rellm-EventInstance) (see below), each of which in turn must have its own [`Post`](#rellm-Post)
- * (`PostContext.EVENT_INSTANCE`, carrying that instance's start/end time, [`Location`](#rellm-Location), and optional per-instance
+ * [`Occasion`](#rellm-Occasion) (see below), each of which in turn must have its own [`Post`](#rellm-Post)
+ * (`PostContext.OCCASION`, carrying that Occasion's start/end time, [`Location`](#rellm-Location), and optional per-Occasion
  * title/link/content override). So the smallest possible Event already backs 2 Posts, and events with recurring/multiple
- * instances back one Post per instance beyond that.
+ * Occasions back one Post per Occasion beyond that.
  *
- * ##### EventInstances
- * An [`EventInstance`](#rellm-EventInstance) is the actual time-boxed occurrence of an [`Event`](#rellm-Event) -
+ * ##### Occasions
+ * An [`Occasion`](#rellm-Occasion) is the actual time-boxed occurrence of an [`Event`](#rellm-Event) -
  * it carries the `starts_at`/`ends_at` timestamps and optional [`Location`](#rellm-Location) that the parent [`Event`](#rellm-Event) itself does not have.
- * An [`Event`](#rellm-Event) with zero instances is meaningless (no time or place to attach to), so every [`Event`](#rellm-Event) must have at least one.
+ * An [`Event`](#rellm-Event) with zero Occasions is meaningless (no time or place to attach to), so every [`Event`](#rellm-Event) must have at least one.
  *
  *     - **EventAttendances**: An [`EventAttendance`](#rellm-EventAttendance) (an "RSVP") tracks one attendee's status
- *     (`INTERESTED`, `REQUESTED`, `GOING`, `NOT_GOING`) for a specific [`EventInstance`](#rellm-EventInstance). Attendees may be logged-in [`User`](#rellm-User)s
+ *     (`INTERESTED`, `REQUESTED`, `GOING`, `NOT_GOING`) for a specific [`Occasion`](#rellm-Occasion). Attendees may be logged-in [`User`](#rellm-User)s
  *     or anonymous (tracked via [`AnonymousAttendee`](#rellm-AnonymousAttendee) plus an `auth_token`), and are subject to their own [`Moderation`](#rellm-Moderation),
- *     independent of the Event's/Instance's own Post moderation.
+ *     independent of the Event's/Occasion's own Post moderation.
  *
- *     - **SyncSource**: It's actually the parent [`Event`](#rellm-Event) (not the [`EventInstance`](#rellm-EventInstance)) that can be synced *in* from a
+ *     - **SyncSource**: It's actually the parent [`Event`](#rellm-Event) (not the [`Occasion`](#rellm-Occasion)) that can be synced *in* from a
  *     user-owned [`SyncSource`](#rellm-SyncSource) (e.g. an iCal subscription). The relationship is
  *     1:(0 or 1): a single source can back many synced [`Event`](#rellm-Event)s, but each [`Event`](#rellm-Event) has *at most one* source it came from
  *     (`Event.sync_source` is a single optional field, not repeated).
  *
- *     - **SyncDestinations**: Conversely, it's each [`EventInstance`](#rellm-EventInstance) (not the parent [`Event`](#rellm-Event)) that syncs *out* to
+ *     - **SyncDestinations**: Conversely, it's each [`Occasion`](#rellm-Occasion) (not the parent [`Event`](#rellm-Event)) that syncs *out* to
  *     [`SyncDestination`](#rellm-SyncDestination)s (e.g. connected Facebook Pages) - the same mechanism [`Post`](#rellm-Post)s use
  *     (see above). Unlike [`SyncSource`](#rellm-SyncSource), this is the outlier's counterpart - a many-to-many relationship: each
- *     instance may push to several destinations at once, tracked per-destination via the repeated
- *     `EventInstance.sync_destinations` (each a [`SyncDestinationStatus`](#rellm-SyncDestinationStatus)), carrying
+ *     Occasion may push to several destinations at once, tracked per-destination via the repeated
+ *     `Occasion.sync_destinations` (each a [`SyncDestinationStatus`](#rellm-SyncDestinationStatus)), carrying
  *     the destination's resulting post ID/URL and last-synced time.
  *
  * #### Group
@@ -720,8 +720,8 @@ export const protobufPackage = "rellm";
  * `/flutter`, `/tamagui`, `/elm` - plus any `CustomNavigationTabSet.tabs` paths configured on the server (excluding
  * the reserved `posts`/`events`/`people`/`about` paths, which are always included above), each qualified with the
  * request's `Host`. It also enumerates individual pages: every [`Post`](#rellm-Post) from an unauthenticated [`GetPosts`](#grpc-api-GetPosts) (the same
- * "first page" an anonymous visitor sees) as `/post/{id}`, and every [`Event`](#rellm-Event) instance from an unauthenticated
- * [`GetEvents`](#grpc-api-GetEvents) starting `EventSettings.calendar_lookback_days` (or 14, if unset) ago as `/event/{instance_id}`.
+ * "first page" an anonymous visitor sees) as `/post/{id}`, and every [`Occasion`](#rellm-Occasion) from an unauthenticated
+ * [`GetEvents`](#grpc-api-GetEvents) starting `EventSettings.calendar_lookback_days` (or 14, if unset) ago as `/event/{occasion_id}`.
  * It does not (yet) enumerate individual [`User`](#rellm-User) pages.
  *
  * ##### `GET /favicon.ico`: ICO Favicon
@@ -807,14 +807,14 @@ export const protobufPackage = "rellm";
  * The Posts listing.
  *
  * ##### `/post/{postId}[@{host}]`: Post
- * An individual [`Post`](#rellm-Post) - including [`Event`](#rellm-Event)/[`EventInstance`](#rellm-EventInstance) posts and replies, which are [`Post`](#rellm-Post)s
+ * An individual [`Post`](#rellm-Post) - including [`Event`](#rellm-Event)/[`Occasion`](#rellm-Occasion) posts and replies, which are [`Post`](#rellm-Post)s
  * themselves (see [Post](#post) above).
  *
  * #### `/events`: Events
  * The Events listing.
  *
  * #### `/[-._~:/?[]@!$&'()*+,;%=]{postId}`: Short Post/Event URLs
- * A [`Post`](#rellm-Post) or [`Event`](#rellm-Event)/[`EventInstance`](#rellm-EventInstance), reached at its own `post.id` prefixed
+ * A [`Post`](#rellm-Post) or [`Event`](#rellm-Event)/[`Occasion`](#rellm-Occasion), reached at its own `post.id` prefixed
  * with any single character a username/custom tab path could never legally start with (see
  * [`validate_username`](https://github.com/JonLatane/rellm/blob/main/backend/src/rpcs/validations/validate_fields.rs)'s
  * own reserved-lead-character check) - e.g. `jonline.io/:4rAfoSKAuJo` or `ato.band/~4rAfoSKAuJo`.
@@ -825,7 +825,7 @@ export const protobufPackage = "rellm";
  * can't be used for this.
  *
  * ##### `/event/{postId}[@{host}]`: Event
- * An individual [`Event`](#rellm-Event), looked up by its own `post.id` or any of its [`EventInstance`](#rellm-EventInstance)s' `post.id`s.
+ * An individual [`Event`](#rellm-Event), looked up by its own `post.id` or any of its [`Occasion`](#rellm-Occasion)s' `post.id`s.
  *
  * ##### `/event_ai`: AI Event Importer
  * Tamagui-only, for now - an AI-assisted bulk [`Event`](#rellm-Event) importer. Elm doesn't have this page yet.
@@ -863,7 +863,7 @@ export const protobufPackage = "rellm";
  * An individual [`Post`](#rellm-Post) cross-posted into the group.
  *
  * ##### `/g/{shortname}/events`: Events
- * ##### `/g/{shortname}/e/{eventInstanceId}[@{host}]`: Event
+ * ##### `/g/{shortname}/e/{occasionId}[@{host}]`: Event
  * ##### `/g/{shortname}/members`: Members
  * ##### `/g/{shortname}/m/{username}`: Member
  * An individual [`Member`](#rellm-Member)'s details.
@@ -1415,9 +1415,9 @@ export const RellmDefinition = {
       options: {},
     },
     /**
-     * Updates an Event. Automatically creates/updates/deletes child EventInstances of the Event. *Authenticated.*
+     * Updates an Event. Automatically creates/updates/deletes child Occasions of the Event. *Authenticated.*
      * Since Events are more complex structures, [`UpdateEventDetails`](#grpc-api-UpdateEventDetails),
-     * [`CreateNewEventInstances`](#grpc-api-CreateNewEventInstances), [`UpdateEventInstances`](#grpc-api-UpdateEventInstances), and [`DeleteRemovedEventInstances`](#grpc-api-DeleteRemovedEventInstances)
+     * [`CreateNewOccasions`](#grpc-api-CreateNewOccasions), [`UpdateOccasions`](#grpc-api-UpdateOccasions), and [`DeleteRemovedOccasions`](#grpc-api-DeleteRemovedOccasions)
      * are provided as separate RPCs to break down what happens during this request.
      */
     updateEvent: {
@@ -1437,7 +1437,7 @@ export const RellmDefinition = {
       responseStream: false,
       options: {},
     },
-    /** Updates only the [`Event`](#rellm-Event)'s top-level details and those of its [`Post`](#rellm-Post) (not any [`EventInstance`](#rellm-EventInstance)s or their [`Post`](#rellm-Post)s). *Authenticated.* */
+    /** Updates only the [`Event`](#rellm-Event)'s top-level details and those of its [`Post`](#rellm-Post) (not any [`Occasion`](#rellm-Occasion)s or their [`Post`](#rellm-Post)s). *Authenticated.* */
     updateEventDetails: {
       name: "UpdateEventDetails",
       requestType: Event,
@@ -1447,11 +1447,11 @@ export const RellmDefinition = {
       options: {},
     },
     /**
-     * Creates EventInstances in an existing Event for every EventInstance in the request that isn't already on the event. *Authenticated.*
-     * Any other instances in the request are ignored.
+     * Creates Occasions in an existing Event for every Occasion in the request that isn't already on the event. *Authenticated.*
+     * Any other Occasions in the request are ignored.
      */
-    createNewEventInstances: {
-      name: "CreateNewEventInstances",
+    createNewOccasions: {
+      name: "CreateNewOccasions",
       requestType: Event,
       requestStream: false,
       responseType: Event,
@@ -1459,20 +1459,20 @@ export const RellmDefinition = {
       options: {},
     },
     /**
-     * Updates EventInstances in an existing Event for every EventInstance in the request that's already on the event.
-     * Any other instances in the request are ignored. *Authenticated.*
+     * Updates Occasions in an existing Event for every Occasion in the request that's already on the event.
+     * Any other Occasions in the request are ignored. *Authenticated.*
      */
-    updateEventInstances: {
-      name: "UpdateEventInstances",
+    updateOccasions: {
+      name: "UpdateOccasions",
       requestType: Event,
       requestStream: false,
       responseType: Event,
       responseStream: false,
       options: {},
     },
-    /** Deletes EventInstances in an existing Event that aren't present in the input Event. *Authenticated.* */
-    deleteRemovedEventInstances: {
-      name: "DeleteRemovedEventInstances",
+    /** Deletes Occasions in an existing Event that aren't present in the input Event. *Authenticated.* */
+    deleteRemovedOccasions: {
+      name: "DeleteRemovedOccasions",
       requestType: Event,
       requestStream: false,
       responseType: Event,
@@ -1558,84 +1558,84 @@ export const RellmDefinition = {
       responseStream: false,
       options: {},
     },
-    /** Syncs (cross-posts) an EventInstance to a SyncDestination. *Authenticated* (destination owner, or Admin), requires `SYNC_EVENTS_TO_FACEBOOK` (or Admin). */
-    syncEventInstance: {
-      name: "SyncEventInstance",
-      requestType: SyncEventInstanceRequest,
+    /** Syncs (cross-posts) an Occasion to a SyncDestination. *Authenticated* (destination owner, or Admin), requires `SYNC_EVENTS_TO_FACEBOOK` (or Admin). */
+    syncOccasion: {
+      name: "SyncOccasion",
+      requestType: SyncOccasionRequest,
       requestStream: false,
-      responseType: EventInstance,
+      responseType: Occasion,
       responseStream: false,
       options: {},
     },
-    /** Removes an EventInstance's sync (cross-post) to a SyncDestination, the reverse of [`SyncEventInstance`](#grpc-api-SyncEventInstance). *Authenticated* (destination owner, or Admin), requires `SYNC_EVENTS_TO_FACEBOOK` (or Admin). */
-    deleteEventInstanceSyncDestination: {
-      name: "DeleteEventInstanceSyncDestination",
-      requestType: DeleteEventInstanceSyncDestinationRequest,
+    /** Removes an Occasion's sync (cross-post) to a SyncDestination, the reverse of [`SyncOccasion`](#grpc-api-SyncOccasion). *Authenticated* (destination owner, or Admin), requires `SYNC_EVENTS_TO_FACEBOOK` (or Admin). */
+    deleteOccasionSyncDestination: {
+      name: "DeleteOccasionSyncDestination",
+      requestType: DeleteOccasionSyncDestinationRequest,
       requestStream: false,
       responseType: Empty,
       responseStream: false,
       options: {},
     },
-    /** Gets a user's AIModelProviders. *Authenticated* (self, or Admin for any user). */
-    getAIModelProviders: {
-      name: "GetAIModelProviders",
+    /** Gets a user's AIProviders. *Authenticated* (self, or Admin for any user). */
+    getAIProviders: {
+      name: "GetAIProviders",
       requestType: User,
       requestStream: false,
-      responseType: GetAIModelProvidersResponse,
+      responseType: GetAIProvidersResponse,
       responseStream: false,
       options: {},
     },
-    /** Creates an AIModelProvider for the current user. *Authenticated*, requires `CREATE_AI_MODEL_PROVIDERS` (or Admin). */
-    createAIModelProvider: {
-      name: "CreateAIModelProvider",
-      requestType: AIModelProvider,
+    /** Creates an AIProvider for the current user. *Authenticated*, requires `CREATE_AI_PROVIDERS` (or Admin). */
+    createAIProvider: {
+      name: "CreateAIProvider",
+      requestType: AIProvider,
       requestStream: false,
-      responseType: AIModelProvider,
+      responseType: AIProvider,
       responseStream: false,
       options: {},
     },
-    /** Updates an AIModelProvider's name, provider, or credentials. *Authenticated* (owner, or Admin for any user's). */
-    updateAIModelProvider: {
-      name: "UpdateAIModelProvider",
-      requestType: AIModelProvider,
+    /** Updates an AIProvider's name, provider, or credentials. *Authenticated* (owner, or Admin for any user's). */
+    updateAIProvider: {
+      name: "UpdateAIProvider",
+      requestType: AIProvider,
       requestStream: false,
-      responseType: AIModelProvider,
+      responseType: AIProvider,
       responseStream: false,
       options: {},
     },
-    /** Deletes an AIModelProvider (and its AIModelProviderGrants). *Authenticated* (owner, or Admin). */
-    deleteAIModelProvider: {
-      name: "DeleteAIModelProvider",
-      requestType: DeleteAIModelProviderRequest,
+    /** Deletes an AIProvider (and its AIProviderGrants). *Authenticated* (owner, or Admin). */
+    deleteAIProvider: {
+      name: "DeleteAIProvider",
+      requestType: DeleteAIProviderRequest,
       requestStream: false,
       responseType: Empty,
       responseStream: false,
       options: {},
     },
-    /** Grants (or resets) another user's metered access to one of the current user's AIModelProviders. *Authenticated*, owner-only (no Admin override). */
-    grantAIModelProvider: {
-      name: "GrantAIModelProvider",
-      requestType: GrantAIModelProviderRequest,
+    /** Grants (or resets) another user's metered access to one of the current user's AIProviders. *Authenticated*, owner-only (no Admin override). */
+    grantAIProvider: {
+      name: "GrantAIProvider",
+      requestType: GrantAIProviderRequest,
       requestStream: false,
-      responseType: AIModelProviderGrant,
+      responseType: AIProviderGrant,
       responseStream: false,
       options: {},
     },
-    /** Revokes another user's access to one of the current user's AIModelProviders. *Authenticated*, owner-only (no Admin override). */
-    revokeAIModelProvider: {
-      name: "RevokeAIModelProvider",
-      requestType: RevokeAIModelProviderRequest,
+    /** Revokes another user's access to one of the current user's AIProviders. *Authenticated*, owner-only (no Admin override). */
+    revokeAIProvider: {
+      name: "RevokeAIProvider",
+      requestType: RevokeAIProviderRequest,
       requestStream: false,
       responseType: Empty,
       responseStream: false,
       options: {},
     },
     /**
-     * Generates (or edits, given reference `media_ids`) an image via one of the current user's AvailableAIModels,
+     * Generates (or edits, given reference `media_ids`) an image via one of the current user's AIModels,
      * storing it as a new Media and, if `target` is set, attaching it to that Post/Event. *Authenticated* - caller
-     * must own or have been granted access to the chosen AIModelProvider, and (if `target` is set) have edit access
+     * must own or have been granted access to the chosen AIProvider, and (if `target` is set) have edit access
      * to that Post/Event. A grantee (never the provider's own owner) spends real
-     * AIModelProviderGrant.tokens_remaining on every call - the provider's own reported token usage once generation
+     * AIProviderGrant.tokens_remaining on every call - the provider's own reported token usage once generation
      * succeeds, or (rejected before any request is even sent to the provider) a rough pre-flight estimate of the
      * request's input cost alone, whichever catches an insufficient balance first.
      */
@@ -1647,7 +1647,7 @@ export const RellmDefinition = {
       responseStream: false,
       options: {},
     },
-    /** Gets EventAttendances for an EventInstance. *Publicly accessible **or** Authenticated.* */
+    /** Gets EventAttendances for an Occasion. *Publicly accessible **or** Authenticated.* */
     getEventAttendances: {
       name: "GetEventAttendances",
       requestType: GetEventAttendancesRequest,
@@ -1993,28 +1993,28 @@ export interface RellmServiceImplementation<CallContextExt = {}> {
   /** Creates an Event. *Authenticated.* */
   createEvent(request: Event, context: CallContext & CallContextExt): Promise<DeepPartial<Event>>;
   /**
-   * Updates an Event. Automatically creates/updates/deletes child EventInstances of the Event. *Authenticated.*
+   * Updates an Event. Automatically creates/updates/deletes child Occasions of the Event. *Authenticated.*
    * Since Events are more complex structures, [`UpdateEventDetails`](#grpc-api-UpdateEventDetails),
-   * [`CreateNewEventInstances`](#grpc-api-CreateNewEventInstances), [`UpdateEventInstances`](#grpc-api-UpdateEventInstances), and [`DeleteRemovedEventInstances`](#grpc-api-DeleteRemovedEventInstances)
+   * [`CreateNewOccasions`](#grpc-api-CreateNewOccasions), [`UpdateOccasions`](#grpc-api-UpdateOccasions), and [`DeleteRemovedOccasions`](#grpc-api-DeleteRemovedOccasions)
    * are provided as separate RPCs to break down what happens during this request.
    */
   updateEvent(request: Event, context: CallContext & CallContextExt): Promise<DeepPartial<Event>>;
   /** (Soft) deletes a Event. Returns the deleted version of the Event. *Authenticated.* */
   deleteEvent(request: Event, context: CallContext & CallContextExt): Promise<DeepPartial<Event>>;
-  /** Updates only the [`Event`](#rellm-Event)'s top-level details and those of its [`Post`](#rellm-Post) (not any [`EventInstance`](#rellm-EventInstance)s or their [`Post`](#rellm-Post)s). *Authenticated.* */
+  /** Updates only the [`Event`](#rellm-Event)'s top-level details and those of its [`Post`](#rellm-Post) (not any [`Occasion`](#rellm-Occasion)s or their [`Post`](#rellm-Post)s). *Authenticated.* */
   updateEventDetails(request: Event, context: CallContext & CallContextExt): Promise<DeepPartial<Event>>;
   /**
-   * Creates EventInstances in an existing Event for every EventInstance in the request that isn't already on the event. *Authenticated.*
-   * Any other instances in the request are ignored.
+   * Creates Occasions in an existing Event for every Occasion in the request that isn't already on the event. *Authenticated.*
+   * Any other Occasions in the request are ignored.
    */
-  createNewEventInstances(request: Event, context: CallContext & CallContextExt): Promise<DeepPartial<Event>>;
+  createNewOccasions(request: Event, context: CallContext & CallContextExt): Promise<DeepPartial<Event>>;
   /**
-   * Updates EventInstances in an existing Event for every EventInstance in the request that's already on the event.
-   * Any other instances in the request are ignored. *Authenticated.*
+   * Updates Occasions in an existing Event for every Occasion in the request that's already on the event.
+   * Any other Occasions in the request are ignored. *Authenticated.*
    */
-  updateEventInstances(request: Event, context: CallContext & CallContextExt): Promise<DeepPartial<Event>>;
-  /** Deletes EventInstances in an existing Event that aren't present in the input Event. *Authenticated.* */
-  deleteRemovedEventInstances(request: Event, context: CallContext & CallContextExt): Promise<DeepPartial<Event>>;
+  updateOccasions(request: Event, context: CallContext & CallContextExt): Promise<DeepPartial<Event>>;
+  /** Deletes Occasions in an existing Event that aren't present in the input Event. *Authenticated.* */
+  deleteRemovedOccasions(request: Event, context: CallContext & CallContextExt): Promise<DeepPartial<Event>>;
   /** Gets a user's SyncSources. *Authenticated* (self, or Admin for any user). */
   getSyncSources(request: User, context: CallContext & CallContextExt): Promise<DeepPartial<GetSyncSourcesResponse>>;
   /**
@@ -2053,57 +2053,45 @@ export interface RellmServiceImplementation<CallContextExt = {}> {
     request: DeleteSyncDestinationRequest,
     context: CallContext & CallContextExt,
   ): Promise<DeepPartial<Empty>>;
-  /** Syncs (cross-posts) an EventInstance to a SyncDestination. *Authenticated* (destination owner, or Admin), requires `SYNC_EVENTS_TO_FACEBOOK` (or Admin). */
-  syncEventInstance(
-    request: SyncEventInstanceRequest,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<EventInstance>>;
-  /** Removes an EventInstance's sync (cross-post) to a SyncDestination, the reverse of [`SyncEventInstance`](#grpc-api-SyncEventInstance). *Authenticated* (destination owner, or Admin), requires `SYNC_EVENTS_TO_FACEBOOK` (or Admin). */
-  deleteEventInstanceSyncDestination(
-    request: DeleteEventInstanceSyncDestinationRequest,
+  /** Syncs (cross-posts) an Occasion to a SyncDestination. *Authenticated* (destination owner, or Admin), requires `SYNC_EVENTS_TO_FACEBOOK` (or Admin). */
+  syncOccasion(request: SyncOccasionRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Occasion>>;
+  /** Removes an Occasion's sync (cross-post) to a SyncDestination, the reverse of [`SyncOccasion`](#grpc-api-SyncOccasion). *Authenticated* (destination owner, or Admin), requires `SYNC_EVENTS_TO_FACEBOOK` (or Admin). */
+  deleteOccasionSyncDestination(
+    request: DeleteOccasionSyncDestinationRequest,
     context: CallContext & CallContextExt,
   ): Promise<DeepPartial<Empty>>;
-  /** Gets a user's AIModelProviders. *Authenticated* (self, or Admin for any user). */
-  getAIModelProviders(
-    request: User,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<GetAIModelProvidersResponse>>;
-  /** Creates an AIModelProvider for the current user. *Authenticated*, requires `CREATE_AI_MODEL_PROVIDERS` (or Admin). */
-  createAIModelProvider(
-    request: AIModelProvider,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<AIModelProvider>>;
-  /** Updates an AIModelProvider's name, provider, or credentials. *Authenticated* (owner, or Admin for any user's). */
-  updateAIModelProvider(
-    request: AIModelProvider,
-    context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<AIModelProvider>>;
-  /** Deletes an AIModelProvider (and its AIModelProviderGrants). *Authenticated* (owner, or Admin). */
-  deleteAIModelProvider(
-    request: DeleteAIModelProviderRequest,
+  /** Gets a user's AIProviders. *Authenticated* (self, or Admin for any user). */
+  getAIProviders(request: User, context: CallContext & CallContextExt): Promise<DeepPartial<GetAIProvidersResponse>>;
+  /** Creates an AIProvider for the current user. *Authenticated*, requires `CREATE_AI_PROVIDERS` (or Admin). */
+  createAIProvider(request: AIProvider, context: CallContext & CallContextExt): Promise<DeepPartial<AIProvider>>;
+  /** Updates an AIProvider's name, provider, or credentials. *Authenticated* (owner, or Admin for any user's). */
+  updateAIProvider(request: AIProvider, context: CallContext & CallContextExt): Promise<DeepPartial<AIProvider>>;
+  /** Deletes an AIProvider (and its AIProviderGrants). *Authenticated* (owner, or Admin). */
+  deleteAIProvider(
+    request: DeleteAIProviderRequest,
     context: CallContext & CallContextExt,
   ): Promise<DeepPartial<Empty>>;
-  /** Grants (or resets) another user's metered access to one of the current user's AIModelProviders. *Authenticated*, owner-only (no Admin override). */
-  grantAIModelProvider(
-    request: GrantAIModelProviderRequest,
+  /** Grants (or resets) another user's metered access to one of the current user's AIProviders. *Authenticated*, owner-only (no Admin override). */
+  grantAIProvider(
+    request: GrantAIProviderRequest,
     context: CallContext & CallContextExt,
-  ): Promise<DeepPartial<AIModelProviderGrant>>;
-  /** Revokes another user's access to one of the current user's AIModelProviders. *Authenticated*, owner-only (no Admin override). */
-  revokeAIModelProvider(
-    request: RevokeAIModelProviderRequest,
+  ): Promise<DeepPartial<AIProviderGrant>>;
+  /** Revokes another user's access to one of the current user's AIProviders. *Authenticated*, owner-only (no Admin override). */
+  revokeAIProvider(
+    request: RevokeAIProviderRequest,
     context: CallContext & CallContextExt,
   ): Promise<DeepPartial<Empty>>;
   /**
-   * Generates (or edits, given reference `media_ids`) an image via one of the current user's AvailableAIModels,
+   * Generates (or edits, given reference `media_ids`) an image via one of the current user's AIModels,
    * storing it as a new Media and, if `target` is set, attaching it to that Post/Event. *Authenticated* - caller
-   * must own or have been granted access to the chosen AIModelProvider, and (if `target` is set) have edit access
+   * must own or have been granted access to the chosen AIProvider, and (if `target` is set) have edit access
    * to that Post/Event. A grantee (never the provider's own owner) spends real
-   * AIModelProviderGrant.tokens_remaining on every call - the provider's own reported token usage once generation
+   * AIProviderGrant.tokens_remaining on every call - the provider's own reported token usage once generation
    * succeeds, or (rejected before any request is even sent to the provider) a rough pre-flight estimate of the
    * request's input cost alone, whichever catches an insufficient balance first.
    */
   generateMedia(request: GenerateMediaRequest, context: CallContext & CallContextExt): Promise<DeepPartial<Media>>;
-  /** Gets EventAttendances for an EventInstance. *Publicly accessible **or** Authenticated.* */
+  /** Gets EventAttendances for an Occasion. *Publicly accessible **or** Authenticated.* */
   getEventAttendances(
     request: GetEventAttendancesRequest,
     context: CallContext & CallContextExt,
@@ -2396,28 +2384,28 @@ export interface RellmClient<CallOptionsExt = {}> {
   /** Creates an Event. *Authenticated.* */
   createEvent(request: DeepPartial<Event>, options?: CallOptions & CallOptionsExt): Promise<Event>;
   /**
-   * Updates an Event. Automatically creates/updates/deletes child EventInstances of the Event. *Authenticated.*
+   * Updates an Event. Automatically creates/updates/deletes child Occasions of the Event. *Authenticated.*
    * Since Events are more complex structures, [`UpdateEventDetails`](#grpc-api-UpdateEventDetails),
-   * [`CreateNewEventInstances`](#grpc-api-CreateNewEventInstances), [`UpdateEventInstances`](#grpc-api-UpdateEventInstances), and [`DeleteRemovedEventInstances`](#grpc-api-DeleteRemovedEventInstances)
+   * [`CreateNewOccasions`](#grpc-api-CreateNewOccasions), [`UpdateOccasions`](#grpc-api-UpdateOccasions), and [`DeleteRemovedOccasions`](#grpc-api-DeleteRemovedOccasions)
    * are provided as separate RPCs to break down what happens during this request.
    */
   updateEvent(request: DeepPartial<Event>, options?: CallOptions & CallOptionsExt): Promise<Event>;
   /** (Soft) deletes a Event. Returns the deleted version of the Event. *Authenticated.* */
   deleteEvent(request: DeepPartial<Event>, options?: CallOptions & CallOptionsExt): Promise<Event>;
-  /** Updates only the [`Event`](#rellm-Event)'s top-level details and those of its [`Post`](#rellm-Post) (not any [`EventInstance`](#rellm-EventInstance)s or their [`Post`](#rellm-Post)s). *Authenticated.* */
+  /** Updates only the [`Event`](#rellm-Event)'s top-level details and those of its [`Post`](#rellm-Post) (not any [`Occasion`](#rellm-Occasion)s or their [`Post`](#rellm-Post)s). *Authenticated.* */
   updateEventDetails(request: DeepPartial<Event>, options?: CallOptions & CallOptionsExt): Promise<Event>;
   /**
-   * Creates EventInstances in an existing Event for every EventInstance in the request that isn't already on the event. *Authenticated.*
-   * Any other instances in the request are ignored.
+   * Creates Occasions in an existing Event for every Occasion in the request that isn't already on the event. *Authenticated.*
+   * Any other Occasions in the request are ignored.
    */
-  createNewEventInstances(request: DeepPartial<Event>, options?: CallOptions & CallOptionsExt): Promise<Event>;
+  createNewOccasions(request: DeepPartial<Event>, options?: CallOptions & CallOptionsExt): Promise<Event>;
   /**
-   * Updates EventInstances in an existing Event for every EventInstance in the request that's already on the event.
-   * Any other instances in the request are ignored. *Authenticated.*
+   * Updates Occasions in an existing Event for every Occasion in the request that's already on the event.
+   * Any other Occasions in the request are ignored. *Authenticated.*
    */
-  updateEventInstances(request: DeepPartial<Event>, options?: CallOptions & CallOptionsExt): Promise<Event>;
-  /** Deletes EventInstances in an existing Event that aren't present in the input Event. *Authenticated.* */
-  deleteRemovedEventInstances(request: DeepPartial<Event>, options?: CallOptions & CallOptionsExt): Promise<Event>;
+  updateOccasions(request: DeepPartial<Event>, options?: CallOptions & CallOptionsExt): Promise<Event>;
+  /** Deletes Occasions in an existing Event that aren't present in the input Event. *Authenticated.* */
+  deleteRemovedOccasions(request: DeepPartial<Event>, options?: CallOptions & CallOptionsExt): Promise<Event>;
   /** Gets a user's SyncSources. *Authenticated* (self, or Admin for any user). */
   getSyncSources(request: DeepPartial<User>, options?: CallOptions & CallOptionsExt): Promise<GetSyncSourcesResponse>;
   /**
@@ -2456,57 +2444,45 @@ export interface RellmClient<CallOptionsExt = {}> {
     request: DeepPartial<DeleteSyncDestinationRequest>,
     options?: CallOptions & CallOptionsExt,
   ): Promise<Empty>;
-  /** Syncs (cross-posts) an EventInstance to a SyncDestination. *Authenticated* (destination owner, or Admin), requires `SYNC_EVENTS_TO_FACEBOOK` (or Admin). */
-  syncEventInstance(
-    request: DeepPartial<SyncEventInstanceRequest>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<EventInstance>;
-  /** Removes an EventInstance's sync (cross-post) to a SyncDestination, the reverse of [`SyncEventInstance`](#grpc-api-SyncEventInstance). *Authenticated* (destination owner, or Admin), requires `SYNC_EVENTS_TO_FACEBOOK` (or Admin). */
-  deleteEventInstanceSyncDestination(
-    request: DeepPartial<DeleteEventInstanceSyncDestinationRequest>,
+  /** Syncs (cross-posts) an Occasion to a SyncDestination. *Authenticated* (destination owner, or Admin), requires `SYNC_EVENTS_TO_FACEBOOK` (or Admin). */
+  syncOccasion(request: DeepPartial<SyncOccasionRequest>, options?: CallOptions & CallOptionsExt): Promise<Occasion>;
+  /** Removes an Occasion's sync (cross-post) to a SyncDestination, the reverse of [`SyncOccasion`](#grpc-api-SyncOccasion). *Authenticated* (destination owner, or Admin), requires `SYNC_EVENTS_TO_FACEBOOK` (or Admin). */
+  deleteOccasionSyncDestination(
+    request: DeepPartial<DeleteOccasionSyncDestinationRequest>,
     options?: CallOptions & CallOptionsExt,
   ): Promise<Empty>;
-  /** Gets a user's AIModelProviders. *Authenticated* (self, or Admin for any user). */
-  getAIModelProviders(
-    request: DeepPartial<User>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<GetAIModelProvidersResponse>;
-  /** Creates an AIModelProvider for the current user. *Authenticated*, requires `CREATE_AI_MODEL_PROVIDERS` (or Admin). */
-  createAIModelProvider(
-    request: DeepPartial<AIModelProvider>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<AIModelProvider>;
-  /** Updates an AIModelProvider's name, provider, or credentials. *Authenticated* (owner, or Admin for any user's). */
-  updateAIModelProvider(
-    request: DeepPartial<AIModelProvider>,
-    options?: CallOptions & CallOptionsExt,
-  ): Promise<AIModelProvider>;
-  /** Deletes an AIModelProvider (and its AIModelProviderGrants). *Authenticated* (owner, or Admin). */
-  deleteAIModelProvider(
-    request: DeepPartial<DeleteAIModelProviderRequest>,
+  /** Gets a user's AIProviders. *Authenticated* (self, or Admin for any user). */
+  getAIProviders(request: DeepPartial<User>, options?: CallOptions & CallOptionsExt): Promise<GetAIProvidersResponse>;
+  /** Creates an AIProvider for the current user. *Authenticated*, requires `CREATE_AI_PROVIDERS` (or Admin). */
+  createAIProvider(request: DeepPartial<AIProvider>, options?: CallOptions & CallOptionsExt): Promise<AIProvider>;
+  /** Updates an AIProvider's name, provider, or credentials. *Authenticated* (owner, or Admin for any user's). */
+  updateAIProvider(request: DeepPartial<AIProvider>, options?: CallOptions & CallOptionsExt): Promise<AIProvider>;
+  /** Deletes an AIProvider (and its AIProviderGrants). *Authenticated* (owner, or Admin). */
+  deleteAIProvider(
+    request: DeepPartial<DeleteAIProviderRequest>,
     options?: CallOptions & CallOptionsExt,
   ): Promise<Empty>;
-  /** Grants (or resets) another user's metered access to one of the current user's AIModelProviders. *Authenticated*, owner-only (no Admin override). */
-  grantAIModelProvider(
-    request: DeepPartial<GrantAIModelProviderRequest>,
+  /** Grants (or resets) another user's metered access to one of the current user's AIProviders. *Authenticated*, owner-only (no Admin override). */
+  grantAIProvider(
+    request: DeepPartial<GrantAIProviderRequest>,
     options?: CallOptions & CallOptionsExt,
-  ): Promise<AIModelProviderGrant>;
-  /** Revokes another user's access to one of the current user's AIModelProviders. *Authenticated*, owner-only (no Admin override). */
-  revokeAIModelProvider(
-    request: DeepPartial<RevokeAIModelProviderRequest>,
+  ): Promise<AIProviderGrant>;
+  /** Revokes another user's access to one of the current user's AIProviders. *Authenticated*, owner-only (no Admin override). */
+  revokeAIProvider(
+    request: DeepPartial<RevokeAIProviderRequest>,
     options?: CallOptions & CallOptionsExt,
   ): Promise<Empty>;
   /**
-   * Generates (or edits, given reference `media_ids`) an image via one of the current user's AvailableAIModels,
+   * Generates (or edits, given reference `media_ids`) an image via one of the current user's AIModels,
    * storing it as a new Media and, if `target` is set, attaching it to that Post/Event. *Authenticated* - caller
-   * must own or have been granted access to the chosen AIModelProvider, and (if `target` is set) have edit access
+   * must own or have been granted access to the chosen AIProvider, and (if `target` is set) have edit access
    * to that Post/Event. A grantee (never the provider's own owner) spends real
-   * AIModelProviderGrant.tokens_remaining on every call - the provider's own reported token usage once generation
+   * AIProviderGrant.tokens_remaining on every call - the provider's own reported token usage once generation
    * succeeds, or (rejected before any request is even sent to the provider) a rough pre-flight estimate of the
    * request's input cost alone, whichever catches an insufficient balance first.
    */
   generateMedia(request: DeepPartial<GenerateMediaRequest>, options?: CallOptions & CallOptionsExt): Promise<Media>;
-  /** Gets EventAttendances for an EventInstance. *Publicly accessible **or** Authenticated.* */
+  /** Gets EventAttendances for an Occasion. *Publicly accessible **or** Authenticated.* */
   getEventAttendances(
     request: DeepPartial<GetEventAttendancesRequest>,
     options?: CallOptions & CallOptionsExt,

@@ -1,7 +1,7 @@
 //! Calls an OpenAI-Images-API-shaped endpoint to generate a new image (`POST
 //! {base_url}/v1/images/generations`, no reference images) or edit existing ones (`POST
 //! {base_url}/v1/images/edits`, one or more reference images -- accepted as a multipart file array).
-//! Used by `rpcs::ai_model_providers::generate_media` for both OpenAI itself
+//! Used by `rpcs::ai_providers::generate_media` for both OpenAI itself
 //! (`platform.openai.com/docs/guides/image-generation`) and DigitalOcean's Serverless Inference API
 //! (`docs.digitalocean.com/products/inference`), which re-hosts GPT Image (and Stable Diffusion)
 //! models behind the exact same request/response shape, just a different `base_url`/key --
@@ -30,8 +30,8 @@ pub struct OpenAiGeneratedImage {
     pub content_type: String,
     pub bytes: Vec<u8>,
     /// This call's `usage.total_tokens`, if the response reported one -- what
-    /// `rpcs::ai_model_providers::generate_media` actually deducts from a grantee's
-    /// `AIModelProviderGrant.tokens_remaining`. `None` for models that don't bill by token at all
+    /// `rpcs::ai_providers::generate_media` actually deducts from a grantee's
+    /// `AIProviderGrant.tokens_remaining`. `None` for models that don't bill by token at all
     /// (e.g. DigitalOcean's `stable-diffusion-3.5-large`, priced per-image) -- `generate_media.rs`
     /// falls back to a flat charge in that case.
     pub tokens_used: Option<i64>,

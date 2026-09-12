@@ -1,6 +1,6 @@
-//! Specs for `SyncDestination.synced_event_instance_count`/`synced_post_count` -- computed fresh
+//! Specs for `SyncDestination.synced_occasion_count`/`synced_post_count` -- computed fresh
 //! via `COUNT` at request time (see those proto fields' own docs), not stored. Covers
-//! `marshaling::attach_synced_counts`/`get_sync_destinations` end to end, for both EventInstances
+//! `marshaling::attach_synced_counts`/`get_sync_destinations` end to end, for both Occasions
 //! and Posts.
 
 use diesel::Connection;
@@ -21,7 +21,7 @@ fn reports_zero_when_nothing_has_been_synced() {
             get_sync_destinations(User::default(), &owner, conn).expect("get should succeed");
         assert_eq!(response.destinations.len(), 1);
         assert_eq!(
-            response.destinations[0].synced_event_instance_count,
+            response.destinations[0].synced_occasion_count,
             Some(0)
         );
         assert_eq!(response.destinations[0].synced_post_count, Some(0));
@@ -31,7 +31,7 @@ fn reports_zero_when_nothing_has_been_synced() {
 }
 
 #[test]
-fn counts_synced_instances_for_the_right_destination_only() {
+fn counts_synced_occasions_for_the_right_destination_only() {
     let mut conn = test_conn();
     conn.test_transaction::<_, tonic::Status, _>(|conn| {
         let owner = create_user(conn, "sdct_count");
@@ -42,16 +42,16 @@ fn counts_synced_instances_for_the_right_destination_only() {
             conn,
             &owner,
             EventOpts {
-                default_instance: None,
+                default_occasion: None,
                 ..Default::default()
             },
         );
-        let (instance_1, _) = create_event_instance(conn, &event, Some(&owner), Default::default());
-        let (instance_2, _) = create_event_instance(conn, &event, Some(&owner), Default::default());
+        let (occasion_1, _) = create_occasion(conn, &event, Some(&owner), Default::default());
+        let (occasion_2, _) = create_occasion(conn, &event, Some(&owner), Default::default());
 
-        create_event_instance_sync_destination_row(conn, &instance_1, &destination_a);
-        create_event_instance_sync_destination_row(conn, &instance_2, &destination_a);
-        create_event_instance_sync_destination_row(conn, &instance_1, &destination_b);
+        create_occasion_sync_destination_row(conn, &occasion_1, &destination_a);
+        create_occasion_sync_destination_row(conn, &occasion_2, &destination_a);
+        create_occasion_sync_destination_row(conn, &occasion_1, &destination_b);
 
         let response =
             get_sync_destinations(User::default(), &owner, conn).expect("get should succeed");
@@ -62,7 +62,7 @@ fn counts_synced_instances_for_the_right_destination_only() {
                 .destinations
                 .iter()
                 .find(|d| d.id == proto_id)
-                .and_then(|d| d.synced_event_instance_count)
+                .and_then(|d| d.synced_occasion_count)
         };
         assert_eq!(count_for(destination_a.id), Some(2));
         assert_eq!(count_for(destination_b.id), Some(1));

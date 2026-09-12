@@ -11,7 +11,7 @@ mod delete_group_tests;
 mod delete_media_tests;
 mod delete_post_tests;
 mod delete_user_tests;
-mod event_instance_rpc_tests;
+mod occasion_rpc_tests;
 mod sync_source_rpc_tests;
 mod event_sync_tests;
 mod facebook_sync_tests;

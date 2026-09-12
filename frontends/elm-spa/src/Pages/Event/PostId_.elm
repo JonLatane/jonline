@@ -1,12 +1,12 @@
 module Pages.Event.PostId_ exposing (Model, Msg, fromShared, page)
 
 {-| `/event/:postId[@host]` -- a single Event, by its own (or one of its
-`EventInstance`s') Post id, on `mainFrontendHost` or (with an `@host` suffix)
+`Occasion`s') Post id, on `mainFrontendHost` or (with an `@host` suffix)
 some other federated server. Thin wrapper around `Components.Pages.EventPage`,
 which does all the actual work -- mirrors `Pages.Post.PostId_`'s own
 direct-alias shape around `Components.Pages.PostPage`. Also reused,
 unmodified, by `Components.Pages.PostOrEventPage` (once a short-URL id
-resolves to an Event/EventInstance) and, through it, `Pages.UsernameOrCustomTab_`,
+resolves to an Event/Occasion) and, through it, `Pages.UsernameOrCustomTab_`,
 so a vanity short URL like `/:4rAfoSKAuJo` renders indistinguishably from
 this page itself -- see those modules' own docs.
 -}

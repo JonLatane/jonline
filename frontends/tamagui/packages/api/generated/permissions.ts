@@ -94,7 +94,7 @@ export enum Permission {
   VIEW_EVENTS = 30,
   /**
    * CREATE_EVENTS - As a user permission, allow the user to create [`Event`](#rellm-Event)s of `PRIVATE` and `LIMITED` visibility.
-   * As a group permission, allow the user to create [`GroupPost`](#rellm-GroupPost)s for `EVENT` and `FEDERATED_EVENT_INSTANCE` [`PostContext`](#rellm-PostContext)s..
+   * As a group permission, allow the user to create [`GroupPost`](#rellm-GroupPost)s for `EVENT` and `FEDERATED_OCCASION` [`PostContext`](#rellm-PostContext)s..
    */
   CREATE_EVENTS = 31,
   /** PUBLISH_EVENTS_LOCALLY - Allow the user to publish events with `SERVER_PUBLIC` visibility. */
@@ -121,10 +121,10 @@ export enum Permission {
   READ_PERSONAL_MESSAGES = 50,
   READ_ALL_SYSTEM_MESSAGES = 51,
   /**
-   * CREATE_AI_MODEL_PROVIDERS - Allow the user to create/update their own [`AIModelProvider`](#rellm-AIModelProvider)s (see
-   * `ai_model_providers.proto`) and grant/revoke other users' access to them.
+   * CREATE_AI_PROVIDERS - Allow the user to create/update their own [`AIProvider`](#rellm-AIProvider)s (see
+   * `ai_providers.proto`) and grant/revoke other users' access to them.
    */
-  CREATE_AI_MODEL_PROVIDERS = 60,
+  CREATE_AI_PROVIDERS = 60,
   /**
    * SYNC_EVENTS_FROM_ICS - Allow the user to create/update [`SyncSource`](#rellm-SyncSource)s (iCal subscriptions) that
    * synchronize [`Event`](#rellm-Event)s in.
@@ -141,8 +141,8 @@ export enum Permission {
    */
   SYNC_POSTS_FROM_ATOM = 702,
   /**
-   * SYNC_EVENTS_TO_FACEBOOK - Allow the user to create/update [`SyncDestination`](#rellm-SyncDestination)s that cross-post EventInstances to a
-   * connected Facebook Page, and to sync EventInstances to them.
+   * SYNC_EVENTS_TO_FACEBOOK - Allow the user to create/update [`SyncDestination`](#rellm-SyncDestination)s that cross-post Occasions to a
+   * connected Facebook Page, and to sync Occasions to them.
    */
   SYNC_EVENTS_TO_FACEBOOK = 1000,
   /**
@@ -151,8 +151,8 @@ export enum Permission {
    */
   SYNC_POSTS_TO_FACEBOOK = 1001,
   /**
-   * SYNC_EVENTS_TO_INSTAGRAM - Allow the user to create/update [`SyncDestination`](#rellm-SyncDestination)s that cross-post EventInstances to a
-   * connected Instagram Business/Creator account, and to sync EventInstances to them.
+   * SYNC_EVENTS_TO_INSTAGRAM - Allow the user to create/update [`SyncDestination`](#rellm-SyncDestination)s that cross-post Occasions to a
+   * connected Instagram Business/Creator account, and to sync Occasions to them.
    */
   SYNC_EVENTS_TO_INSTAGRAM = 1010,
   /**
@@ -161,8 +161,8 @@ export enum Permission {
    */
   SYNC_POSTS_TO_INSTAGRAM = 1011,
   /**
-   * SYNC_EVENTS_TO_MASTODON - Allow the user to create/update [`SyncDestination`](#rellm-SyncDestination)s that cross-post EventInstances to a
-   * connected Mastodon account, and to sync EventInstances to them.
+   * SYNC_EVENTS_TO_MASTODON - Allow the user to create/update [`SyncDestination`](#rellm-SyncDestination)s that cross-post Occasions to a
+   * connected Mastodon account, and to sync Occasions to them.
    */
   SYNC_EVENTS_TO_MASTODON = 1020,
   /**
@@ -171,8 +171,8 @@ export enum Permission {
    */
   SYNC_POSTS_TO_MASTODON = 1021,
   /**
-   * SYNC_EVENTS_TO_BLUESKY - Allow the user to create/update [`SyncDestination`](#rellm-SyncDestination)s that cross-post EventInstances to a
-   * connected Bluesky account, and to sync EventInstances to them.
+   * SYNC_EVENTS_TO_BLUESKY - Allow the user to create/update [`SyncDestination`](#rellm-SyncDestination)s that cross-post Occasions to a
+   * connected Bluesky account, and to sync Occasions to them.
    */
   SYNC_EVENTS_TO_BLUESKY = 1030,
   /**
@@ -181,8 +181,8 @@ export enum Permission {
    */
   SYNC_POSTS_TO_BLUESKY = 1031,
   /**
-   * SYNC_EVENTS_TO_X_TWITTER - Allow the user to create/update [`SyncDestination`](#rellm-SyncDestination)s that cross-post EventInstances to a
-   * connected X (Twitter) account, and to sync EventInstances to them.
+   * SYNC_EVENTS_TO_X_TWITTER - Allow the user to create/update [`SyncDestination`](#rellm-SyncDestination)s that cross-post Occasions to a
+   * connected X (Twitter) account, and to sync Occasions to them.
    */
   SYNC_EVENTS_TO_X_TWITTER = 1040,
   /**
@@ -191,8 +191,8 @@ export enum Permission {
    */
   SYNC_POSTS_TO_X_TWITTER = 1041,
   /**
-   * SYNC_EVENTS_TO_THREADS - Allow the user to create/update [`SyncDestination`](#rellm-SyncDestination)s that cross-post EventInstances to a
-   * connected Threads account, and to sync EventInstances to them.
+   * SYNC_EVENTS_TO_THREADS - Allow the user to create/update [`SyncDestination`](#rellm-SyncDestination)s that cross-post Occasions to a
+   * connected Threads account, and to sync Occasions to them.
    */
   SYNC_EVENTS_TO_THREADS = 1050,
   /**
@@ -338,8 +338,8 @@ export function permissionFromJSON(object: any): Permission {
     case "READ_ALL_SYSTEM_MESSAGES":
       return Permission.READ_ALL_SYSTEM_MESSAGES;
     case 60:
-    case "CREATE_AI_MODEL_PROVIDERS":
-      return Permission.CREATE_AI_MODEL_PROVIDERS;
+    case "CREATE_AI_PROVIDERS":
+      return Permission.CREATE_AI_PROVIDERS;
     case 700:
     case "SYNC_EVENTS_FROM_ICS":
       return Permission.SYNC_EVENTS_FROM_ICS;
@@ -477,8 +477,8 @@ export function permissionToJSON(object: Permission): string {
       return "READ_PERSONAL_MESSAGES";
     case Permission.READ_ALL_SYSTEM_MESSAGES:
       return "READ_ALL_SYSTEM_MESSAGES";
-    case Permission.CREATE_AI_MODEL_PROVIDERS:
-      return "CREATE_AI_MODEL_PROVIDERS";
+    case Permission.CREATE_AI_PROVIDERS:
+      return "CREATE_AI_PROVIDERS";
     case Permission.SYNC_EVENTS_FROM_ICS:
       return "SYNC_EVENTS_FROM_ICS";
     case Permission.SYNC_POSTS_FROM_RSS:

@@ -11,7 +11,7 @@ use crate::models;
 
 /// Dispatches a `SyncSource` sync to its underlying implementation based on which
 /// `configuration` variant is set: `event_sync::sync_source_ics` for an ICS subscription
-/// (creates/updates Events/EventInstances), or `feed_sync::sync_source_feed` for an RSS or Atom
+/// (creates/updates Events/Occasions), or `feed_sync::sync_source_feed` for an RSS or Atom
 /// subscription (creates/updates plain Posts) -- both variants dispatch to the same feed-sync
 /// implementation, since `feed-rs` parses either format into one unified shape.
 pub fn sync_source(source: &models::SyncSource, conn: &mut PgPooledConnection) -> Result<(), Status> {

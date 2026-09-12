@@ -455,23 +455,23 @@ impl Rellm for RellmService {
     ) -> Result<Response<Event>, Status> {
         authenticated_rpc!(self, rpcs::update_event_details, request)
     }
-    async fn create_new_event_instances(
+    async fn create_new_occasions(
         &self,
         request: Request<Event>,
     ) -> Result<Response<Event>, Status> {
-        authenticated_rpc!(self, rpcs::create_new_event_instances, request)
+        authenticated_rpc!(self, rpcs::create_new_occasions, request)
     }
-    async fn update_event_instances(
+    async fn update_occasions(
         &self,
         request: Request<Event>,
     ) -> Result<Response<Event>, Status> {
-        authenticated_rpc!(self, rpcs::update_event_instances, request)
+        authenticated_rpc!(self, rpcs::update_occasions, request)
     }
-    async fn delete_removed_event_instances(
+    async fn delete_removed_occasions(
         &self,
         request: Request<Event>,
     ) -> Result<Response<Event>, Status> {
-        authenticated_rpc!(self, rpcs::delete_removed_event_instances, request)
+        authenticated_rpc!(self, rpcs::delete_removed_occasions, request)
     }
     async fn get_events(
         &self,
@@ -529,54 +529,54 @@ impl Rellm for RellmService {
     ) -> Result<Response<()>, Status> {
         authenticated_rpc!(self, rpcs::delete_sync_destination, request)
     }
-    async fn sync_event_instance(
+    async fn sync_occasion(
         &self,
-        request: Request<SyncEventInstanceRequest>,
-    ) -> Result<Response<EventInstance>, Status> {
-        authenticated_rpc!(self, rpcs::sync_event_instance, request)
+        request: Request<SyncOccasionRequest>,
+    ) -> Result<Response<Occasion>, Status> {
+        authenticated_rpc!(self, rpcs::sync_occasion, request)
     }
-    async fn delete_event_instance_sync_destination(
+    async fn delete_occasion_sync_destination(
         &self,
-        request: Request<DeleteEventInstanceSyncDestinationRequest>,
+        request: Request<DeleteOccasionSyncDestinationRequest>,
     ) -> Result<Response<()>, Status> {
-        authenticated_rpc!(self, rpcs::delete_event_instance_sync_destination, request)
+        authenticated_rpc!(self, rpcs::delete_occasion_sync_destination, request)
     }
 
-    async fn get_ai_model_providers(
+    async fn get_ai_providers(
         &self,
         request: Request<User>,
-    ) -> Result<Response<GetAiModelProvidersResponse>, Status> {
-        authenticated_rpc!(self, rpcs::get_ai_model_providers, request)
+    ) -> Result<Response<GetAiProvidersResponse>, Status> {
+        authenticated_rpc!(self, rpcs::get_ai_providers, request)
     }
-    async fn create_ai_model_provider(
+    async fn create_ai_provider(
         &self,
-        request: Request<AiModelProvider>,
-    ) -> Result<Response<AiModelProvider>, Status> {
-        authenticated_rpc!(self, rpcs::create_ai_model_provider, request)
+        request: Request<AiProvider>,
+    ) -> Result<Response<AiProvider>, Status> {
+        authenticated_rpc!(self, rpcs::create_ai_provider, request)
     }
-    async fn update_ai_model_provider(
+    async fn update_ai_provider(
         &self,
-        request: Request<AiModelProvider>,
-    ) -> Result<Response<AiModelProvider>, Status> {
-        authenticated_rpc!(self, rpcs::update_ai_model_provider, request)
+        request: Request<AiProvider>,
+    ) -> Result<Response<AiProvider>, Status> {
+        authenticated_rpc!(self, rpcs::update_ai_provider, request)
     }
-    async fn delete_ai_model_provider(
+    async fn delete_ai_provider(
         &self,
-        request: Request<DeleteAiModelProviderRequest>,
+        request: Request<DeleteAiProviderRequest>,
     ) -> Result<Response<()>, Status> {
-        authenticated_rpc!(self, rpcs::delete_ai_model_provider, request)
+        authenticated_rpc!(self, rpcs::delete_ai_provider, request)
     }
-    async fn grant_ai_model_provider(
+    async fn grant_ai_provider(
         &self,
-        request: Request<GrantAiModelProviderRequest>,
-    ) -> Result<Response<AiModelProviderGrant>, Status> {
-        authenticated_rpc!(self, rpcs::grant_ai_model_provider, request)
+        request: Request<GrantAiProviderRequest>,
+    ) -> Result<Response<AiProviderGrant>, Status> {
+        authenticated_rpc!(self, rpcs::grant_ai_provider, request)
     }
-    async fn revoke_ai_model_provider(
+    async fn revoke_ai_provider(
         &self,
-        request: Request<RevokeAiModelProviderRequest>,
+        request: Request<RevokeAiProviderRequest>,
     ) -> Result<Response<()>, Status> {
-        authenticated_rpc!(self, rpcs::revoke_ai_model_provider, request)
+        authenticated_rpc!(self, rpcs::revoke_ai_provider, request)
     }
     async fn generate_media(
         &self,

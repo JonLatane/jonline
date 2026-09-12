@@ -1,11 +1,26 @@
-module Components.Pages.ServerInformationPage.IntegrationsTab exposing (Model, Msg, init, update, view)
+module Components.Pages.ServerInformationPage.IntegrationsTab exposing (Model, Msg, activated, init, update, view)
 
 {-| The Integrations tab of `Components.Pages.ServerInformationPage` -- Twilio (`TwilioConfig`) and
 Bird (`BirdConfig`, see that message's own doc in `server_configuration.proto` -- a cheaper Twilio
 alternative for SMS verification), each editable by an admin as its own unit (a single
-Edit/Save/Cancel per provider, mirroring `CdnTab` -- the simplest existing tab, no async "activate on
-select" dance like `ClusterTab` needs), plus a "Preferred Verification Providers" selector choosing
-which provider is tried first when both are enabled (`preferredVerificationApis`).
+Edit/Save/Cancel per provider, mirroring `CdnTab`'s Edit/Save/Cancel shape), plus a "Preferred
+Verification Providers" selector choosing which provider is tried first when both are enabled
+(`preferredVerificationApis`).
+
+Unlike `CdnTab`, though, this tab **can't** just read `RellmServers.configurationOf server` for its
+display -- `twilioConfig`/`birdConfig`/`preferredVerificationApis` are all admin-only-serialized
+(see their own proto docs), stripped from the unauthenticated `GetServerConfiguration` probe
+`RellmServers.configurationOf` reflects (the same one used for the initial "can we connect at all"
+check and every reconnect). So, exactly like `ClusterTab` (`cluster_resources` is admin-only the
+same way), this tab fires its own authenticated `GetServerConfiguration`
+(`fetchAuthenticatedServerConfiguration`/`AdminIntegrationsStatus`) once an admin account is
+present, and displays *that* instead, via the exposed `activated` message --
+`Components.Pages.ServerInformationPage` dispatches it from every point its own connectivity state
+could plausibly have changed (`TabSelected`, `GotOwnServerResult`'s success branch, `init`'s
+already-known-connected branch, and every `SharedMsg`), via `activateIntegrationsTab`, since firing
+it before the account's server connection has actually finished settling races ahead of it and
+fails with a `Grpc.NetworkError` -- see `ClusterTab`'s own doc for the full "why so many call
+sites" explanation, which applies here verbatim.
 
 Unlike `CdnTab`'s "External CDN HTTP Support" toggle (which nulls `externalCdnConfig` out entirely
 when off), each provider's "Enabled" toggle here only ever flips its own `*Enabled` field -- the
@@ -33,11 +48,12 @@ import Html exposing (Html, button, div, h3, input, option, select, span, text)
 import Html.Attributes exposing (class, disabled, placeholder, selected, type_, value)
 import Html.Events exposing (onClick, onInput)
 import Proto.Rellm exposing (BirdConfig, ServerConfiguration, TwilioConfig, defaultBirdConfig, defaultTwilioConfig)
+import Proto.Rellm.Rellm as Rellm
 import Proto.Rellm.VerificationAPI exposing (VerificationAPI(..))
 import Shared
 import Shared.AccountsPanel as AccountsPanel
 import Shared.AccountsPanel.RellmAccounts exposing (RellmAccount)
-import Shared.AccountsPanel.RellmServers as RellmServers exposing (RellmServer)
+import Shared.AccountsPanel.RellmServers as RellmServers
 import Task
 
 
@@ -49,7 +65,21 @@ type alias Model =
     { configEdit : Maybe TwilioConfigEdit
     , birdConfigEdit : Maybe BirdConfigEdit
     , preferredProvidersEdit : Maybe PreferredProvidersEdit
+    , adminIntegrations : AdminIntegrationsStatus
     }
+
+
+{-| The result of this tab's own authenticated `GetServerConfiguration` fetch -- see this module's
+own doc for why it can't just read `RellmServers.configurationOf server` like most other tabs.
+Mirrors `ClusterTab.AdminClusterResourcesStatus` exactly, just holding the whole fetched
+`ServerConfiguration` (since this tab needs three admin-only fields off of it --
+`twilioConfig`/`birdConfig`/`preferredVerificationApis` -- rather than ClusterTab's one).
+-}
+type AdminIntegrationsStatus
+    = AdminIntegrationsNotFetched
+    | FetchingAdminIntegrations
+    | AdminIntegrationsLoaded ServerConfiguration
+    | AdminIntegrationsFetchFailed String
 
 
 type Msg
@@ -76,6 +106,8 @@ type Msg
     | PreferredProvidersCancelClicked
     | PreferredProvidersSaveClicked
     | GotPreferredProvidersSaveResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, ServerConfiguration ))
+    | IntegrationsTabActivated
+    | GotAuthenticatedServerConfiguration (Result Grpc.Error ( Maybe AccountsPanel.Msg, ServerConfiguration ))
 
 
 {-| Live only while the Twilio config is being edited by an admin. `authToken` always starts blank
@@ -120,39 +152,81 @@ init =
     { configEdit = Nothing
     , birdConfigEdit = Nothing
     , preferredProvidersEdit = Nothing
+    , adminIntegrations = AdminIntegrationsNotFetched
     }
+
+
+{-| `Components.Pages.ServerInformationPage` dispatches this (via `IntegrationsTab.update`)
+whenever this tab becomes the active one -- on `TabSelected TabIntegrations`, and at every point
+this page's own connectivity state could plausibly have changed (see module doc) -- to kick off the
+authenticated fetch this module's own doc describes. `IntegrationsTabActivated`'s own constructor
+isn't exposed (like every other `Msg` here), so this is the one blessed way a parent triggers it.
+Mirrors `ClusterTab.activated` exactly.
+-}
+activated : Msg
+activated =
+    IntegrationsTabActivated
+
+
+{-| `twilioConfig`/`birdConfig`/`preferredVerificationApis` off of `model.adminIntegrations`'s own
+freshly-authenticated fetch (see module doc) -- `Nothing`/`[]` whenever that fetch hasn't completed
+yet (or failed), same as `ClusterTab`'s own accessors.
+-}
+adminTwilioConfig : Model -> Maybe TwilioConfig
+adminTwilioConfig model =
+    case model.adminIntegrations of
+        AdminIntegrationsLoaded config ->
+            config.twilioConfig
+
+        _ ->
+            Nothing
+
+
+adminBirdConfig : Model -> Maybe BirdConfig
+adminBirdConfig model =
+    case model.adminIntegrations of
+        AdminIntegrationsLoaded config ->
+            config.birdConfig
+
+        _ ->
+            Nothing
+
+
+adminPreferredProviders : Model -> List VerificationAPI
+adminPreferredProviders model =
+    case model.adminIntegrations of
+        AdminIntegrationsLoaded config ->
+            config.preferredVerificationApis
+
+        _ ->
+            []
 
 
 
 -- UPDATE
 
 
-update : Shared.Model -> String -> Maybe RellmServer -> Msg -> Model -> ( Model, Effect Msg )
-update shared targetHost maybeServer msg model =
+update : Shared.Model -> String -> Msg -> Model -> ( Model, Effect Msg )
+update shared targetHost msg model =
     case msg of
         TwilioEditClicked ->
-            case maybeServer of
-                Just server ->
-                    let
-                        twilioConfig : Maybe TwilioConfig
-                        twilioConfig =
-                            (RellmServers.configurationOf server).twilioConfig
-                    in
-                    ( { model
-                        | configEdit =
-                            Just
-                                { enabled = twilioConfig |> Maybe.map .twilioEnabled |> Maybe.withDefault False
-                                , accountSid = twilioConfig |> Maybe.map .twilioAccountSid |> Maybe.withDefault ""
-                                , authToken = ""
-                                , fromNumber = twilioConfig |> Maybe.map .twilioFromNumber |> Maybe.withDefault ""
-                                , status = AccountsPanel.Idle
-                                }
-                      }
-                    , Effect.none
-                    )
-
-                Nothing ->
-                    ( model, Effect.none )
+            let
+                twilioConfig : Maybe TwilioConfig
+                twilioConfig =
+                    adminTwilioConfig model
+            in
+            ( { model
+                | configEdit =
+                    Just
+                        { enabled = twilioConfig |> Maybe.map .twilioEnabled |> Maybe.withDefault False
+                        , accountSid = twilioConfig |> Maybe.map .twilioAccountSid |> Maybe.withDefault ""
+                        , authToken = ""
+                        , fromNumber = twilioConfig |> Maybe.map .twilioFromNumber |> Maybe.withDefault ""
+                        , status = AccountsPanel.Idle
+                        }
+              }
+            , Effect.none
+            )
 
         TwilioEnabledToggled ->
             ( { model | configEdit = model.configEdit |> Maybe.map (\edit -> { edit | enabled = not edit.enabled }) }, Effect.none )
@@ -182,7 +256,7 @@ update shared targetHost maybeServer msg model =
                     ( model, Effect.none )
 
         GotTwilioSaveResult (Ok ( maybeAccountsPanelMsg, newConfig )) ->
-            ( { model | configEdit = Nothing }
+            ( { model | configEdit = Nothing, adminIntegrations = AdminIntegrationsLoaded newConfig }
             , Effect.batch
                 [ Common.accountsPanelEffect maybeAccountsPanelMsg
                 , Effect.fromShared (Shared.AccountsPanelMsg (AccountsPanel.GotServerConfigSaveResult targetHost newConfig))
@@ -195,28 +269,23 @@ update shared targetHost maybeServer msg model =
             )
 
         BirdEditClicked ->
-            case maybeServer of
-                Just server ->
-                    let
-                        birdConfig : Maybe BirdConfig
-                        birdConfig =
-                            (RellmServers.configurationOf server).birdConfig
-                    in
-                    ( { model
-                        | birdConfigEdit =
-                            Just
-                                { enabled = birdConfig |> Maybe.map .birdEnabled |> Maybe.withDefault False
-                                , accessKey = ""
-                                , from = birdConfig |> Maybe.map .birdFrom |> Maybe.withDefault ""
-                                , region = birdConfig |> Maybe.map .birdRegion |> Maybe.withDefault ""
-                                , status = AccountsPanel.Idle
-                                }
-                      }
-                    , Effect.none
-                    )
-
-                Nothing ->
-                    ( model, Effect.none )
+            let
+                birdConfig : Maybe BirdConfig
+                birdConfig =
+                    adminBirdConfig model
+            in
+            ( { model
+                | birdConfigEdit =
+                    Just
+                        { enabled = birdConfig |> Maybe.map .birdEnabled |> Maybe.withDefault False
+                        , accessKey = ""
+                        , from = birdConfig |> Maybe.map .birdFrom |> Maybe.withDefault ""
+                        , region = birdConfig |> Maybe.map .birdRegion |> Maybe.withDefault ""
+                        , status = AccountsPanel.Idle
+                        }
+              }
+            , Effect.none
+            )
 
         BirdEnabledToggled ->
             ( { model | birdConfigEdit = model.birdConfigEdit |> Maybe.map (\edit -> { edit | enabled = not edit.enabled }) }, Effect.none )
@@ -246,7 +315,7 @@ update shared targetHost maybeServer msg model =
                     ( model, Effect.none )
 
         GotBirdSaveResult (Ok ( maybeAccountsPanelMsg, newConfig )) ->
-            ( { model | birdConfigEdit = Nothing }
+            ( { model | birdConfigEdit = Nothing, adminIntegrations = AdminIntegrationsLoaded newConfig }
             , Effect.batch
                 [ Common.accountsPanelEffect maybeAccountsPanelMsg
                 , Effect.fromShared (Shared.AccountsPanelMsg (AccountsPanel.GotServerConfigSaveResult targetHost newConfig))
@@ -259,19 +328,14 @@ update shared targetHost maybeServer msg model =
             )
 
         PreferredProvidersEditClicked ->
-            case maybeServer of
-                Just server ->
-                    let
-                        current : List VerificationAPI
-                        current =
-                            (RellmServers.configurationOf server).preferredVerificationApis
-                    in
-                    ( { model | preferredProvidersEdit = Just { pending = current, addSelection = resolveAddSelection Nothing current, status = AccountsPanel.Idle } }
-                    , Effect.none
-                    )
-
-                Nothing ->
-                    ( model, Effect.none )
+            let
+                current : List VerificationAPI
+                current =
+                    adminPreferredProviders model
+            in
+            ( { model | preferredProvidersEdit = Just { pending = current, addSelection = resolveAddSelection Nothing current, status = AccountsPanel.Idle } }
+            , Effect.none
+            )
 
         PreferredProviderRemoveClicked provider ->
             ( { model
@@ -335,7 +399,7 @@ update shared targetHost maybeServer msg model =
                     ( model, Effect.none )
 
         GotPreferredProvidersSaveResult (Ok ( maybeAccountsPanelMsg, newConfig )) ->
-            ( { model | preferredProvidersEdit = Nothing }
+            ( { model | preferredProvidersEdit = Nothing, adminIntegrations = AdminIntegrationsLoaded newConfig }
             , Effect.batch
                 [ Common.accountsPanelEffect maybeAccountsPanelMsg
                 , Effect.fromShared (Shared.AccountsPanelMsg (AccountsPanel.GotServerConfigSaveResult targetHost newConfig))
@@ -346,6 +410,49 @@ update shared targetHost maybeServer msg model =
             ( { model | preferredProvidersEdit = model.preferredProvidersEdit |> Maybe.map (\edit -> { edit | status = AccountsPanel.Errored (AccountsPanel.grpcErrorToString err) }) }
             , Effect.none
             )
+
+        IntegrationsTabActivated ->
+            case ( model.adminIntegrations, Common.adminAccountFor shared targetHost ) of
+                ( AdminIntegrationsNotFetched, Just account ) ->
+                    ( { model | adminIntegrations = FetchingAdminIntegrations }
+                    , fetchAuthenticatedServerConfiguration shared targetHost account
+                    )
+
+                ( AdminIntegrationsFetchFailed _, Just account ) ->
+                    ( { model | adminIntegrations = FetchingAdminIntegrations }
+                    , fetchAuthenticatedServerConfiguration shared targetHost account
+                    )
+
+                _ ->
+                    ( model, Effect.none )
+
+        GotAuthenticatedServerConfiguration (Ok ( maybeAccountsPanelMsg, config )) ->
+            ( { model | adminIntegrations = AdminIntegrationsLoaded config }
+            , Common.accountsPanelEffect maybeAccountsPanelMsg
+            )
+
+        GotAuthenticatedServerConfiguration (Err err) ->
+            ( { model | adminIntegrations = AdminIntegrationsFetchFailed (AccountsPanel.grpcErrorToString err) }, Effect.none )
+
+
+{-| `cluster_resources`/`twilio_config`/`bird_config`/`preferred_verification_apis` are all
+stripped from the unauthenticated `GetServerConfiguration` every other tab reads via
+`RellmServers.configurationOf` (see module doc) -- this fetches it fresh, authenticated as
+`account`, the same way `AccountsPanel.updateServerConfig` does before writing. Mirrors
+`ClusterTab.fetchAuthenticatedServerConfiguration` exactly.
+-}
+fetchAuthenticatedServerConfiguration : Shared.Model -> String -> RellmAccount -> Effect Msg
+fetchAuthenticatedServerConfiguration shared targetHost account =
+    AccountsPanel.performWithAccountServer shared.accounts
+        ( Just account.userId, targetHost )
+        (\server token ->
+            Grpc.new Rellm.getServerConfiguration {}
+                |> Grpc.setHost (RellmServers.rellmServerUrl server)
+                |> RellmServers.withAccessToken (Just token)
+                |> Grpc.toTask
+        )
+        |> Task.attempt GotAuthenticatedServerConfiguration
+        |> Effect.fromCmd
 
 
 {-| `TwilioSaveClicked`'s transform, passed to `AccountsPanel.updateServerConfig` the same way every
@@ -452,32 +559,39 @@ verificationApiFromText text_ =
 -- VIEW
 
 
-view : RellmServer -> Maybe RellmAccount -> Model -> Html Msg
-view server maybeAdminAccount model =
-    let
-        config : ServerConfiguration
-        config =
-            RellmServers.configurationOf server
-    in
+view : Maybe RellmAccount -> Model -> Html Msg
+view maybeAdminAccount model =
     div [ class "server-details-tab-content server-details-integrations" ]
-        [ div []
-            (case model.configEdit of
-                Just edit ->
-                    twilioEditView edit
+        (case model.adminIntegrations of
+            FetchingAdminIntegrations ->
+                [ span [ class "server-details-feature-settings-value" ] [ text "Loading…" ] ]
 
-                Nothing ->
-                    twilioDisplayView maybeAdminAccount config.twilioConfig
-            )
-        , div []
-            (case model.birdConfigEdit of
-                Just edit ->
-                    birdEditView edit
+            AdminIntegrationsNotFetched ->
+                [ span [ class "server-details-feature-settings-value" ] [ text "Loading…" ] ]
 
-                Nothing ->
-                    birdDisplayView maybeAdminAccount config.birdConfig
-            )
-        , preferredProvidersSection maybeAdminAccount model.preferredProvidersEdit config.preferredVerificationApis
-        ]
+            AdminIntegrationsFetchFailed err ->
+                [ span [ class "server-details-feature-settings-value" ] [ text ("Failed to load integration settings: " ++ err) ] ]
+
+            AdminIntegrationsLoaded _ ->
+                [ div []
+                    (case model.configEdit of
+                        Just edit ->
+                            twilioEditView edit
+
+                        Nothing ->
+                            twilioDisplayView maybeAdminAccount (adminTwilioConfig model)
+                    )
+                , div []
+                    (case model.birdConfigEdit of
+                        Just edit ->
+                            birdEditView edit
+
+                        Nothing ->
+                            birdDisplayView maybeAdminAccount (adminBirdConfig model)
+                    )
+                , preferredProvidersSection maybeAdminAccount model.preferredProvidersEdit (adminPreferredProviders model)
+                ]
+        )
 
 
 twilioDisplayView : Maybe RellmAccount -> Maybe TwilioConfig -> List (Html Msg)

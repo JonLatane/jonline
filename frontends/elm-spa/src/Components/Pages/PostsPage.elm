@@ -219,7 +219,7 @@ type Msg
       -- The Push button on a card's `Posts.postCard`-rendered sync
       -- destination row (see `Model.availableSyncDestinations`'s own doc) --
       -- host/postId/syncDestinationId, keyed into `Model.pushStatuses` via
-      -- `pushStatusKey`. Mirrors `Components.Pages.EventsPage.PushEventInstanceToDestination`
+      -- `pushStatusKey`. Mirrors `Components.Pages.EventsPage.PushOccasionToDestination`
       -- exactly.
     | PushPostToDestination String String String
     | GotPushResult String String String (Result Grpc.Error ( Maybe AccountsPanel.Msg, Post ))
@@ -663,7 +663,7 @@ updateInner shared msg model =
                         -- (`Shared.RequestDelete`/`Shared.ConfirmPostSyncDestinationDelete`, see
                         -- `postCardView`'s own `onDelete`) resolving -- mirrors
                         -- `Components.Pages.EventsPage`'s identical
-                        -- `Shared.GotEventInstanceSyncDestinationDeleteResult` handling (re-scoped
+                        -- `Shared.GotOccasionSyncDestinationDeleteResult` handling (re-scoped
                         -- refetch of just `host`'s server), since a successful un-sync changes
                         -- `post.syncDestinations` behind this already-fetched copy's back the same way.
                         Shared.GotPostSyncDestinationDeleteResult host (Ok _) ->

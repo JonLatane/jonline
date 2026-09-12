@@ -13,7 +13,7 @@ import 'dart:core' as $core;
 
 import 'package:protobuf/protobuf.dart' as $pb;
 
-import 'ai_model_providers.pb.dart' as $11;
+import 'ai_providers.pb.dart' as $11;
 import 'federation.pb.dart' as $1;
 import 'google/protobuf/timestamp.pb.dart' as $12;
 import 'media.pb.dart' as $5;
@@ -46,7 +46,7 @@ class User extends $pb.GeneratedMessage {
     $core.int? postCount,
     $core.int? responseCount,
     $core.int? eventCount,
-    $core.int? eventInstanceCount,
+    $core.int? occasionCount,
     Follow? currentUserFollow,
     Follow? targetCurrentUserFollow,
     Membership? currentGroupMembership,
@@ -54,7 +54,7 @@ class User extends $pb.GeneratedMessage {
     $core.Iterable<$1.FederatedAccount>? federatedProfiles,
     $core.Iterable<$10.SyncDestination>? syncDestinations,
     $core.Iterable<$10.SyncSource>? syncSources,
-    $core.Iterable<$11.AvailableAIModel>? availableAiModels,
+    $core.Iterable<$11.AIModel>? aiModels,
     $12.Timestamp? createdAt,
     $12.Timestamp? updatedAt,
   }) {
@@ -113,8 +113,8 @@ class User extends $pb.GeneratedMessage {
     if (eventCount != null) {
       $result.eventCount = eventCount;
     }
-    if (eventInstanceCount != null) {
-      $result.eventInstanceCount = eventInstanceCount;
+    if (occasionCount != null) {
+      $result.occasionCount = occasionCount;
     }
     if (currentUserFollow != null) {
       $result.currentUserFollow = currentUserFollow;
@@ -137,8 +137,8 @@ class User extends $pb.GeneratedMessage {
     if (syncSources != null) {
       $result.syncSources.addAll(syncSources);
     }
-    if (availableAiModels != null) {
-      $result.availableAiModels.addAll(availableAiModels);
+    if (aiModels != null) {
+      $result.aiModels.addAll(aiModels);
     }
     if (createdAt != null) {
       $result.createdAt = createdAt;
@@ -171,7 +171,7 @@ class User extends $pb.GeneratedMessage {
     ..a<$core.int>(35, _omitFieldNames ? '' : 'postCount', $pb.PbFieldType.O3)
     ..a<$core.int>(36, _omitFieldNames ? '' : 'responseCount', $pb.PbFieldType.O3)
     ..a<$core.int>(37, _omitFieldNames ? '' : 'eventCount', $pb.PbFieldType.O3)
-    ..a<$core.int>(38, _omitFieldNames ? '' : 'eventInstanceCount', $pb.PbFieldType.O3)
+    ..a<$core.int>(38, _omitFieldNames ? '' : 'occasionCount', $pb.PbFieldType.O3)
     ..aOM<Follow>(50, _omitFieldNames ? '' : 'currentUserFollow', subBuilder: Follow.create)
     ..aOM<Follow>(51, _omitFieldNames ? '' : 'targetCurrentUserFollow', subBuilder: Follow.create)
     ..aOM<Membership>(52, _omitFieldNames ? '' : 'currentGroupMembership', subBuilder: Membership.create)
@@ -179,7 +179,7 @@ class User extends $pb.GeneratedMessage {
     ..pc<$1.FederatedAccount>(81, _omitFieldNames ? '' : 'federatedProfiles', $pb.PbFieldType.PM, subBuilder: $1.FederatedAccount.create)
     ..pc<$10.SyncDestination>(82, _omitFieldNames ? '' : 'syncDestinations', $pb.PbFieldType.PM, subBuilder: $10.SyncDestination.create)
     ..pc<$10.SyncSource>(83, _omitFieldNames ? '' : 'syncSources', $pb.PbFieldType.PM, subBuilder: $10.SyncSource.create)
-    ..pc<$11.AvailableAIModel>(84, _omitFieldNames ? '' : 'availableAiModels', $pb.PbFieldType.PM, subBuilder: $11.AvailableAIModel.create)
+    ..pc<$11.AIModel>(84, _omitFieldNames ? '' : 'aiModels', $pb.PbFieldType.PM, subBuilder: $11.AIModel.create)
     ..aOM<$12.Timestamp>(100, _omitFieldNames ? '' : 'createdAt', subBuilder: $12.Timestamp.create)
     ..aOM<$12.Timestamp>(101, _omitFieldNames ? '' : 'updatedAt', subBuilder: $12.Timestamp.create)
     ..hasRequiredFields = false
@@ -392,15 +392,15 @@ class User extends $pb.GeneratedMessage {
   @$pb.TagNumber(37)
   void clearEventCount() => clearField(37);
 
-  /// The number of event instances this user has created (across all of their events).
+  /// The number of occasions this user has created (across all of their events).
   @$pb.TagNumber(38)
-  $core.int get eventInstanceCount => $_getIZ(18);
+  $core.int get occasionCount => $_getIZ(18);
   @$pb.TagNumber(38)
-  set eventInstanceCount($core.int v) { $_setSignedInt32(18, v); }
+  set occasionCount($core.int v) { $_setSignedInt32(18, v); }
   @$pb.TagNumber(38)
-  $core.bool hasEventInstanceCount() => $_has(18);
+  $core.bool hasOccasionCount() => $_has(18);
   @$pb.TagNumber(38)
-  void clearEventInstanceCount() => clearField(38);
+  void clearOccasionCount() => clearField(38);
 
   /// Presence indicates the current user is following
   /// or has a pending follow request for this user.
@@ -476,13 +476,13 @@ class User extends $pb.GeneratedMessage {
   @$pb.TagNumber(83)
   $core.List<$10.SyncSource> get syncSources => $_getList(25);
 
-  /// Every [`AIModelProvider`](#rellm-AIModelProvider) model the target user may currently call - their own
+  /// Every [`AIProvider`](#rellm-AIProvider) model the target user may currently call - their own
   /// providers' models, plus any models granted to them on other users' providers (see
-  /// [`AvailableAIModel`](#rellm-AvailableAIModel)). Gated and populated the same way as `sync_sources`
+  /// [`AIModel`](#rellm-AIModel)). Gated and populated the same way as `sync_sources`
   /// (target user themselves, or an Admin, across any [`GetUsers`](#grpc-api-GetUsers) listing type, plus
   /// [`Login`](#grpc-api-Login)/[`CreateAccount`](#grpc-api-CreateAccount)/[`GetCurrentUser`](#grpc-api-GetCurrentUser)).
   @$pb.TagNumber(84)
-  $core.List<$11.AvailableAIModel> get availableAiModels => $_getList(26);
+  $core.List<$11.AIModel> get aiModels => $_getList(26);
 
   /// The time the user was created.
   @$pb.TagNumber(100)

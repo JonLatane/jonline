@@ -12,30 +12,30 @@ module Components.Pages.EventPage exposing
 {-| The shared guts of a single Event's detail/"invitation" view: the
 `Event`'s own `Post` (title, link, media, content) up top, then a
 horizontally-scrolling date-picker strip of the `Event`'s other
-`EventInstance`s (see `instanceHistoryView`) if it has more than one, then
-the specific `EventInstance` being viewed (its start/end time and location),
-then that `EventInstance`'s own optional override `Post`. Reused by both
+`Occasion`s (see `occasionHistoryView`) if it has more than one, then
+the specific `Occasion` being viewed (its start/end time and location),
+then that `Occasion`'s own optional override `Post`. Reused by both
 `Pages.Event.PostId_` (`/event/:postId[@host]`) and
 `Components.Pages.PostOrEventPage` (once a short-URL id resolves to an
-Event/EventInstance -- see that module's own doc), and, through it,
+Event/Occasion -- see that module's own doc), and, through it,
 `Pages.UsernameOrCustomTab_` (once a segment starting with a reserved
 short-URL character resolves this way -- see that module's `initEmbedded`).
 Mirrors `Components.Pages.PostPage`'s own split from its two callers.
 
 `postId` (passed to `init`, matching `Components.Pages.PostPage.init`'s own
-`rawPostId` naming) is genuinely the viewed `EventInstance`'s own `Post` id --
-an `EventInstance`'s identity is its own `Post`'s id (see
-`Proto.Rellm.EventInstance`). `GetEventsRequest.post_id` is the only way to
+`rawPostId` naming) is genuinely the viewed `Occasion`'s own `Post` id --
+an `Occasion`'s identity is its own `Post`'s id (see
+`Proto.Rellm.Occasion`). `GetEventsRequest.post_id` is the only way to
 fetch a single Event (see `events.proto`), and looking it up by an
-`EventInstance`'s own Post id returns that instance's whole parent `Event`
-with _every_ one of its instances, not just the one asked for -- which is
+`Occasion`'s own Post id returns that occasion's whole parent `Event`
+with _every_ one of its occasions, not just the one asked for -- which is
 exactly what makes the date-picker strip possible without a second request.
 
 `pageIsSecure`/`navKey` are captured once, at `init` (same reasoning as
 `Components.Pages.PostPage.Model.pageIsSecure`/`navKey`) -- needed later by
 `ConnectClicked` (`RellmServers.connectToRellmServer`) and `update`'s own
-`Shared.GotEventDeleteResult`/`Shared.GotEventInstanceDeleteResult` handling
-(navigating away once the viewed Event/instance no longer exists), neither of
+`Shared.GotEventDeleteResult`/`Shared.GotOccasionDeleteResult` handling
+(navigating away once the viewed Event/occasion no longer exists), neither of
 which otherwise has access to the calling page's own `Request`.
 
 -}
@@ -43,7 +43,7 @@ which otherwise has access to the calling page's own `Request`.
 import Animation
 import Browser.Dom as Dom
 import Browser.Navigation
-import Components.AIModelProviders as AIModelProviders
+import Components.AIProviders as AIProviders
 import Components.Authors as Authors
 import Components.Events as Events
 import Components.Markdown as Markdown
@@ -62,7 +62,7 @@ import Html.Events exposing (onClick, onInput)
 import Json.Encode as Encode
 import Ports
 import Process
-import Proto.Rellm exposing (Event, EventInstance, GetSyncDestinationsResponse, Location, Post, SyncDestination, defaultEventInstance, defaultLocation)
+import Proto.Rellm exposing (Event, Occasion, GetSyncDestinationsResponse, Location, Post, SyncDestination, defaultOccasion, defaultLocation)
 import Proto.Rellm.Moderation exposing (Moderation)
 import Proto.Rellm.Permission exposing (Permission(..))
 import Proto.Rellm.Visibility exposing (Visibility)
@@ -87,7 +87,7 @@ import UI.Flip
 
 type alias Model =
     { targetHost : String
-    , eventInstanceId : String
+    , occasionId : String
     , eventStatus : EventStatus
     , connectStatus : ServerDependentView.ConnectStatus
     , fetchStarted : Bool
@@ -97,9 +97,9 @@ type alias Model =
     -- `targetHost` (the Event's own server) when the currently-held
     -- `eventStatus` was last fetched, if any.
     , fetchedAccountId : Maybe String
-    , instanceHistoryDisplay : InstanceHistoryDisplay
-    , instanceLayout : InstanceLayout
-    , instanceAnimations : Dict String InstanceAnimation
+    , occasionHistoryDisplay : OccasionHistoryDisplay
+    , occasionLayout : OccasionLayout
+    , occasionAnimations : Dict String OccasionAnimation
 
     -- Set by `MediaEditClicked`, until the `Shared.MyMediaPanel` it opens
     -- reports back a `SaveMediaClicked`/`CloseClicked` -- mirrors
@@ -128,16 +128,16 @@ type alias Model =
     -- `Components.Pages.PostPage.VisibilityEdit` in spirit.
     , visibilityEdit : Maybe VisibilityEdit
 
-    -- Live only while the currently-viewed `EventInstance`'s start/end time
-    -- editor (see `instanceTimeEditFormView`) is open -- mirrors
+    -- Live only while the currently-viewed `Occasion`'s start/end time
+    -- editor (see `occasionTimeEditFormView`) is open -- mirrors
     -- `postFieldEdit` in shape, just with two pending fields instead of one
     -- (mirrors `Shared.CreateNewPanel.Model`'s own `startsAt`/`endsAt` pair).
-    , instanceTimeEdit : Maybe InstanceTimeEdit
+    , occasionTimeEdit : Maybe OccasionTimeEdit
 
-    -- Live only while the currently-viewed `EventInstance`'s location editor
-    -- (see `instanceLocationEditFormView`) is open -- mirrors `postFieldEdit`
+    -- Live only while the currently-viewed `Occasion`'s location editor
+    -- (see `occasionLocationEditFormView`) is open -- mirrors `postFieldEdit`
     -- in shape, just a single free-text address field.
-    , instanceLocationEdit : Maybe InstanceLocationEdit
+    , occasionLocationEdit : Maybe OccasionLocationEdit
 
     -- Live only while the "Add More" recurrence popover (see `addMoreView`)
     -- is open -- `Nothing` is "closed", mirroring every other panel here.
@@ -147,8 +147,8 @@ type alias Model =
     -- for the "synced to" listing's own Push/Push-again button (see
     -- `Events.eventSyncDestinationsView`'s `isPushing`/`pushError`) --
     -- mirrors `Components.Pages.EventsPage.Model.pushStatuses`, just keyed by
-    -- destination id alone rather than `instanceId ++ "|" ++ destinationId`,
-    -- since this page only ever shows one `EventInstance` at a time.
+    -- destination id alone rather than `occasionId ++ "|" ++ destinationId`,
+    -- since this page only ever shows one `Occasion` at a time.
     , syncDestinationPushStatuses : Dict String SubmitStatus
 
     -- The viewer's own `SyncDestination`s, fetched once `GotEvent` confirms they're this Event's
@@ -173,13 +173,13 @@ type Msg
       -- reusing plain `UpdatePost` (via `Posts.updatePost`) to save -- the
       -- backend's `update_post.rs` already updates `media` unconditionally
       -- for `admin || self_update` regardless of the post's own context
-      -- (`Post`, `Event`, `EventInstance`, ...), so nothing about `UpdateEvent`
+      -- (`Post`, `Event`, `Occasion`, ...), so nothing about `UpdateEvent`
       -- is needed just to change which media this Post carries.
     | MediaEditClicked Post
       -- The Event's own "Generate Media…" button (see `eventDetailView`) -- opens
       -- `Shared.MediaGeneratorPanel` targeting the Event's own Post, mirroring
       -- `Components.Pages.PostPage.GenerateMediaClicked` exactly.
-    | GenerateMediaClicked Event EventInstance
+    | GenerateMediaClicked Event Occasion
     | GotMediaUpdateResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, Post ))
       -- One of the Event's own `Post`'s title/link editors (see
       -- `postFieldEditFormView`) -- each shown to the post's own author or
@@ -216,30 +216,30 @@ type Msg
     | VisibilityCancelClicked
     | VisibilitySaveClicked Post
     | GotVisibilitySaveResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, Post ))
-      -- The currently-viewed `EventInstance`'s start/end time editor (see
-      -- `instanceTimeEditFormView`) -- unlike the Event's own `Post` fields
-      -- above, this *does* need `UpdateEventInstances` (there's no
-      -- `EventInstance`-only equivalent of `UpdatePost`).
-    | InstanceTimeEditClicked EventInstance
-    | InstanceStartsAtChanged String
-    | InstanceEndsAtChanged String
-    | InstanceTimezoneChanged String
-    | InstanceTimeCancelClicked
-    | InstanceTimeSaveClicked EventInstance
-    | GotInstanceTimeSaveResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, Event ))
-      -- The currently-viewed `EventInstance`'s location editor (see
-      -- `instanceLocationEditFormView`) -- mirrors the time editor above,
-      -- also via `UpdateEventInstances`.
-    | InstanceLocationEditClicked EventInstance
-    | InstanceLocationChanged String
-    | InstanceLocationCancelClicked
-    | InstanceLocationSaveClicked EventInstance
-    | GotInstanceLocationSaveResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, Event ))
+      -- The currently-viewed `Occasion`'s start/end time editor (see
+      -- `occasionTimeEditFormView`) -- unlike the Event's own `Post` fields
+      -- above, this *does* need `UpdateOccasions` (there's no
+      -- `Occasion`-only equivalent of `UpdatePost`).
+    | OccasionTimeEditClicked Occasion
+    | OccasionStartsAtChanged String
+    | OccasionEndsAtChanged String
+    | OccasionTimezoneChanged String
+    | OccasionTimeCancelClicked
+    | OccasionTimeSaveClicked Occasion
+    | GotOccasionTimeSaveResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, Event ))
+      -- The currently-viewed `Occasion`'s location editor (see
+      -- `occasionLocationEditFormView`) -- mirrors the time editor above,
+      -- also via `UpdateOccasions`.
+    | OccasionLocationEditClicked Occasion
+    | OccasionLocationChanged String
+    | OccasionLocationCancelClicked
+    | OccasionLocationSaveClicked Occasion
+    | GotOccasionLocationSaveResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, Event ))
       -- The "Add More" recurrence popover (see `addMoreView`) -- a two-step
-      -- menu (`AddMoreMenu.step`): first how many more `EventInstance`s to
+      -- menu (`AddMoreMenu.step`): first how many more `Occasion`s to
       -- create (`AddMoreCountClicked`), then how far apart to space them
       -- (`AddMoreFrequencyClicked`, which actually submits via
-      -- `CreateNewEventInstances`).
+      -- `CreateNewOccasions`).
     | AddMoreClicked
     | AddMoreClosed
     | AddMoreCountClicked Int
@@ -251,44 +251,44 @@ type Msg
       -- (`Shared.ConfirmEventDelete`); its result (`Shared.GotEventDeleteResult`)
       -- is picked up in `SharedMsg` below.
     | DeleteClicked Event
-      -- The "Delete Instance" button next to it (see
-      -- `deleteInstanceButtonView`), only shown once `event` has more than
-      -- one `EventInstance` -- opens the same shared dialog
-      -- (`Shared.ConfirmEventInstanceDelete`) for just `instance`; its result
-      -- (`Shared.GotEventInstanceDeleteResult`) is picked up in `SharedMsg`
+      -- The "Delete Occasion" button next to it (see
+      -- `deleteOccasionButtonView`), only shown once `event` has more than
+      -- one `Occasion` -- opens the same shared dialog
+      -- (`Shared.ConfirmOccasionDelete`) for just `occasion`; its result
+      -- (`Shared.GotOccasionDeleteResult`) is picked up in `SharedMsg`
       -- below.
-    | DeleteInstanceClicked EventInstance Event
+    | DeleteOccasionClicked Occasion Event
     | ConnectClicked
     | GotConnectResult (Result Grpc.Error RellmServer)
     | EnableClicked
-      -- Switches which of the Event's `EventInstance`s the date-picker strip
-      -- shows (see `InstanceHistoryDisplay`) -- fired by `historyButtons`.
-    | HistoryDisplayChanged InstanceHistoryDisplay
+      -- Switches which of the Event's `Occasion`s the date-picker strip
+      -- shows (see `OccasionHistoryDisplay`) -- fired by `historyButtons`.
+    | HistoryDisplayChanged OccasionHistoryDisplay
       -- Switches the strip between its scrolling-row and wrapping-grid
-      -- layouts (see `InstanceLayout`) -- fired by `instanceLayoutButtonView`.
-    | InstanceLayoutChanged InstanceLayout
-      -- Steps every date chip's enter/leave fade (`instanceAnimations`)
+      -- layouts (see `OccasionLayout`) -- fired by `occasionLayoutButtonView`.
+    | OccasionLayoutChanged OccasionLayout
+      -- Steps every date chip's enter/leave fade (`occasionAnimations`)
       -- forward on an animation-frame tick -- mirrors
       -- `Shared.MyMediaPanel.AnimateItemFlip`.
     | AnimateItemFlip Animation.Msg
       -- Fired once a chip that dropped out of the current
-      -- `InstanceHistoryDisplay` filter finishes fading/collapsing out (see
-      -- `UI.Flip.remove`) -- drops it from `instanceAnimations` for good.
-    | RemoveInstanceAnimation String
-      -- The scroll-the-current-instance-into-view measurement (see
-      -- `scrollToInstance`) resolving with the target `scrollLeft` to send
+      -- `OccasionHistoryDisplay` filter finishes fading/collapsing out (see
+      -- `UI.Flip.remove`) -- drops it from `occasionAnimations` for good.
+    | RemoveOccasionAnimation String
+      -- The scroll-the-current-occasion-into-view measurement (see
+      -- `scrollToOccasion`) resolving with the target `scrollLeft` to send
       -- through `Ports.scrollElementLeft` -- `Err` (the chip/strip not
-      -- found, e.g. an `Event` with only one instance) is a pure no-op.
+      -- found, e.g. an `Event` with only one occasion) is a pure no-op.
     | GotScrollTarget (Result Dom.Error Float)
     | Poll
       -- The "synced to" listing's own Push/Push-again button (see
       -- `Model.syncDestinationPushStatuses`'s own doc) -- the Delete button
       -- next to it needs no `Msg` of its own, going straight through
-      -- `Shared.RequestDelete`/`Shared.ConfirmEventInstanceSyncDestinationDelete`
+      -- `Shared.RequestDelete`/`Shared.ConfirmOccasionSyncDestinationDelete`
       -- like `Components.Pages.EventsPage.eventCardView`'s own `onDelete`
       -- does, picked up in `SharedMsg` below.
     | PushSyncDestinationClicked String
-    | GotSyncDestinationPushResult String (Result Grpc.Error ( Maybe AccountsPanel.Msg, EventInstance ))
+    | GotSyncDestinationPushResult String (Result Grpc.Error ( Maybe AccountsPanel.Msg, Occasion ))
       -- `Model.availableSyncDestinations`'s own fetch (see `GotEvent`'s Ok branch) resolving --
       -- populates the "Push" button's list of destinations not yet synced. A failure just leaves
       -- `availableSyncDestinations` at `Nothing` (same as never having fetched at all -- only
@@ -300,45 +300,45 @@ type Msg
 
 type EventStatus
     = LoadingEvent
-    | EventLoaded Event EventInstance
+    | EventLoaded Event Occasion
     | EventFailed
 
 
-{-| Which of an `Event`'s `EventInstance`s the date-picker strip (see
-`instanceHistoryView`) shows -- starts `OnlyFuture` (see `init`) unless the
-`EventInstance` this page is actually showing needs a broader mode than that
+{-| Which of an `Event`'s `Occasion`s the date-picker strip (see
+`occasionHistoryView`) shows -- starts `OnlyFuture` (see `init`) unless the
+`Occasion` this page is actually showing needs a broader mode than that
 to even be in the strip at all, in which case it starts there instead (see
-`clampHistoryDisplay`): the currently-viewed instance is never allowed to be
+`clampHistoryDisplay`): the currently-viewed occasion is never allowed to be
 hidden by its own page's date picker. The history buttons above the strip
 (see `historyButtons`) switch it to reveal further past dates on request
-rather than dumping every instance of a long-running recurring `Event`
+rather than dumping every occasion of a long-running recurring `Event`
 (weekly meetups can rack up hundreds) on the page by default.
 -}
-type InstanceHistoryDisplay
+type OccasionHistoryDisplay
     = OnlyFuture
     | SinceTwoWeeksAgo
-    | ShowAllInstances
+    | ShowAllOccasions
 
 
-{-| How `instanceHistoryView`'s strip lays out its chips -- `StripLayout`
+{-| How `occasionHistoryView`'s strip lays out its chips -- `StripLayout`
 (the default) is a single horizontally-scrolling row; `GridLayout` wraps
 instead, trading the scrollbar for vertical growth. Toggled via
-`instanceLayoutButtonView`, only offered at all once there's more than 3
-chips to justify it (see `instanceHistoryView`).
+`occasionLayoutButtonView`, only offered at all once there's more than 3
+chips to justify it (see `occasionHistoryView`).
 -}
-type InstanceLayout
+type OccasionLayout
     = StripLayout
     | GridLayout
 
 
 {-| One date-picker chip's data plus its own enter/leave `UI.Flip.State` --
 mirrors `Shared.MyMediaPanel.MediaAnimation` (see its own doc): keeping
-`instance` here, not just looking it up from `Event.instances` by id, means a
-chip that just dropped out of `instanceHistoryDisplay`'s current filter still
+`occasion` here, not just looking it up from `Event.occasions` by id, means a
+chip that just dropped out of `occasionHistoryDisplay`'s current filter still
 has something to render for the length of its own fade/collapse-out.
 -}
-type alias InstanceAnimation =
-    { instance : EventInstance
+type alias OccasionAnimation =
+    { occasion : Occasion
     , flip : UI.Flip.State Msg
     }
 
@@ -396,19 +396,19 @@ type alias VisibilityEdit =
     }
 
 
-{-| Live only while the currently-viewed `EventInstance`'s start/end time
+{-| Live only while the currently-viewed `Occasion`'s start/end time
 editor is open -- mirrors `PostFieldEdit` in shape, just two pending fields
 (`Shared.CreateNewPanel.Model`'s own `startsAt`/`endsAt` pair) instead of
 one. Both `Nothing` only transiently, while the raw `<input
-type="datetime-local">` text doesn't parse (see `InstanceStartsAtChanged`/
-`InstanceEndsAtChanged`) -- `InstanceTimeSaveClicked` no-ops rather than
+type="datetime-local">` text doesn't parse (see `OccasionStartsAtChanged`/
+`OccasionEndsAtChanged`) -- `OccasionTimeSaveClicked` no-ops rather than
 submitting an incomplete pair.
 -}
-type alias InstanceTimeEdit =
+type alias OccasionTimeEdit =
     { pendingStartsAt : Maybe Time.Posix
     , pendingEndsAt : Maybe Time.Posix
 
-    -- Defaults to the browser's own timezone (see `InstanceTimeEditClicked`), mirroring
+    -- Defaults to the browser's own timezone (see `OccasionTimeEditClicked`), mirroring
     -- `Shared.CreateNewPanel.Model.timezone`'s own "always has a sensible value, never blank"
     -- convention -- unlike `pendingStartsAt`/`pendingEndsAt`, there's no "not yet picked" state
     -- worth showing blank for.
@@ -417,19 +417,19 @@ type alias InstanceTimeEdit =
     }
 
 
-{-| Live only while the currently-viewed `EventInstance`'s location editor is
+{-| Live only while the currently-viewed `Occasion`'s location editor is
 open -- mirrors `PostFieldEdit` exactly, `pending` being the in-progress
 `Location.uniformlyFormattedAddress` text (the only field `Location` has
 worth editing by hand -- see that message's own proto doc).
 -}
-type alias InstanceLocationEdit =
+type alias OccasionLocationEdit =
     { pending : String
     , status : SubmitStatus
     }
 
 
 {-| Which half of the "Add More" recurrence popover (`addMoreView`) is
-showing -- `ChoosingCount` first (how many more `EventInstance`s), then
+showing -- `ChoosingCount` first (how many more `Occasion`s), then
 `ChoosingFrequency count` (how far apart to space them -- see
 `availableFrequencies`/`frequencyLabel`), which is what actually submits via
 `AddMoreFrequencyClicked`.
@@ -453,7 +453,7 @@ type alias AddMoreMenu =
 page derived it from -- a route segment directly, for `Pages.Event.PostId_`,
 or a short-URL id with its own reserved leading character stripped, for
 `Components.Pages.PostOrEventPage` -- see that module's own doc). Genuinely
-the viewed `EventInstance`'s own `Post` id -- see the module doc.
+the viewed `Occasion`'s own `Post` id -- see the module doc.
 -}
 init : Shared.Model -> Bool -> String -> Browser.Navigation.Key -> ( Model, Effect Msg )
 init shared pageIsSecure rawPostId navKey =
@@ -464,21 +464,21 @@ init shared pageIsSecure rawPostId navKey =
         ( fetchedModel, fetchEffect ) =
             fetchIfReady shared
                 { targetHost = targetHost
-                , eventInstanceId = eventId
+                , occasionId = eventId
                 , eventStatus = LoadingEvent
                 , connectStatus = ServerDependentView.NotConnected
                 , fetchStarted = False
                 , fetchedAccountId = Nothing
-                , instanceHistoryDisplay = OnlyFuture
-                , instanceLayout = StripLayout
-                , instanceAnimations = Dict.empty
+                , occasionHistoryDisplay = OnlyFuture
+                , occasionLayout = StripLayout
+                , occasionAnimations = Dict.empty
                 , mediaEditActive = False
                 , mediaGeneratorActive = False
                 , postFieldEdit = Nothing
                 , moderationEdit = Nothing
                 , visibilityEdit = Nothing
-                , instanceTimeEdit = Nothing
-                , instanceLocationEdit = Nothing
+                , occasionTimeEdit = Nothing
+                , occasionLocationEdit = Nothing
                 , addMoreMenu = Nothing
                 , syncDestinationPushStatuses = Dict.empty
                 , availableSyncDestinations = Nothing
@@ -502,7 +502,7 @@ subscriptions model =
 
           else
             Time.every 30000 (\_ -> Poll)
-        , UI.Flip.subscription AnimateItemFlip (Dict.values model.instanceAnimations |> List.map .flip)
+        , UI.Flip.subscription AnimateItemFlip (Dict.values model.occasionAnimations |> List.map .flip)
         ]
 
 
@@ -519,9 +519,9 @@ update shared msg model =
                 newStatus =
                     case List.head response.events of
                         Just event ->
-                            case Events.findInstance model.eventInstanceId event of
-                                Just instance ->
-                                    EventLoaded event instance
+                            case Events.findOccasion model.occasionId event of
+                                Just occasion ->
+                                    EventLoaded event occasion
 
                                 Nothing ->
                                     EventFailed
@@ -546,7 +546,7 @@ update shared msg model =
                 scrollEffect =
                     case newStatus of
                         EventLoaded _ _ ->
-                            scrollToInstance 300 model.eventInstanceId |> Effect.fromCmd
+                            scrollToOccasion 300 model.occasionId |> Effect.fromCmd
 
                         _ ->
                             Effect.none
@@ -586,13 +586,13 @@ update shared msg model =
                 clampedModel : Model
                 clampedModel =
                     case newStatus of
-                        EventLoaded _ loadedInstance ->
-                            clampHistoryDisplay shared.time.now loadedInstance modelWithNewStatus
+                        EventLoaded _ loadedOccasion ->
+                            clampHistoryDisplay shared.time.now loadedOccasion modelWithNewStatus
 
                         _ ->
                             modelWithNewStatus
             in
-            ( clampedModel |> syncInstanceAnimations shared.time.now
+            ( clampedModel |> syncOccasionAnimations shared.time.now
             , Effect.batch [ accountEffect, breadcrumbsEffect, scrollEffect, syncDestinationsFetchEffect ]
             )
 
@@ -621,11 +621,11 @@ update shared msg model =
                 )
             )
 
-        GenerateMediaClicked event instance ->
+        GenerateMediaClicked event occasion ->
             ( { model | mediaGeneratorActive = True }
             , Effect.fromShared
                 (Shared.MediaGeneratorPanelMsg
-                    (MediaGeneratorPanel.Open (Just (MediaGeneratorPanel.TargetEvent event instance)) model.targetHost shared.basePath)
+                    (MediaGeneratorPanel.Open (Just (MediaGeneratorPanel.TargetEvent event occasion)) model.targetHost shared.basePath)
                 )
             )
 
@@ -806,14 +806,14 @@ update shared msg model =
             , Effect.none
             )
 
-        InstanceTimeEditClicked instance ->
+        OccasionTimeEditClicked occasion ->
             ( { model
-                | instanceTimeEdit =
+                | occasionTimeEdit =
                     Just
-                        { pendingStartsAt = instance.startsAt |> Maybe.map Conversions.timestampToPosix
-                        , pendingEndsAt = instance.endsAt |> Maybe.map Conversions.timestampToPosix
+                        { pendingStartsAt = occasion.startsAt |> Maybe.map Conversions.timestampToPosix
+                        , pendingEndsAt = occasion.endsAt |> Maybe.map Conversions.timestampToPosix
                         , pendingTimezone =
-                            instance.timezone
+                            occasion.timezone
                                 |> Maybe.withDefault shared.time.browserTimeZone.name
                         , status = Idle
                         }
@@ -821,10 +821,10 @@ update shared msg model =
             , Effect.none
             )
 
-        InstanceStartsAtChanged raw ->
+        OccasionStartsAtChanged raw ->
             ( { model
-                | instanceTimeEdit =
-                    model.instanceTimeEdit
+                | occasionTimeEdit =
+                    model.occasionTimeEdit
                         |> Maybe.map
                             (\edit ->
                                 let
@@ -855,10 +855,10 @@ update shared msg model =
             , Effect.none
             )
 
-        InstanceEndsAtChanged raw ->
+        OccasionEndsAtChanged raw ->
             ( { model
-                | instanceTimeEdit =
-                    model.instanceTimeEdit
+                | occasionTimeEdit =
+                    model.occasionTimeEdit
                         |> Maybe.map
                             (\edit ->
                                 let
@@ -884,36 +884,36 @@ update shared msg model =
             , Effect.none
             )
 
-        InstanceTimezoneChanged tz ->
+        OccasionTimezoneChanged tz ->
             ( { model
-                | instanceTimeEdit =
-                    model.instanceTimeEdit |> Maybe.map (\edit -> { edit | pendingTimezone = tz })
+                | occasionTimeEdit =
+                    model.occasionTimeEdit |> Maybe.map (\edit -> { edit | pendingTimezone = tz })
               }
             , Effect.none
             )
 
-        InstanceTimeCancelClicked ->
-            ( { model | instanceTimeEdit = Nothing }, Effect.none )
+        OccasionTimeCancelClicked ->
+            ( { model | occasionTimeEdit = Nothing }, Effect.none )
 
-        InstanceTimeSaveClicked instance ->
-            case ( model.instanceTimeEdit, model.eventStatus, serverAndAccount shared model ) of
+        OccasionTimeSaveClicked occasion ->
+            case ( model.occasionTimeEdit, model.eventStatus, serverAndAccount shared model ) of
                 ( Just edit, EventLoaded event _, Just ( server, account ) ) ->
                     case ( edit.pendingStartsAt, edit.pendingEndsAt ) of
                         ( Just startsAt, Just endsAt ) ->
-                            ( { model | instanceTimeEdit = Just { edit | status = Submitting } }
-                            , Events.updateEventInstances
+                            ( { model | occasionTimeEdit = Just { edit | status = Submitting } }
+                            , Events.updateOccasions
                                 shared.accounts
                                 ( Just account.userId, server.frontendHost )
                                 { event
-                                    | instances =
-                                        [ { instance
+                                    | occasions =
+                                        [ { occasion
                                             | startsAt = Just (Conversions.posixToTimestamp startsAt)
                                             , endsAt = Just (Conversions.posixToTimestamp endsAt)
                                             , timezone = Just edit.pendingTimezone
                                           }
                                         ]
                                 }
-                                |> Task.attempt GotInstanceTimeSaveResult
+                                |> Task.attempt GotOccasionTimeSaveResult
                                 |> Effect.fromCmd
                             )
 
@@ -923,45 +923,45 @@ update shared msg model =
                 _ ->
                     ( model, Effect.none )
 
-        GotInstanceTimeSaveResult (Ok ( maybeAccountsPanelMsg, updatedEvent )) ->
+        GotOccasionTimeSaveResult (Ok ( maybeAccountsPanelMsg, updatedEvent )) ->
             let
                 updatedModel : Model
                 updatedModel =
                     applyUpdatedEvent shared.time.now model updatedEvent
             in
-            ( { updatedModel | instanceTimeEdit = Nothing }
+            ( { updatedModel | occasionTimeEdit = Nothing }
             , accountsPanelEffect maybeAccountsPanelMsg
             )
 
-        GotInstanceTimeSaveResult (Err err) ->
+        GotOccasionTimeSaveResult (Err err) ->
             ( { model
-                | instanceTimeEdit =
-                    model.instanceTimeEdit |> Maybe.map (\edit -> { edit | status = SubmitFailed (AccountsPanel.grpcErrorToString err) })
+                | occasionTimeEdit =
+                    model.occasionTimeEdit |> Maybe.map (\edit -> { edit | status = SubmitFailed (AccountsPanel.grpcErrorToString err) })
               }
             , Effect.none
             )
 
-        InstanceLocationEditClicked instance ->
+        OccasionLocationEditClicked occasion ->
             ( { model
-                | instanceLocationEdit =
+                | occasionLocationEdit =
                     Just
-                        { pending = instance.location |> Maybe.map .uniformlyFormattedAddress |> Maybe.withDefault ""
+                        { pending = occasion.location |> Maybe.map .uniformlyFormattedAddress |> Maybe.withDefault ""
                         , status = Idle
                         }
               }
             , Effect.none
             )
 
-        InstanceLocationChanged text ->
-            ( { model | instanceLocationEdit = model.instanceLocationEdit |> Maybe.map (\edit -> { edit | pending = text }) }
+        OccasionLocationChanged text ->
+            ( { model | occasionLocationEdit = model.occasionLocationEdit |> Maybe.map (\edit -> { edit | pending = text }) }
             , Effect.none
             )
 
-        InstanceLocationCancelClicked ->
-            ( { model | instanceLocationEdit = Nothing }, Effect.none )
+        OccasionLocationCancelClicked ->
+            ( { model | occasionLocationEdit = Nothing }, Effect.none )
 
-        InstanceLocationSaveClicked instance ->
-            case ( model.instanceLocationEdit, model.eventStatus, serverAndAccount shared model ) of
+        OccasionLocationSaveClicked occasion ->
+            case ( model.occasionLocationEdit, model.eventStatus, serverAndAccount shared model ) of
                 ( Just edit, EventLoaded event _, Just ( server, account ) ) ->
                     let
                         newLocation : Maybe Location
@@ -972,32 +972,32 @@ update shared msg model =
                             else
                                 Just { defaultLocation | uniformlyFormattedAddress = String.trim edit.pending }
                     in
-                    ( { model | instanceLocationEdit = Just { edit | status = Submitting } }
-                    , Events.updateEventInstances
+                    ( { model | occasionLocationEdit = Just { edit | status = Submitting } }
+                    , Events.updateOccasions
                         shared.accounts
                         ( Just account.userId, server.frontendHost )
-                        { event | instances = [ { instance | location = newLocation } ] }
-                        |> Task.attempt GotInstanceLocationSaveResult
+                        { event | occasions = [ { occasion | location = newLocation } ] }
+                        |> Task.attempt GotOccasionLocationSaveResult
                         |> Effect.fromCmd
                     )
 
                 _ ->
                     ( model, Effect.none )
 
-        GotInstanceLocationSaveResult (Ok ( maybeAccountsPanelMsg, updatedEvent )) ->
+        GotOccasionLocationSaveResult (Ok ( maybeAccountsPanelMsg, updatedEvent )) ->
             let
                 updatedModel : Model
                 updatedModel =
                     applyUpdatedEvent shared.time.now model updatedEvent
             in
-            ( { updatedModel | instanceLocationEdit = Nothing }
+            ( { updatedModel | occasionLocationEdit = Nothing }
             , accountsPanelEffect maybeAccountsPanelMsg
             )
 
-        GotInstanceLocationSaveResult (Err err) ->
+        GotOccasionLocationSaveResult (Err err) ->
             ( { model
-                | instanceLocationEdit =
-                    model.instanceLocationEdit |> Maybe.map (\edit -> { edit | status = SubmitFailed (AccountsPanel.grpcErrorToString err) })
+                | occasionLocationEdit =
+                    model.occasionLocationEdit |> Maybe.map (\edit -> { edit | status = SubmitFailed (AccountsPanel.grpcErrorToString err) })
               }
             , Effect.none
             )
@@ -1020,17 +1020,17 @@ update shared msg model =
 
         AddMoreFrequencyClicked count unit ->
             case ( model.eventStatus, serverAndAccount shared model ) of
-                ( EventLoaded event instance, Just ( server, account ) ) ->
-                    case buildRecurringInstances shared.time.browserTimeZone.zone count unit instance of
+                ( EventLoaded event occasion, Just ( server, account ) ) ->
+                    case buildRecurringOccasions shared.time.browserTimeZone.zone count unit occasion of
                         [] ->
                             ( model, Effect.none )
 
-                        newInstances ->
+                        newOccasions ->
                             ( { model | addMoreMenu = model.addMoreMenu |> Maybe.map (\menu -> { menu | status = Submitting }) }
-                            , Events.createNewEventInstances
+                            , Events.createNewOccasions
                                 shared.accounts
                                 ( Just account.userId, server.frontendHost )
-                                { event | instances = newInstances }
+                                { event | occasions = newOccasions }
                                 |> Task.attempt GotAddMoreResult
                                 |> Effect.fromCmd
                             )
@@ -1059,8 +1059,8 @@ update shared msg model =
         DeleteClicked event ->
             ( model, Effect.fromShared (Shared.RequestDelete (Shared.ConfirmEventDelete event model.targetHost)) )
 
-        DeleteInstanceClicked instance event ->
-            ( model, Effect.fromShared (Shared.RequestDelete (Shared.ConfirmEventInstanceDelete instance event model.targetHost)) )
+        DeleteOccasionClicked occasion event ->
+            ( model, Effect.fromShared (Shared.RequestDelete (Shared.ConfirmOccasionDelete occasion event model.targetHost)) )
 
         ConnectClicked ->
             ( { model | connectStatus = ServerDependentView.Connecting }
@@ -1090,24 +1090,24 @@ update shared msg model =
             ( model, Effect.fromShared (Shared.AccountsPanelMsg (AccountsPanel.ToggleServerEnabled model.targetHost)) )
 
         HistoryDisplayChanged mode ->
-            if mode == model.instanceHistoryDisplay then
+            if mode == model.occasionHistoryDisplay then
                 -- Clicking the already-active mode's button changes nothing
                 -- to animate (see `historyButtonView`'s highlighting) -- just
-                -- re-centers the strip on the current instance right away,
+                -- re-centers the strip on the current occasion right away,
                 -- e.g. after the user's scrolled it away by hand.
-                ( model, scrollToInstance 0 model.eventInstanceId |> Effect.fromCmd )
+                ( model, scrollToOccasion 0 model.occasionId |> Effect.fromCmd )
 
             else
-                ( { model | instanceHistoryDisplay = mode } |> syncInstanceAnimations shared.time.now
-                , scrollToInstance 1000 model.eventInstanceId |> Effect.fromCmd
+                ( { model | occasionHistoryDisplay = mode } |> syncOccasionAnimations shared.time.now
+                , scrollToOccasion 1000 model.occasionId |> Effect.fromCmd
                 )
 
-        InstanceLayoutChanged layout ->
-            ( { model | instanceLayout = layout }, Effect.none )
+        OccasionLayoutChanged layout ->
+            ( { model | occasionLayout = layout }, Effect.none )
 
         AnimateItemFlip animMsg ->
             let
-                step : String -> InstanceAnimation -> ( Dict String InstanceAnimation, List (Cmd Msg) ) -> ( Dict String InstanceAnimation, List (Cmd Msg) )
+                step : String -> OccasionAnimation -> ( Dict String OccasionAnimation, List (Cmd Msg) ) -> ( Dict String OccasionAnimation, List (Cmd Msg) )
                 step id anim ( animations, accCmds ) =
                     let
                         ( newFlip, cmd ) =
@@ -1115,19 +1115,19 @@ update shared msg model =
                     in
                     ( Dict.insert id { anim | flip = newFlip } animations, cmd :: accCmds )
 
-                ( newInstanceAnimations, cmds ) =
-                    Dict.foldl step ( Dict.empty, [] ) model.instanceAnimations
+                ( newOccasionAnimations, cmds ) =
+                    Dict.foldl step ( Dict.empty, [] ) model.occasionAnimations
             in
-            ( { model | instanceAnimations = newInstanceAnimations }, Cmd.batch cmds |> Effect.fromCmd )
+            ( { model | occasionAnimations = newOccasionAnimations }, Cmd.batch cmds |> Effect.fromCmd )
 
-        RemoveInstanceAnimation id ->
-            ( { model | instanceAnimations = Dict.remove id model.instanceAnimations }, Effect.none )
+        RemoveOccasionAnimation id ->
+            ( { model | occasionAnimations = Dict.remove id model.occasionAnimations }, Effect.none )
 
         GotScrollTarget (Ok target) ->
             ( model
             , Ports.scrollElementLeft
                 (Encode.object
-                    [ ( "id", Encode.string instanceStripDomId )
+                    [ ( "id", Encode.string occasionStripDomId )
                     , ( "left", Encode.float (max 0 target) )
                     ]
                 )
@@ -1142,12 +1142,12 @@ update shared msg model =
 
         PushSyncDestinationClicked destinationId ->
             case ( model.eventStatus, serverAndAccount shared model ) of
-                ( EventLoaded _ instance, Just ( server, account ) ) ->
+                ( EventLoaded _ occasion, Just ( server, account ) ) ->
                     ( { model | syncDestinationPushStatuses = Dict.insert destinationId Submitting model.syncDestinationPushStatuses }
-                    , Events.syncEventInstance
+                    , Events.syncOccasion
                         shared.accounts
                         ( Just account.userId, server.frontendHost )
-                        (instance.post |> Maybe.map .id |> Maybe.withDefault "")
+                        (occasion.post |> Maybe.map .id |> Maybe.withDefault "")
                         destinationId
                         |> Task.attempt (GotSyncDestinationPushResult destinationId)
                         |> Effect.fromCmd
@@ -1156,13 +1156,13 @@ update shared msg model =
                 _ ->
                     ( model, Effect.none )
 
-        GotSyncDestinationPushResult destinationId (Ok ( maybeAccountsPanelMsg, updatedInstance )) ->
+        GotSyncDestinationPushResult destinationId (Ok ( maybeAccountsPanelMsg, updatedOccasion )) ->
             ( { model
                 | syncDestinationPushStatuses = Dict.remove destinationId model.syncDestinationPushStatuses
                 , eventStatus =
                     case model.eventStatus of
                         EventLoaded event _ ->
-                            EventLoaded event updatedInstance
+                            EventLoaded event updatedOccasion
 
                         other ->
                             other
@@ -1261,23 +1261,23 @@ update shared msg model =
                         Shared.GotEventDeleteResult (Ok _) ->
                             ( model, Browser.Navigation.pushUrl model.navKey (Gen.Route.toHref Gen.Route.Home_) |> Effect.fromCmd )
 
-                        -- This page's own `DeleteInstanceClicked` resolving
+                        -- This page's own `DeleteOccasionClicked` resolving
                         -- successfully -- unlike `GotEventDeleteResult`
                         -- above, the Event itself still exists (`updatedEvent`
-                        -- is `DeleteRemovedEventInstances`' own return value,
-                        -- carrying every surviving `EventInstance`), so
+                        -- is `DeleteRemovedOccasions`' own return value,
+                        -- carrying every surviving `Occasion`), so
                         -- navigate to one of those instead of bouncing away
                         -- entirely -- `List.head` picks whichever happens to
                         -- come back first, same "no particular ordering
-                        -- promised or needed" reasoning `instanceHistoryView`
+                        -- promised or needed" reasoning `occasionHistoryView`
                         -- already accepts elsewhere on this page. Falls back
                         -- to Home only if that list is somehow empty (deleting
-                        -- an instance never leaves zero behind -- this button
+                        -- an occasion never leaves zero behind -- this button
                         -- only shows once there were at least two -- but
                         -- covers it exactly as gracefully as `GotEventDeleteResult`
                         -- would).
-                        Shared.GotEventInstanceDeleteResult (Ok ( _, updatedEvent )) ->
-                            case List.head updatedEvent.instances of
+                        Shared.GotOccasionDeleteResult (Ok ( _, updatedEvent )) ->
+                            case List.head updatedEvent.occasions of
                                 Just sibling ->
                                     let
                                         siblingPostId : String
@@ -1305,11 +1305,11 @@ update shared msg model =
                         -- resolving successfully -- mirrors
                         -- `Components.Pages.EventsPage`'s identical branch:
                         -- refetch, since a successful un-sync changes
-                        -- `instance.syncDestinations` behind this
+                        -- `occasion.syncDestinations` behind this
                         -- already-fetched copy's back the same way, and the
                         -- result carries no destination id to patch it out
                         -- by hand with.
-                        Shared.GotEventInstanceSyncDestinationDeleteResult _ (Ok _) ->
+                        Shared.GotOccasionSyncDestinationDeleteResult _ (Ok _) ->
                             refetch shared model
 
                         _ ->
@@ -1332,7 +1332,7 @@ fetchIfReady shared model =
         case RellmServers.knownConnectedRellmServer shared.accounts.servers model.targetHost of
             Just _ ->
                 ( { model | fetchStarted = True, fetchedAccountId = currentAccountId shared model }
-                , Events.fetchEvent shared.accounts (maybeAccountServerFor shared model) model.eventInstanceId
+                , Events.fetchEvent shared.accounts (maybeAccountServerFor shared model) model.occasionId
                     |> Task.attempt GotEvent
                     |> Effect.fromCmd
                 )
@@ -1351,7 +1351,7 @@ successful save to the Event's own primary `Post`'s content
 refetch : Shared.Model -> Model -> ( Model, Effect Msg )
 refetch shared model =
     ( { model | fetchedAccountId = currentAccountId shared model }
-    , Events.fetchEvent shared.accounts (maybeAccountServerFor shared model) model.eventInstanceId
+    , Events.fetchEvent shared.accounts (maybeAccountServerFor shared model) model.occasionId
         |> Task.attempt GotEvent
         |> Effect.fromCmd
     )
@@ -1391,7 +1391,7 @@ serverAndAccount shared model =
 
 {-| Applies a just-saved `updatedPost` to the currently-loaded `Event`'s own
 `post` field (the only one `MediaEditClicked` ever opens the picker for, not
-`instance.post`) -- a no-op if the `Event` isn't loaded at all, which
+`occasion.post`) -- a no-op if the `Event` isn't loaded at all, which
 shouldn't happen in practice (this is only ever called from
 `GotMediaUpdateResult`, itself only reachable once `MediaEditClicked` has
 already rendered from a loaded `Event`). Mirrors
@@ -1401,64 +1401,64 @@ than `Model`'s own top-level `postStatus`.
 applyUpdatedEventPost : Model -> Post -> Model
 applyUpdatedEventPost model updatedPost =
     case model.eventStatus of
-        EventLoaded event instance ->
-            { model | eventStatus = EventLoaded { event | post = Just updatedPost } instance }
+        EventLoaded event occasion ->
+            { model | eventStatus = EventLoaded { event | post = Just updatedPost } occasion }
 
         _ ->
             model
 
 
-{-| Applies a just-saved `updatedEvent` (`UpdateEventInstances`'/
-`CreateNewEventInstances`' own return value -- both hand back the `Event`'s
-full current state, not just the touched instance(s)) as this page's new
+{-| Applies a just-saved `updatedEvent` (`UpdateOccasions`'/
+`CreateNewOccasions`' own return value -- both hand back the `Event`'s
+full current state, not just the touched occasion(s)) as this page's new
 `eventStatus` -- mirrors `GotEvent`'s own handling (re-clamping
-`instanceHistoryDisplay` and re-syncing `instanceAnimations`, since
-`CreateNewEventInstances` can change how many instances there are to animate)
+`occasionHistoryDisplay` and re-syncing `occasionAnimations`, since
+`CreateNewOccasions` can change how many occasions there are to animate)
 rather than just `applyUpdatedEventPost`'s plain field patch. Re-finds
-`model.eventInstanceId` in `updatedEvent.instances` (`Events.findInstance`)
-for the new "currently-viewed" `EventInstance`, falling back to whichever one
+`model.occasionId` in `updatedEvent.occasions` (`Events.findOccasion`)
+for the new "currently-viewed" `Occasion`, falling back to whichever one
 was already loaded if -- unexpectedly -- it's gone missing (none of
-`InstanceTimeSaveClicked`/`InstanceLocationSaveClicked`/`AddMoreFrequencyClicked`
+`OccasionTimeSaveClicked`/`OccasionLocationSaveClicked`/`AddMoreFrequencyClicked`
 can actually remove it). A no-op if the `Event` isn't loaded at all, same
 "shouldn't happen in practice" reasoning as `applyUpdatedEventPost`.
 -}
 applyUpdatedEvent : Time.Posix -> Model -> Event -> Model
 applyUpdatedEvent now model updatedEvent =
     case model.eventStatus of
-        EventLoaded _ currentInstance ->
+        EventLoaded _ currentOccasion ->
             let
-                newInstance : EventInstance
-                newInstance =
-                    Events.findInstance model.eventInstanceId updatedEvent |> Maybe.withDefault currentInstance
+                newOccasion : Occasion
+                newOccasion =
+                    Events.findOccasion model.occasionId updatedEvent |> Maybe.withDefault currentOccasion
             in
-            { model | eventStatus = EventLoaded updatedEvent newInstance }
-                |> clampHistoryDisplay now newInstance
-                |> syncInstanceAnimations now
+            { model | eventStatus = EventLoaded updatedEvent newOccasion }
+                |> clampHistoryDisplay now newOccasion
+                |> syncOccasionAnimations now
 
         _ ->
             model
 
 
-{-| Builds `count` new `EventInstance`s to send to `CreateNewEventInstances`
-(via `AddMoreFrequencyClicked`), each `unit` further from `instance`'s own
+{-| Builds `count` new `Occasion`s to send to `CreateNewOccasions`
+(via `AddMoreFrequencyClicked`), each `unit` further from `occasion`'s own
 `startsAt`/`endsAt` than the last (`n = 1..count`, via `SharedTime.addRecurrence`
 in `zone` -- see that function's own doc for the DST guarantee this relies
-on). Every duplicate copies `instance`'s own `post` (its title/link/content/
+on). Every duplicate copies `occasion`'s own `post` (its title/link/content/
 visibility override, if any), `location`, and `timezone` verbatim -- nothing
 about "add more like this one" should silently drop any of them. Copying `post` along also
-copies its own id (an `EventInstance`'s identity, post-migration -- see this
-module's own top-of-file doc), but that's harmless: `create_instance` on the
+copies its own id (an `Occasion`'s identity, post-migration -- see this
+module's own top-of-file doc), but that's harmless: `create_occasion` on the
 backend ignores whatever `id`/`author` a submitted `post` carries and always
 creates a fresh Post authored by the caller, so every duplicate still ends up
-a genuinely new `EventInstance`, never mistaken for `instance` itself.
-Everything else is left at `defaultEventInstance`'s blank defaults.
-`[]` (a no-op back in `AddMoreFrequencyClicked`) if `instance` is missing
+a genuinely new `Occasion`, never mistaken for `occasion` itself.
+Everything else is left at `defaultOccasion`'s blank defaults.
+`[]` (a no-op back in `AddMoreFrequencyClicked`) if `occasion` is missing
 either `startsAt` or `endsAt`, which shouldn't happen in practice -- both are
-required fields everywhere an `EventInstance` is created.
+required fields everywhere an `Occasion` is created.
 -}
-buildRecurringInstances : Time.Zone -> Int -> SharedTime.RecurrenceUnit -> EventInstance -> List EventInstance
-buildRecurringInstances zone count unit instance =
-    case ( instance.startsAt, instance.endsAt ) of
+buildRecurringOccasions : Time.Zone -> Int -> SharedTime.RecurrenceUnit -> Occasion -> List Occasion
+buildRecurringOccasions zone count unit occasion =
+    case ( occasion.startsAt, occasion.endsAt ) of
         ( Just startsAtTimestamp, Just endsAtTimestamp ) ->
             let
                 baseStartsAt : Time.Posix
@@ -1472,10 +1472,10 @@ buildRecurringInstances zone count unit instance =
             List.range 1 count
                 |> List.map
                     (\n ->
-                        { defaultEventInstance
-                            | post = instance.post
-                            , location = instance.location
-                            , timezone = instance.timezone
+                        { defaultOccasion
+                            | post = occasion.post
+                            , location = occasion.location
+                            , timezone = occasion.timezone
                             , startsAt = Just (Conversions.posixToTimestamp (SharedTime.addRecurrence zone unit n baseStartsAt))
                             , endsAt = Just (Conversions.posixToTimestamp (SharedTime.addRecurrence zone unit n baseEndsAt))
                         }
@@ -1561,29 +1561,29 @@ accountsPanelEffect maybeAccountsPanelMsg =
         |> Maybe.withDefault Effect.none
 
 
-{-| Whether `instance` belongs in the strip under `mode` -- `ShowAllInstances`
+{-| Whether `occasion` belongs in the strip under `mode` -- `ShowAllOccasions`
 takes everything, `SinceTwoWeeksAgo`/`OnlyFuture` cut off at 14 days before
-`now`/`now` itself (via `Components.Events.instanceMoment`). An instance with
-no resolvable time at all (`instanceMoment == Nothing`) always passes, same
-"can't tell, so don't hide it" reasoning as `Components.Events.instanceMoment`
+`now`/`now` itself (via `Components.Events.occasionMoment`). An occasion with
+no resolvable time at all (`occasionMoment == Nothing`) always passes, same
+"can't tell, so don't hide it" reasoning as `Components.Events.occasionMoment`
 falling back to `startsAt`.
 -}
-instanceMatchesHistoryDisplay : Time.Posix -> InstanceHistoryDisplay -> EventInstance -> Bool
-instanceMatchesHistoryDisplay now mode instance =
+occasionMatchesHistoryDisplay : Time.Posix -> OccasionHistoryDisplay -> Occasion -> Bool
+occasionMatchesHistoryDisplay now mode occasion =
     case mode of
-        ShowAllInstances ->
+        ShowAllOccasions ->
             True
 
         SinceTwoWeeksAgo ->
-            instanceAtOrAfter (twoWeeksBefore now) instance
+            occasionAtOrAfter (twoWeeksBefore now) occasion
 
         OnlyFuture ->
-            instanceAtOrAfter now instance
+            occasionAtOrAfter now occasion
 
 
-instanceAtOrAfter : Time.Posix -> EventInstance -> Bool
-instanceAtOrAfter threshold instance =
-    case Events.instanceEndsOrStartsAt instance of
+occasionAtOrAfter : Time.Posix -> Occasion -> Bool
+occasionAtOrAfter threshold occasion =
+    case Events.occasionEndsOrStartsAt occasion of
         Just moment ->
             Time.posixToMillis moment >= Time.posixToMillis threshold
 
@@ -1596,14 +1596,14 @@ twoWeeksBefore now =
     Time.millisToPosix (Time.posixToMillis now - 14 * 24 * 60 * 60 * 1000)
 
 
-{-| `OnlyFuture` < `SinceTwoWeeksAgo` < `ShowAllInstances`, as an `Int` --
-`OnlyFuture`'s own set of instances is always a subset of `SinceTwoWeeksAgo`'s,
-which is always a subset of `ShowAllInstances`'s, so this ordering is exactly
+{-| `OnlyFuture` < `SinceTwoWeeksAgo` < `ShowAllOccasions`, as an `Int` --
+`OnlyFuture`'s own set of occasions is always a subset of `SinceTwoWeeksAgo`'s,
+which is always a subset of `ShowAllOccasions`'s, so this ordering is exactly
 "how restrictive a mode is" -- used by `minimumHistoryDisplayFor`/
 `clampHistoryDisplay`/`historyButtons` to compare modes without a full `case`
 each time.
 -}
-historyDisplayRank : InstanceHistoryDisplay -> Int
+historyDisplayRank : OccasionHistoryDisplay -> Int
 historyDisplayRank mode =
     case mode of
         OnlyFuture ->
@@ -1612,60 +1612,60 @@ historyDisplayRank mode =
         SinceTwoWeeksAgo ->
             1
 
-        ShowAllInstances ->
+        ShowAllOccasions ->
             2
 
 
-{-| The least-inclusive `InstanceHistoryDisplay` that still keeps `instance`
+{-| The least-inclusive `OccasionHistoryDisplay` that still keeps `occasion`
 in the strip -- `OnlyFuture` for an upcoming
-instance, `SinceTwoWeeksAgo` for one less than two weeks in the past,
-`ShowAllInstances` for anything older than that. Used by both
+occasion, `SinceTwoWeeksAgo` for one less than two weeks in the past,
+`ShowAllOccasions` for anything older than that. Used by both
 `clampHistoryDisplay` (to pick this page's own initial mode) and
-`historyButtons` (to never offer a switch that would hide the very instance
+`historyButtons` (to never offer a switch that would hide the very occasion
 the page is showing) -- see either's own doc.
 -}
-minimumHistoryDisplayFor : Time.Posix -> EventInstance -> InstanceHistoryDisplay
-minimumHistoryDisplayFor now instance =
-    if instanceMatchesHistoryDisplay now OnlyFuture instance then
+minimumHistoryDisplayFor : Time.Posix -> Occasion -> OccasionHistoryDisplay
+minimumHistoryDisplayFor now occasion =
+    if occasionMatchesHistoryDisplay now OnlyFuture occasion then
         OnlyFuture
 
-    else if instanceMatchesHistoryDisplay now SinceTwoWeeksAgo instance then
+    else if occasionMatchesHistoryDisplay now SinceTwoWeeksAgo occasion then
         SinceTwoWeeksAgo
 
     else
-        ShowAllInstances
+        ShowAllOccasions
 
 
-{-| Raises `model.instanceHistoryDisplay` up to `minimumHistoryDisplayFor
-now instance` if it's currently more restrictive than that -- never lowers
+{-| Raises `model.occasionHistoryDisplay` up to `minimumHistoryDisplayFor
+now occasion` if it's currently more restrictive than that -- never lowers
 it, so this is safe to call every time the loaded `Event` changes
 (`GotEvent`) without ever undoing a broader mode the user already switched
 to via `historyButtonView`, whose button for any mode below that same
 `minimumHistoryDisplayFor` floor is `disabled` rather than removed, so
 there's no way to have reached one of those in the first place. In practice
 this is what actually picks this page's initial mode: `init` always starts
-`model.instanceHistoryDisplay` at `OnlyFuture` (the most restrictive
+`model.occasionHistoryDisplay` at `OnlyFuture` (the most restrictive
 possible value) before the `Event` is known, so the first call once it
-lands is the one that raises it to wherever the currently-viewed `instance`
+lands is the one that raises it to wherever the currently-viewed `occasion`
 actually needs. `now` is `Shared.Model.time.now` -- see its own doc.
 -}
-clampHistoryDisplay : Time.Posix -> EventInstance -> Model -> Model
-clampHistoryDisplay now instance model =
+clampHistoryDisplay : Time.Posix -> Occasion -> Model -> Model
+clampHistoryDisplay now occasion model =
     let
-        minimum : InstanceHistoryDisplay
+        minimum : OccasionHistoryDisplay
         minimum =
-            minimumHistoryDisplayFor now instance
+            minimumHistoryDisplayFor now occasion
     in
-    if historyDisplayRank model.instanceHistoryDisplay < historyDisplayRank minimum then
-        { model | instanceHistoryDisplay = minimum }
+    if historyDisplayRank model.occasionHistoryDisplay < historyDisplayRank minimum then
+        { model | occasionHistoryDisplay = minimum }
 
     else
         model
 
 
-{-| Reconciles `instanceAnimations` with whichever of `event.instances`
-`model.instanceHistoryDisplay` currently selects -- newly-revealed instances
-(switching to a broader mode, e.g. `OnlyFuture` -> `ShowAllInstances`) fade
+{-| Reconciles `occasionAnimations` with whichever of `event.occasions`
+`model.occasionHistoryDisplay` currently selects -- newly-revealed occasions
+(switching to a broader mode, e.g. `OnlyFuture` -> `ShowAllOccasions`) fade
 in, newly-hidden ones (the reverse) fade/collapse out rather than just
 vanishing, and the ones staying visible are left alone. A no-op while the
 `Event` itself hasn't loaded yet. Mirrors
@@ -1673,49 +1673,49 @@ vanishing, and the ones staying visible are left alone. A no-op while the
 every `update` branch that can change either input: `GotEvent` and
 `HistoryDisplayChanged`. `now` is `Shared.Model.time.now` -- see its own doc.
 -}
-syncInstanceAnimations : Time.Posix -> Model -> Model
-syncInstanceAnimations now model =
+syncOccasionAnimations : Time.Posix -> Model -> Model
+syncOccasionAnimations now model =
     case model.eventStatus of
         EventLoaded event _ ->
             let
-                currentInstances : Dict String EventInstance
-                currentInstances =
-                    event.instances
-                        |> List.filter (instanceMatchesHistoryDisplay now model.instanceHistoryDisplay)
-                        |> List.map (\instance -> ( instance.post |> Maybe.map .id |> Maybe.withDefault "", instance ))
+                currentOccasions : Dict String Occasion
+                currentOccasions =
+                    event.occasions
+                        |> List.filter (occasionMatchesHistoryDisplay now model.occasionHistoryDisplay)
+                        |> List.map (\occasion -> ( occasion.post |> Maybe.map .id |> Maybe.withDefault "", occasion ))
                         |> Dict.fromList
             in
             { model
-                | instanceAnimations =
+                | occasionAnimations =
                     UI.Flip.syncAnimations
-                        RemoveInstanceAnimation
-                        (\instance -> { instance = instance, flip = UI.Flip.enter })
-                        (\instance anim -> { anim | instance = instance })
-                        currentInstances
-                        model.instanceAnimations
+                        RemoveOccasionAnimation
+                        (\occasion -> { occasion = occasion, flip = UI.Flip.enter })
+                        (\occasion anim -> { anim | occasion = occasion })
+                        currentOccasions
+                        model.occasionAnimations
             }
 
         _ ->
             model
 
 
-{-| The DOM id `instanceHistoryView`'s scrollable strip is rendered with --
-paired with `instanceChipDomId` by `scrollToInstance`.
+{-| The DOM id `occasionHistoryView`'s scrollable strip is rendered with --
+paired with `occasionChipDomId` by `scrollToOccasion`.
 -}
-instanceStripDomId : String
-instanceStripDomId =
-    "event-instance-strip"
+occasionStripDomId : String
+occasionStripDomId =
+    "event-occasion-strip"
 
 
-instanceChipDomId : String -> String
-instanceChipDomId instanceId =
-    "event-instance-chip-" ++ instanceId
+occasionChipDomId : String -> String
+occasionChipDomId occasionId =
+    "event-occasion-chip-" ++ occasionId
 
 
-{-| Scrolls `instanceStripDomId`'s strip horizontally so `instanceId`'s own
-chip is centered in view -- fired both whenever a new `EventInstance` becomes
+{-| Scrolls `occasionStripDomId`'s strip horizontally so `occasionId`'s own
+chip is centered in view -- fired both whenever a new `Occasion` becomes
 "the current one" (a fresh page load, or the user clicking to a sibling
-instance's own page -- see `GotEvent`) and whenever `HistoryDisplayChanged`
+occasion's own page -- see `GotEvent`) and whenever `HistoryDisplayChanged`
 reveals/hides other chips around it, potentially shifting its position.
 `Process.sleep delayMs` first in both cases: measuring immediately would read
 some chip's still-collapsed (`grid-template-columns: 0fr`, see `flip.css`)
@@ -1723,14 +1723,14 @@ some chip's still-collapsed (`grid-template-columns: 0fr`, see `flip.css`)
 `UI.Flip.enter`/`remove` animation is still in progress at the moment either
 caller's own model update lands -- `GotEvent` passes 300ms (every chip,
 including ones that were already visible, starts a fresh `enter` whenever
-`syncInstanceAnimations` rebuilds `instanceAnimations` from scratch, as it
+`syncOccasionAnimations` rebuilds `occasionAnimations` from scratch, as it
 does right after `GotEvent`), `HistoryDisplayChanged` passes 400ms (only the
 chips actually entering/leaving are mid-animation, but there's usually more
 of them sliding at once than a fresh page load ever has, so a little more
 headroom). Either way this clears `flip.css`'s own 0.25s collapse/grow transition.
 Silently gives up (`GotScrollTarget`'s `Err` case is a no-op) if the strip or
-chip aren't found -- e.g. an `Event` with only one instance, whose strip
-`instanceHistoryView` doesn't render at all.
+chip aren't found -- e.g. an `Event` with only one occasion, whose strip
+`occasionHistoryView` doesn't render at all.
 
 Only _measures_ here (`Dom.getElement`/`Dom.getViewportOf`) -- the actual
 scroll happens back in `update`'s `GotScrollTarget` case, via
@@ -1747,15 +1747,15 @@ callback is a plain (non-rAF-wrapped) JS callback, and doesn't have the
 problem.
 
 -}
-scrollToInstance : Float -> String -> Cmd Msg
-scrollToInstance delayMs instanceId =
+scrollToOccasion : Float -> String -> Cmd Msg
+scrollToOccasion delayMs occasionId =
     Process.sleep delayMs
         |> Task.andThen
             (\_ ->
                 Task.map3 (\chip strip viewport -> ( chip, strip, viewport ))
-                    (Dom.getElement (instanceChipDomId instanceId))
-                    (Dom.getElement instanceStripDomId)
-                    (Dom.getViewportOf instanceStripDomId)
+                    (Dom.getElement (occasionChipDomId occasionId))
+                    (Dom.getElement occasionStripDomId)
+                    (Dom.getViewportOf occasionStripDomId)
             )
         |> Task.map
             (\( chip, strip, viewport ) ->
@@ -1798,15 +1798,15 @@ view shared model =
                     p [ class "event-error" ]
                         [ text
                             ("Couldn't load Event "
-                                ++ model.eventInstanceId
+                                ++ model.occasionId
                                 ++ "@"
                                 ++ model.targetHost
                                 ++ ". Maybe it doesn't exist, or maybe you need to be logged in?"
                             )
                         ]
 
-                EventLoaded event instance ->
-                    eventDetailView shared model event instance
+                EventLoaded event occasion ->
+                    eventDetailView shared model event occasion
         )
 
 
@@ -1817,14 +1817,14 @@ titleFor : Model -> String
 titleFor model =
     case model.eventStatus of
         EventLoaded event _ ->
-            event.post |> Maybe.map Posts.postTitleText |> Maybe.withDefault ("Event " ++ model.eventInstanceId)
+            event.post |> Maybe.map Posts.postTitleText |> Maybe.withDefault ("Event " ++ model.occasionId)
 
         _ ->
-            "Event " ++ model.eventInstanceId
+            "Event " ++ model.occasionId
 
 
-eventDetailView : Shared.Model -> Model -> Event -> EventInstance -> Html Msg
-eventDetailView shared model event instance =
+eventDetailView : Shared.Model -> Model -> Event -> Occasion -> Html Msg
+eventDetailView shared model event occasion =
     let
         maybeServer : Maybe RellmServer
         maybeServer =
@@ -1852,19 +1852,19 @@ eventDetailView shared model event instance =
 
                     -- Slotted between the byline and the media display in the primary
                     -- (`Event`) post section below -- the currently-viewed
-                    -- `EventInstance`'s own start/end/location, then (below that) the
+                    -- `Occasion`'s own start/end/location, then (below that) the
                     -- date-picker strip to switch to a sibling one.
-                    instanceDetailAndStrip : Html Msg
-                    instanceDetailAndStrip =
-                        div [ class "event-instance-detail-and-strip" ]
-                            [ div [ class "event-instance-detail" ]
-                                [ div [ class "event-instance-detail-info" ]
-                                    [ instanceTimeView shared maybeAccount model.instanceTimeEdit eventPost instance
-                                    , instanceLocationView maybeAccount model.instanceLocationEdit eventPost instance
+                    occasionDetailAndStrip : Html Msg
+                    occasionDetailAndStrip =
+                        div [ class "event-occasion-detail-and-strip" ]
+                            [ div [ class "event-occasion-detail" ]
+                                [ div [ class "event-occasion-detail-info" ]
+                                    [ occasionTimeView shared maybeAccount model.occasionTimeEdit eventPost occasion
+                                    , occasionLocationView maybeAccount model.occasionLocationEdit eventPost occasion
                                     ]
-                                , addMoreView maybeAccount model eventPost instance
+                                , addMoreView maybeAccount model eventPost occasion
                                 ]
-                            , instanceHistoryView shared model event instance
+                            , occasionHistoryView shared model event occasion
                             ]
                 in
                 div []
@@ -1877,11 +1877,11 @@ eventDetailView shared model event instance =
                             , visibilityView maybeAccount model.visibilityEdit eventPost
                             , moderationView maybeAccount model.moderationEdit event eventPost
                             ]
-                        , instanceDetailAndStrip
+                        , occasionDetailAndStrip
                         , case maybeServer of
                             Just server ->
                                 let
-                                    -- `Nothing` when the viewer has no image-capable `AvailableAIModel`
+                                    -- `Nothing` when the viewer has no image-capable `AIModel`
                                     -- at all -- see `Posts.generateMediaButton`'s own doc, mirrors
                                     -- `Components.Pages.PostPage.postDetailView`'s identical
                                     -- `onGenerateMediaClicked`.
@@ -1889,8 +1889,8 @@ eventDetailView shared model event instance =
                                     onGenerateMediaClicked =
                                         case maybeAccount of
                                             Just account ->
-                                                if List.any AIModelProviders.hasAnyImageCapability account.availableAiModels then
-                                                    Just (GenerateMediaClicked event instance)
+                                                if List.any AIProviders.hasAnyImageCapability account.aiModels then
+                                                    Just (GenerateMediaClicked event occasion)
 
                                                 else
                                                     Nothing
@@ -1912,17 +1912,17 @@ eventDetailView shared model event instance =
                         ]
                     , div [ class "post-detail-edit-row" ]
                         [ deleteButtonView maybeAccount event eventPost
-                        , deleteInstanceButtonView maybeAccount event eventPost instance
+                        , deleteOccasionButtonView maybeAccount event eventPost occasion
                         ]
                     ]
 
             Nothing ->
                 text ""
-        , case instance.post |> Maybe.andThen Events.meaningfulPost of
-            Just instancePost ->
+        , case occasion.post |> Maybe.andThen Events.meaningfulPost of
+            Just occasionPost ->
                 div [ classes [ "event-post-section", hostnameToCSSClass model.targetHost, "event-post-secondary" ] ]
-                    [ h2 [ class "event-post-title" ] [ text (Posts.postTitleText instancePost) ]
-                    , case Posts.postLinkText instancePost of
+                    [ h2 [ class "event-post-title" ] [ text (Posts.postTitleText occasionPost) ]
+                    , case Posts.postLinkText occasionPost of
                         Just link ->
                             a
                                 [ href link
@@ -1936,20 +1936,20 @@ eventDetailView shared model event instance =
                             text ""
                     , div [ class "event-post-meta" ]
                         [ text "by "
-                        , Authors.link shared.basePath shared.accounts.mainFrontendHost model.targetHost maybeServer maybeAccount instancePost.author
-                        , if Posts.showPostVisibility maybeAccount instancePost then
-                            text (" · " ++ Posts.postVisibilityText instancePost)
+                        , Authors.link shared.basePath shared.accounts.mainFrontendHost model.targetHost maybeServer maybeAccount occasionPost.author
+                        , if Posts.showPostVisibility maybeAccount occasionPost then
+                            text (" · " ++ Posts.postVisibilityText occasionPost)
 
                           else
                             text ""
                         ]
                     , case maybeServer of
                         Just server ->
-                            MultiMediaRenderer.view instancePost.postMediaLayout server maybeAccount (MediaClicked instancePost) instancePost.media
+                            MultiMediaRenderer.view occasionPost.postMediaLayout server maybeAccount (MediaClicked occasionPost) occasionPost.media
 
                         Nothing ->
                             text ""
-                    , case instancePost.content of
+                    , case occasionPost.content of
                         Just content ->
                             Markdown.view [ class "event-post-content" ] content
 
@@ -1959,7 +1959,7 @@ eventDetailView shared model event instance =
 
             Nothing ->
                 text ""
-        , instanceMetaView shared model instance
+        , occasionMetaView shared model occasion
         , Events.syncSourceView event
 
         -- `model.availableSyncDestinations` is `Nothing` until `GotEvent` confirms the viewer is
@@ -1983,9 +1983,9 @@ eventDetailView shared model event instance =
             )
             PushSyncDestinationClicked
             (\destinationId destinationLabel ->
-                SharedMsg (Shared.RequestDelete (Shared.ConfirmEventInstanceSyncDestinationDelete instance destinationId destinationLabel model.targetHost))
+                SharedMsg (Shared.RequestDelete (Shared.ConfirmOccasionSyncDestinationDelete occasion destinationId destinationLabel model.targetHost))
             )
-            instance
+            occasion
         ]
 
 
@@ -1996,7 +1996,7 @@ button in one place; each field's own "Edit X" button
 (`postFieldEditButtonView`) sits right next to that field instead. Mirrors
 `linkView` exactly, just for the title (`contentDisplayView` is the odd one
 out among the three -- see its own doc for why it needs no analogous
-`contentView` wrapper). The secondary section (`instancePost`) has no
+`contentView` wrapper). The secondary section (`occasionPost`) has no
 editable fields, so it renders its title as plain text directly instead of
 going through this.
 -}
@@ -2143,7 +2143,7 @@ classes (posts.css) rather than `event-*` ones of its own.
 -}
 postFieldEditActionsView : PostFieldEdit -> Post -> List (Html Msg)
 postFieldEditActionsView edit post =
-    [ span [ class "event-instance-edit-actions" ]
+    [ span [ class "event-occasion-edit-actions" ]
         [ button
             [ classes [ "post-visibility-save", "background-color-primary" ]
             , onClick (PostFieldSaveClicked post)
@@ -2212,8 +2212,8 @@ editButtonView label onClickMsg maybeAccount post =
 owner (per this feature's own scope -- unlike `postFieldEditButtonView`,
 not extended to Admins here) -- opens the shared "are you sure?" dialog via
 `DeleteClicked`/`Shared.ConfirmEventDelete`. Labeled "Delete Event" (not just
-"Delete") to read distinctly from `deleteInstanceButtonView`'s "Delete
-Instance" beside it -- deleting the whole Event is a much bigger action than
+"Delete") to read distinctly from `deleteOccasionButtonView`'s "Delete
+Occasion" beside it -- deleting the whole Event is a much bigger action than
 deleting one of its dates. Not tied to any one field (unlike title/link/
 content's own edit buttons), so it keeps its own `.post-detail-edit-row`
 below the primary post section (see `eventDetailView`) rather than sitting
@@ -2236,22 +2236,22 @@ deleteButtonView maybeAccount event post =
             text ""
 
 
-{-| The "Delete Instance" button next to `deleteButtonView`'s "Delete Event"
+{-| The "Delete Occasion" button next to `deleteButtonView`'s "Delete Event"
 (same row, same `.post-edit-button` styling, same owner-only gate) --
-only rendered once `event` has more than one `EventInstance`: with exactly
-one, deleting it *is* deleting the Event (see `ConfirmEventInstanceDelete`'s
+only rendered once `event` has more than one `Occasion`: with exactly
+one, deleting it *is* deleting the Event (see `ConfirmOccasionDelete`'s
 own doc for why), so `deleteButtonView`'s own button already covers that
 case and a second one here would be redundant at best, misleading at worst.
 Opens the same shared "are you sure?" dialog as `deleteButtonView`, via
-`DeleteInstanceClicked`/`Shared.ConfirmEventInstanceDelete`, for just the
-currently-viewed `instance`.
+`DeleteOccasionClicked`/`Shared.ConfirmOccasionDelete`, for just the
+currently-viewed `occasion`.
 -}
-deleteInstanceButtonView : Maybe RellmAccount -> Event -> Post -> EventInstance -> Html Msg
-deleteInstanceButtonView maybeAccount event post instance =
+deleteOccasionButtonView : Maybe RellmAccount -> Event -> Post -> Occasion -> Html Msg
+deleteOccasionButtonView maybeAccount event post occasion =
     case maybeAccount of
         Just account ->
-            if Posts.isAuthor account post && List.length event.instances > 1 then
-                button [ class "post-edit-button", onClick (DeleteInstanceClicked instance event) ] [ text "Delete Instance" ]
+            if Posts.isAuthor account post && List.length event.occasions > 1 then
+                button [ class "post-edit-button", onClick (DeleteOccasionClicked occasion event) ] [ text "Delete Occasion" ]
 
             else
                 text ""
@@ -2265,8 +2265,8 @@ deleteInstanceButtonView maybeAccount event post instance =
 function's own display-vs-editing split (and reuses its exact "Edit"-button
 gate, `Posts.isAuthor account post || ADMIN`, via `editButtonView`) but for
 `Visibility` instead of `Moderation`, submitted via plain `UpdatePost`
-(`VisibilitySaveClicked`) rather than `UpdateEventInstances`/
-`CreateNewEventInstances` -- see `Msg.VisibilityEditClicked`'s own doc for
+(`VisibilitySaveClicked`) rather than `UpdateOccasions`/
+`CreateNewOccasions` -- see `Msg.VisibilityEditClicked`'s own doc for
 why the Event's own `Post` fields don't need the heavier RPCs. Options are
 narrowed to whatever `maybeAccount` can actually publish at
 (`Posts.allowedVisibilities`), mirroring
@@ -2290,7 +2290,7 @@ visibilityView maybeAccount maybeEdit post =
                                         [ text (Posts.visibilityText visibility) ]
                                 )
                         )
-                    , span [ class "event-instance-edit-actions" ]
+                    , span [ class "event-occasion-edit-actions" ]
                         [ button
                             [ classes [ "post-visibility-save", "background-color-primary" ]
                             , onClick (VisibilitySaveClicked post)
@@ -2401,53 +2401,53 @@ moderationView maybeAccount maybeEdit event post =
                             ]
 
 
-{-| Whether `instance`'s own start/end time and location are safe to edit by
-hand at all -- an instance synced in from an ICS feed (`instance.post.syncSource
-/= Nothing`, set by `logic::sync_sources::event_sync::reconcile_instances` when it creates
-an instance from a feed occurrence) has its `starts_at`/`ends_at`/`location`
+{-| Whether `occasion`'s own start/end time and location are safe to edit by
+hand at all -- an occasion synced in from an ICS feed (`occasion.post.syncSource
+/= Nothing`, set by `logic::sync_sources::event_sync::reconcile_occasions` when it creates
+an occasion from a feed occurrence) has its `starts_at`/`ends_at`/`location`
 silently overwritten back to the feed's own values on every subsequent sync
-run (see that function's own `existing_instance.starts_at != starts_at_db ||
+run (see that function's own `existing_occasion.starts_at != starts_at_db ||
 ...` check) -- exactly the same "would be clobbered on the next sync" problem
 `editable`/`Events.hasIcsSyncSource` already guards title/link/content
-against, just decided per-instance rather than per-`Event`: an `Event` with a
-sync source can still have manually-added instances (via "Add More", which
-never sets its instance `Post`'s `syncSource`) safely alongside feed-sourced
-ones, so this checks `instance` itself rather than reusing `eventDetailView`'s
+against, just decided per-occasion rather than per-`Event`: an `Event` with a
+sync source can still have manually-added occasions (via "Add More", which
+never sets its occasion `Post`'s `syncSource`) safely alongside feed-sourced
+ones, so this checks `occasion` itself rather than reusing `eventDetailView`'s
 `editable`. Also gates `addMoreView`'s own button (see its own doc) -- "Add
-More" duplicates `instance`'s own `post`/`location` (see `buildRecurringInstances`),
+More" duplicates `occasion`'s own `post`/`location` (see `buildRecurringOccasions`),
 which reads as "add more dates like this synced one" in a way that doesn't
-make sense for an instance that isn't itself something the viewer set up by
+make sense for an occasion that isn't itself something the viewer set up by
 hand.
 -}
-instanceEditable : EventInstance -> Bool
-instanceEditable instance =
-    (instance.post |> Maybe.andThen .syncSource) == Nothing
+occasionEditable : Occasion -> Bool
+occasionEditable occasion =
+    (occasion.post |> Maybe.andThen .syncSource) == Nothing
 
 
-{-| The currently-viewed `EventInstance`'s own start/end time row (see
-`eventDetailView`'s `instanceDetailAndStrip`) -- `Events.instanceWhenText`
+{-| The currently-viewed `Occasion`'s own start/end time row (see
+`eventDetailView`'s `occasionDetailAndStrip`) -- `Events.occasionWhenText`
 plus its own "Edit Time" button when `maybeEdit == Nothing`, gated the same
 way `editButtonView` gates every other field here (the Event's own `Post`'s
-author, or an Admin -- passing `eventPost`, not `instance.post`, since
-editing an `EventInstance`'s time/location is authorized against the
+author, or an Admin -- passing `eventPost`, not `occasion.post`, since
+editing an `Occasion`'s time/location is authorized against the
 _Event_'s ownership server-side, see
 `backend/src/rpcs/events/event_permissions.rs`'s `validate_event_edit_permission`,
-not the instance's own possibly-different-owner override `Post`) *and*
-`instanceEditable`; the inline `instanceTimeEditFormView` once
+not the occasion's own possibly-different-owner override `Post`) *and*
+`occasionEditable`; the inline `occasionTimeEditFormView` once
 editing.
 -}
-instanceTimeView : Shared.Model -> Maybe RellmAccount -> Maybe InstanceTimeEdit -> Post -> EventInstance -> Html Msg
-instanceTimeView shared maybeAccount maybeEdit eventPost instance =
+occasionTimeView : Shared.Model -> Maybe RellmAccount -> Maybe OccasionTimeEdit -> Post -> Occasion -> Html Msg
+occasionTimeView shared maybeAccount maybeEdit eventPost occasion =
     case maybeEdit of
         Just edit ->
-            div [ class "event-instance-when" ] [ text "📅 ", instanceTimeEditFormView shared.time.browserTimeZone.zone edit instance ]
+            div [ class "event-occasion-when" ] [ text "📅 ", occasionTimeEditFormView shared.time.browserTimeZone.zone edit occasion ]
 
         Nothing ->
-            div [ class "event-instance-when" ]
+            div [ class "event-occasion-when" ]
                 [ text "📅 "
-                , text (Events.instanceWhenText shared.time instance)
-                , if instanceEditable instance then
-                    editButtonView "Edit Time" (InstanceTimeEditClicked instance) maybeAccount eventPost
+                , text (Events.occasionWhenText shared.time occasion)
+                , if occasionEditable occasion then
+                    editButtonView "Edit Time" (OccasionTimeEditClicked occasion) maybeAccount eventPost
 
                   else
                     text ""
@@ -2458,40 +2458,40 @@ instanceTimeView shared maybeAccount maybeEdit eventPost instance =
 `<select>` (`CreateNewPanel.allTimezoneNames`, same dataset/convention as
 `Shared.CreateNewPanel.timezoneField`), + Save/Cancel controls -- mirrors
 `Shared.CreateNewPanel.dateField`'s own `formatDateTimeLocalInput`/`onInput`
-round-trip (see `Msg.InstanceStartsAtChanged`/`InstanceEndsAtChanged` for the
+round-trip (see `Msg.OccasionStartsAtChanged`/`OccasionEndsAtChanged` for the
 parse-back half), reusing `postFieldEditActionsView`'s
 `.post-visibility-save`/`.post-visibility-cancel`/`.post-visibility-error`
 classes for the controls, same convention that function's own doc explains.
 -}
-instanceTimeEditFormView : Time.Zone -> InstanceTimeEdit -> EventInstance -> Html Msg
-instanceTimeEditFormView zone edit instance =
-    span [ class "event-instance-time-edit" ]
+occasionTimeEditFormView : Time.Zone -> OccasionTimeEdit -> Occasion -> Html Msg
+occasionTimeEditFormView zone edit occasion =
+    span [ class "event-occasion-time-edit" ]
         [ Html.input
             [ type_ "datetime-local"
-            , class "event-instance-time-edit-input"
+            , class "event-occasion-time-edit-input"
             , value (edit.pendingStartsAt |> Maybe.map (SharedTime.formatDateTimeLocalInput zone) |> Maybe.withDefault "")
-            , onInput InstanceStartsAtChanged
+            , onInput OccasionStartsAtChanged
             ]
             []
         , text " to "
         , Html.input
             [ type_ "datetime-local"
-            , class "event-instance-time-edit-input"
+            , class "event-occasion-time-edit-input"
             , value (edit.pendingEndsAt |> Maybe.map (SharedTime.formatDateTimeLocalInput zone) |> Maybe.withDefault "")
-            , onInput InstanceEndsAtChanged
+            , onInput OccasionEndsAtChanged
             ]
             []
-        , select [ class "event-instance-time-edit-timezone-select", onInput InstanceTimezoneChanged ]
+        , select [ class "event-occasion-time-edit-timezone-select", onInput OccasionTimezoneChanged ]
             (List.map
                 (\name ->
                     option [ value name, selected (name == edit.pendingTimezone) ] [ text name ]
                 )
                 CreateNewPanel.allTimezoneNames
             )
-        , span [ class "event-instance-edit-actions" ]
+        , span [ class "event-occasion-edit-actions" ]
             [ button
                 [ classes [ "post-visibility-save", "background-color-primary" ]
-                , onClick (InstanceTimeSaveClicked instance)
+                , onClick (OccasionTimeSaveClicked occasion)
                 , disabled (edit.status == Submitting)
                 ]
                 [ text
@@ -2504,7 +2504,7 @@ instanceTimeEditFormView zone edit instance =
                 ]
             , button
                 [ class "post-visibility-cancel"
-                , onClick InstanceTimeCancelClicked
+                , onClick OccasionTimeCancelClicked
                 , disabled (edit.status == Submitting)
                 ]
                 [ text "Cancel" ]
@@ -2518,36 +2518,36 @@ instanceTimeEditFormView zone edit instance =
         ]
 
 
-{-| The currently-viewed `EventInstance`'s own location row -- mirrors
-`instanceTimeView` exactly, just for `Location` instead of start/end time
-(including the same `instanceEditable` gate), plus one
+{-| The currently-viewed `Occasion`'s own location row -- mirrors
+`occasionTimeView` exactly, just for `Location` instead of start/end time
+(including the same `occasionEditable` gate), plus one
 difference: with no location set yet, the display half reads "+ Add
 Location" (no separate location line to show) rather than a plain
 "Edit Location" next to existing text -- and, unlike the time row (which
 always has *something* to show), renders nothing at all when there's neither
-a location to show nor (a synced instance) a button to add one.
+a location to show nor (a synced occasion) a button to add one.
 -}
-instanceLocationView : Maybe RellmAccount -> Maybe InstanceLocationEdit -> Post -> EventInstance -> Html Msg
-instanceLocationView maybeAccount maybeEdit eventPost instance =
+occasionLocationView : Maybe RellmAccount -> Maybe OccasionLocationEdit -> Post -> Occasion -> Html Msg
+occasionLocationView maybeAccount maybeEdit eventPost occasion =
     case maybeEdit of
         Just edit ->
-            div [ class "event-instance-where" ] [ text "📍 ", instanceLocationEditFormView edit instance ]
+            div [ class "event-occasion-where" ] [ text "📍 ", occasionLocationEditFormView edit occasion ]
 
         Nothing ->
-            case ( instance.location |> Maybe.andThen Events.locationText, instanceEditable instance ) of
+            case ( occasion.location |> Maybe.andThen Events.locationText, occasionEditable occasion ) of
                 ( Just locationLine, True ) ->
-                    div [ class "event-instance-where" ]
+                    div [ class "event-occasion-where" ]
                         [ text "📍 "
                         , text locationLine
-                        , editButtonView "Edit Location" (InstanceLocationEditClicked instance) maybeAccount eventPost
+                        , editButtonView "Edit Location" (OccasionLocationEditClicked occasion) maybeAccount eventPost
                         ]
 
                 ( Just locationLine, False ) ->
-                    div [ class "event-instance-where" ] [ text "📍 ", text locationLine ]
+                    div [ class "event-occasion-where" ] [ text "📍 ", text locationLine ]
 
                 ( Nothing, True ) ->
-                    div [ class "event-instance-where" ]
-                        [ editButtonView "+ Add Location" (InstanceLocationEditClicked instance) maybeAccount eventPost ]
+                    div [ class "event-occasion-where" ]
+                        [ editButtonView "+ Add Location" (OccasionLocationEditClicked occasion) maybeAccount eventPost ]
 
                 ( Nothing, False ) ->
                     text ""
@@ -2556,23 +2556,23 @@ instanceLocationView maybeAccount maybeEdit eventPost instance =
 {-| The actual address `<input>` + Save/Cancel controls for the location
 editor -- mirrors `postFieldEditFormView` exactly (a single plain-text field,
 same Save/Cancel/error controls), just editing `Location.uniformlyFormattedAddress`
-via `UpdateEventInstances` instead of a `Post` field via `UpdatePost`.
+via `UpdateOccasions` instead of a `Post` field via `UpdatePost`.
 -}
-instanceLocationEditFormView : InstanceLocationEdit -> EventInstance -> Html Msg
-instanceLocationEditFormView edit instance =
-    span [ class "event-instance-location-edit" ]
+occasionLocationEditFormView : OccasionLocationEdit -> Occasion -> Html Msg
+occasionLocationEditFormView edit occasion =
+    span [ class "event-occasion-location-edit" ]
         [ Html.input
             [ type_ "text"
-            , class "event-instance-location-edit-input"
+            , class "event-occasion-location-edit-input"
             , placeholder "Address"
             , value edit.pending
-            , onInput InstanceLocationChanged
+            , onInput OccasionLocationChanged
             ]
             []
-        , span [ class "event-instance-edit-actions" ]
+        , span [ class "event-occasion-edit-actions" ]
             [ button
                 [ classes [ "post-visibility-save", "background-color-primary" ]
-                , onClick (InstanceLocationSaveClicked instance)
+                , onClick (OccasionLocationSaveClicked occasion)
                 , disabled (edit.status == Submitting)
                 ]
                 [ text
@@ -2585,7 +2585,7 @@ instanceLocationEditFormView edit instance =
                 ]
             , button
                 [ class "post-visibility-cancel"
-                , onClick InstanceLocationCancelClicked
+                , onClick OccasionLocationCancelClicked
                 , disabled (edit.status == Submitting)
                 ]
                 [ text "Cancel" ]
@@ -2603,21 +2603,21 @@ instanceLocationEditFormView edit instance =
 on `ui/popover.css`'s generic `.popover-anchor`/`.popover-toggle`/`.popover`/
 `.popover-backdrop` pieces, the same way `Components.Pages.EventsPage.exportButtonView`
 uses them (see that function's own doc for what each class does). Gated the
-same way every other edit affordance in `instanceDetailAndStrip` is (the
+same way every other edit affordance in `occasionDetailAndStrip` is (the
 Event's own `Post`'s author, or an Admin -- reuses `editButtonView`'s exact
 condition rather than rendering a bare button, so "who can add more dates"
 always matches "who can edit this date"'s own time/location buttons right
-above it) *and* `instanceEditable` (see its own doc for why "Add More" is
+above it) *and* `occasionEditable` (see its own doc for why "Add More" is
 gated the same way Edit Time/Edit Location are).
 -}
-addMoreView : Maybe RellmAccount -> Model -> Post -> EventInstance -> Html Msg
-addMoreView maybeAccount model eventPost instance =
+addMoreView : Maybe RellmAccount -> Model -> Post -> Occasion -> Html Msg
+addMoreView maybeAccount model eventPost occasion =
     case maybeAccount of
         Nothing ->
             text ""
 
         Just account ->
-            if not ((Posts.isAuthor account eventPost || List.member ADMIN account.permissions) && instanceEditable instance) then
+            if not ((Posts.isAuthor account eventPost || List.member ADMIN account.permissions) && occasionEditable occasion) then
                 text ""
 
             else
@@ -2626,9 +2626,9 @@ addMoreView maybeAccount model eventPost instance =
                     isOpen =
                         model.addMoreMenu /= Nothing
                 in
-                div [ classes [ "event-instance-add-more", "popover-anchor" ] ]
+                div [ classes [ "event-occasion-add-more", "popover-anchor" ] ]
                     [ button
-                        [ classes [ "event-instance-add-more-toggle", "popover-toggle", "background-color-nav", openClosedClass isOpen ]
+                        [ classes [ "event-occasion-add-more-toggle", "popover-toggle", "background-color-nav", openClosedClass isOpen ]
                         , onClick
                             (if isOpen then
                                 AddMoreClosed
@@ -2640,7 +2640,7 @@ addMoreView maybeAccount model eventPost instance =
                         ]
                         [ text "+ Add More" ]
                     , div [ classes [ "popover-backdrop", openClosedClass isOpen ], onClick AddMoreClosed ] []
-                    , div [ classes [ "event-instance-add-more-popover", "popover", openClosedClass isOpen ] ]
+                    , div [ classes [ "event-occasion-add-more-popover", "popover", openClosedClass isOpen ] ]
                         (model.addMoreMenu
                             |> Maybe.map addMoreMenuContentView
                             |> Maybe.withDefault []
@@ -2652,8 +2652,8 @@ addMoreView maybeAccount model eventPost instance =
 lists every "N more" option `1..52` (per this feature's own request), each
 opening `ChoosingFrequency`'s "Daily"/"Weekly"/(`Monthly` under 12) buttons
 (`availableFrequencies`/`frequencyLabel`), which is what actually submits
-(`AddMoreFrequencyClicked`, via `Components.Events.createNewEventInstances`).
-`AddMoreFrequencyClicked` doesn't carry the `Event`/`EventInstance` it needs
+(`AddMoreFrequencyClicked`, via `Components.Events.createNewOccasions`).
+`AddMoreFrequencyClicked` doesn't carry the `Event`/`Occasion` it needs
 either -- `update` re-reads both from `model.eventStatus` at submit time,
 same as every other save handler in this module -- so this needs nothing
 beyond `menu` itself.
@@ -2662,13 +2662,13 @@ addMoreMenuContentView : AddMoreMenu -> List (Html Msg)
 addMoreMenuContentView menu =
     case menu.step of
         ChoosingCount ->
-            [ h3 [ class "event-instance-add-more-heading" ] [ text "Add more dates" ]
-            , div [ class "event-instance-add-more-counts" ]
+            [ h3 [ class "event-occasion-add-more-heading" ] [ text "Add more dates" ]
+            , div [ class "event-occasion-add-more-counts" ]
                 (List.range 1 52
                     |> List.map
                         (\count ->
                             button
-                                [ class "event-instance-add-more-count"
+                                [ class "event-occasion-add-more-count"
                                 , onClick (AddMoreCountClicked count)
                                 , type_ "button"
                                 ]
@@ -2678,13 +2678,13 @@ addMoreMenuContentView menu =
             ]
 
         ChoosingFrequency count ->
-            [ h3 [ class "event-instance-add-more-heading" ] [ text (String.fromInt count ++ " more…") ]
-            , div [ class "event-instance-add-more-frequencies" ]
+            [ h3 [ class "event-occasion-add-more-heading" ] [ text (String.fromInt count ++ " more…") ]
+            , div [ class "event-occasion-add-more-frequencies" ]
                 (availableFrequencies count
                     |> List.map
                         (\unit ->
                             button
-                                [ classes [ "event-instance-add-more-frequency", "background-color-primary" ]
+                                [ classes [ "event-occasion-add-more-frequency", "background-color-primary" ]
                                 , onClick (AddMoreFrequencyClicked count unit)
                                 , disabled (menu.status == Submitting)
                                 , type_ "button"
@@ -2693,7 +2693,7 @@ addMoreMenuContentView menu =
                         )
                 )
             , button
-                [ class "event-instance-add-more-back"
+                [ class "event-occasion-add-more-back"
                 , onClick AddMoreBackClicked
                 , disabled (menu.status == Submitting)
                 , type_ "button"
@@ -2701,32 +2701,32 @@ addMoreMenuContentView menu =
                 [ text "← Back" ]
             , case menu.status of
                 SubmitFailed err ->
-                    span [ class "event-instance-add-more-error" ] [ text err ]
+                    span [ class "event-occasion-add-more-error" ] [ text err ]
 
                 Submitting ->
-                    span [ class "event-instance-add-more-status" ] [ text "Creating…" ]
+                    span [ class "event-occasion-add-more-status" ] [ text "Creating…" ]
 
                 Idle ->
                     text ""
             ]
 
 
-{-| The star button + comment count for `instance`'s own `Post` -- bottom
+{-| The star button + comment count for `occasion`'s own `Post` -- bottom
 right of the detail view, mirroring `eventCard`'s own bottom-right meta (see
 `Components.Events.eventCard`'s doc) rather than `event.post`'s: each
-`EventInstance` of a recurring `Event` gets its own independent star/comment
+`Occasion` of a recurring `Event` gets its own independent star/comment
 count, the same way it gets its own `Post` row. Renders nothing if
-`instance.post` is unset (shouldn't happen in practice, but the field is
+`occasion.post` is unset (shouldn't happen in practice, but the field is
 optional on the wire).
 -}
-instanceMetaView : Shared.Model -> Model -> EventInstance -> Html Msg
-instanceMetaView shared model instance =
-    case instance.post of
-        Just instancePost ->
+occasionMetaView : Shared.Model -> Model -> Occasion -> Html Msg
+occasionMetaView shared model occasion =
+    case occasion.post of
+        Just occasionPost ->
             let
                 displayPost : Post
                 displayPost =
-                    StarredPanel.freshestPost model.targetHost instancePost shared.panels.starredPanel
+                    StarredPanel.freshestPost model.targetHost occasionPost shared.panels.starredPanel
 
                 starred : Bool
                 starred =
@@ -2750,80 +2750,80 @@ instanceMetaView shared model instance =
 
 {-| The date-picker strip: all 3 "switch scope" buttons (see `historyButtons`)
 plus, once there's more than 3 chips to justify it, a scroll/grid layout
-toggle (see `instanceLayoutButtonView`), above either a
-horizontally-scrolling row or a wrapping grid (`model.instanceLayout`) of
-every `EventInstance` currently selected by `model.instanceHistoryDisplay`,
-each linking to that instance's own page. Renders nothing at all for an
-`Event` with only one instance -- there's no other date to pick.
+toggle (see `occasionLayoutButtonView`), above either a
+horizontally-scrolling row or a wrapping grid (`model.occasionLayout`) of
+every `Occasion` currently selected by `model.occasionHistoryDisplay`,
+each linking to that occasion's own page. Renders nothing at all for an
+`Event` with only one occasion -- there's no other date to pick.
 -}
-instanceHistoryView : Shared.Model -> Model -> Event -> EventInstance -> Html Msg
-instanceHistoryView shared model event instance =
-    if List.length event.instances <= 1 then
+occasionHistoryView : Shared.Model -> Model -> Event -> Occasion -> Html Msg
+occasionHistoryView shared model event occasion =
+    if List.length event.occasions <= 1 then
         text ""
 
     else
         let
             minimumRank : Int
             minimumRank =
-                historyDisplayRank (minimumHistoryDisplayFor shared.time.now instance)
+                historyDisplayRank (minimumHistoryDisplayFor shared.time.now occasion)
 
             showLayoutToggle : Bool
             showLayoutToggle =
-                List.length event.instances > 3
+                List.length event.occasions > 3
         in
-        div [ class "event-instance-history" ]
-            [ div [ class "event-instance-history-buttons" ]
+        div [ class "event-occasion-history" ]
+            [ div [ class "event-occasion-history-buttons" ]
                 (List.map (historyButtonView model minimumRank) (historyButtons shared.time.now event)
                     ++ (if showLayoutToggle then
-                            [ instanceLayoutButtonView model.instanceLayout ]
+                            [ occasionLayoutButtonView model.occasionLayout ]
 
                         else
                             []
                        )
                 )
             , div
-                (id instanceStripDomId :: instanceContainerAttributes model.instanceLayout)
-                (event.instances
+                (id occasionStripDomId :: occasionContainerAttributes model.occasionLayout)
+                (event.occasions
                     |> List.filterMap
-                        (\eventInstance ->
-                            eventInstance.post
-                                |> Maybe.andThen (\post -> Dict.get post.id model.instanceAnimations)
+                        (\otherOccasion ->
+                            otherOccasion.post
+                                |> Maybe.andThen (\post -> Dict.get post.id model.occasionAnimations)
                         )
-                    |> List.map (instanceChipView shared model instance)
+                    |> List.map (occasionChipView shared model occasion)
                 )
             ]
 
 
 {-| The strip container's own layout classes -- `StripLayout` is a plain
-`UI.Flip.Horizontal` row (`flip-animated-row`/`.event-instance-strip`,
+`UI.Flip.Horizontal` row (`flip-animated-row`/`.event-occasion-strip`,
 scrolling), `GridLayout` wraps instead (`flip-animated-grid`/
-`.event-instance-grid`, no scrollbar, grows vertically) -- see `flip.css` for
+`.event-occasion-grid`, no scrollbar, grows vertically) -- see `flip.css` for
 how each of those first classes drives a chip's own collapse/grow direction
 via `UI.Flip.itemAttributes`' `.horizontal` (used for both layouts here; see
-`instanceChipView`).
+`occasionChipView`).
 -}
-instanceContainerAttributes : InstanceLayout -> List (Html.Attribute Msg)
-instanceContainerAttributes layout =
+occasionContainerAttributes : OccasionLayout -> List (Html.Attribute Msg)
+occasionContainerAttributes layout =
     case layout of
         StripLayout ->
-            [ classes [ "event-instance-strip", "flip-animated-row" ] ]
+            [ classes [ "event-occasion-strip", "flip-animated-row" ] ]
 
         GridLayout ->
-            [ classes [ "event-instance-grid", "flip-animated-grid" ] ]
+            [ classes [ "event-occasion-grid", "flip-animated-grid" ] ]
 
 
-{-| Icon-only toggle between the strip's two layouts (see `InstanceLayout`) --
-always the same glyph (☰), rotated 90° via `.event-instance-layout-icon-rotated`
+{-| Icon-only toggle between the strip's two layouts (see `OccasionLayout`) --
+always the same glyph (☰), rotated 90° via `.event-occasion-layout-icon-rotated`
 (a CSS `transition`, see `events.css`) while `GridLayout` is active, rather
 than swapping to a second glyph -- labeled (via `aria-label`/`title`, for
 accessibility and a hover tooltip since the glyph itself doesn't change) for
 whichever layout it would switch _to_, not the current one. Always
-right-aligned (`.event-instance-layout-button`, see `events.css`) in the
+right-aligned (`.event-occasion-layout-button`, see `events.css`) in the
 buttons row, regardless of how many "switch scope" buttons
 (`historyButtonView`) precede it.
 -}
-instanceLayoutButtonView : InstanceLayout -> Html Msg
-instanceLayoutButtonView layout =
+occasionLayoutButtonView : OccasionLayout -> Html Msg
+occasionLayoutButtonView layout =
     let
         ( targetLayout, targetLabel ) =
             case layout of
@@ -2834,16 +2834,16 @@ instanceLayoutButtonView layout =
                     ( StripLayout, "List view" )
     in
     button
-        [ classes [ "event-instance-history-button", "event-instance-layout-button" ]
-        , onClick (InstanceLayoutChanged targetLayout)
+        [ classes [ "event-occasion-history-button", "event-occasion-layout-button" ]
+        , onClick (OccasionLayoutChanged targetLayout)
         , attribute "aria-label" targetLabel
         , title targetLabel
         ]
         [ span
             [ classes
-                ("event-instance-layout-icon"
+                ("event-occasion-layout-icon"
                     :: (if layout == GridLayout then
-                            [ "event-instance-layout-icon-rotated" ]
+                            [ "event-occasion-layout-icon-rotated" ]
 
                         else
                             []
@@ -2855,20 +2855,20 @@ instanceLayoutButtonView layout =
 
 
 {-| One of the 3 "switch scope" buttons -- highlighted (`background-color-primary`)
-if `mode` is `model.instanceHistoryDisplay` itself, disabled if `mode` is more
+if `mode` is `model.occasionHistoryDisplay` itself, disabled if `mode` is more
 restrictive than `minimumRank` (see `historyButtons`' own doc) since
-switching to it would hide `instance`, the very one this page is showing.
+switching to it would hide `occasion`, the very one this page is showing.
 -}
-historyButtonView : Model -> Int -> ( InstanceHistoryDisplay, Int ) -> Html Msg
+historyButtonView : Model -> Int -> ( OccasionHistoryDisplay, Int ) -> Html Msg
 historyButtonView model minimumRank ( mode, count ) =
     let
         isCurrent : Bool
         isCurrent =
-            mode == model.instanceHistoryDisplay
+            mode == model.occasionHistoryDisplay
     in
     button
         [ classes
-            ("event-instance-history-button"
+            ("event-occasion-history-button"
                 :: (if isCurrent then
                         [ "background-color-primary" ]
 
@@ -2882,7 +2882,7 @@ historyButtonView model minimumRank ( mode, count ) =
         [ text (historyButtonLabel mode count) ]
 
 
-historyButtonLabel : InstanceHistoryDisplay -> Int -> String
+historyButtonLabel : OccasionHistoryDisplay -> Int -> String
 historyButtonLabel mode count =
     let
         dateWord : String
@@ -2894,7 +2894,7 @@ historyButtonLabel mode count =
                 "dates"
     in
     case mode of
-        ShowAllInstances ->
+        ShowAllOccasions ->
             String.fromInt count ++ " total " ++ dateWord
 
         SinceTwoWeeksAgo ->
@@ -2906,31 +2906,31 @@ historyButtonLabel mode count =
 
 {-| The "switch scope" buttons to show above the strip (see `historyButtonView`
 for how the current one is highlighted instead of omitted, and how one more
-restrictive than `minimumHistoryDisplayFor now instance` -- which would hide
-`instance`, the very one this page is showing -- is disabled instead of
+restrictive than `minimumHistoryDisplayFor now occasion` -- which would hide
+`occasion`, the very one this page is showing -- is disabled instead of
 hidden). Normally all 3, but a mode is dropped entirely when its count ties a
 strictly more restrictive mode's count -- since `OnlyFuture` ⊆
-`SinceTwoWeeksAgo` ⊆ `ShowAllInstances` (see `historyDisplayRank`), a tie
+`SinceTwoWeeksAgo` ⊆ `ShowAllOccasions` (see `historyDisplayRank`), a tie
 means the wider mode wouldn't reveal anything beyond what the narrower one
 already shows, so offering it would just be a second button for the same set
-of instances (e.g. "1 date since 2 weeks ago" alongside "1 upcoming date"
-when that's the same single instance). `OnlyFuture` itself is never dropped
+of occasions (e.g. "1 date since 2 weeks ago" alongside "1 upcoming date"
+when that's the same single occasion). `OnlyFuture` itself is never dropped
 this way, since nothing is more restrictive than it. `now` is
 `Shared.Model.time.now` -- see its own doc.
 -}
-historyButtons : Time.Posix -> Event -> List ( InstanceHistoryDisplay, Int )
+historyButtons : Time.Posix -> Event -> List ( OccasionHistoryDisplay, Int )
 historyButtons now event =
     let
-        countFor : InstanceHistoryDisplay -> Int
+        countFor : OccasionHistoryDisplay -> Int
         countFor mode =
-            event.instances |> List.filter (instanceMatchesHistoryDisplay now mode) |> List.length
+            event.occasions |> List.filter (occasionMatchesHistoryDisplay now mode) |> List.length
 
-        allButtons : List ( InstanceHistoryDisplay, Int )
+        allButtons : List ( OccasionHistoryDisplay, Int )
         allButtons =
-            [ ShowAllInstances, SinceTwoWeeksAgo, OnlyFuture ]
+            [ ShowAllOccasions, SinceTwoWeeksAgo, OnlyFuture ]
                 |> List.map (\mode -> ( mode, countFor mode ))
 
-        isRedundant : ( InstanceHistoryDisplay, Int ) -> Bool
+        isRedundant : ( OccasionHistoryDisplay, Int ) -> Bool
         isRedundant ( mode, count ) =
             allButtons
                 |> List.any (\( otherMode, otherCount ) -> historyDisplayRank otherMode < historyDisplayRank mode && otherCount == count)
@@ -2939,41 +2939,41 @@ historyButtons now event =
         |> List.filter (\button -> not (isRedundant button))
 
 
-{-| One date chip -- links to `anim.instance`'s own page (see
-`Components.Events.eventInstanceHref`), highlighted if it's the instance
-currently being viewed (`model.eventInstanceId`). `currentInstance` is that
-currently-viewed instance (see `instanceHistoryView`'s own `instance`
-parameter) -- passed through to `Components.Events.siblingInstanceWhenText`
-so a sibling chip that shares `currentInstance`'s own time-of-day can drop
+{-| One date chip -- links to `anim.occasion`'s own page (see
+`Components.Events.occasionHref`), highlighted if it's the occasion
+currently being viewed (`model.occasionId`). `currentOccasion` is that
+currently-viewed occasion (see `occasionHistoryView`'s own `occasion`
+parameter) -- passed through to `Components.Events.siblingOccasionWhenText`
+so a sibling chip that shares `currentOccasion`'s own time-of-day can drop
 its redundant time and show just the date(s). Wrapped in
 `UI.Flip.itemAttributes` so it fades/collapses in and out as
-`model.instanceHistoryDisplay` changes which instances `instanceHistoryView`
-selects (see `syncInstanceAnimations`).
+`model.occasionHistoryDisplay` changes which occasions `occasionHistoryView`
+selects (see `syncOccasionAnimations`).
 -}
-instanceChipView : Shared.Model -> Model -> EventInstance -> InstanceAnimation -> Html Msg
-instanceChipView shared model currentInstance { instance, flip } =
+occasionChipView : Shared.Model -> Model -> Occasion -> OccasionAnimation -> Html Msg
+occasionChipView shared model currentOccasion { occasion, flip } =
     let
-        instancePostId : String
-        instancePostId =
-            instance.post |> Maybe.map .id |> Maybe.withDefault ""
+        occasionPostId : String
+        occasionPostId =
+            occasion.post |> Maybe.map .id |> Maybe.withDefault ""
 
         isCurrent : Bool
         isCurrent =
-            instancePostId == model.eventInstanceId
+            occasionPostId == model.occasionId
     in
     div (UI.Flip.itemAttributes UI.Flip.Horizontal flip False)
         [ a
-            [ href (Events.eventInstanceHref shared.basePath shared.accounts.mainFrontendHost model.targetHost instance)
-            , id (instanceChipDomId instancePostId)
+            [ href (Events.occasionHref shared.basePath shared.accounts.mainFrontendHost model.targetHost occasion)
+            , id (occasionChipDomId occasionPostId)
             , classes
-                ([ "event-instance-chip", hostnameToCSSClass model.targetHost ]
+                ([ "event-occasion-chip", hostnameToCSSClass model.targetHost ]
                     ++ (if isCurrent then
-                            [ "event-instance-chip-current", "background-color-primary" ]
+                            [ "event-occasion-chip-current", "background-color-primary" ]
 
                         else
                             []
                        )
                 )
             ]
-            [ text (Events.siblingInstanceWhenText shared.time currentInstance instance) ]
+            [ text (Events.siblingOccasionWhenText shared.time currentOccasion occasion) ]
         ]

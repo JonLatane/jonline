@@ -3,7 +3,7 @@ module Components.Pages.MastodonUserProfilePage exposing (Model, Msg, fromShared
 {-| A single Mastodon account's profile, read-only -- avatar/display name/bio/follower-and-following
 counts, plus that account's own authored posts (embedding `Components.Pages.PostsPage`, scoped to
 just this account via its `MastodonAccountFeed` `FeedSource`). No follow/moderation/permissions/sync
-affordances, no Events/Sync Sources/Sync Destinations/AI Model Providers sections -- none of that
+affordances, no Events/Sync Sources/Sync Destinations/AI Providers sections -- none of that
 makes sense for an account Rellm doesn't own, mirroring `Components.Pages.MastodonPostPage`'s own
 read-only scope one level up (a whole profile instead of a single post).
 

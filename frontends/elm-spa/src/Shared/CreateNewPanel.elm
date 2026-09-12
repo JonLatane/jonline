@@ -17,10 +17,10 @@ draft.
 (`CREATEPOSTS` vs `CREATEEVENTS`) gates `postingAsSelector`/`resolve` --
 title/link/media/content are shared by both modes, submitted as-is either as
 the Post itself (`PostMode`) or as the `Event`'s own underlying Post
-(`EventMode`). An `EventMode` save always creates exactly one `EventInstance`
+(`EventMode`). An `EventMode` save always creates exactly one `Occasion`
 (`startsAt`/`endsAt`, the two extra fields), with no `Post` of its own --
 its `visibility` is inherited from the `Event`'s own Post by the backend
-(`create_event.rs`) leaving `EventInstance.post` unset, so there's nothing
+(`create_event.rs`) leaving `Occasion.post` unset, so there's nothing
 else for this panel to set on it.
 
 Cancel/the shared backdrop/`CloseAllPanels` all just close this panel
@@ -52,7 +52,7 @@ import Grpc
 import Html exposing (Html, button, div, img, input, label, option, select, span, text)
 import Html.Attributes exposing (alt, attribute, class, disabled, placeholder, selected, src, type_, value)
 import Html.Events exposing (onClick, onInput)
-import Proto.Rellm exposing (MediaReference, defaultEvent, defaultEventInfo, defaultEventInstance, defaultPost)
+import Proto.Rellm exposing (MediaReference, defaultEvent, defaultEventInfo, defaultOccasion, defaultPost)
 import Proto.Rellm.Rellm as Rellm
 import Proto.Rellm.Permission exposing (Permission(..))
 import Proto.Rellm.PostContext exposing (PostContext(..))
@@ -568,7 +568,7 @@ resolvedVisibility mode account model =
 falls back to the browser's own timezone whenever `timezone` is unset,
 mirroring `resolvedAccount`/`resolvedVisibility`'s own "unset means default"
 fallback. What `timezoneField` shows as selected and what `saveTask` submits
-as `EventInstance.timezone`.
+as `Occasion.timezone`.
 -}
 resolvedTimezone : SharedTime.BrowserTimeZone -> Model -> String
 resolvedTimezone browserTimeZone model =
@@ -590,9 +590,9 @@ nonEmptyTrimmed value =
 
 
 {-| `PostMode` calls `Rellm.createPost` exactly as before; `EventMode`
-calls `Rellm.createEvent` with a single `EventInstance` (`startsAt`/
+calls `Rellm.createEvent` with a single `Occasion` (`startsAt`/
 `endsAt`, this panel's own two date fields) and no `Post` of its own -- see
-module doc for why that instance needs no visibility of its own. Both
+module doc for why that occasion needs no visibility of its own. Both
 branches tag their own RPC's response (the server-populated Post/Event
 itself, `id`/`createdAt`/etc. included) as a `CreatedItem` with
 `resolved.server.frontendHost` -- what `GotSaveResult` appends to
@@ -629,8 +629,8 @@ saveTask browserTimeZone accountsPanelModel resolved model =
                         { defaultEvent
                             | post = Just { post | context = EVENT }
                             , info = Just defaultEventInfo
-                            , instances =
-                                [ { defaultEventInstance
+                            , occasions =
+                                [ { defaultOccasion
                                     | startsAt = Maybe.map posixToTimestamp model.startsAt
                                     , endsAt = Maybe.map posixToTimestamp model.endsAt
                                     , timezone = Just (resolvedTimezone browserTimeZone model)
@@ -844,7 +844,7 @@ timezoneField browserTimeZone model =
 {-| Every IANA zone name `justinmimbs/timezone-data` bundles (the same
 dataset `Shared.getBrowserZone` itself resolves against), sorted for a
 sensible `<select>` order -- what `timezoneField` (here) and
-`Components.Pages.EventPage.instanceTimezoneField` both offer.
+`Components.Pages.EventPage.occasionTimezoneField` both offer.
 -}
 allTimezoneNames : List String
 allTimezoneNames =

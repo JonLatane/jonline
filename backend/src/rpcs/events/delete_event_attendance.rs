@@ -6,33 +6,33 @@ use crate::marshaling::*;
 use crate::models;
 use crate::models::get_event_attendance;
 use crate::protos::*;
-use crate::schema::{event_attendances, event_instances, events, posts};
+use crate::schema::{event_attendances, occasions, events, posts};
 
 pub fn delete_event_attendance(
     request: EventAttendance,
     user: &Option<&models::User>,
     conn: &mut PgPooledConnection,
 ) -> Result<(), Status> {
-    let event_instance_id = request
-        .event_instance_id
-        .to_db_id_or_err("event_instance_id")?;
+    let occasion_id = request
+        .occasion_id
+        .to_db_id_or_err("occasion_id")?;
 
-    let (_event, event_post, _event_instance): (
+    let (_event, event_post, _occasion): (
         models::Event,
         models::Post,
-        models::EventInstance,
-    ) = event_instances::table
-        .inner_join(events::table.on(event_instances::event_id.eq(events::post_id)))
+        models::Occasion,
+    ) = occasions::table
+        .inner_join(events::table.on(occasions::event_id.eq(events::post_id)))
         .inner_join(posts::table.on(events::post_id.eq(posts::id)))
-        .filter(event_instances::post_id.eq(event_instance_id))
+        .filter(occasions::post_id.eq(occasion_id))
         .select((
             events::all_columns,
             models::POST_COLUMNS,
-            models::EVENT_INSTANCE_COLUMNS,
+            models::OCCASION_COLUMNS,
         ))
-        .first::<(models::Event, models::Post, models::EventInstance)>(conn)
+        .first::<(models::Event, models::Post, models::Occasion)>(conn)
         // .execute(conn)
-        .map_err(|_e| Status::new(Code::Internal, "invalid_event_instance_id"))?;
+        .map_err(|_e| Status::new(Code::Internal, "invalid_occasion_id"))?;
 
     let is_event_owner = user.is_some() && event_post.user_id == user.map(|u| u.id);
     let is_own_attendance = match &request.attendee {
@@ -74,7 +74,7 @@ pub fn delete_event_attendance(
         })
         .flatten();
     let existing_attendance = get_event_attendance(
-        event_instance_id,
+        occasion_id,
         attendee_user_id,
         attendee_auth_token,
         conn,

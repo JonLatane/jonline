@@ -27,7 +27,7 @@ render in the viewer's own local time rather than the server's UTC.
 `browserTimeZone.zone`'s own `getBrowserZone` capture exactly, including the
 `Time.millisToPosix 0` placeholder until it resolves) -- the single app-wide
 "now" every page that used to capture its own (`Pages.Event.PostId_`'s
-date-picker strip categorizing `EventInstance`s as upcoming/past,
+date-picker strip categorizing `Occasion`s as upcoming/past,
 `Components.Events.eventCard`/`instanceWhenText`'s "is this date in the
 viewer's current year" check) reads instead, rather than each independently
 re-running `Task.perform ... Time.now`. Deliberately _not_ kept live via a
@@ -67,11 +67,11 @@ the others too -- see `Model.browserTimeZone`.
 for long: the `Task` resolves on the same frame the app first renders).
 Unlike plain `Time.here`, `getBrowserZone` is DST-aware (backed by
 `justinmimbs/timezone-data`), so a timestamp far from "now" -- e.g. a
-recurring `EventInstance` on the other side of a DST transition -- still
+recurring `Occasion` on the other side of a DST transition -- still
 converts with the offset that actually applied on _its_ date, not today's.
 `name` is the actual IANA zone name (e.g. "America/New\_York") `zone` itself
 was looked up by -- kept alongside it so a timezone *selector*
-(`Shared.CreateNewPanel`/`Components.Pages.EventPage`'s `EventInstance.timezone`
+(`Shared.CreateNewPanel`/`Components.Pages.EventPage`'s `Occasion.timezone`
 field) has a sensible default to preselect, since `Time.Zone` alone is just a
 raw offset table with no name of its own. `""` if `elm/time`'s
 `Time.getZoneName` couldn't read one (falls back to plain `Time.here`, which
@@ -156,7 +156,7 @@ August 1, 6PM" (see `dateLabel`), or (24-hour) "August 1, 18:00" -- `time.now`
 supplies the viewer's own "current year"/"current day", so `dateLabel` can
 drop a redundant year or add a "Today"/"Yesterday"/"Tomorrow" prefix (see
 its own doc). Used by `Components.Events.instanceWhenText` for an
-`EventInstance` with only a `startsAt` or only an `endsAt` (unusual --
+`Occasion` with only a `startsAt` or only an `endsAt` (unusual --
 normally both are set, see `formatRange`), and by `Components.Posts.whenText`
 for a `Post`'s created/updated/published timestamps.
 -}
@@ -223,7 +223,7 @@ formatRange time start end =
 {-| Like `formatRange`, but omits the time-of-day entirely -- just the
 date(s), e.g. "August 1" (same day) or "June 1 - June 8" (different days).
 Used by `Components.Events.siblingInstanceWhenText` to drop a redundant time
-when a sibling `EventInstance` shares its current instance's own
+when a sibling `Occasion` shares its current instance's own
 time-of-day (e.g. a weekly meetup that's always 6-7PM) -- only the date(s)
 then distinguish one instance from another. Same "Today"/"Yesterday"/"Tomorrow"
 handling (including the same-side suppression) as `formatRange` -- see its
@@ -685,7 +685,7 @@ posixFromDateTimeLocalInput zone raw =
 
 
 {-| How far apart `Pages.Event.PostId_`'s "Add More" recurrence menu spaces
-each newly-created `EventInstance` from the one before it -- `Daily`/`Weekly`
+each newly-created `Occasion` from the one before it -- `Daily`/`Weekly`
 step by a fixed number of days (`1`/`7`), `Monthly` steps the calendar month
 itself (clamping the day-of-month down when the target month is shorter,
 e.g. Jan 31 + 1 month -> Feb 28/29), all via `addRecurrence`.

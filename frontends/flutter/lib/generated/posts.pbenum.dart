@@ -46,14 +46,14 @@ class PostContext extends $pb.ProtobufEnum {
   static const PostContext POST = PostContext._(0, _omitEnumNames ? '' : 'POST');
   static const PostContext REPLY = PostContext._(1, _omitEnumNames ? '' : 'REPLY');
   static const PostContext EVENT = PostContext._(2, _omitEnumNames ? '' : 'EVENT');
-  static const PostContext EVENT_INSTANCE = PostContext._(3, _omitEnumNames ? '' : 'EVENT_INSTANCE');
+  static const PostContext OCCASION = PostContext._(3, _omitEnumNames ? '' : 'OCCASION');
   static const PostContext FEDERATED_REPLY = PostContext._(10, _omitEnumNames ? '' : 'FEDERATED_REPLY');
 
   static const $core.List<PostContext> values = <PostContext> [
     POST,
     REPLY,
     EVENT,
-    EVENT_INSTANCE,
+    OCCASION,
     FEDERATED_REPLY,
   ];
 

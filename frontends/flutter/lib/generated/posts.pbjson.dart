@@ -42,15 +42,15 @@ const PostContext$json = {
     {'1': 'POST', '2': 0},
     {'1': 'REPLY', '2': 1},
     {'1': 'EVENT', '2': 2},
-    {'1': 'EVENT_INSTANCE', '2': 3},
+    {'1': 'OCCASION', '2': 3},
     {'1': 'FEDERATED_REPLY', '2': 10},
   ],
 };
 
 /// Descriptor for `PostContext`. Decode as a `google.protobuf.EnumDescriptorProto`.
 final $typed_data.Uint8List postContextDescriptor = $convert.base64Decode(
-    'CgtQb3N0Q29udGV4dBIICgRQT1NUEAASCQoFUkVQTFkQARIJCgVFVkVOVBACEhIKDkVWRU5UX0'
-    'lOU1RBTkNFEAMSEwoPRkVERVJBVEVEX1JFUExZEAo=');
+    'CgtQb3N0Q29udGV4dBIICgRQT1NUEAASCQoFUkVQTFkQARIJCgVFVkVOVBACEgwKCE9DQ0FTSU'
+    '9OEAMSEwoPRkVERVJBVEVEX1JFUExZEAo=');
 
 @$core.Deprecated('Use postMediaLayoutDescriptor instead')
 const PostMediaLayout$json = {

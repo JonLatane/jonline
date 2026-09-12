@@ -80,7 +80,7 @@ export const EventListingLarge: React.FC<EventListingLargeProps> = ({ events }) 
       display: 'flex', flexDirection: 'column', alignItems: 'center'
     }}>
       <EventsFullCalendar events={events}
-        scrollToTime={events[0]?.instances[0]?.startsAt} />
+        scrollToTime={events[0]?.occasions[0]?.startsAt} />
     </div>
     : renderInColumns
       ? [
@@ -97,7 +97,7 @@ export const EventListingLarge: React.FC<EventListingLargeProps> = ({ events }) 
             </XStack>
             : undefined}
           {paginatedEvents.map((event) => {
-            return <XStack key={federateId(event.instances[0]?.id ?? '', currentServer)}
+            return <XStack key={federateId(event.occasions[0]?.id ?? '', currentServer)}
               animation='standard' {...standardAnimation}
             >
               <XStack w={eventCardWidth}
@@ -122,8 +122,8 @@ export const EventListingLarge: React.FC<EventListingLargeProps> = ({ events }) 
           : undefined,
 
         paginatedEvents.map((event) => {
-          return <XStack key={`event-preview-${federatedId(event)}-${event.instances[0]!.id}`} w='100%'>
-            <EventCard event={event} key={federateId(event.instances[0]?.id ?? '', currentServer)} isPreview />
+          return <XStack key={`event-preview-${federatedId(event)}-${event.occasions[0]!.id}`} w='100%'>
+            <EventCard event={event} key={federateId(event.occasions[0]?.id ?? '', currentServer)} isPreview />
           </XStack>
         }),
 

@@ -1,5 +1,5 @@
 //! Specs for `SyncPost`/`DeletePostSyncDestination` -- mirrors `sync_destination_rpc_tests`'
-//! `sync_event_instance`/`delete_event_instance_sync_destination` coverage, but for Posts (gated
+//! `sync_occasion`/`delete_occasion_sync_destination` coverage, but for Posts (gated
 //! on `SyncPostsToFacebook` instead of `SyncEventsToFacebook`). Facebook Graph API interaction
 //! correctness itself is covered by `facebook_sync_tests`; these specs focus on permissions,
 //! ownership, and validation.

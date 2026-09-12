@@ -126,7 +126,7 @@ class FederationInfo extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   $core.List<FederatedServer> get servers => $_getList(0);
 
-  /// Facebook authentication configuration for the server. If set, allows users to create Facebook (and Instagram) SyncDestinations for their Posts and EventInstances.
+  /// Facebook authentication configuration for the server. If set, allows users to create Facebook (and Instagram) SyncDestinations for their Posts and Occasions.
   @$pb.TagNumber(2)
   FacebookAuthConfig get facebookAuthConfig => $_getN(1);
   @$pb.TagNumber(2)
@@ -139,7 +139,7 @@ class FederationInfo extends $pb.GeneratedMessage {
   FacebookAuthConfig ensureFacebookAuthConfig() => $_ensure(1);
 
   /// X (Twitter) authentication configuration for the server. If set, allows users to create X (Twitter) SyncDestinations
-  /// for their Posts and EventInstances - an admin registers one X Developer App here, and every
+  /// for their Posts and Occasions - an admin registers one X Developer App here, and every
   /// user on the server connects their own X account through it via OAuth, the same relationship
   /// `facebook_auth_config` has to individual Facebook Pages. Until set, [`XTwitterAccount`](#rellm-XTwitterAccount)
   /// SyncDestinations always fail with `x_twitter_app_not_configured`.

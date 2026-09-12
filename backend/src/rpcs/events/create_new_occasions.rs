@@ -6,47 +6,47 @@ use crate::db_connection::PgPooledConnection;
 use crate::marshaling::*;
 use crate::models;
 use crate::protos::*;
-use crate::schema::{event_instances, posts};
+use crate::schema::{occasions, posts};
 
-use super::event_permissions::{event_post_id, find_existing_instance, validate_event_edit_permission};
+use super::event_permissions::{event_post_id, find_existing_occasion, validate_event_edit_permission};
 
-/// Creates an `EventInstance` for every entry in `instances` that isn't already on `event` (i.e.
+/// Creates an `Occasion` for every entry in `occasions` that isn't already on `event` (i.e.
 /// whose `post.id` doesn't parse, or doesn't belong to this event); entries that do match are left
-/// untouched (see `update_event_instances` for updating those in place). Returns `instances` with
+/// untouched (see `update_occasions` for updating those in place). Returns `occasions` with
 /// each created entry's `post.id` replaced by its newly-minted Post's id -- callers that need to
-/// know which instances survive this event (like `update_event`, feeding
-/// `delete_removed_event_instances`) can't otherwise tell a request instance just created apart
+/// know which occasions survive this event (like `update_event`, feeding
+/// `delete_removed_occasions`) can't otherwise tell a request occasion just created apart
 /// from one about to be deleted, since both have no id the deletion pass would recognize.
-pub(super) fn create_new_event_instances_impl(
+pub(super) fn create_new_occasions_impl(
     event: &models::Event,
-    instances: &[EventInstance],
+    occasions: &[Occasion],
     current_user: &models::User,
     conn: &mut PgPooledConnection,
-) -> Result<Vec<EventInstance>, Status> {
-    let mut resolved = Vec::with_capacity(instances.len());
-    for request_instance in instances {
-        if find_existing_instance(request_instance, event.post_id, conn).is_some() {
-            resolved.push(request_instance.clone());
+) -> Result<Vec<Occasion>, Status> {
+    let mut resolved = Vec::with_capacity(occasions.len());
+    for request_occasion in occasions {
+        if find_existing_occasion(request_occasion, event.post_id, conn).is_some() {
+            resolved.push(request_occasion.clone());
             continue;
         }
-        let (_, created_instance_post) =
-            create_instance(event, request_instance, current_user, conn)?;
-        let mut resolved_post = request_instance.post.clone().unwrap_or_default();
-        resolved_post.id = created_instance_post.id.to_proto_id();
-        resolved.push(EventInstance {
+        let (_, created_occasion_post) =
+            create_occasion(event, request_occasion, current_user, conn)?;
+        let mut resolved_post = request_occasion.post.clone().unwrap_or_default();
+        resolved_post.id = created_occasion_post.id.to_proto_id();
+        resolved.push(Occasion {
             post: Some(resolved_post),
-            ..request_instance.clone()
+            ..request_occasion.clone()
         });
     }
 
-    // New instances are always owned by `current_user`; refresh their `event_instance_count`.
+    // New occasions are always owned by `current_user`; refresh their `occasion_count`.
     crate::logic::update_event_counts(current_user.id, conn)
         .map_err(|_| Status::new(Code::Internal, "error_updating_event_counts"))?;
 
     Ok(resolved)
 }
 
-pub fn create_new_event_instances(
+pub fn create_new_occasions(
     request: Event,
     current_user: &models::User,
     conn: &mut PgPooledConnection,
@@ -55,7 +55,7 @@ pub fn create_new_event_instances(
     let event = models::get_event(event_id, &Some(current_user), conn)?;
     validate_event_edit_permission(&event, current_user, conn)?;
 
-    create_new_event_instances_impl(&event, &request.instances, current_user, conn)?;
+    create_new_occasions_impl(&event, &request.occasions, current_user, conn)?;
 
     Ok(super::get_events(
         GetEventsRequest {
@@ -69,26 +69,26 @@ pub fn create_new_event_instances(
         .clone())
 }
 
-/// New instances are always authored by `user` (the caller) -- syncing to any other owner isn't
+/// New occasions are always authored by `user` (the caller) -- syncing to any other owner isn't
 /// supported.
-pub fn create_instance(
+pub fn create_occasion(
     event: &models::Event,
-    instance: &EventInstance,
+    occasion: &Occasion,
     user: &models::User,
     conn: &mut PgPooledConnection,
-) -> Result<(models::EventInstance, models::Post), Status> {
-    let media_ids = instance
+) -> Result<(models::Occasion, models::Post), Status> {
+    let media_ids = occasion
         .post
         .as_ref()
         .map(|p| {
             p.media
                 .iter()
-                .map(|m| m.id.to_db_id_or_err("instance.post.media"))
+                .map(|m| m.id.to_db_id_or_err("occasion.post.media"))
                 .collect::<Result<Vec<i64>, Status>>()
         })
         .transpose()?
         .unwrap_or_default();
-    let new_post = instance.post.as_ref().map_or(
+    let new_post = occasion.post.as_ref().map_or(
         models::NewPost {
             user_id: Some(user.id),
             parent_post_id: None,
@@ -97,7 +97,7 @@ pub fn create_instance(
             content: None,
             visibility: "GLOBAL_PUBLIC".to_string(),
             embed_link: false,
-            context: PostContext::EventInstance.as_str_name().to_string(),
+            context: PostContext::Occasion.as_str_name().to_string(),
             moderation: "UNMODERATED".to_string(),
             media: vec![],
         },
@@ -109,37 +109,37 @@ pub fn create_instance(
             content: p.content.to_owned(),
             visibility: p.visibility.to_string_visibility(),
             embed_link: p.embed_link.to_owned(),
-            context: PostContext::EventInstance.as_str_name().to_string(),
+            context: PostContext::Occasion.as_str_name().to_string(),
             moderation: "UNMODERATED".to_string(),
             media: media_ids,
         },
     );
-    let instance_post: models::Post = insert_into(posts::table)
+    let occasion_post: models::Post = insert_into(posts::table)
         .values(&new_post)
         .returning(models::POST_COLUMNS)
         .get_result::<models::Post>(conn)
         .map_err(|e| {
-            log::error!("Failed to create event instance post: {:?}", e);
-            Status::new(Code::Internal, "failed_to_create_event_instance_post")
+            log::error!("Failed to create event occasion post: {:?}", e);
+            Status::new(Code::Internal, "failed_to_create_occasion_post")
         })?;
-    let instance = insert_into(event_instances::table)
-        .values(&models::NewEventInstance {
+    let occasion = insert_into(occasions::table)
+        .values(&models::NewOccasion {
             event_id: event.post_id,
-            post_id: instance_post.id,
-            starts_at: instance.starts_at.as_ref().unwrap().to_db(),
-            ends_at: instance.ends_at.as_ref().unwrap().to_db(),
-            location: instance
+            post_id: occasion_post.id,
+            starts_at: occasion.starts_at.as_ref().unwrap().to_db(),
+            ends_at: occasion.ends_at.as_ref().unwrap().to_db(),
+            location: occasion
                 .location
                 .as_ref()
                 .map(|c| serde_json::to_value(c).unwrap()),
             info: json!({}),
-            timezone: instance.timezone.clone(),
+            timezone: occasion.timezone.clone(),
         })
-        .returning(models::EVENT_INSTANCE_COLUMNS)
-        .get_result::<models::EventInstance>(conn)
+        .returning(models::OCCASION_COLUMNS)
+        .get_result::<models::Occasion>(conn)
         .map_err(|e| {
-            log::error!("Failed to create event instance: {:?}", e);
-            Status::new(Code::Internal, "failed_to_create_event_instance")
+            log::error!("Failed to create event occasion: {:?}", e);
+            Status::new(Code::Internal, "failed_to_create_occasion")
         })?;
-    Ok((instance, instance_post))
+    Ok((occasion, occasion_post))
 }

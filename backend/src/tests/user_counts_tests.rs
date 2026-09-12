@@ -1,5 +1,5 @@
 //! Specs for the denormalized `users` counters (`follower_count`, `following_count`,
-//! `friend_count`, `post_count`, `response_count`, `event_count`, `event_instance_count`) --
+//! `friend_count`, `post_count`, `response_count`, `event_count`, `occasion_count`) --
 //! `backend/src/logic/user_counts.rs` defines what a correct value looks like, and this file
 //! checks the RPC call sites that are supposed to keep them in sync actually do, plus
 //! `update_all_counts` (the full recompute `bin/update_user_counts.rs` runs hourly).
@@ -7,8 +7,8 @@
 //! Regression coverage in particular for two bugs `logic::user_counts` fixed:
 //! `create_post` used to bump the *wrong* counter for replies vs. top-level posts (see
 //! `create_post_increments_post_count_and_reply_increments_response_count`), and `create_event`
-//! used to bump `event_count` once per *instance* rather than once per event (see
-//! `create_event_sets_event_count_once_and_event_instance_count_per_instance`).
+//! used to bump `event_count` once per *occasion* rather than once per event (see
+//! `create_event_sets_event_count_once_and_occasion_count_per_occasion`).
 
 use std::time::{Duration, SystemTime};
 
@@ -31,7 +31,7 @@ fn new_top_level_post() -> Post {
     }
 }
 
-fn new_event(num_instances: usize) -> Event {
+fn new_event(num_occasions: usize) -> Event {
     let now = SystemTime::now();
     let starts_at = Some((now + Duration::from_secs(3600)).to_proto());
     let ends_at = Some((now + Duration::from_secs(7200)).to_proto());
@@ -41,8 +41,8 @@ fn new_event(num_instances: usize) -> Event {
             visibility: Visibility::GlobalPublic as i32,
             ..Default::default()
         }),
-        instances: (0..num_instances)
-            .map(|_| EventInstance {
+        occasions: (0..num_occasions)
+            .map(|_| Occasion {
                 starts_at: starts_at.clone(),
                 ends_at: ends_at.clone(),
                 ..Default::default()
@@ -163,7 +163,7 @@ fn mutual_follow_sets_friend_follower_and_following_counts_for_both_users() {
 }
 
 #[test]
-fn create_event_sets_event_count_once_and_event_instance_count_per_instance() {
+fn create_event_sets_event_count_once_and_occasion_count_per_occasion() {
     let mut conn = test_conn();
     conn.test_transaction::<_, Status, _>(|conn| {
         let author = create_user(conn, "uct_event_author1");
@@ -175,17 +175,17 @@ fn create_event_sets_event_count_once_and_event_instance_count_per_instance() {
 
         create_event(new_event(3), &author, conn)?;
         let author = models::get_user(author.id, conn)?;
-        // Regression check: previously event_count was bumped once per instance (3), not once
+        // Regression check: previously event_count was bumped once per occasion (3), not once
         // per event (1).
         assert_eq!(author.event_count, 1);
-        assert_eq!(author.event_instance_count, 3);
+        assert_eq!(author.occasion_count, 3);
 
         Ok(())
     });
 }
 
 #[test]
-fn delete_event_clears_event_and_event_instance_counts() {
+fn delete_event_clears_event_and_occasion_counts() {
     let mut conn = test_conn();
     conn.test_transaction::<_, Status, _>(|conn| {
         let author = create_user(conn, "uct_event_author2");
@@ -209,7 +209,7 @@ fn delete_event_clears_event_and_event_instance_counts() {
         )?;
         let author = models::get_user(author.id, conn)?;
         assert_eq!(author.event_count, 0);
-        assert_eq!(author.event_instance_count, 0);
+        assert_eq!(author.occasion_count, 0);
 
         Ok(())
     });

@@ -2,7 +2,7 @@ import { useFederatedDispatch } from "app/hooks";
 import { FederatedEvent, getCredentialClient, useServerTheme } from "app/store";
 import React, { useState } from "react";
 
-import { AttendanceStatus, EventAttendance, EventInstance, Moderation, Post } from "@rellm/api";
+import { AttendanceStatus, EventAttendance, Occasion, Moderation, Post } from "@rellm/api";
 import { Button, Card, Heading, Paragraph, XStack, YStack, standardAnimation, useMedia } from "@rellm/ui";
 import { Edit3 as Edit } from "@tamagui/lucide-icons";
 import { ModerationPicker } from "app/components/moderation_picker";
@@ -13,7 +13,7 @@ import { AuthorInfo } from "../post/author_info";
 
 interface Props {
   event: FederatedEvent;
-  instance: EventInstance;
+  occasion: Occasion;
   attendance: EventAttendance;
   onPressEdit?: () => void;
   onModerated?: (attendance: EventAttendance) => void;
@@ -21,7 +21,7 @@ interface Props {
 
 export const RsvpCard: React.FC<Props> = ({
   event,
-  instance,
+  occasion,
   attendance,
   onPressEdit,
   onModerated,

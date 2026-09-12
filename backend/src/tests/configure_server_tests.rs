@@ -7,7 +7,10 @@
 use diesel::Connection;
 
 use crate::db_connection::PgPooledConnection;
-use crate::logic::{server_facebook_app_credentials, server_x_twitter_app_credentials};
+use crate::logic::{
+    server_bird_config, server_facebook_app_credentials, server_twilio_config,
+    server_x_twitter_app_credentials,
+};
 use crate::protos::*;
 use crate::rpcs::{configure_server, get_server_configuration_proto};
 use crate::tests::factories::*;
@@ -267,6 +270,180 @@ fn saving_facebook_auth_config_does_not_clobber_an_already_stored_x_twitter_secr
         let (_, x_client_secret) =
             server_x_twitter_app_credentials(conn).expect("x_twitter credentials should still be configured");
         assert_eq!(x_client_secret, "x-secret");
+
+        Ok(())
+    });
+}
+
+/// Mirrors `facebook_auth_request`, against `twilio_config` instead -- see
+/// `logic::contact_verification`'s own doc for why `TwilioConfig.twilio_api_key` (the Auth Token)
+/// gets the identical write-only/merge-on-blank treatment as `FacebookAuthConfig.app_secret`.
+fn twilio_request(
+    conn: &mut PgPooledConnection,
+    account_sid: &str,
+    api_key: &str,
+    from_number: &str,
+) -> ServerConfiguration {
+    let mut config = get_server_configuration_proto(conn).expect("failed to fetch base config");
+    config.twilio_config = Some(TwilioConfig {
+        twilio_enabled: true,
+        twilio_account_sid: account_sid.to_string(),
+        twilio_api_key: api_key.to_string(),
+        twilio_from_number: from_number.to_string(),
+    });
+    config
+}
+
+#[test]
+fn twilio_api_key_is_never_returned_to_the_client() {
+    let mut conn = test_conn();
+    conn.test_transaction::<_, tonic::Status, _>(|conn| {
+        let admin = create_user(conn, "cst_twilio_hidden");
+        let admin = grant_permissions(conn, &admin, vec![Permission::Admin]);
+
+        let updated = configure_server(
+            twilio_request(conn, "AC_sid", "super-secret-token", "+15005550006"),
+            &admin,
+            conn,
+        )
+        .expect("configure should succeed");
+
+        assert_eq!(
+            updated.twilio_config.expect("twilio_config should be set").twilio_api_key,
+            ""
+        );
+
+        Ok(())
+    });
+}
+
+#[test]
+fn empty_twilio_api_key_preserves_the_previously_stored_one() {
+    let mut conn = test_conn();
+    conn.test_transaction::<_, tonic::Status, _>(|conn| {
+        let admin = create_user(conn, "cst_twilio_preserved");
+        let admin = grant_permissions(conn, &admin, vec![Permission::Admin]);
+
+        configure_server(
+            twilio_request(conn, "AC_sid_1", "super-secret-token", "+15005550006"),
+            &admin,
+            conn,
+        )
+        .expect("first configure should succeed");
+
+        // Changing just the Account SID, with the Auth Token left blank (as the client always
+        // sends it, since it never gets the real value back to resend) -- this is exactly the bug
+        // report this spec guards against: editing one field must not silently blank/clobber the
+        // other already-stored secret.
+        configure_server(
+            twilio_request(conn, "AC_sid_2", "", "+15005550006"),
+            &admin,
+            conn,
+        )
+        .expect("second configure should succeed");
+
+        let stored = server_twilio_config(conn).expect("twilio config should still be configured");
+        assert_eq!(stored.twilio_account_sid, "AC_sid_2");
+        assert_eq!(stored.twilio_api_key, "super-secret-token");
+
+        Ok(())
+    });
+}
+
+#[test]
+fn setting_twilio_config_to_none_clears_the_stored_secret() {
+    let mut conn = test_conn();
+    conn.test_transaction::<_, tonic::Status, _>(|conn| {
+        let admin = create_user(conn, "cst_twilio_cleared");
+        let admin = grant_permissions(conn, &admin, vec![Permission::Admin]);
+
+        configure_server(
+            twilio_request(conn, "AC_sid", "super-secret-token", "+15005550006"),
+            &admin,
+            conn,
+        )
+        .expect("first configure should succeed");
+
+        let mut clearing_config =
+            get_server_configuration_proto(conn).expect("failed to fetch base config");
+        clearing_config.twilio_config = None;
+        configure_server(clearing_config, &admin, conn).expect("clearing configure should succeed");
+
+        assert_eq!(server_twilio_config(conn), None);
+
+        Ok(())
+    });
+}
+
+/// Mirrors `twilio_request` exactly, against `bird_config` instead.
+fn bird_request(conn: &mut PgPooledConnection, access_key: &str, from: &str) -> ServerConfiguration {
+    let mut config = get_server_configuration_proto(conn).expect("failed to fetch base config");
+    config.bird_config = Some(BirdConfig {
+        bird_enabled: true,
+        bird_access_key: access_key.to_string(),
+        bird_from: from.to_string(),
+        bird_region: "us1".to_string(),
+    });
+    config
+}
+
+#[test]
+fn bird_access_key_is_never_returned_to_the_client() {
+    let mut conn = test_conn();
+    conn.test_transaction::<_, tonic::Status, _>(|conn| {
+        let admin = create_user(conn, "cst_bird_hidden");
+        let admin = grant_permissions(conn, &admin, vec![Permission::Admin]);
+
+        let updated = configure_server(bird_request(conn, "super-secret-key", "Bird"), &admin, conn)
+            .expect("configure should succeed");
+
+        assert_eq!(
+            updated.bird_config.expect("bird_config should be set").bird_access_key,
+            ""
+        );
+
+        Ok(())
+    });
+}
+
+#[test]
+fn empty_bird_access_key_preserves_the_previously_stored_one() {
+    let mut conn = test_conn();
+    conn.test_transaction::<_, tonic::Status, _>(|conn| {
+        let admin = create_user(conn, "cst_bird_preserved");
+        let admin = grant_permissions(conn, &admin, vec![Permission::Admin]);
+
+        configure_server(bird_request(conn, "super-secret-key", "Bird-1"), &admin, conn)
+            .expect("first configure should succeed");
+
+        // Changing just the From value, with the Access Key left blank.
+        configure_server(bird_request(conn, "", "Bird-2"), &admin, conn)
+            .expect("second configure should succeed");
+
+        let stored = server_bird_config(conn).expect("bird config should still be configured");
+        assert_eq!(stored.bird_from, "Bird-2");
+        assert_eq!(stored.bird_access_key, "super-secret-key");
+
+        Ok(())
+    });
+}
+
+#[test]
+fn setting_bird_config_to_none_clears_the_stored_secret() {
+    let mut conn = test_conn();
+    conn.test_transaction::<_, tonic::Status, _>(|conn| {
+        let admin = create_user(conn, "cst_bird_cleared");
+        let admin = grant_permissions(conn, &admin, vec![Permission::Admin]);
+
+        configure_server(bird_request(conn, "super-secret-key", "Bird"), &admin, conn)
+            .expect("first configure should succeed");
+
+        let mut clearing_config =
+            get_server_configuration_proto(conn).expect("failed to fetch base config");
+        clearing_config.bird_config = None;
+        configure_server(clearing_config, &admin, conn).expect("clearing configure should succeed");
+
+        assert_eq!(server_bird_config(conn), None);
 
         Ok(())
     });

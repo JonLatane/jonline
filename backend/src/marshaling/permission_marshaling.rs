@@ -50,7 +50,7 @@ pub const ALL_PERMISSIONS: [Permission; 54] = [
     ModerateMedia,
     ReadPersonalMessages,
     ReadAllSystemMessages,
-    CreateAiModelProviders,
+    CreateAiProviders,
     SyncEventsFromIcs,
     SyncPostsFromRss,
     SyncPostsFromAtom,

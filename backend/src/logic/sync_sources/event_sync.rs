@@ -1,19 +1,19 @@
 //! Pulls events from a `SyncSource`'s external calendar (currently only ICS subscription
-//! URLs) and upserts them into `events`/`event_instances`/`posts`.
+//! URLs) and upserts them into `events`/`occasions`/`posts`.
 //!
 //! Recurring `VEVENT`s (an `RRULE`) are expanded with the `rrule` crate: one ICS `UID` maps to
-//! one `Event`, and each occurrence maps to one `EventInstance`, keyed by
+//! one `Event`, and each occurrence maps to one `Occasion`, keyed by
 //! `(sync_source_id, sync_source_uid, sync_source_recurrence_anchor)` -- real, indexed columns
 //! (and a hard DB unique constraint) on the occurrence's own `Post` (see migration
 //! 2026-09-11-000000_move_sync_source_to_posts -- these columns started out on
-//! `events`/`event_instances` themselves, denormalized down onto `posts` so any kind of synced
-//! Post, not just Events/EventInstances, gets the same guarantee) rather than an app-level JSON
+//! `events`/`occasions` themselves, denormalized down onto `posts` so any kind of synced
+//! Post, not just Events/Occasions, gets the same guarantee) rather than an app-level JSON
 //! key or a hand-built/parsed string, so re-syncing finds and updates the same rows rather than
 //! duplicating them, and a bug that breaks that matching fails loudly (a constraint violation)
 //! instead of silently creating duplicates -- see 2026-09-04's duplicate-events incident, which is
 //! exactly what motivated this.
 //! A `VEVENT` with a `RECURRENCE-ID` overrides that one occurrence's time/text (a moved or edited
-//! single instance of a series); `sync_source_recurrence_anchor` is that occurrence's stable
+//! single occasion of a series); `sync_source_recurrence_anchor` is that occurrence's stable
 //! identity within the series (its own start time for a plain expansion, or its *original*
 //! scheduled time for one that's since moved -- deliberately different from that row's own
 //! `starts_at` once moved, which is what lets it still be found as "the same one" next sync).
@@ -22,13 +22,13 @@
 //! Existing rows older than that are never touched, even if they'd otherwise be pruned for no
 //! longer appearing in the feed.
 //!
-//! An in-window instance that stops appearing in the feed isn't deleted right away: it's marked
+//! An in-window occasion that stops appearing in the feed isn't deleted right away: it's marked
 //! `sync_missing_since` and only actually deleted once it's stayed missing for
 //! `MISSING_GRACE_PERIOD_DAYS`. This protects against a transient or partial upstream response
 //! (rate limiting, a mid-edit feed, a truncated fetch) being mistaken for a real deletion --
-//! re-creating a dropped instance always makes a brand new `Post`, so a same-sync round-trip
+//! re-creating a dropped occasion always makes a brand new `Post`, so a same-sync round-trip
 //! delete+recreate would silently orphan whatever comment thread/media the user had attached to
-//! the original one. An `Event` itself is only deleted once none of its instances remain.
+//! the original one. An `Event` itself is only deleted once none of its occasions remain.
 
 use std::collections::{HashMap, HashSet};
 use std::time::SystemTime;
@@ -44,12 +44,12 @@ use crate::db_connection::PgPooledConnection;
 use crate::marshaling::*;
 use crate::models;
 use crate::protos::*;
-use crate::schema::{event_instances, events, posts, sync_sources};
+use crate::schema::{occasions, events, posts, sync_sources};
 
 const SYNC_PAST_WINDOW_DAYS: i64 = 365;
 const SYNC_FUTURE_WINDOW_DAYS: i64 = 365;
 const MAX_RRULE_OCCURRENCES: u16 = 2000;
-/// How long an in-window instance can stay absent from the feed before `reconcile_instances`
+/// How long an in-window occasion can stay absent from the feed before `reconcile_occasions`
 /// actually deletes it. See the module doc comment.
 const MISSING_GRACE_PERIOD_DAYS: i64 = 3;
 
@@ -111,14 +111,14 @@ struct Occurrence {
     title: Option<String>,
     content: Option<String>,
     /// The IANA timezone (`TZID`) `starts_at` was expressed in in the source feed, if any -- e.g.
-    /// `DTSTART;TZID=America/New_York:...` -- so `EventInstance.timezone` can be populated
+    /// `DTSTART;TZID=America/New_York:...` -- so `Occasion.timezone` can be populated
     /// straight from the feed rather than only ever coming from `logic::resolve_timezone`'s
     /// Nominatim guess or a hand-picked selector value. `None` for a floating or UTC `DTSTART`
     /// (no `TZID` to read).
     timezone: Option<String>,
     /// Whether this occurrence came from its own `RECURRENCE-ID` VEVENT (as opposed to being a
-    /// plain expansion of the master's `RRULE`) -- only overrides get their own instance `Post`
-    /// text; plain expansions leave their instance `Post` empty, same as normal (non-synced)
+    /// plain expansion of the master's `RRULE`) -- only overrides get their own occasion `Post`
+    /// text; plain expansions leave their occasion `Post` empty, same as normal (non-synced)
     /// recurring events do.
     is_override: bool,
 }
@@ -153,13 +153,13 @@ pub fn sync_source_text(
     let window_start_db: SystemTime = window_start.into();
 
     let result = conn.transaction::<(), diesel::result::Error, _>(|conn| {
-        // Every currently-existing synced instance's series UID -> parent Event id, via real,
+        // Every currently-existing synced occasion's series UID -> parent Event id, via real,
         // indexed columns (see the module doc comment) instead of an app-level JSON key. Multiple
-        // instances of a recurring series share the same `event_id`, so a plain overwrite while
+        // occasions of a recurring series share the same `event_id`, so a plain overwrite while
         // building this map is correct.
-        let existing_event_ids_by_uid: HashMap<String, i64> = event_instances::table
-            .inner_join(posts::table.on(posts::id.eq(event_instances::post_id)))
-            .select((posts::sync_source_uid, event_instances::event_id))
+        let existing_event_ids_by_uid: HashMap<String, i64> = occasions::table
+            .inner_join(posts::table.on(posts::id.eq(occasions::post_id)))
+            .select((posts::sync_source_uid, occasions::event_id))
             .filter(posts::sync_source_id.eq(source.id))
             .load::<(Option<String>, i64)>(conn)?
             .into_iter()
@@ -182,7 +182,7 @@ pub fn sync_source_text(
                 }
             };
 
-            reconcile_instances(
+            reconcile_occasions(
                 conn,
                 event_id,
                 source.id,
@@ -195,9 +195,9 @@ pub fn sync_source_text(
         }
 
         // Events whose UID no longer appears in the feed at all: prune their in-window
-        // instances the same way `reconcile_instances` does for a group with zero occurrences
-        // (subject to the same missing-grace-period before an instance is actually deleted),
-        // then delete the event itself (cascades its instances/attendances) once nothing's left.
+        // occasions the same way `reconcile_occasions` does for a group with zero occurrences
+        // (subject to the same missing-grace-period before an occasion is actually deleted),
+        // then delete the event itself (cascades its occasions/attendances) once nothing's left.
         let stale_event_ids: HashSet<i64> = existing_event_ids_by_uid
             .iter()
             .filter(|(uid, _)| !seen_uids.contains(*uid))
@@ -211,7 +211,7 @@ pub fn sync_source_text(
                 link: None,
                 occurrences: vec![],
             };
-            reconcile_instances(
+            reconcile_occasions(
                 conn,
                 event_id,
                 source.id,
@@ -222,8 +222,8 @@ pub fn sync_source_text(
                 now,
             )?;
 
-            let remaining: i64 = event_instances::table
-                .filter(event_instances::event_id.eq(event_id))
+            let remaining: i64 = occasions::table
+                .filter(occasions::event_id.eq(event_id))
                 .count()
                 .get_result(conn)?;
             if remaining == 0 {
@@ -236,8 +236,8 @@ pub fn sync_source_text(
             .filter(posts::sync_source_id.eq(source.id))
             .count()
             .get_result(conn)?;
-        let event_instance_count: i64 = event_instances::table
-            .inner_join(posts::table.on(posts::id.eq(event_instances::post_id)))
+        let occasion_count: i64 = occasions::table
+            .inner_join(posts::table.on(posts::id.eq(occasions::post_id)))
             .filter(posts::sync_source_id.eq(source.id))
             .count()
             .get_result(conn)?;
@@ -246,7 +246,7 @@ pub fn sync_source_text(
             .set((
                 sync_sources::last_synced_at.eq(SystemTime::now()),
                 sync_sources::event_count.eq(event_count),
-                sync_sources::event_instance_count.eq(event_instance_count),
+                sync_sources::occasion_count.eq(occasion_count),
             ))
             .execute(conn)?;
 
@@ -301,7 +301,7 @@ fn create_event_for_group(
     // codebase that never set a SyncSource, and every nullable column a struct doesn't name is
     // simply left at its SQL default (NULL) on INSERT, so this is the only place that actually
     // needs to touch these columns at creation time. `sync_source_recurrence_anchor` stays NULL
-    // here -- it's specific to a recurring EventInstance's own occurrence identity, not this
+    // here -- it's specific to a recurring Occasion's own occurrence identity, not this
     // series-level Post (see `models::Post`'s field doc).
     diesel::update(posts::table.filter(posts::id.eq(post.id)))
         .set((
@@ -352,15 +352,15 @@ fn location_json(location: &Option<String>) -> Option<serde_json::Value> {
     })
 }
 
-/// Creates/updates `EventInstance`s (+ their `Post`s) for `group`'s occurrences under
-/// `event_id`, then reconciles any existing instance under `event_id` that's no longer present
-/// in `group.occurrences` -- but only if that instance's `ends_at` is still within the sync
+/// Creates/updates `Occasion`s (+ their `Post`s) for `group`'s occurrences under
+/// `event_id`, then reconciles any existing occasion under `event_id` that's no longer present
+/// in `group.occurrences` -- but only if that occasion's `ends_at` is still within the sync
 /// window (`>= window_start_db`); older ones are left untouched no matter what the feed says now.
-/// An in-window instance that's missing isn't deleted immediately: the first sync that misses it
+/// An in-window occasion that's missing isn't deleted immediately: the first sync that misses it
 /// stamps `sync_missing_since` and leaves it alone, and only a sync that *still* misses it after
-/// `MISSING_GRACE_PERIOD_DAYS` have passed since that stamp actually deletes it. An instance that
+/// `MISSING_GRACE_PERIOD_DAYS` have passed since that stamp actually deletes it. An occasion that
 /// reappears (matched by `sync_source_recurrence_anchor`) has its `sync_missing_since` cleared.
-fn reconcile_instances(
+fn reconcile_occasions(
     conn: &mut PgPooledConnection,
     event_id: i64,
     source_id: i64,
@@ -370,12 +370,12 @@ fn reconcile_instances(
     window_start_db: SystemTime,
     now: DateTime<Utc>,
 ) -> Result<(), diesel::result::Error> {
-    let existing_instances: Vec<(models::EventInstance, Option<SystemTime>)> = event_instances::table
-        .inner_join(posts::table.on(posts::id.eq(event_instances::post_id)))
-        .select((models::EVENT_INSTANCE_COLUMNS, posts::sync_source_recurrence_anchor))
-        .filter(event_instances::event_id.eq(event_id))
+    let existing_occasions: Vec<(models::Occasion, Option<SystemTime>)> = occasions::table
+        .inner_join(posts::table.on(posts::id.eq(occasions::post_id)))
+        .select((models::OCCASION_COLUMNS, posts::sync_source_recurrence_anchor))
+        .filter(occasions::event_id.eq(event_id))
         .load(conn)?;
-    let mut existing_by_anchor: HashMap<SystemTime, models::EventInstance> = existing_instances
+    let mut existing_by_anchor: HashMap<SystemTime, models::Occasion> = existing_occasions
         .into_iter()
         .filter_map(|(i, anchor)| anchor.map(|anchor| (anchor, i)))
         .collect();
@@ -387,30 +387,30 @@ fn reconcile_instances(
         let loc_json = location_json(&occ.location);
 
         match existing_by_anchor.remove(&anchor_db) {
-            Some(existing_instance) => {
-                if existing_instance.starts_at != starts_at_db
-                    || existing_instance.ends_at != ends_at_db
-                    || existing_instance.location != loc_json
-                    || existing_instance.timezone != occ.timezone
-                    || existing_instance.sync_missing_since.is_some()
+            Some(existing_occasion) => {
+                if existing_occasion.starts_at != starts_at_db
+                    || existing_occasion.ends_at != ends_at_db
+                    || existing_occasion.location != loc_json
+                    || existing_occasion.timezone != occ.timezone
+                    || existing_occasion.sync_missing_since.is_some()
                 {
                     diesel::update(
-                        event_instances::table
-                            .filter(event_instances::post_id.eq(existing_instance.post_id)),
+                        occasions::table
+                            .filter(occasions::post_id.eq(existing_occasion.post_id)),
                     )
                     .set((
-                        event_instances::starts_at.eq(starts_at_db),
-                        event_instances::ends_at.eq(ends_at_db),
-                        event_instances::location.eq(&loc_json),
-                        event_instances::timezone.eq(&occ.timezone),
-                        event_instances::sync_missing_since.eq(None::<SystemTime>),
+                        occasions::starts_at.eq(starts_at_db),
+                        occasions::ends_at.eq(ends_at_db),
+                        occasions::location.eq(&loc_json),
+                        occasions::timezone.eq(&occ.timezone),
+                        occasions::sync_missing_since.eq(None::<SystemTime>),
                     ))
                     .execute(conn)?;
                 }
                 if occ.is_override {
                     sync_post_text(
                         conn,
-                        existing_instance.post_id,
+                        existing_occasion.post_id,
                         &occ.title,
                         &occ.content,
                         &None,
@@ -418,7 +418,7 @@ fn reconcile_instances(
                 }
             }
             None => {
-                let instance_post = insert_into(posts::table)
+                let occasion_post = insert_into(posts::table)
                     .values(&models::NewPost {
                         user_id: Some(owner_user_id),
                         parent_post_id: None,
@@ -435,16 +435,16 @@ fn reconcile_instances(
                         },
                         visibility: Visibility::GlobalPublic.to_string_visibility(),
                         embed_link: false,
-                        context: PostContext::EventInstance.as_str_name().to_string(),
+                        context: PostContext::Occasion.as_str_name().to_string(),
                         moderation: moderation.to_string(),
                         media: vec![],
                     })
                     .returning(models::POST_COLUMNS)
                     .get_result::<models::Post>(conn)?;
-                insert_into(event_instances::table)
-                    .values(&models::NewEventInstance {
+                insert_into(occasions::table)
+                    .values(&models::NewOccasion {
                         event_id,
-                        post_id: instance_post.id,
+                        post_id: occasion_post.id,
                         info: json!({}),
                         starts_at: starts_at_db,
                         ends_at: ends_at_db,
@@ -456,7 +456,7 @@ fn reconcile_instances(
                 // than fields on `NewPost` -- this is also where the hard DB unique constraint on
                 // (sync_source_id, sync_source_uid, sync_source_recurrence_anchor) actually gets
                 // checked (the INSERT above never sets these columns, so it can't violate it).
-                diesel::update(posts::table.filter(posts::id.eq(instance_post.id)))
+                diesel::update(posts::table.filter(posts::id.eq(occasion_post.id)))
                     .set((
                         posts::sync_source_id.eq(Some(source_id)),
                         posts::sync_source_uid.eq(Some(&group.uid)),
@@ -486,13 +486,13 @@ fn reconcile_instances(
     }
     if !newly_missing_ids.is_empty() {
         diesel::update(
-            event_instances::table.filter(event_instances::post_id.eq_any(newly_missing_ids)),
+            occasions::table.filter(occasions::post_id.eq_any(newly_missing_ids)),
         )
-        .set(event_instances::sync_missing_since.eq(now_db))
+        .set(occasions::sync_missing_since.eq(now_db))
         .execute(conn)?;
     }
     if !expired_ids.is_empty() {
-        diesel::delete(event_instances::table.filter(event_instances::post_id.eq_any(expired_ids)))
+        diesel::delete(occasions::table.filter(occasions::post_id.eq_any(expired_ids)))
             .execute(conn)?;
     }
 
@@ -600,7 +600,7 @@ fn group_vevents(
         }
 
         // Override VEVENTs whose RECURRENCE-ID falls outside the plain RRULE expansion (e.g. an
-        // occurrence moved to a different time) still need their own instance.
+        // occurrence moved to a different time) still need their own occasion.
         for (recurrence_id, override_event) in &overrides {
             if seen_starts.contains(recurrence_id) {
                 continue;

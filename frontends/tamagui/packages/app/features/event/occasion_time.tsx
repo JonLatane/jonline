@@ -1,4 +1,4 @@
-import { FederatedEvent, IdentifiedEventInstance, federateId, useServerTheme } from "app/store";
+import { FederatedEvent, IdentifiedOccasion, federateId, useServerTheme } from "app/store";
 import React from "react";
 
 import { Group } from "@rellm/api";
@@ -12,47 +12,47 @@ import { ThemedStar } from "../post/star_button";
 
 interface Props {
   event: FederatedEvent;
-  instance: IdentifiedEventInstance;
-  linkToInstance?: boolean;
+  occasion: IdentifiedOccasion;
+  linkToOccasion?: boolean;
   highlight?: boolean;
   noAutoScroll?: boolean;
 }
 
-export const useInstanceLink = (event: FederatedEvent, instance: IdentifiedEventInstance, group?: Group) => {
+export const useOccasionLink = (event: FederatedEvent, occasion: IdentifiedOccasion, group?: Group) => {
   const { server } = useFederatedAccountOrServer(event);
   const showServerInfo = server?.host !== useCurrentServer()?.host;
   const detailsLinkId = showServerInfo
-    ? federateId(instance!.id, server)
-    : instance!.id;
+    ? federateId(occasion!.id, server)
+    : occasion!.id;
   const groupLinkId = group ?
     (showServerInfo
       ? federateId(group.shortname, server)
       : group.shortname)
     : undefined;
-  const instanceLink = useLink({
+  const occasionLink = useLink({
     href: group
       ? `/g/${groupLinkId}/e/${detailsLinkId}`
       : `/event/${detailsLinkId}`
   });
-  return instanceLink;
+  return occasionLink;
 }
 
-export const InstanceTime: React.FC<Props> = ({
+export const OccasionTime: React.FC<Props> = ({
   event,
-  instance,
-  linkToInstance = false,
+  occasion,
+  linkToOccasion = false,
   highlight = false,
   noAutoScroll,
 }) => {
-  const { startsAt, endsAt } = instance;
+  const { startsAt, endsAt } = occasion;
   const { server } = useFederatedAccountOrServer(event);
   const { primaryColor, primaryAnchorColor, navAnchorColor, textColor, backgroundColor: themeBgColor } = useServerTheme(server);
   const { selectedGroup: group } = useGroupContext();
-  const instanceLink = useInstanceLink(event, instance, group);
+  const occasionLink = useOccasionLink(event, occasion, group);
 
-  const mx = linkToInstance ? 'auto' : undefined;
+  const mx = linkToOccasion ? 'auto' : undefined;
   const lh = 14;
-  const federatedPostId = federateId(instance.post?.id ?? '', server);
+  const federatedPostId = federateId(occasion.post?.id ?? '', server);
   const starred = useAppSelector(state => state.config.starredPostIds.includes(federatedPostId));
 
   function dateView(date: string) {
@@ -76,17 +76,17 @@ export const InstanceTime: React.FC<Props> = ({
   const isPast = moment.utc().isAfter(moment.utc(endsAt));
   const color = highlight
     ? primaryAnchorColor
-    : linkToInstance
+    : linkToOccasion
       ? (isPast ? textColor : navAnchorColor)
       : primaryAnchorColor;
-  const key = `instance-time-${instance.id}`
-  const opacity = linkToInstance || highlight ? undefined : 0.8;
+  const key = `occasion-time-${occasion.id}`
+  const opacity = linkToOccasion || highlight ? undefined : 0.8;
   const mainView = <XStack ai='center'>
-    {starred && linkToInstance ? <ThemedStar starred server={server} /> : undefined}
+    {starred && linkToOccasion ? <ThemedStar starred server={server} /> : undefined}
     {(startsAtDate == endsAtDate)
       ? <YStack f={1} key={key}
-        className={highlight && !noAutoScroll ? 'highlighted-instance-time' : undefined}
-        backgroundColor={linkToInstance ? undefined : themeBgColor}
+        className={highlight && !noAutoScroll ? 'highlighted-occasion-time' : undefined}
+        backgroundColor={linkToOccasion ? undefined : themeBgColor}
         opacity={opacity}
         px='$1' borderRadius='$3'>
         <Paragraph size="$2" color={color} fontWeight='800' mx={mx} lineHeight={lh}>
@@ -107,25 +107,25 @@ export const InstanceTime: React.FC<Props> = ({
           </Heading>
         </XStack>
       </YStack>
-      : <XStack f={1} gap={linkToInstance ? undefined : '$2'}
+      : <XStack f={1} gap={linkToOccasion ? undefined : '$2'}
         opacity={opacity}>
-        <YStack f={linkToInstance ? 1 : undefined}>
+        <YStack f={linkToOccasion ? 1 : undefined}>
           {startsAt ? dateView(startsAt) : undefined}
         </YStack>
         <Heading size="$3" color={color} my='auto' fontWeight='900'>
           -
         </Heading>
-        <YStack f={linkToInstance ? 1 : undefined}>
+        <YStack f={linkToOccasion ? 1 : undefined}>
           {endsAt ? dateView(endsAt) : undefined}
         </YStack>
       </XStack>}
   </XStack>;
 
-  if (linkToInstance) {
+  if (linkToOccasion) {
     return <Button key={key}
       {...themedButtonBackground(highlight ? '$backgroundFocus' : undefined)}
       // backgroundColor={highlight ? '$backgroundFocus' : undefined}
-      {...instanceLink} h='auto' mx='$2' px='$2'>
+      {...occasionLink} h='auto' mx='$2' px='$2'>
       {mainView}
     </Button>;
   } else {

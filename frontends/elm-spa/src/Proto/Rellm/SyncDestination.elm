@@ -21,32 +21,32 @@ import Proto.Rellm.Internals_
 
 ### FacebookPage
 
- A connected Facebook Page to post EventInstances/Posts to.
+ A connected Facebook Page to post Occasions/Posts to.
 
 
 ### InstagramAccount
 
- A connected Instagram Business/Creator account to post EventInstances/Posts to.
+ A connected Instagram Business/Creator account to post Occasions/Posts to.
 
 
 ### MastodonAccount
 
- A connected Mastodon account to post EventInstances/Posts to.
+ A connected Mastodon account to post Occasions/Posts to.
 
 
 ### BlueskyAccount
 
- A connected Bluesky account to post EventInstances/Posts to.
+ A connected Bluesky account to post Occasions/Posts to.
 
 
 ### XTwitterAccount
 
- A connected X (Twitter) account to post EventInstances/Posts to.
+ A connected X (Twitter) account to post Occasions/Posts to.
 
 
 ### ThreadsAccount
 
- A connected Threads account to post EventInstances/Posts to.
+ A connected Threads account to post Occasions/Posts to.
 
 
 -}

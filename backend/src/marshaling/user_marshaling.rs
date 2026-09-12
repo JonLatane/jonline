@@ -61,7 +61,7 @@ impl ToProtoUser for models::User {
             group_count: Some(self.group_count),
             post_count: Some(self.post_count),
             event_count: Some(self.event_count),
-            event_instance_count: Some(self.event_instance_count),
+            occasion_count: Some(self.occasion_count),
             response_count: Some(self.response_count),
             default_follow_moderation: self
                 .default_follow_moderation
@@ -80,7 +80,7 @@ impl ToProtoUser for models::User {
             // `attach_advanced_admin_data` across *every* listing type (not just the two
             // single-user lookups) -- see that function's own doc.
             sync_sources: vec![],
-            available_ai_models: vec![],
+            ai_models: vec![],
             current_user_follow: follow.as_ref().map(|f| f.to_proto()),
             target_current_user_follow: target_follow.as_ref().map(|f| f.to_proto()),
             current_group_membership: None, // TODO

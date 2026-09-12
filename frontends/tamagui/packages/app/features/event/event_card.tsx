@@ -1,8 +1,8 @@
 import useIsVisibleHorizontal from 'app/hooks/use_is_visible';
-import { FederatedEvent, FederatedGroup, IdentifiedEvent, IdentifiedEventInstance, deleteEvent, federateId, federatedEntity, identifyEventInstance, updateEvent, useServerTheme } from "app/store";
+import { FederatedEvent, FederatedGroup, IdentifiedEvent, IdentifiedOccasion, deleteEvent, federateId, federatedEntity, identifyOccasion, updateEvent, useServerTheme } from "app/store";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 
-import { Event, EventInstance, Location, Post, Visibility } from "@rellm/api";
+import { Event, Occasion, Location, Post, Visibility } from "@rellm/api";
 import { Anchor, AnimatePresence, Button, Card, DateTimePicker, Dialog, Heading, Image, Input, Paragraph, ScrollView, Select, TextArea, Theme, Tooltip, XStack, YStack, ZStack, reverseStandardAnimation, standardAnimation, standardHorizontalAnimation, supportDateInput, toProtoISOString, useMedia, useWindowDimensions } from "@rellm/ui";
 import { CalendarPlus, Check, ChevronDown, ChevronRight, Delete, Edit3 as Edit, History, Link, Link2, Menu, Repeat, Save, X as XIcon } from '@tamagui/lucide-icons';
 import { ToggleRow, VisibilityPicker } from "app/components";
@@ -10,7 +10,7 @@ import { GroupPostManager } from "app/features/groups";
 import { AuthorInfo, LinkProps, PostMediaManager, PostMediaRenderer, TamaguiMarkdown, postBackgroundSize, postVisibilityDescription } from "app/features/post";
 import { useAppSelector, useComponentKey, useCurrentAccountOrServer, useFederatedDispatch, useForceUpdate, useLocalConfiguration, useMediaUrl, usePinnedAccountsAndServers } from "app/hooks";
 import { themedButtonBackground } from "app/utils/themed_button_background";
-import { instanceTimeSort, isNotPastInstance, isPastInstance } from "app/utils/time";
+import { occasionTimeSort, isNotPastOccasion, isPastOccasion } from "app/utils/time";
 import moment from "moment";
 import { FacebookEmbed, InstagramEmbed, LinkedInEmbed, PinterestEmbed, TikTokEmbed, TwitterEmbed, YouTubeEmbed } from "react-social-media-embed";
 import { useLink } from "solito/link";
@@ -22,15 +22,15 @@ import { useSelector } from 'react-redux';
 import { federatedId } from '../../store/federation';
 import { ServerNameAndLogo } from '../navigation/server_name_and_logo';
 import { StarButton } from '../post/star_button';
-import { defaultEventInstance, } from "./create_event_sheet";
+import { defaultOccasion, } from "./create_event_sheet";
 import { EventCalendarExporter } from './event_calendar_exporter';
 import { EventRsvpManager, RsvpMode, selectRsvpData } from './event_rsvp_manager';
-import { InstanceTime } from "./instance_time";
+import { OccasionTime } from "./occasion_time";
 import { LocationControl } from "./location_control";
 
 interface Props {
   event: FederatedEvent;
-  selectedInstance?: IdentifiedEventInstance;
+  selectedOccasion?: IdentifiedOccasion;
   isModalPreview?: boolean;
   isPreview?: boolean;
   // groupContext?: FederatedGroup;
@@ -40,7 +40,7 @@ interface Props {
   onEditingChange?: (editing: boolean) => void;
   newRsvpMode?: RsvpMode;
   setNewRsvpMode?: (mode: RsvpMode) => void;
-  onInstancesUpdated?: (instances: IdentifiedEventInstance[]) => void;
+  onOccasionsUpdated?: (occasions: IdentifiedOccasion[]) => void;
   ignoreShrinkPreview?: boolean;
   forceShrinkPreview?: boolean;
   // disableSharingButton?: boolean;
@@ -52,7 +52,7 @@ let newEventId = 0;
 
 export const EventCard: React.FC<Props> = ({
   event,
-  selectedInstance = event.instances.find(isNotPastInstance) ?? event.instances[0],
+  selectedOccasion = event.occasions.find(isNotPastOccasion) ?? event.occasions[0],
   isModalPreview,
   isPreview = isModalPreview,
   // groupContext,
@@ -62,7 +62,7 @@ export const EventCard: React.FC<Props> = ({
   onEditingChange,
   newRsvpMode,
   setNewRsvpMode,
-  onInstancesUpdated,
+  onOccasionsUpdated,
   ignoreShrinkPreview: ignoreShrinkPreviewProp,
   forceShrinkPreview,
   // disableSharingButton,
@@ -101,9 +101,9 @@ export const EventCard: React.FC<Props> = ({
   const [editedShareable, setEditedShareable] = useState(eventPost.shareable);
 
 
-  const [editedInstances, setEditedInstances] = useState(event.instances);
+  const [editedOccasions, setEditedOccasions] = useState(event.occasions);
   useEffect(() => {
-    setEditedInstances(editedInstances.map(i => ({
+    setEditedOccasions(editedOccasions.map(i => ({
       ...i,
       post: Post.create({
         ...i.post,
@@ -111,7 +111,7 @@ export const EventCard: React.FC<Props> = ({
         shareable: editedShareable,
       })
     })))
-  }, [editedInstances?.map(i => i.id).join(','), editedVisibility, editedShareable]);
+  }, [editedOccasions?.map(i => i.id).join(','), editedVisibility, editedShareable]);
 
   const [editedAllowRsvps, setEditedAllowRsvps] = useState(event.info?.allowsRsvps ?? false);
   const [editedAllowAnonymousRsvps, setEditedAllowAnonymousRsvps] = useState(event.info?.allowsAnonymousRsvps ?? false);
@@ -123,48 +123,48 @@ export const EventCard: React.FC<Props> = ({
   const embedLink = editing ? editedEmbedLink : eventPost.embedLink;
   const visibility = editing ? editedVisibility : eventPost.visibility;
   const shareable = editing ? editedShareable : eventPost.shareable;
-  const instances = editing ? editedInstances : event.instances;
+  const occasions = editing ? editedOccasions : event.occasions;
 
-  const hasPastInstances = instances.find(isPastInstance) != undefined;
-  const [editingInstance, setEditingInstance] = useState(undefined as IdentifiedEventInstance | undefined);
+  const hasPastOccasions = occasions.find(isPastOccasion) != undefined;
+  const [editingOccasion, setEditingOccasion] = useState(undefined as IdentifiedOccasion | undefined);
 
 
   const [repeatWeeks, setRepeatWeeks] = useState(1);
 
-  const endDateInvalid = editingInstance && !moment(editingInstance.endsAt).isAfter(moment(editingInstance.startsAt));
-  const primaryInstance = /*editingInstance ??*/
-    editing && previewingEdits && !editedInstances.some(i => i.id === selectedInstance?.id)
+  const endDateInvalid = editingOccasion && !moment(editingOccasion.endsAt).isAfter(moment(editingOccasion.startsAt));
+  const primaryOccasion = /*editingOccasion ??*/
+    editing && previewingEdits && !editedOccasions.some(i => i.id === selectedOccasion?.id)
       ? undefined
-      : selectedInstance ?? (instances.length === 1 ? instances[0] : undefined);
+      : selectedOccasion ?? (occasions.length === 1 ? occasions[0] : undefined);
 
-  function editingOrPrimary<T>(getter: (i: IdentifiedEventInstance | undefined) => T): T {
-    if (editingInstance) {
-      return getter(editingInstance);
+  function editingOrPrimary<T>(getter: (i: IdentifiedOccasion | undefined) => T): T {
+    if (editingOccasion) {
+      return getter(editingOccasion);
     } else {
-      return getter(primaryInstance);
+      return getter(primaryOccasion);
     }
   }
 
-  const rsvpData = useSelector(selectRsvpData(editingOrPrimary(instance => federateId(instance?.id ?? '', event.serverHost))));
-  const currentInstanceLocation = editingOrPrimary(instance => {
-    if (event.info?.hideLocationUntilRsvpApproved && !instance?.location && rsvpData?.hiddenLocation) {
+  const rsvpData = useSelector(selectRsvpData(editingOrPrimary(occasion => federateId(occasion?.id ?? '', event.serverHost))));
+  const currentOccasionLocation = editingOrPrimary(occasion => {
+    if (event.info?.hideLocationUntilRsvpApproved && !occasion?.location && rsvpData?.hiddenLocation) {
       return rsvpData?.hiddenLocation;
     }
-    return instance?.location ?? Location.create({});
+    return occasion?.location ?? Location.create({});
   })
-  const setCurrentInstanceLocation = useCallback((location: Location) => {
-    if (editingInstance) {
-      updateEditingInstance({ ...editingInstance, location });
+  const setCurrentOccasionLocation = useCallback((location: Location) => {
+    if (editingOccasion) {
+      updateEditingOccasion({ ...editingOccasion, location });
     }
-  }, [editingInstance?.id]);
-  // console.log("EventCard", { currentInstanceLocation, rsvpData });
+  }, [editingOccasion?.id]);
+  // console.log("EventCard", { currentOccasionLocation, rsvpData });
   // const post = useAppSelector(state => state.posts.entities[event.postId]);
-  // Retrieve the Instance's post from the Posts store first.
-  const storedInstancePost = useAppSelector(state => primaryInstance?.post?.id
-    ? state.posts.entities[federateId(primaryInstance?.post?.id, server)]
+  // Retrieve the Occasion's post from the Posts store first.
+  const storedOccasionPost = useAppSelector(state => primaryOccasion?.post?.id
+    ? state.posts.entities[federateId(primaryOccasion?.post?.id, server)]
     : undefined);
-  const instancePost = primaryInstance?.post
-    ? storedInstancePost ?? federatedEntity(primaryInstance?.post, server)
+  const occasionPost = primaryOccasion?.post
+    ? storedOccasionPost ?? federatedEntity(primaryOccasion?.post, server)
     : undefined;
 
   const saveEdits = useCallback(() => {
@@ -190,38 +190,38 @@ export const EventCard: React.FC<Props> = ({
           visibility: editedVisibility,
           shareable: editedShareable,
         },
-        instances: editedInstances,
+        occasions: editedOccasions,
       })).then((result: PayloadAction<IdentifiedEvent, any, any, any>) => {
-        onInstancesUpdated?.(result.payload?.instances);
+        onOccasionsUpdated?.(result.payload?.occasions);
         setEditing(false);
         setPreviewingEdits(false);
-        setEditedInstances(result.payload?.instances);
+        setEditedOccasions(result.payload?.occasions);
       })
         .finally(() => requestAnimationFrame(() => {
           setSavingEdits(false);
         }));
     });
-  }, [savingEdits, event, editedAllowRsvps, editedAllowAnonymousRsvps, editedHideLocation, eventPost, editedTitle, editedLink, editedContent, editedMedia, editedVisibility, editedShareable, editedInstances]);
+  }, [savingEdits, event, editedAllowRsvps, editedAllowAnonymousRsvps, editedHideLocation, eventPost, editedTitle, editedLink, editedContent, editedMedia, editedVisibility, editedShareable, editedOccasions]);
 
-  const addInstance = useCallback(() => {
-    const newInstance = { ...defaultEventInstance(), id: `unsynchronized-event-instance-${newEventId++}` };
-    setEditedInstances([newInstance, ...editedInstances]);
-    setEditingInstance(newInstance);
-  }, [editedInstances]);
-  const removeInstance = useCallback((target: IdentifiedEventInstance) => {
-    if (target.id === editingInstance?.id) {
-      setEditingInstance(undefined);
+  const addOccasion = useCallback(() => {
+    const newOccasion = { ...defaultOccasion(), id: `unsynchronized-event-occasion-${newEventId++}` };
+    setEditedOccasions([newOccasion, ...editedOccasions]);
+    setEditingOccasion(newOccasion);
+  }, [editedOccasions]);
+  const removeOccasion = useCallback((target: IdentifiedOccasion) => {
+    if (target.id === editingOccasion?.id) {
+      setEditingOccasion(undefined);
     }
-    setEditedInstances(editedInstances.filter(i => i.id != target.id));
-  }, [editedInstances]);
-  const updateEditingInstance = useCallback((target: IdentifiedEventInstance) => {
-    setEditedInstances(editedInstances.map(i => i.id === target.id ? target : i));
-    if (target.id === editingInstance?.id) {
-      setEditingInstance(target);
+    setEditedOccasions(editedOccasions.filter(i => i.id != target.id));
+  }, [editedOccasions]);
+  const updateEditingOccasion = useCallback((target: IdentifiedOccasion) => {
+    setEditedOccasions(editedOccasions.map(i => i.id === target.id ? target : i));
+    if (target.id === editingOccasion?.id) {
+      setEditingOccasion(target);
     }
-  }, [editedInstances, editingInstance]);
+  }, [editedOccasions, editingOccasion]);
 
-  const { setStartTime, setEndTime } = useStartAndEndTime(editingInstance, updateEditingInstance);
+  const { setStartTime, setEndTime } = useStartAndEndTime(editingOccasion, updateEditingOccasion);
   const [deleted, setDeleted] = useState(eventPost.author === undefined);
   const [deleting, setDeleting] = useState(false);
   const doDeletePost = useCallback(() => {
@@ -234,23 +234,23 @@ export const EventCard: React.FC<Props> = ({
 
   const window = useWindowDimensions();
   const visibilityRef = React.createRef<HTMLDivElement>();
-  const instanceScrollRef = React.createRef<ScrollView>();
+  const occasionScrollRef = React.createRef<ScrollView>();
   const isVisible = useIsVisibleHorizontal(visibilityRef);
 
   const authorId = eventPost.author?.userId;
   const authorName = eventPost.author?.username;
 
-  const primaryInstanceIdString = primaryInstance?.id ?? 'no-primary-instance';
+  const primaryOccasionIdString = primaryOccasion?.id ?? 'no-primary-occasion';
   const detailsLinkId = !isPrimaryServer
-    ? federateId(primaryInstanceIdString, accountOrServer.server)
-    : primaryInstanceIdString;
+    ? federateId(primaryOccasionIdString, accountOrServer.server)
+    : primaryOccasionIdString;
   const groupLinkId = selectedGroup ?
     (!isGroupPrimaryServer
       ? federateId(selectedGroup.shortname, accountOrServer.server)
       : selectedGroup.shortname)
     : undefined;
   const eventLink: LinkProps = useLink({
-    href: primaryInstance ?
+    href: primaryOccasion ?
       selectedGroup
         ? `/g/${groupLinkId}/e/${detailsLinkId}`
         : `/event/${detailsLinkId}`
@@ -268,7 +268,7 @@ export const EventCard: React.FC<Props> = ({
       ? federateId(group.shortname, accountOrServer.server)
       : group.shortname);
 
-    return primaryInstance
+    return primaryOccasion
       ? `/g/${groupLinkId}/e/${detailsLinkId}`
       : `.`;
   }
@@ -278,7 +278,7 @@ export const EventCard: React.FC<Props> = ({
       ? xs ? 275 : 350
       : 500)
     - (event.info?.allowsRsvps ? 100 : 0)
-    - (currentInstanceLocation?.uniformlyFormattedAddress?.length ?? 0 > 0 ? 43 : 0)
+    - (currentOccasionLocation?.uniformlyFormattedAddress?.length ?? 0 > 0 ? 43 : 0)
     : undefined;
   // console.log({ maxTotalContentHeight })
   const numContentSections = ((content?.length ?? 0) > 0 ? 1 : 0)
@@ -343,41 +343,41 @@ export const EventCard: React.FC<Props> = ({
   const isAuthor = useMemo(() => author && author.userId === currentUser?.id, [author, currentUser?.id]);
   const showEdit = useMemo(() => !!isAuthor && !isPreview && !hideEditControls, [isAuthor, isPreview, hideEditControls]);
 
-  const [scrollInstancesVertically, setScrollInstancesVertically] = useState(false);
-  const [showPastInstances, setShowPastInstances] = useState(false);
-  const selectedInstanceIsPast = useMemo(() => selectedInstance && moment(selectedInstance.startsAt).isBefore(moment()), [selectedInstance]);
+  const [scrollOccasionsVertically, setScrollOccasionsVertically] = useState(false);
+  const [showPastOccasions, setShowPastOccasions] = useState(false);
+  const selectedOccasionIsPast = useMemo(() => selectedOccasion && moment(selectedOccasion.startsAt).isBefore(moment()), [selectedOccasion]);
   useEffect(() => {
-    if (!showPastInstances && selectedInstanceIsPast) {
-      setShowPastInstances(true);
+    if (!showPastOccasions && selectedOccasionIsPast) {
+      setShowPastOccasions(true);
     }
-  }, [selectedInstanceIsPast, showPastInstances])
+  }, [selectedOccasionIsPast, showPastOccasions])
 
-  const canEasilySeeInstances = useCallback((instances: EventInstance[]) => mediaQuery.gtXxs ? instances.length <= 3 : instances.length <= 2, [mediaQuery.gtXxs]);
-  const canEasilySeeAllPastInstances = useMemo(() => canEasilySeeInstances(instances), [canEasilySeeInstances, instances]);
-  const filteredInstances = useMemo(() => showPastInstances
-    ? instances
-    : instances.filter(isNotPastInstance), [showPastInstances, instances]);
-  const sortedFilteredInstances = [...filteredInstances].sort(instanceTimeSort);
-  const canEasilySeeAllInstances = canEasilySeeInstances(sortedFilteredInstances);
-  const displayedInstances = canEasilySeeAllPastInstances
-    ? instances
-    : sortedFilteredInstances;
+  const canEasilySeeOccasions = useCallback((occasions: Occasion[]) => mediaQuery.gtXxs ? occasions.length <= 3 : occasions.length <= 2, [mediaQuery.gtXxs]);
+  const canEasilySeeAllPastOccasions = useMemo(() => canEasilySeeOccasions(occasions), [canEasilySeeOccasions, occasions]);
+  const filteredOccasions = useMemo(() => showPastOccasions
+    ? occasions
+    : occasions.filter(isNotPastOccasion), [showPastOccasions, occasions]);
+  const sortedFilteredOccasions = [...filteredOccasions].sort(occasionTimeSort);
+  const canEasilySeeAllOccasions = canEasilySeeOccasions(sortedFilteredOccasions);
+  const displayedOccasions = canEasilySeeAllPastOccasions
+    ? occasions
+    : sortedFilteredOccasions;
 
 
   useEffect(() => {
-    if (!isPreview /*&& !scrollInstancesVertically*/) {
+    if (!isPreview /*&& !scrollOccasionsVertically*/) {
       setTimeout(() =>
-        document.querySelectorAll('.highlighted-instance-time')
+        document.querySelectorAll('.highlighted-occasion-time')
           .forEach(e => e.scrollIntoView({ block: 'center', inline: 'center', behavior: 'smooth' })),
-        scrollInstancesVertically ? 800 : 500);
+        scrollOccasionsVertically ? 800 : 500);
     }
-  }, [selectedInstance?.id, editingInstance?.id, showPastInstances]);
+  }, [selectedOccasion?.id, editingOccasion?.id, showPastOccasions]);
   useEffect(() => {
-    if (!isPreview && !scrollInstancesVertically) {
-      document.querySelectorAll('.highlighted-instance-time')
+    if (!isPreview && !scrollOccasionsVertically) {
+      document.querySelectorAll('.highlighted-occasion-time')
         .forEach(e => e.scrollIntoView({ block: 'center', inline: 'center', behavior: 'smooth' }));
     }
-  }, [scrollInstancesVertically]);
+  }, [scrollOccasionsVertically]);
 
   const postLinkView = postLink
     ? editing && !previewingEdits
@@ -400,39 +400,39 @@ export const EventCard: React.FC<Props> = ({
       </Anchor>
     : undefined;
 
-  const instanceModeButton = canEasilySeeAllInstances
+  const occasionModeButton = canEasilySeeAllOccasions
     ? undefined
-    : <Button p='$2' onPress={() => setScrollInstancesVertically(!scrollInstancesVertically)} ml="$1">
+    : <Button p='$2' onPress={() => setScrollOccasionsVertically(!scrollOccasionsVertically)} ml="$1">
       <ZStack h='$1' w='$1' mx='auto' my='auto' transform={[{ translateY: -1 }]}>
-        <XStack animation='standard' o={scrollInstancesVertically ? 1 : 0} rotate={scrollInstancesVertically ? '90deg' : '0deg'}>
+        <XStack animation='standard' o={scrollOccasionsVertically ? 1 : 0} rotate={scrollOccasionsVertically ? '90deg' : '0deg'}>
           <ChevronRight />
         </XStack>
-        <XStack animation='standard' o={!scrollInstancesVertically ? 1 : 0} rotate={scrollInstancesVertically ? '90deg' : '0deg'}>
+        <XStack animation='standard' o={!scrollOccasionsVertically ? 1 : 0} rotate={scrollOccasionsVertically ? '90deg' : '0deg'}>
           <Menu />
         </XStack>
       </ZStack>
     </Button>;
-  const instanceManagementButtons = <>
-    {/* <YStack key='instances-buttons' my='$2' gap="$3"> */}
+  const occasionManagementButtons = <>
+    {/* <YStack key='occasions-buttons' my='$2' gap="$3"> */}
     {editing
-      ? <Button my='auto' size='$3' circular icon={CalendarPlus} onPress={addInstance} />
+      ? <Button my='auto' size='$3' circular icon={CalendarPlus} onPress={addOccasion} />
       : undefined}
-    {hasPastInstances && !canEasilySeeAllPastInstances
+    {hasPastOccasions && !canEasilySeeAllPastOccasions
       ? <Tooltip placement='bottom-start'>
         <Tooltip.Trigger>
-          <Button ml='$2' size='$3' my='auto' disabled={selectedInstanceIsPast}
-            {...showPastInstances ? themedButtonBackground(navColor, navTextColor) : {}}
-            o={selectedInstanceIsPast ? 0.5 : 1}
-            // color={showPastInstances ? navAnchorColor : undefined}
-            circular={(displayedInstances?.length ?? 0) > 0} icon={History}
-            onPress={() => setShowPastInstances(!showPastInstances)} >
-            {(displayedInstances?.length ?? 0) === 0 ? 'Show Past Instances' : undefined}
+          <Button ml='$2' size='$3' my='auto' disabled={selectedOccasionIsPast}
+            {...showPastOccasions ? themedButtonBackground(navColor, navTextColor) : {}}
+            o={selectedOccasionIsPast ? 0.5 : 1}
+            // color={showPastOccasions ? navAnchorColor : undefined}
+            circular={(displayedOccasions?.length ?? 0) > 0} icon={History}
+            onPress={() => setShowPastOccasions(!showPastOccasions)} >
+            {(displayedOccasions?.length ?? 0) === 0 ? 'Show Past Occasions' : undefined}
           </Button>
         </Tooltip.Trigger>
-        {(displayedInstances?.length ?? 0) === 0
+        {(displayedOccasions?.length ?? 0) === 0
           ? undefined
           : <Tooltip.Content>
-            <Paragraph size='$1'>{showPastInstances ? 'Show' : 'Hide'} Past Instances</Paragraph>
+            <Paragraph size='$1'>{showPastOccasions ? 'Show' : 'Hide'} Past Occasions</Paragraph>
           </Tooltip.Content>}
       </Tooltip>
       : undefined}
@@ -449,7 +449,7 @@ export const EventCard: React.FC<Props> = ({
       <ServerNameAndLogo server={server} shrinkToSquare={shrinkServerInfo} disableTooltip />
     </XStack>
     : undefined;
-  const isGlobalPublicEvent = eventPost.visibility === Visibility.GLOBAL_PUBLIC && instancePost?.visibility === Visibility.GLOBAL_PUBLIC;
+  const isGlobalPublicEvent = eventPost.visibility === Visibility.GLOBAL_PUBLIC && occasionPost?.visibility === Visibility.GLOBAL_PUBLIC;
   const headerLinksView = <YStack f={1} key='header-links-view'>
     {isPreview
       ? <>
@@ -463,13 +463,13 @@ export const EventCard: React.FC<Props> = ({
           {serverInfoView}
         </XStack>
         <XStack mr='$2'>
-          <Anchor f={1} key='instance-link' textDecorationLine='none' {...detailsLink}>
-            {primaryInstance ? <InstanceTime event={event} instance={primaryInstance} highlight noAutoScroll /> : undefined}
+          <Anchor f={1} key='occasion-link' textDecorationLine='none' {...detailsLink}>
+            {primaryOccasion ? <OccasionTime event={event} occasion={primaryOccasion} highlight noAutoScroll /> : undefined}
           </Anchor>
-          {primaryInstance //&& (!isPreview || isVisible)
+          {primaryOccasion //&& (!isPreview || isVisible)
             ? <XStack my='$1'>
               <EventCalendarExporter tiny event={event}
-                instance={primaryInstance}
+                occasion={primaryOccasion}
                 showSubscriptions={isGlobalPublicEvent
                   ? {
                     servers: server ? [server] : undefined
@@ -486,20 +486,20 @@ export const EventCard: React.FC<Props> = ({
             <Heading size="$7" marginRight='auto'>{title}</Heading>
           </YStack>
           {serverInfoView}
-          {instanceModeButton}
+          {occasionModeButton}
         </XStack>
         {postLinkView}
         <XStack w='100%' mt='$1'>
           <YStack>
-            {primaryInstance
-              ? <InstanceTime key='instance-time' event={event} instance={primaryInstance} highlight noAutoScroll />
+            {primaryOccasion
+              ? <OccasionTime key='occasion-time' event={event} occasion={primaryOccasion} highlight noAutoScroll />
               : editing && previewingEdits
-                ? <Paragraph key='missing-instance' size='$1'>This instance no longer exists.</Paragraph>
+                ? <Paragraph key='missing-occasion' size='$1'>This occasion no longer exists.</Paragraph>
                 : undefined}
           </YStack>
           <XStack f={1} />
-          {primaryInstance ? <EventCalendarExporter event={event} instance={primaryInstance} /> : undefined}
-          {instanceManagementButtons}
+          {primaryOccasion ? <EventCalendarExporter event={event} occasion={primaryOccasion} /> : undefined}
+          {occasionManagementButtons}
         </XStack>
       </>}
   </YStack>;
@@ -512,12 +512,12 @@ export const EventCard: React.FC<Props> = ({
         onChange={(data) => { setEditedTitle(data.nativeEvent.text) }} />
 
       {serverInfoView}
-      {instanceModeButton}
+      {occasionModeButton}
     </XStack>
     <XStack w='100%'>
       {postLinkView}
       <XStack f={1} />
-      {instanceManagementButtons}
+      {occasionManagementButtons}
     </XStack>
   </YStack>;
 
@@ -545,54 +545,54 @@ export const EventCard: React.FC<Props> = ({
   const weeklyRepeatOptions = [...Array(52).keys()];
   const forceUpdate = useForceUpdate();
 
-  const repeatedInstances = useMemo(() => {
-    const instances: IdentifiedEventInstance[] = [];
-    if (editingInstance) {
+  const repeatedOccasions = useMemo(() => {
+    const occasions: IdentifiedOccasion[] = [];
+    if (editingOccasion) {
       [...Array(repeatWeeks).keys()].map(i => i + 1).forEach(weeksAfter => {
-        const repeatedInstance = identifyEventInstance(EventInstance.create({
-          startsAt: moment(editingInstance.startsAt).add(weeksAfter, 'weeks').toISOString(),
-          endsAt: moment(editingInstance.endsAt).add(weeksAfter, 'weeks').toISOString(),
-          location: currentInstanceLocation,
+        const repeatedOccasion = identifyOccasion(Occasion.create({
+          startsAt: moment(editingOccasion.startsAt).add(weeksAfter, 'weeks').toISOString(),
+          endsAt: moment(editingOccasion.endsAt).add(weeksAfter, 'weeks').toISOString(),
+          location: currentOccasionLocation,
           post: Post.create({
-            id: `unsynchronized-event-instance-${newEventId++}`,
+            id: `unsynchronized-event-occasion-${newEventId++}`,
             visibility: eventPost.visibility,
           })
         }));
-        instances.push(repeatedInstance);
+        occasions.push(repeatedOccasion);
       });
     }
-    return instances;
+    return occasions;
   }, [
     repeatWeeks,
-    editingInstance?.startsAt,
-    editingInstance?.endsAt, currentInstanceLocation?.uniformlyFormattedAddress
+    editingOccasion?.startsAt,
+    editingOccasion?.endsAt, currentOccasionLocation?.uniformlyFormattedAddress
   ]);
 
-  const doRepeatInstance = useCallback(() => {
-    setEditedInstances([...editedInstances, ...repeatedInstances]);
+  const doRepeatOccasion = useCallback(() => {
+    setEditedOccasions([...editedOccasions, ...repeatedOccasions]);
     requestAnimationFrame(forceUpdate);
     // setTimeout(forceUpdate, 1);
-  }, [editedInstances, repeatedInstances]);
+  }, [editedOccasions, repeatedOccasions]);
 
-  const renderInstance = useCallback((i: IdentifiedEventInstance) => {
-    const isPrimary = i.id == primaryInstance?.id;
-    const isEditingInstance = i.id == editingInstance?.id;
-    const highlight = editing ? isEditingInstance : isPrimary;
-    let result = <YStack key={`instance-${i.id}`} mx={editing ? '$1' : undefined} animation='standard'
-      {...standardHorizontalAnimation} o={highlight ? 1 : 0.5} mb={scrollInstancesVertically ? '$2' : undefined}>
-      <InstanceTime key={i.id} linkToInstance={!editing}
-        event={event} instance={i}
+  const renderOccasion = useCallback((i: IdentifiedOccasion) => {
+    const isPrimary = i.id == primaryOccasion?.id;
+    const isEditingOccasion = i.id == editingOccasion?.id;
+    const highlight = editing ? isEditingOccasion : isPrimary;
+    let result = <YStack key={`occasion-${i.id}`} mx={editing ? '$1' : undefined} animation='standard'
+      {...standardHorizontalAnimation} o={highlight ? 1 : 0.5} mb={scrollOccasionsVertically ? '$2' : undefined}>
+      <OccasionTime key={i.id} linkToOccasion={!editing}
+        event={event} occasion={i}
         highlight={highlight}
       />
       {editing
         ? <XStack w='100%' mt='$2'>
-          <Theme inverse={editingInstance?.id === i.id}>
-            <Button mx='auto' size='$2' circular icon={Edit} onPress={() => setEditingInstance(i.id !== editingInstance?.id ? i : undefined)} />
+          <Theme inverse={editingOccasion?.id === i.id}>
+            <Button mx='auto' size='$2' circular icon={Edit} onPress={() => setEditingOccasion(i.id !== editingOccasion?.id ? i : undefined)} />
           </Theme>
-          {i.id == editingInstance?.id
+          {i.id == editingOccasion?.id
             ? <Dialog>
               <Dialog.Trigger asChild>
-                <Button mx='auto' size='$2' circular icon={Repeat} onPress={() => setEditingInstance(i)} />
+                <Button mx='auto' size='$2' circular icon={Repeat} onPress={() => setEditingOccasion(i)} />
               </Dialog.Trigger>
               <Dialog.Portal zi={1000011}>
                 <Dialog.Overlay
@@ -623,7 +623,7 @@ export const EventCard: React.FC<Props> = ({
                   y={0}
                 >
                   <YStack space>
-                    <Dialog.Title>Repeat Instance</Dialog.Title>
+                    <Dialog.Title>Repeat Occasion</Dialog.Title>
                     <Dialog.Description>
                       <Paragraph size="$2">Repeat for:</Paragraph>
                       <XStack>
@@ -670,11 +670,11 @@ export const EventCard: React.FC<Props> = ({
                         </Select>
                         {/* <Text fontFamily='$body'>weeks</Text> */}
                       </XStack>
-                      {repeatedInstances.length > 0
+                      {repeatedOccasions.length > 0
                         ? <YStack>
                           <XStack mt='$2'>
                             <Paragraph f={1} my='auto'>Last:</Paragraph>
-                            <InstanceTime key={i.id} event={event} instance={repeatedInstances[repeatedInstances.length - 1]!} />
+                            <OccasionTime key={i.id} event={event} occasion={repeatedOccasions[repeatedOccasions.length - 1]!} />
                           </XStack>
                         </YStack>
                         : undefined}
@@ -688,7 +688,7 @@ export const EventCard: React.FC<Props> = ({
                       <Dialog.Close asChild>
                         {/* <Dialog.A> */}
                         {/* <Theme inverse> */}
-                        <Button color={primaryAnchorColor} onPress={doRepeatInstance}>Repeat</Button>
+                        <Button color={primaryAnchorColor} onPress={doRepeatOccasion}>Repeat</Button>
                         {/* </Theme> */}
                         {/* </Dialog.Action> */}
                       </Dialog.Close>
@@ -699,15 +699,15 @@ export const EventCard: React.FC<Props> = ({
               </Dialog.Portal>
             </Dialog>
             : undefined}
-          {editedInstances.length > 1
-            ? <Button mx='auto' size='$2' circular icon={Delete} onPress={() => removeInstance(i)} />
+          {editedOccasions.length > 1
+            ? <Button mx='auto' size='$2' circular icon={Delete} onPress={() => removeOccasion(i)} />
             : undefined}
         </XStack>
         : undefined}
     </YStack>;
 
     if (editing) {
-      result = <YStack ml='$1' h={100} mb='$1' key={`instance-${i.id}-wrapper`}
+      result = <YStack ml='$1' h={100} mb='$1' key={`occasion-${i.id}-wrapper`}
         padding='$2'
         borderRadius='$3' backgroundColor='$backgroundStrong'>
         {result}
@@ -715,7 +715,7 @@ export const EventCard: React.FC<Props> = ({
     }
 
     return result;
-  }, [editing, editedInstances, editingInstance, repeatedInstances, primaryInstance]);
+  }, [editing, editedOccasions, editingOccasion, repeatedOccasions, primaryOccasion]);
 
 
   const deleteDialog = <Dialog key='delete-button-dialog'>
@@ -755,8 +755,8 @@ export const EventCard: React.FC<Props> = ({
         <YStack space>
           <Dialog.Title>Delete Event</Dialog.Title>
           <Dialog.Description>
-            Really delete event? {event.instances.length > 1 ? `All ${event.instances.length} instances will be deleted. ` : undefined}
-            The content and title, along with all event instances and RSVPs, will be deleted, and your user account de-associated, but any replies (including quotes) will still be present.
+            Really delete event? {event.occasions.length > 1 ? `All ${event.occasions.length} occasions will be deleted. ` : undefined}
+            The content and title, along with all event occasions and RSVPs, will be deleted, and your user account de-associated, but any replies (including quotes) will still be present.
           </Dialog.Description>
 
           <XStack gap="$3" jc="flex-end">
@@ -781,7 +781,7 @@ export const EventCard: React.FC<Props> = ({
         <YStack key={`event-card--${imagePostBackgrounds ? '-bg' : ''}-${fancyPostBackgrounds ? '-fancy' : ''}`}
           w={isPreview && horizontal ? recommendedHorizontalSize : '100%'}>
           <Card theme="dark" size="$4" bordered id={componentKey}
-            // key={`event-card-${event.id}-${isPreview ? primaryInstance?.id : 'details'}-${isPreview ? '-preview' : ''}`}
+            // key={`event-card-${event.id}-${isPreview ? primaryOccasion?.id : 'details'}-${isPreview ? '-preview' : ''}`}
             animation='standard'
             borderColor={showServerInfo ? primaryColor : undefined}
             margin='$0'
@@ -800,8 +800,8 @@ export const EventCard: React.FC<Props> = ({
                 <YStack w='100%'>
                   <XStack ai='center' w='100%'>
                     {/* {isVisible || true? <Eye size='$2' /> : undefined} */}
-                    {instancePost
-                      ? <StarButton post={instancePost} eventMargins />
+                    {occasionPost
+                      ? <StarButton post={occasionPost} eventMargins />
                       : undefined}
                     <YStack key='primary-header' f={1} pt='$4' pb={0}>
                       <YStack key='header-links' w='100%' pl='$4' pr={isPreview && showServerInfo ? 0 : '$4'}>
@@ -815,20 +815,20 @@ export const EventCard: React.FC<Props> = ({
                     </XStack>
                     : undefined} */}
                   </XStack>
-                  {!isPreview && (instances.length > 1 || editing)
-                    ? <XStack key='instances' w='100%' mt='$2' space>
+                  {!isPreview && (occasions.length > 1 || editing)
+                    ? <XStack key='occasions' w='100%' mt='$2' space>
 
 
-                      {scrollInstancesVertically
-                        ? <XStack key='instance-display' jc='center' animation='standard' {...standardAnimation} gap='$2' flexWrap='wrap' f={1}>
+                      {scrollOccasionsVertically
+                        ? <XStack key='occasion-display' jc='center' animation='standard' {...standardAnimation} gap='$2' flexWrap='wrap' f={1}>
                           <AnimatePresence>
-                            {displayedInstances?.map((i) => renderInstance(i))}
+                            {displayedOccasions?.map((i) => renderOccasion(i))}
                           </AnimatePresence>
                         </XStack>
-                        : <ScrollView key='instance-scroller' animation='standard' {...reverseStandardAnimation} f={1} horizontal pb='$3'>
-                          <XStack mt='$1' px='$3' key='instance-scroller-list'>
-                            <AnimatePresence key='instance-scroll-animator'>
-                              {displayedInstances?.map((i) => renderInstance(i))}
+                        : <ScrollView key='occasion-scroller' animation='standard' {...reverseStandardAnimation} f={1} horizontal pb='$3'>
+                          <XStack mt='$1' px='$3' key='occasion-scroller-list'>
+                            <AnimatePresence key='occasion-scroll-animator'>
+                              {displayedOccasions?.map((i) => renderOccasion(i))}
                             </AnimatePresence>
                           </XStack>
                         </ScrollView>}
@@ -837,19 +837,19 @@ export const EventCard: React.FC<Props> = ({
                     : undefined
                   }
                   <YStack w='100%' maw={800} mx='auto'>
-                    {editingInstance && editing && !previewingEdits
+                    {editingOccasion && editing && !previewingEdits
                       ? <>
-                        <XStack mx='$2' key={`startsAt-${editingInstance?.id}`}>
+                        <XStack mx='$2' key={`startsAt-${editingOccasion?.id}`}>
                           <Heading size='$2' key='label' f={1} marginVertical='auto'>Start Time</Heading>
 
                           <XStack ml='auto' my='auto'>
-                            <DateTimePicker value={editingInstance.startsAt ?? moment(0).toISOString()} onChange={(v) => setStartTime(v)} />
+                            <DateTimePicker value={editingOccasion.startsAt ?? moment(0).toISOString()} onChange={(v) => setStartTime(v)} />
                           </XStack>
                         </XStack>
-                        <XStack mx='$2' key={`endsAt-${editingInstance?.id}`}>
+                        <XStack mx='$2' key={`endsAt-${editingOccasion?.id}`}>
                           <Heading size='$2' key='label' f={1} marginVertical='auto'>End Time</Heading>
                           <XStack ml='auto' my='auto'>
-                            <DateTimePicker value={editingInstance.endsAt ?? moment(0).toISOString()} onChange={(v) => setEndTime(v)} />
+                            <DateTimePicker value={editingOccasion.endsAt ?? moment(0).toISOString()} onChange={(v) => setEndTime(v)} />
                           </XStack>
                         </XStack>
                         {endDateInvalid ? <Paragraph size='$2' mx='$2'>Must be after Start Time</Paragraph> : undefined}
@@ -869,19 +869,19 @@ export const EventCard: React.FC<Props> = ({
                       : <YStack key='event-content' animation='standard' {...reverseStandardAnimation}
                         pt={0} w='100%' maw={800} mx='auto'>
                         <YStack key='location' px='$3' >
-                          {primaryInstance// && (!isPreview || isVisible)
+                          {primaryOccasion// && (!isPreview || isVisible)
                             ? event.info?.hideLocationUntilRsvpApproved && !rsvpData?.hiddenLocation
                               ? <Paragraph size='$1' my='$1' fontStyle='italic'>Location will be revealed to attendees after RSVP approval.</Paragraph>
                               : <XStack mx='$3' mt='$1'>
                                 <LocationControl key='location-control'
-                                  location={currentInstanceLocation}
+                                  location={currentOccasionLocation}
                                   readOnly={!editing || previewingEdits}
                                   preview={isPreview}
                                   link={isPreview ? eventLink : undefined}
-                                  setLocation={setCurrentInstanceLocation}
+                                  setLocation={setCurrentOccasionLocation}
                                 // setLocation={(location: Location) => {
-                                //   if (editingInstance) {
-                                //     updateEditingInstance({ ...editingInstance, location });
+                                //   if (editingOccasion) {
+                                //     updateEditingOccasion({ ...editingOccasion, location });
                                 //   }
                                 // }}
                                 />
@@ -933,13 +933,13 @@ export const EventCard: React.FC<Props> = ({
                       </YStack>
                     }
                   </AnimatePresence>
-                  {primaryInstance// && (!isPreview || isVisible)
+                  {primaryOccasion// && (!isPreview || isVisible)
                     ? <YStack key='rsvp-manager' maw={800} w='100%' px='$1' mx='auto' mt='$1'>
                       <EventRsvpManager
-                        key={`rsvp-manager-${(editingInstance ?? primaryInstance)?.id}`}
+                        key={`rsvp-manager-${(editingOccasion ?? primaryOccasion)?.id}`}
                         event={event!}
                         isVisible={!isPreview || isVisible}
-                        instance={editingInstance ?? primaryInstance}
+                        occasion={editingOccasion ?? primaryOccasion}
                         {...{ isPreview, isModalPreview, newRsvpMode, setNewRsvpMode }} />
                     </YStack>
                     : undefined}
@@ -1004,8 +1004,8 @@ export const EventCard: React.FC<Props> = ({
                                   : <>
                                     <Button my='auto' key='edit-button' size='$2' icon={Edit}
                                       onPress={() => {
-                                        setEditing(true); if (editedInstances.some(i => i.id === selectedInstance?.id)) {
-                                          setEditingInstance(selectedInstance)
+                                        setEditing(true); if (editedOccasions.some(i => i.id === selectedOccasion?.id)) {
+                                          setEditingOccasion(selectedOccasion)
                                         }
                                       }} transparent
                                       disabled={deleting} o={deleting ? 0.5 : 1}>
@@ -1039,7 +1039,7 @@ export const EventCard: React.FC<Props> = ({
                       <YStack key='discussion-anchor-root' h='100%'>
                         <Button key='comments-link-button'
                           opacity={isPreview ? 1 : 0.9}
-                          transparent={isPreview || !instancePost?.replyToPostId || instancePost.replyCount == 0}
+                          transparent={isPreview || !occasionPost?.replyToPostId || occasionPost.replyCount == 0}
                           disabled={true}
                           marginVertical='auto'
                           px='$2'
@@ -1047,10 +1047,10 @@ export const EventCard: React.FC<Props> = ({
                           <XStack opacity={0.9}>
                             <YStack marginVertical='auto' scale={0.75}>
                               <Paragraph size="$1" ta='right'>
-                                {instancePost?.responseCount ?? 0} comment{(instancePost?.responseCount ?? 0) == 1 ? '' : 's'}
+                                {occasionPost?.responseCount ?? 0} comment{(occasionPost?.responseCount ?? 0) == 1 ? '' : 's'}
                               </Paragraph>
-                              {isPreview || (instancePost?.replyCount ?? 0) == 0 ? undefined : <Paragraph size="$1" ta='right'>
-                                {instancePost?.replyCount ?? 0} repl{(instancePost?.replyCount ?? 0) == 1 ? 'y' : 'ies'}
+                              {isPreview || (occasionPost?.replyCount ?? 0) == 0 ? undefined : <Paragraph size="$1" ta='right'>
+                                {occasionPost?.replyCount ?? 0} repl{(occasionPost?.replyCount ?? 0) == 1 ? 'y' : 'ies'}
                               </Paragraph>}
                             </YStack>
                           </XStack>
@@ -1088,22 +1088,22 @@ export const EventCard: React.FC<Props> = ({
 
 export default EventCard;
 
-function useStartAndEndTime(instance: IdentifiedEventInstance | undefined, setInstance: (instance: IdentifiedEventInstance) => void) {
-  const [startTime, endTime] = [instance?.startsAt, instance?.endsAt]
+function useStartAndEndTime(occasion: IdentifiedOccasion | undefined, setOccasion: (occasion: IdentifiedOccasion) => void) {
+  const [startTime, endTime] = [occasion?.startsAt, occasion?.endsAt]
   const setEndTime = useCallback((value: string) => {
-    if (!instance) {
+    if (!occasion) {
       return;
     }
-    const updatedInstance = { ...instance, endsAt: toProtoISOString(value) };
-    setInstance(updatedInstance);
-  }, [instance]);
+    const updatedOccasion = { ...occasion, endsAt: toProtoISOString(value) };
+    setOccasion(updatedOccasion);
+  }, [occasion]);
   const setStartTime = useCallback((value: string) => {
-    if (!instance) {
+    if (!occasion) {
       return;
     }
-    const updatedInstance = { ...instance, startsAt: toProtoISOString(value) };
-    setInstance(updatedInstance);
-  }, [instance]);
+    const updatedOccasion = { ...occasion, startsAt: toProtoISOString(value) };
+    setOccasion(updatedOccasion);
+  }, [occasion]);
   const [duration, _setDuration] = useState(0);
   useEffect(() => {
     if (startTime && endTime) {

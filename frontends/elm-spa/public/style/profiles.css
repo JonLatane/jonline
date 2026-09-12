@@ -438,7 +438,7 @@
 }
 
 /* Shared "Refresh" button/error row -- see UserProfilePage.elm's `refreshRowView`, used by both
-   the Sync Sources and AI Model Providers sections. */
+   the Sync Sources and AI Providers sections. */
 .profile-section-refresh-row {
   display: flex;
   align-items: center;
@@ -640,7 +640,7 @@
   align-self: flex-start;
 }
 
-/* Components.AIModelProviders, embedded on UserProfilePage below Sync Destinations. */
+/* Components.AIProviders, embedded on UserProfilePage below Sync Destinations. */
 
 .ai-model-providers-section {
   display: flex;
@@ -693,7 +693,7 @@ input.ai-model-provider-api-key {
   font-weight: normal;
 }
 
-/* The add-row's own credentials-variant picker (`aiModelProviderAddRowView`) -- sits before the
+/* The add-row's own credentials-variant picker (`aiProviderAddRowView`) -- sits before the
    name/API key inputs it decides the placeholder text of. */
 select.ai-model-provider-add-type {
   flex: 0 1 7rem;
