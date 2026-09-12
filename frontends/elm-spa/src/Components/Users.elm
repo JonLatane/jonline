@@ -1010,8 +1010,8 @@ permissionText permission =
         READALLSYSTEMMESSAGES ->
             "Read All System Messages"
 
-        CREATEAIMODELPROVIDERS ->
-            "Create AI Model Providers"
+        CREATEAIPROVIDERS ->
+            "Create AI Providers"
 
         PermissionUnrecognized_ _ ->
             "Unknown"
@@ -1071,7 +1071,7 @@ allPermissions =
     , MODERATEMEDIA
     , READPERSONALMESSAGES
     , READALLSYSTEMMESSAGES
-    , CREATEAIMODELPROVIDERS
+    , CREATEAIPROVIDERS
     , BUSINESS
     , RUNBOTS
     , ADMIN

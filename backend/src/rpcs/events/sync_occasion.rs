@@ -6,34 +6,34 @@ use tonic::{Code, Status};
 
 use crate::db_connection::PgPooledConnection;
 use crate::logic::{
-    build_event_instance_message, post_event_instance, post_record, post_status, post_thread,
-    post_to_instagram, post_tweet, EventInstanceMessageInput, MediaAttachment,
+    build_occasion_message, post_occasion, post_record, post_status, post_thread,
+    post_to_instagram, post_tweet, OccasionMessageInput, MediaAttachment,
 };
 use crate::marshaling::*;
 use crate::models;
 use crate::models::POST_COLUMNS;
 use crate::protos::*;
 use crate::rpcs::{get_server_configuration_proto, validate_permission};
-use crate::schema::{event_instance_sync_destinations, posts};
+use crate::schema::{occasion_sync_destinations, posts};
 
-pub fn sync_event_instance(
-    request: SyncEventInstanceRequest,
+pub fn sync_occasion(
+    request: SyncOccasionRequest,
     current_user: &models::User,
     conn: &mut PgPooledConnection,
-) -> Result<EventInstance, Status> {
+) -> Result<Occasion, Status> {
     let instance_id = request
-        .event_instance_id
-        .to_db_id_or_err("event_instance_id")?;
+        .occasion_id
+        .to_db_id_or_err("occasion_id")?;
     let destination_id = request
         .sync_destination_id
         .to_db_id_or_err("sync_destination_id")?;
 
-    let instance = models::get_event_instance(instance_id, &Some(current_user), conn)?;
+    let instance = models::get_occasion(instance_id, &Some(current_user), conn)?;
     let instance_post: models::Post = posts::table
         .select(POST_COLUMNS)
         .filter(posts::id.eq(instance.post_id))
         .first(conn)
-        .map_err(|_| Status::new(Code::NotFound, "event_instance_post_not_found"))?;
+        .map_err(|_| Status::new(Code::NotFound, "occasion_post_not_found"))?;
     let event = models::get_event(instance.event_id, &Some(current_user), conn)?;
     let event_post: models::Post = posts::table
         .select(POST_COLUMNS)
@@ -134,7 +134,7 @@ pub fn sync_event_instance(
     let title = combine_title(&event_post.title, &instance_post.title);
     let content = combine_content(&event_post.content, &instance_post.content);
 
-    let message = build_event_instance_message(EventInstanceMessageInput {
+    let message = build_occasion_message(OccasionMessageInput {
         title: &title,
         content: &content,
         link: &instance_post.link,
@@ -148,7 +148,7 @@ pub fn sync_event_instance(
 
     let (destination_instance_id, destination_url) = match &configuration {
         Some(sync_destination::Configuration::FacebookPage(_)) => {
-            post_event_instance(&destination, &message)?
+            post_occasion(&destination, &message)?
         }
         Some(sync_destination::Configuration::InstagramAccount(_)) => {
             post_to_instagram(&destination, &message)?
@@ -173,25 +173,25 @@ pub fn sync_event_instance(
         }
     };
 
-    let new_row = models::NewEventInstanceSyncDestination {
-        event_instance_id: instance.post_id,
+    let new_row = models::NewOccasionSyncDestination {
+        occasion_id: instance.post_id,
         sync_destination_id: destination.id,
         destination_instance_id: Some(destination_instance_id),
         destination_url: Some(destination_url),
         synced_at: Some(SystemTime::now()),
     };
-    insert_into(event_instance_sync_destinations::table)
+    insert_into(occasion_sync_destinations::table)
         .values(&new_row)
         .on_conflict((
-            event_instance_sync_destinations::event_instance_id,
-            event_instance_sync_destinations::sync_destination_id,
+            occasion_sync_destinations::occasion_id,
+            occasion_sync_destinations::sync_destination_id,
         ))
         .do_update()
         .set(&new_row)
         .execute(conn)
         .map_err(|e| {
             log::error!("Failed to record event instance sync status: {:?}", e);
-            Status::new(Code::Internal, "failed_to_record_event_instance_sync")
+            Status::new(Code::Internal, "failed_to_record_occasion_sync")
         })?;
 
     let instance_post_id = instance.post_id.to_proto_id();
@@ -211,7 +211,7 @@ pub fn sync_event_instance(
                 i.post.as_ref().map(|p| p.id.as_str()) == Some(instance_post_id.as_str())
             })
         })
-        .ok_or_else(|| Status::new(Code::Internal, "failed_to_reload_synced_event_instance"))
+        .ok_or_else(|| Status::new(Code::Internal, "failed_to_reload_synced_occasion"))
 }
 
 /// `"{event_title}: {instance_title}"` when `instance_title` is set (non-empty), else just
@@ -228,7 +228,7 @@ fn combine_content(event_content: &Option<String>, instance_content: &Option<Str
     combine(event_content, instance_content, "\n\n---\n\n")
 }
 
-/// Unions the Event's own Post's media with the EventInstance's own Post's media, Event-first --
+/// Unions the Event's own Post's media with the Occasion's own Post's media, Event-first --
 /// an instance-level Post rarely carries its own media override (e.g. a plain weekly recurrence
 /// with nothing instance-specific to show), so without this an Event's actual photos/video
 /// (attached to the *Event's* Post, not any particular instance) would never get synced at all.

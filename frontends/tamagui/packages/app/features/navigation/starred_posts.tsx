@@ -27,11 +27,11 @@ const selectFilteredPostIds = (
       let filteredPostIds: string[];
       if (starredPostFilter === 'posts') {
         filteredPostIds = starredPostIds.map(id => state.posts.entities[id])
-          .filter(p => p && p?.context !== PostContext.EVENT_INSTANCE)
+          .filter(p => p && p?.context !== PostContext.OCCASION)
           .map(p => federatedId(p!));
       } else if (starredPostFilter === 'events') {
         filteredPostIds = starredPostIds.map(id => state.posts.entities[id])
-          .filter(p => p?.context === PostContext.EVENT_INSTANCE)
+          .filter(p => p?.context === PostContext.OCCASION)
           .map(p => federatedId(p!));
       } else {
         filteredPostIds = starredPostIds;
@@ -39,7 +39,7 @@ const selectFilteredPostIds = (
       return {
         filteredPostIds,
         hasPosts: starredPostIds.some(id => [PostContext.POST, PostContext.REPLY].includes(state.posts.entities[id]?.context!)),
-        hasEvents: starredPostIds.some(id => state.posts.entities[id]?.context === PostContext.EVENT_INSTANCE)
+        hasEvents: starredPostIds.some(id => state.posts.entities[id]?.context === PostContext.OCCASION)
       };
     }],
     (data) => data
@@ -93,7 +93,7 @@ export function StarredPosts({ }: StarredPostsProps) {
       scrollToTop();
     }
   }, [openedPostId])
-  const { serverHost, basePost, event, eventInstanceId, eventWithSingleInstance } = useStarredPostDetails(openedPostId ?? '');
+  const { serverHost, basePost, event, occasionId, eventWithSingleInstance } = useStarredPostDetails(openedPostId ?? '');
   const { ancestorPost, ancestorEvent } = useReplyAncestors(basePost);
   const basePostTitle = event?.post?.title || basePost?.title ||
     (ancestorEvent?.post?.title

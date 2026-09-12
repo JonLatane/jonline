@@ -9,7 +9,7 @@ use diesel::Connection;
 
 use crate::logic::{sync_source, sync_source_text};
 use crate::models;
-use crate::schema::{event_instances, events, posts};
+use crate::schema::{occasions, events, posts};
 use crate::tests::factories::*;
 use diesel::prelude::*;
 
@@ -18,11 +18,11 @@ const ICS_FORMAT: &str = "%Y%m%dT%H%M%SZ";
 fn instances_for(
     conn: &mut crate::db_connection::PgPooledConnection,
     event_id: i64,
-) -> Vec<models::EventInstance> {
-    event_instances::table
-        .select(models::EVENT_INSTANCE_COLUMNS)
-        .filter(event_instances::event_id.eq(event_id))
-        .load::<models::EventInstance>(conn)
+) -> Vec<models::Occasion> {
+    occasions::table
+        .select(models::OCCASION_COLUMNS)
+        .filter(occasions::event_id.eq(event_id))
+        .load::<models::Occasion>(conn)
         .unwrap()
 }
 
@@ -31,9 +31,9 @@ fn synced_event(
     source_id: i64,
     uid: &str,
 ) -> Option<models::Event> {
-    let event_id: Option<i64> = event_instances::table
-        .inner_join(posts::table.on(posts::id.eq(event_instances::post_id)))
-        .select(event_instances::event_id)
+    let event_id: Option<i64> = occasions::table
+        .inner_join(posts::table.on(posts::id.eq(occasions::post_id)))
+        .select(occasions::event_id)
         .filter(posts::sync_source_id.eq(source_id))
         .filter(posts::sync_source_uid.eq(uid))
         .first(conn)
@@ -87,7 +87,7 @@ fn single_vevent_creates_event_and_instance() {
     });
 }
 
-/// `DTSTART`'s `TZID` parameter (RFC 5545 §3.3.5) should populate `EventInstance.timezone`
+/// `DTSTART`'s `TZID` parameter (RFC 5545 §3.3.5) should populate `Occasion.timezone`
 /// straight from the feed, without needing `logic::resolve_timezone`'s Nominatim geocoding or a
 /// hand-picked selector value at all.
 #[test]
@@ -143,8 +143,8 @@ fn resyncing_backfills_a_timezone_that_was_null_before_this_feature_shipped() {
 
         // Simulate a pre-deploy row by nulling out the timezone this first sync just set -- what
         // an instance synced by the old code would actually look like.
-        diesel::update(event_instances::table.filter(event_instances::event_id.eq(event.post_id)))
-            .set(event_instances::timezone.eq(None::<String>))
+        diesel::update(occasions::table.filter(occasions::event_id.eq(event.post_id)))
+            .set(occasions::timezone.eq(None::<String>))
             .execute(conn)
             .unwrap();
         assert_eq!(instances_for(conn, event.post_id)[0].timezone, None);
@@ -161,7 +161,7 @@ fn resyncing_backfills_a_timezone_that_was_null_before_this_feature_shipped() {
 
 /// Regression test for the 2026-09-04 duplicate-events incident: re-syncing the exact same feed
 /// twice in a row (e.g. two runs of the background job before anything upstream changes) must
-/// match every existing Event/EventInstance by `(sync_source_id, sync_source_uid,
+/// match every existing Event/Occasion by `(sync_source_id, sync_source_uid,
 /// sync_source_recurrence_anchor)` rather than silently creating a second copy of everything.
 #[test]
 fn resyncing_the_same_feed_twice_creates_no_duplicates() {
@@ -197,7 +197,7 @@ fn resyncing_the_same_feed_twice_creates_no_duplicates() {
         assert_eq!(
             instances.len(),
             1,
-            "expected exactly one EventInstance after syncing the same feed twice"
+            "expected exactly one Occasion after syncing the same feed twice"
         );
 
         Ok(())
@@ -236,7 +236,7 @@ fn duplicate_recurrence_anchor_is_rejected_by_db_unique_constraint() {
                 content: None,
                 visibility: "GLOBAL_PUBLIC".to_string(),
                 embed_link: false,
-                context: "EVENT_INSTANCE".to_string(),
+                context: "OCCASION".to_string(),
                 moderation: "UNMODERATED".to_string(),
                 media: vec![],
             })
@@ -244,8 +244,8 @@ fn duplicate_recurrence_anchor_is_rejected_by_db_unique_constraint() {
             .get_result(conn)
             .unwrap();
 
-        diesel::insert_into(event_instances::table)
-            .values(&models::NewEventInstance {
+        diesel::insert_into(occasions::table)
+            .values(&models::NewOccasion {
                 event_id: event.post_id,
                 post_id: duplicate_post.id,
                 info: serde_json::json!({}),
@@ -255,7 +255,7 @@ fn duplicate_recurrence_anchor_is_rejected_by_db_unique_constraint() {
                 timezone: existing_instance.timezone.clone(),
             })
             .execute(conn)
-            .expect("event_instances insert itself no longer carries the unique constraint");
+            .expect("occasions insert itself no longer carries the unique constraint");
 
         // The unique constraint now lives on `posts` (see migration
         // 2026-09-11-000000_move_sync_source_to_posts), so it's this follow-up UPDATE --
@@ -479,10 +479,10 @@ fn resync_removes_instances_no_longer_in_feed_but_leaves_old_ones_alone() {
         // aren't deleted by resync even when absent from the feed.
         let old_start_db: std::time::SystemTime = old_start.into();
         let old_end_db: std::time::SystemTime = old_end.into();
-        diesel::update(event_instances::table.filter(event_instances::event_id.eq(event.post_id)))
+        diesel::update(occasions::table.filter(occasions::event_id.eq(event.post_id)))
             .set((
-                event_instances::starts_at.eq(old_start_db),
-                event_instances::ends_at.eq(old_end_db),
+                occasions::starts_at.eq(old_start_db),
+                occasions::ends_at.eq(old_end_db),
             ))
             .execute(conn)
             .unwrap();
@@ -540,7 +540,7 @@ fn resync_marks_recent_instance_missing_instead_of_deleting_it_immediately() {
 }
 
 /// If the feed goes back to reporting the occurrence before the grace period elapses, the exact
-/// same EventInstance row (and its Post, i.e. any comment thread/media on it) is reused rather
+/// same Occasion row (and its Post, i.e. any comment thread/media on it) is reused rather
 /// than deleted-then-recreated.
 #[test]
 fn instance_reappearing_before_grace_period_elapses_reuses_the_same_row() {
@@ -601,8 +601,8 @@ fn instance_missing_past_grace_period_is_deleted_and_emptied_event_is_removed() 
 
         // Simulate the grace period having elapsed by backdating the missing-since stamp.
         let long_ago: std::time::SystemTime = (Utc::now() - Duration::days(4)).into();
-        diesel::update(event_instances::table.filter(event_instances::event_id.eq(event.post_id)))
-            .set(event_instances::sync_missing_since.eq(long_ago))
+        diesel::update(occasions::table.filter(occasions::event_id.eq(event.post_id)))
+            .set(occasions::sync_missing_since.eq(long_ago))
             .execute(conn)
             .unwrap();
 

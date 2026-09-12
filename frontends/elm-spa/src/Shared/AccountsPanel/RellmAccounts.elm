@@ -41,7 +41,7 @@ own coordinating logic.
 import Grpc
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode
-import Proto.Rellm exposing (AccessTokenResponse, AvailableAIModel, ExpirableToken, SyncDestination, SyncSource, User)
+import Proto.Rellm exposing (AccessTokenResponse, AIModel, ExpirableToken, SyncDestination, SyncSource, User)
 import Proto.Rellm.Permission exposing (Permission(..), fieldNumbersPermission)
 import Proto.Rellm.Rellm as Rellm
 import Shared.AccountsPanel.RellmServers as RellmServers exposing (Connection, RellmServer)
@@ -80,14 +80,14 @@ type alias RellmAccount =
     , needsPassword : Bool
     , sortOrder : Int
 
-    -- The signed-in user's own linked SyncDestinations/SyncSources/AvailableAIModels (see
+    -- The signed-in user's own linked SyncDestinations/SyncSources/AIModels (see
     -- `Proto.Rellm.User`'s own doc on each field) -- refreshed alongside `permissions`/etc by
     -- `refreshPermissionsTask`. Login/CreateAccount (`GotAuthResult`) can't populate them either
     -- (same backend restriction), so they start empty there and only appear once the first
     -- refresh lands.
     , syncDestinations : List SyncDestination
     , syncSources : List SyncSource
-    , availableAiModels : List AvailableAIModel
+    , aiModels : List AIModel
     }
 
 
@@ -223,7 +223,7 @@ upsertRellmAccount account accounts =
 
 {-| The bare `Task` behind `Shared.AccountsPanel.refreshPermissions`/`refreshPermissionsForServer` --
 refreshes an account's `permissions` (and `username`, in case it changed
-server-side), plus `syncDestinations`/`syncSources`/`availableAiModels`
+server-side), plus `syncDestinations`/`syncSources`/`aiModels`
 (see `RellmAccount`'s own doc), via `GetCurrentUser` (always a self-view, so the
 backend populates all of these -- see `attach_own_advanced_data` on the
 backend), refreshing its access token first if needed -- see
@@ -283,7 +283,7 @@ applyPermissionsRefreshResult accId result accounts =
                     , needsPassword = False
                     , syncDestinations = user.syncDestinations
                     , syncSources = user.syncSources
-                    , availableAiModels = user.availableAiModels
+                    , aiModels = user.aiModels
                 }
                 accounts
 
@@ -432,7 +432,7 @@ isExpired now token =
 -- ENCODE/DECODE
 
 
-{-| Deliberately omits `syncDestinations`/`syncSources`/`availableAiModels` -- they're
+{-| Deliberately omits `syncDestinations`/`syncSources`/`aiModels` -- they're
 nested-proto-shaped, can be sizeable, and change often, so persisting them to `localStorage` (and
 writing the JSON codecs for their `oneof`s) isn't worth it when `refreshPermissionsTask` already
 refetches them on every reconnect/enable. See `rellmAccountDecoder`'s own doc for the decode side.
@@ -477,7 +477,7 @@ encodeToken token =
 {-| `elm/json` only provides `map8`, but `RellmAccount` now has 14 fields -- so this
 decodes the first 8 into a partially-applied `RellmAccount` constructor, then
 applies `realName`, `needsPassword`, and `sortOrder` on top of that. The last 3
-(`syncDestinations`/`syncSources`/`availableAiModels`) are deliberately
+(`syncDestinations`/`syncSources`/`aiModels`) are deliberately
 never persisted at all -- see `encodeRellmAccount`'s own doc -- so they always
 decode to `[]` here regardless of what's in storage; the very next
 `refreshPermissionsTask` (fired on every reconnect/enable) fills them back in.
@@ -650,7 +650,7 @@ permissionFromInt n =
             READALLSYSTEMMESSAGES
 
         60 ->
-            CREATEAIMODELPROVIDERS
+            CREATEAIPROVIDERS
 
         700 ->
             SYNCEVENTSFROMICS

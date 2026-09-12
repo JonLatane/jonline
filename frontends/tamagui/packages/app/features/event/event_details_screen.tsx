@@ -2,7 +2,7 @@ import { AnimatePresence, Button, Heading, Paragraph, ScrollView, Spinner, Toolt
 import { ListEnd } from '@tamagui/lucide-icons';
 import { AccountOrServerContextProvider } from 'app/contexts';
 import { useAppSelector, useCurrentServer, useFederatedDispatch, useLocalConfiguration } from 'app/hooks';
-import { IdentifiedEventInstance, accountID, federateId, loadEvent, parseFederatedId, selectEventById, selectPostById, serverID, useDebouncedAccountOrServer, useServerTheme } from 'app/store';
+import { IdentifiedOccasion, accountID, federateId, loadEvent, parseFederatedId, selectEventById, selectPostById, serverID, useDebouncedAccountOrServer, useServerTheme } from 'app/store';
 import { isPastInstance, setDocumentTitle, themedButtonBackground } from 'app/utils';
 import React, { useEffect, useState } from 'react';
 import { createParam } from 'solito';
@@ -17,7 +17,7 @@ import { RsvpMode } from './event_rsvp_manager';
 const { useParam, useUpdateParams } = createParam<{ instanceId: string, shortname: string | undefined }>()
 
 // In terms of the web app's URL structure, "/event" corresponds to
-// EventInstances, not Events.
+// Occasions, not Events.
 export function EventDetailsScreen() {
   const mediaQuery = useMedia();
   const [pathInstanceId] = useParam('instanceId');
@@ -53,7 +53,7 @@ export function EventDetailsScreen() {
   // debugger
 
   const subjectInstances = subjectEvent?.instances;
-  const [subjectInstance, setSubjectInstance] = useState<IdentifiedEventInstance | undefined>(undefined);
+  const [subjectInstance, setSubjectInstance] = useState<IdentifiedOccasion | undefined>(undefined);
 
   const instancePost = useAppSelector(state => subjectInstance
     ? selectPostById(state.posts, federateId(subjectInstance.post!.id, serverHost))
@@ -86,7 +86,7 @@ export function EventDetailsScreen() {
 
   // console.log("subjectEvent=", subjectEvent, 'failedToLoadEvent=', failedToLoadEvent);
 
-  function onEventInstancesUpdated(instances: IdentifiedEventInstance[]) {
+  function onOccasionsUpdated(instances: IdentifiedOccasion[]) {
     if (!instances.some(i => i.id === serverInstanceId)) {
       updateParams({
         instanceId: `${instances.find(i => !isPastInstance(i))?.id
@@ -131,7 +131,7 @@ export function EventDetailsScreen() {
       if (subjectPost.title && subjectPost.title.length > 0) {
         title = subjectPost.title;
       } else {
-        title = `Event Instance Details (#${instanceId})`;
+        title = `Occasion Details (#${instanceId})`;
       }
     } else if (failedToLoadEvent) {
       title = 'Event Not Found';
@@ -267,7 +267,7 @@ export function EventDetailsScreen() {
                         event={subjectEvent}
                         onEditingChange={editHandler(subjectPost!.id)}
                         selectedInstance={subjectInstance}
-                        onInstancesUpdated={onEventInstancesUpdated}
+                        onInstancesUpdated={onOccasionsUpdated}
                         {...{ newRsvpMode, setNewRsvpMode }}
                       />
                     </XStack>

@@ -13,7 +13,7 @@ import moment from "moment";
 import { createFederated, Federated, federatedEntities, federatedEntity, FederatedEntity, federatedId, federatedPayload, federateId, getFederated, parseFederatedId, serverHost, setFederated, toFederatedId } from '../federation';
 import { createFederatedPagesStatus, FederatedPagesStatus, GroupedPages, PaginatedIds } from "../pagination";
 import { store } from "../store";
-import { GroupedEventInstancePages, serializeTimeFilter } from "./events_state";
+import { GroupedOccasionPages, serializeTimeFilter } from "./events_state";
 import { createGroup, createGroupPost, defaultGroupListingType, deleteGroup, deleteGroupPost, joinLeaveGroup, loadGroup, loadGroupByShortname, loadGroupEventsPage, loadGroupMembers, loadGroupPostsPage, loadGroupsPage, loadPostGroupPosts, respondToMembershipRequest, updateGroup, updateMembership } from "./group_actions";
 import { markGroupVisit } from "./config";
 
@@ -31,7 +31,7 @@ export interface GroupsState {
   // By group ID -> membership group moderation -> page (as a number) -> memberships
   groupMembershipPages: Dictionary<Dictionary<Membership[][]>>;
   groupPostPages: GroupedPages;
-  groupEventPages: GroupedEventInstancePages;
+  groupEventPages: GroupedOccasionPages;
   postIdGroupPosts: Dictionary<GroupPost[]>;
   failedShortnames: string[];
   failedPostIdGroupPosts: string[];
@@ -203,7 +203,7 @@ export const groupsSlice = createSlice({
 
     builder.addCase(loadGroupEventsPage.fulfilled, (state, action) => {
       const { events } = action.payload;
-      const eventInstanceIds = events.map(e => federateId(e.instances[0]!.id, action));
+      const occasionIds = events.map(e => federateId(e.instances[0]!.id, action));
 
       // NOTE: EventsState adds the post data from this same response
       // on loadGroupPostsPage.fulfilled.
@@ -214,7 +214,7 @@ export const groupsSlice = createSlice({
       const serializedFilter = serializeTimeFilter(action.meta.arg.filter);
       if (!state.groupEventPages[groupId]) state.groupEventPages[groupId] = {};
       if (!state.groupEventPages[groupId]![serializedFilter] || page === 0) state.groupEventPages[groupId]![serializedFilter] = [];
-      state.groupEventPages[groupId]![serializedFilter]![page] = eventInstanceIds;
+      state.groupEventPages[groupId]![serializedFilter]![page] = occasionIds;
     });
 
     builder.addCase(loadGroup.fulfilled, (state, action) => {

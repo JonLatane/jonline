@@ -29,7 +29,7 @@ but none of this module's profile-editing machinery.
 -}
 
 import Browser.Navigation
-import Components.AIModelProviders as AIModelProviders
+import Components.AIProviders as AIProviders
 import Components.Markdown as Markdown
 import Components.Pages.EventsPage as EventsPage
 import Components.Pages.PostsPage as PostsPage
@@ -52,8 +52,8 @@ import Json.Decode as Decode
 import Ports
 import Process
 import Proto.Google.Protobuf
-import Proto.Rellm exposing (AIModelProvider, AIModelProviderGrant, ContactMethod, FederatedAccount, SyncDestination, SyncSource, User, defaultAIModelProvider, defaultDigitalOceanCredentials, defaultGeminiCredentials, defaultMediaReference, defaultOpenAICredentials, defaultSyncDestination, defaultSyncSource)
-import Proto.Rellm.AIModelProvider.Provider as AIModelProviderProvider
+import Proto.Rellm exposing (AIProvider, AIProviderGrant, ContactMethod, FederatedAccount, SyncDestination, SyncSource, User, defaultAIProvider, defaultDigitalOceanCredentials, defaultGeminiCredentials, defaultMediaReference, defaultOpenAICredentials, defaultSyncDestination, defaultSyncSource)
+import Proto.Rellm.AIProvider.Provider as AIProviderProvider
 import Proto.Rellm.Moderation exposing (Moderation(..))
 import Proto.Rellm.Permission exposing (Permission(..))
 import Proto.Rellm.PostContext exposing (PostContext(..))
@@ -98,9 +98,9 @@ type alias Model =
     , syncSourcesExpanded : Bool
     , syncDestinations : SyncDestinationsState
     , syncDestinationsExpanded : Bool
-    , aiModelProviders : AIModelProvidersState
-    , aiModelProvidersExpanded : Bool
-    , aiModelProviderGrantsExpanded : Bool
+    , aiProviders : AIProvidersState
+    , aiProvidersExpanded : Bool
+    , aiProviderGrantsExpanded : Bool
     , followStatusAndButton : FollowStatusAndButton.Model
 
     -- Embedded, row-laid-out `EventsPage`/search-box-less `PostsPage` copies of this
@@ -226,31 +226,31 @@ type Msg
     | GotXTwitterLinkResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, SyncDestination ))
     | SyncDestinationDeleteClicked SyncDestination
     | GotSyncDestinationDeleteResult String (Result Grpc.Error ( Maybe AccountsPanel.Msg, () ))
-    | AIModelProviderRowNameChanged AIModelProvider String
-    | AIModelProviderRowApiKeyChanged AIModelProvider String
-    | AIModelProviderRowSaveClicked AIModelProvider
-    | AIModelProviderRowCancelClicked AIModelProvider
-    | GotAIModelProviderRowSaveResult String (Result Grpc.Error ( Maybe AccountsPanel.Msg, AIModelProvider ))
-    | AIModelProviderAddProviderTypeChanged String
-    | AIModelProviderAddNameChanged String
-    | AIModelProviderAddApiKeyChanged String
-    | AIModelProviderAddClicked
-    | GotAIModelProviderAddResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, AIModelProvider ))
-    | AIModelProviderDeleteClicked AIModelProvider
-    | GotAIModelProviderDeleteResult String (Result Grpc.Error ( Maybe AccountsPanel.Msg, () ))
-    | AIModelProvidersExpandedToggled
-    | AIModelProvidersRefreshClicked
-    | GotAIModelProvidersRefreshResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Rellm.GetAIModelProvidersResponse ))
-    | AIModelProviderGrantsToggled String
-    | AIModelProviderGrantUserIdChanged String String
-    | AIModelProviderGrantTokensChanged String String
-    | AIModelProviderGrantModelNamesChanged String String
-    | AIModelProviderGrantEditClicked AIModelProvider AIModelProviderGrant
-    | AIModelProviderGrantClicked AIModelProvider
-    | GotAIModelProviderGrantResult String (Result Grpc.Error ( Maybe AccountsPanel.Msg, AIModelProviderGrant ))
-    | AIModelProviderRevokeClicked AIModelProvider AIModelProviderGrant
-    | GotAIModelProviderRevokeResult String (Result Grpc.Error ( Maybe AccountsPanel.Msg, () ))
-    | AIModelProviderGrantsSectionToggled
+    | AIProviderRowNameChanged AIProvider String
+    | AIProviderRowApiKeyChanged AIProvider String
+    | AIProviderRowSaveClicked AIProvider
+    | AIProviderRowCancelClicked AIProvider
+    | GotAIProviderRowSaveResult String (Result Grpc.Error ( Maybe AccountsPanel.Msg, AIProvider ))
+    | AIProviderAddProviderTypeChanged String
+    | AIProviderAddNameChanged String
+    | AIProviderAddApiKeyChanged String
+    | AIProviderAddClicked
+    | GotAIProviderAddResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, AIProvider ))
+    | AIProviderDeleteClicked AIProvider
+    | GotAIProviderDeleteResult String (Result Grpc.Error ( Maybe AccountsPanel.Msg, () ))
+    | AIProvidersExpandedToggled
+    | AIProvidersRefreshClicked
+    | GotAIProvidersRefreshResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Rellm.GetAIProvidersResponse ))
+    | AIProviderGrantsToggled String
+    | AIProviderGrantUserIdChanged String String
+    | AIProviderGrantTokensChanged String String
+    | AIProviderGrantModelNamesChanged String String
+    | AIProviderGrantEditClicked AIProvider AIProviderGrant
+    | AIProviderGrantClicked AIProvider
+    | GotAIProviderGrantResult String (Result Grpc.Error ( Maybe AccountsPanel.Msg, AIProviderGrant ))
+    | AIProviderRevokeClicked AIProvider AIProviderGrant
+    | GotAIProviderRevokeResult String (Result Grpc.Error ( Maybe AccountsPanel.Msg, () ))
+    | AIProviderGrantsSectionToggled
     | DeleteUserClicked
 
 
@@ -778,66 +778,66 @@ initSyncDestinations =
 
 
 {-| A row's in-progress edit -- created (from the provider's own current name, plus a blank API
-key, see `aiModelProviderRowEditFor`) the moment its "Edit" button is clicked. `pendingApiKey` is
+key, see `aiProviderRowEditFor`) the moment its "Edit" button is clicked. `pendingApiKey` is
 **never** pre-filled from the provider's own credentials -- the server never sends the real key
 back (see `GeminiCredentials.geminiApiKey`'s own doc), so a blank key here just means "leave the
-stored key alone" (see `AIModelProviderRowSaveClicked`, which only includes a new `provider` in the
+stored key alone" (see `AIProviderRowSaveClicked`, which only includes a new `provider` in the
 request when `pendingApiKey` is non-blank) -- the same "blank means unchanged" convention
 `ServerInformationPage.FederationTab` uses for `FacebookAuthConfig.appSecret`/etc.
 -}
-type alias AIModelProviderRowEdit =
+type alias AIProviderRowEdit =
     { pendingName : String
     , pendingApiKey : String
     , status : SubmitStatus
     }
 
 
-{-| Which credentials variant a new `AIModelProvider` is being created with -- all three are
-currently creatable (see `AIModelProvider`'s own proto doc); `Anthropic` isn't included here since
+{-| Which credentials variant a new `AIProvider` is being created with -- all three are
+currently creatable (see `AIProvider`'s own proto doc); `Anthropic` isn't included here since
 it isn't yet.
 -}
-type AddAIModelProviderType
+type AddAIProviderType
     = AddGeminiProvider
     | AddOpenAIProvider
     | AddDigitalOceanProvider
 
 
-type alias AIModelProviderAddForm =
-    { providerType : AddAIModelProviderType
+type alias AIProviderAddForm =
+    { providerType : AddAIProviderType
     , name : String
     , apiKey : String
     , status : SubmitStatus
     }
 
 
-defaultAIModelProviderAddForm : AIModelProviderAddForm
-defaultAIModelProviderAddForm =
+defaultAIProviderAddForm : AIProviderAddForm
+defaultAIProviderAddForm =
     { providerType = AddGeminiProvider, name = "", apiKey = "", status = Idle }
 
 
-{-| The in-progress "grant access" form for one AIModelProvider's expanded grants list -- a target
-user id plus a token budget, submitted via `GrantAIModelProvider`. Keyed by provider id in
-`AIModelProvidersState.grantForms` since more than one provider's grants list may be expanded at
+{-| The in-progress "grant access" form for one AIProvider's expanded grants list -- a target
+user id plus a token budget, submitted via `GrantAIProvider`. Keyed by provider id in
+`AIProvidersState.grantForms` since more than one provider's grants list may be expanded at
 once.
 -}
-type alias AIModelProviderGrantForm =
+type alias AIProviderGrantForm =
     { userId : String
     , tokens : String
 
-    -- Comma-separated model names (see `AIModelProviderGrant.modelNames`'s own doc) -- blank
+    -- Comma-separated model names (see `AIProviderGrant.modelNames`'s own doc) -- blank
     -- means "any model this provider supports".
     , modelNames : String
     , status : SubmitStatus
     }
 
 
-defaultAIModelProviderGrantForm : AIModelProviderGrantForm
-defaultAIModelProviderGrantForm =
+defaultAIProviderGrantForm : AIProviderGrantForm
+defaultAIProviderGrantForm =
     { userId = "", tokens = "", modelNames = "", status = Idle }
 
 
-{-| Splits a comma-separated `AIModelProviderGrantForm.modelNames` input into the `List String`
-`GrantAIModelProviderRequest.modelNames`/`AIModelProviderGrant.modelNames` expect -- trims each
+{-| Splits a comma-separated `AIProviderGrantForm.modelNames` input into the `List String`
+`GrantAIProviderRequest.modelNames`/`AIProviderGrant.modelNames` expect -- trims each
 entry and drops blanks (so "gpt-4, , gpt-3.5" and "gpt-4,gpt-3.5" behave the same), and a fully
 blank input becomes `[]` (any model).
 -}
@@ -851,9 +851,9 @@ parseModelNames input =
 
 {-| The "AI Providers" section's own state -- mirrors `SyncSourcesState`'s doc: neither
 the owned-providers list nor the granted-to-you list is fetched/held here -- both are _derived_ at
-render time from the resolved `User.availableAiModels` (see `ownedAIModelProviders`/
-`grantedAIModelAccess`), since `AvailableAIModel`s are self-or-Admin gated the same way
-`sync_sources` is (see that field's own proto doc, and `AvailableAIModel`'s). `expandedGrants`/
+render time from the resolved `User.aiModels` (see `ownedAIProviders`/
+`grantedAIModelAccess`), since `AIModel`s are self-or-Admin gated the same way
+`sync_sources` is (see that field's own proto doc, and `AIModel`'s). `expandedGrants`/
 `grantForms` track which providers' grant lists are open and their own in-progress "grant access"
 forms; `deleteStatuses`/`revokeStatuses` are `Dict`s (keyed by provider id, and by
 `"<providerId>:<granteeUserId>"` respectively) rather than single fields since, in principle, more
@@ -862,24 +862,24 @@ Deletes/revokes are NOT routed through `Shared.DeleteConfirmation` -- same reaso
 `SyncDestinationsState`'s own doc: removing a provider only drops its own credentials and grants,
 nothing else.
 -}
-type alias AIModelProvidersState =
-    { rowEdits : Dict String AIModelProviderRowEdit
-    , addForm : AIModelProviderAddForm
+type alias AIProvidersState =
+    { rowEdits : Dict String AIProviderRowEdit
+    , addForm : AIProviderAddForm
     , expandedGrants : List String
-    , grantForms : Dict String AIModelProviderGrantForm
+    , grantForms : Dict String AIProviderGrantForm
     , deleteStatuses : Dict String SubmitStatus
     , revokeStatuses : Dict String SubmitStatus
 
-    -- Manual "Refresh" button state (`AIModelProvidersRefreshClicked`) -- overlays a fresh
-    -- `GetAIModelProviders` result onto the resolved `User` without a whole-profile `refetch`.
+    -- Manual "Refresh" button state (`AIProvidersRefreshClicked`) -- overlays a fresh
+    -- `GetAIProviders` result onto the resolved `User` without a whole-profile `refetch`.
     , refreshStatus : SubmitStatus
     }
 
 
-initAIModelProviders : AIModelProvidersState
-initAIModelProviders =
+initAIProviders : AIProvidersState
+initAIProviders =
     { rowEdits = Dict.empty
-    , addForm = defaultAIModelProviderAddForm
+    , addForm = defaultAIProviderAddForm
     , expandedGrants = []
     , grantForms = Dict.empty
     , deleteStatuses = Dict.empty
@@ -888,15 +888,15 @@ initAIModelProviders =
     }
 
 
-{-| This profile's own `AIModelProvider`s -- de-duplicated from `user.availableAiModels` (one entry
+{-| This profile's own `AIProvider`s -- de-duplicated from `user.aiModels` (one entry
 per model an owned provider supports, see that field's own proto doc), keeping each provider's full
-detail (including its own `grants` list, needed by `aiModelProviderGrantsView`) from whichever entry
+detail (including its own `grants` list, needed by `aiProviderGrantsView`) from whichever entry
 is encountered first. Empty for any viewer who isn't the profile's own user or an Admin, since the
-backend never populates `available_ai_models` for anyone else.
+backend never populates `ai_models` for anyone else.
 -}
-ownedAIModelProviders : User -> List AIModelProvider
-ownedAIModelProviders user =
-    user.availableAiModels
+ownedAIProviders : User -> List AIProvider
+ownedAIProviders user =
+    user.aiModels
         |> List.filterMap
             (\available ->
                 if available.grant == Nothing then
@@ -918,22 +918,22 @@ ownedAIModelProviders user =
 
 
 {-| Access granted _to_ this profile's own user, on any provider (their own or someone else's) --
-one `(provider, grant)` pair per distinct grant, de-duplicated from `user.availableAiModels` the
-same way `ownedAIModelProviders` de-duplicates owned providers (each grant's own `modelNames`/
+one `(provider, grant)` pair per distinct grant, de-duplicated from `user.aiModels` the
+same way `ownedAIProviders` de-duplicates owned providers (each grant's own `modelNames`/
 `tokensRemaining` already describes everything it covers, so there's no need to keep every
-per-model `AvailableAIModel` row -- just one representative each). Empty for any viewer who isn't
+per-model `AIModel` row -- just one representative each). Empty for any viewer who isn't
 the profile's own user or an Admin.
 -}
-grantedAIModelAccess : User -> List ( AIModelProvider, AIModelProviderGrant )
+grantedAIModelAccess : User -> List ( AIProvider, AIProviderGrant )
 grantedAIModelAccess user =
-    user.availableAiModels
+    user.aiModels
         |> List.filterMap (\available -> Maybe.map2 Tuple.pair available.provider available.grant)
         |> List.foldl
             (\( provider, grant ) ( seen, acc ) ->
                 let
                     key : String
                     key =
-                        aiModelProviderGrantKey provider.id (grant.aiModelGrantee |> Maybe.map .userId |> Maybe.withDefault "")
+                        aiProviderGrantKey provider.id (grant.aiModelGrantee |> Maybe.map .userId |> Maybe.withDefault "")
                 in
                 if Set.member key seen then
                     ( seen, acc )
@@ -986,9 +986,9 @@ init shared pageIsSecure targetHost lookup navKey path query fragment =
             , syncSourcesExpanded = False
             , syncDestinations = initSyncDestinations
             , syncDestinationsExpanded = False
-            , aiModelProviders = initAIModelProviders
-            , aiModelProvidersExpanded = False
-            , aiModelProviderGrantsExpanded = False
+            , aiProviders = initAIProviders
+            , aiProvidersExpanded = False
+            , aiProviderGrantsExpanded = False
             , followStatusAndButton = FollowStatusAndButton.init
             , posts = Nothing
             , events = Nothing
@@ -1304,7 +1304,7 @@ updateInner shared msg model =
                         -- A successful delete of a Sync Source (fired
                         -- directly from `Shared.update`'s `ConfirmDelete`,
                         -- see `Shared.ConfirmSyncSourceDelete`'s own
-                        -- doc) can remove Events/EventInstances behind the
+                        -- doc) can remove Events/Occasions behind the
                         -- already-`init`ed `EventsPage` copy's back --
                         -- refresh it so the change shows up without a manual
                         -- page reload. Also refetches the resolved `User`
@@ -2742,48 +2742,48 @@ updateInner shared msg model =
             , Effect.none
             )
 
-        AIModelProviderRowNameChanged provider name ->
+        AIProviderRowNameChanged provider name ->
             let
-                ap : AIModelProvidersState
+                ap : AIProvidersState
                 ap =
-                    model.aiModelProviders
+                    model.aiProviders
 
-                edit : AIModelProviderRowEdit
+                edit : AIProviderRowEdit
                 edit =
-                    aiModelProviderRowEditFor provider ap
+                    aiProviderRowEditFor provider ap
             in
-            ( { model | aiModelProviders = { ap | rowEdits = Dict.insert provider.id { edit | pendingName = name } ap.rowEdits } }, Effect.none )
+            ( { model | aiProviders = { ap | rowEdits = Dict.insert provider.id { edit | pendingName = name } ap.rowEdits } }, Effect.none )
 
-        AIModelProviderRowApiKeyChanged provider apiKey ->
+        AIProviderRowApiKeyChanged provider apiKey ->
             let
-                ap : AIModelProvidersState
+                ap : AIProvidersState
                 ap =
-                    model.aiModelProviders
+                    model.aiProviders
 
-                edit : AIModelProviderRowEdit
+                edit : AIProviderRowEdit
                 edit =
-                    aiModelProviderRowEditFor provider ap
+                    aiProviderRowEditFor provider ap
             in
-            ( { model | aiModelProviders = { ap | rowEdits = Dict.insert provider.id { edit | pendingApiKey = apiKey } ap.rowEdits } }, Effect.none )
+            ( { model | aiProviders = { ap | rowEdits = Dict.insert provider.id { edit | pendingApiKey = apiKey } ap.rowEdits } }, Effect.none )
 
-        AIModelProviderRowSaveClicked provider ->
+        AIProviderRowSaveClicked provider ->
             let
-                ap : AIModelProvidersState
+                ap : AIProvidersState
                 ap =
-                    model.aiModelProviders
+                    model.aiProviders
 
-                edit : AIModelProviderRowEdit
+                edit : AIProviderRowEdit
                 edit =
-                    aiModelProviderRowEditFor provider ap
+                    aiProviderRowEditFor provider ap
 
                 -- A blank `pendingApiKey` leaves `provider` unset on the request entirely, which
                 -- the backend reads as "keep the stored credentials" (see
-                -- `update_ai_model_provider.rs`'s `if let Some(provider) = &request.provider`
-                -- gate) -- the same convention `AIModelProviderRowEdit`'s own doc explains. A
+                -- `update_ai_provider.rs`'s `if let Some(provider) = &request.provider`
+                -- gate) -- the same convention `AIProviderRowEdit`'s own doc explains. A
                 -- non-blank key rotates *this* provider's own existing credentials variant (see
                 -- `provider.provider`'s own pattern match below) -- never forces it back to Gemini,
                 -- so rotating an OpenAI provider's key doesn't silently reconfigure it as one.
-                updated : AIModelProvider
+                updated : AIProvider
                 updated =
                     { provider
                         | name = edit.pendingName
@@ -2793,58 +2793,58 @@ updateInner shared msg model =
 
                             else
                                 case provider.provider of
-                                    Just (AIModelProviderProvider.OpenaiCredentials _) ->
-                                        Just (AIModelProviderProvider.OpenaiCredentials { defaultOpenAICredentials | openaiApiKey = Just edit.pendingApiKey })
+                                    Just (AIProviderProvider.OpenaiCredentials _) ->
+                                        Just (AIProviderProvider.OpenaiCredentials { defaultOpenAICredentials | openaiApiKey = Just edit.pendingApiKey })
 
-                                    Just (AIModelProviderProvider.DigitaloceanCredentials _) ->
-                                        Just (AIModelProviderProvider.DigitaloceanCredentials { defaultDigitalOceanCredentials | digitaloceanApiKey = Just edit.pendingApiKey })
+                                    Just (AIProviderProvider.DigitaloceanCredentials _) ->
+                                        Just (AIProviderProvider.DigitaloceanCredentials { defaultDigitalOceanCredentials | digitaloceanApiKey = Just edit.pendingApiKey })
 
                                     _ ->
-                                        Just (AIModelProviderProvider.GeminiCredentials { defaultGeminiCredentials | geminiApiKey = Just edit.pendingApiKey })
+                                        Just (AIProviderProvider.GeminiCredentials { defaultGeminiCredentials | geminiApiKey = Just edit.pendingApiKey })
                     }
             in
-            ( { model | aiModelProviders = { ap | rowEdits = Dict.insert provider.id { edit | status = Submitting } ap.rowEdits } }
-            , performForOwner shared model (\accountServer -> AIModelProviders.updateAIModelProvider shared.accounts accountServer updated)
-                |> Task.attempt (GotAIModelProviderRowSaveResult provider.id)
+            ( { model | aiProviders = { ap | rowEdits = Dict.insert provider.id { edit | status = Submitting } ap.rowEdits } }
+            , performForOwner shared model (\accountServer -> AIProviders.updateAIProvider shared.accounts accountServer updated)
+                |> Task.attempt (GotAIProviderRowSaveResult provider.id)
                 |> Effect.fromCmd
             )
 
-        AIModelProviderRowCancelClicked provider ->
+        AIProviderRowCancelClicked provider ->
             let
-                ap : AIModelProvidersState
+                ap : AIProvidersState
                 ap =
-                    model.aiModelProviders
+                    model.aiProviders
             in
-            ( { model | aiModelProviders = { ap | rowEdits = Dict.remove provider.id ap.rowEdits } }, Effect.none )
+            ( { model | aiProviders = { ap | rowEdits = Dict.remove provider.id ap.rowEdits } }, Effect.none )
 
-        GotAIModelProviderRowSaveResult id (Ok ( maybeAccountsPanelMsg, _ )) ->
+        GotAIProviderRowSaveResult id (Ok ( maybeAccountsPanelMsg, _ )) ->
             let
-                ap : AIModelProvidersState
+                ap : AIProvidersState
                 ap =
-                    model.aiModelProviders
+                    model.aiProviders
 
                 savedModel : Model
                 savedModel =
-                    { model | aiModelProviders = { ap | rowEdits = Dict.remove id ap.rowEdits } }
+                    { model | aiProviders = { ap | rowEdits = Dict.remove id ap.rowEdits } }
 
                 ( refetchedModel, refetchEffect ) =
                     refetch shared savedModel
             in
             ( refetchedModel, Effect.batch [ accountsPanelEffect maybeAccountsPanelMsg, refetchEffect ] )
 
-        GotAIModelProviderRowSaveResult id (Err err) ->
+        GotAIProviderRowSaveResult id (Err err) ->
             let
-                ap : AIModelProvidersState
+                ap : AIProvidersState
                 ap =
-                    model.aiModelProviders
+                    model.aiProviders
             in
-            ( { model | aiModelProviders = { ap | rowEdits = Dict.update id (Maybe.map (\edit -> { edit | status = SubmitFailed (AccountsPanel.grpcErrorToString err) })) ap.rowEdits } }
+            ( { model | aiProviders = { ap | rowEdits = Dict.update id (Maybe.map (\edit -> { edit | status = SubmitFailed (AccountsPanel.grpcErrorToString err) })) ap.rowEdits } }
             , Effect.none
             )
 
-        AIModelProviderAddProviderTypeChanged typeString ->
+        AIProviderAddProviderTypeChanged typeString ->
             let
-                providerType : AddAIModelProviderType
+                providerType : AddAIProviderType
                 providerType =
                     if typeString == "openai" then
                         AddOpenAIProvider
@@ -2855,158 +2855,158 @@ updateInner shared msg model =
                     else
                         AddGeminiProvider
             in
-            ( { model | aiModelProviders = mapAIModelProviderAddForm (\f -> { f | providerType = providerType }) model.aiModelProviders }, Effect.none )
+            ( { model | aiProviders = mapAIProviderAddForm (\f -> { f | providerType = providerType }) model.aiProviders }, Effect.none )
 
-        AIModelProviderAddNameChanged name ->
-            ( { model | aiModelProviders = mapAIModelProviderAddForm (\f -> { f | name = name }) model.aiModelProviders }, Effect.none )
+        AIProviderAddNameChanged name ->
+            ( { model | aiProviders = mapAIProviderAddForm (\f -> { f | name = name }) model.aiProviders }, Effect.none )
 
-        AIModelProviderAddApiKeyChanged apiKey ->
-            ( { model | aiModelProviders = mapAIModelProviderAddForm (\f -> { f | apiKey = apiKey }) model.aiModelProviders }, Effect.none )
+        AIProviderAddApiKeyChanged apiKey ->
+            ( { model | aiProviders = mapAIProviderAddForm (\f -> { f | apiKey = apiKey }) model.aiProviders }, Effect.none )
 
-        AIModelProviderAddClicked ->
+        AIProviderAddClicked ->
             let
-                ap : AIModelProvidersState
+                ap : AIProvidersState
                 ap =
-                    model.aiModelProviders
+                    model.aiProviders
 
-                newProvider : AIModelProvider
+                newProvider : AIProvider
                 newProvider =
-                    { defaultAIModelProvider
+                    { defaultAIProvider
                         | name = ap.addForm.name
                         , provider =
                             case ap.addForm.providerType of
                                 AddGeminiProvider ->
-                                    Just (AIModelProviderProvider.GeminiCredentials { defaultGeminiCredentials | geminiApiKey = Just ap.addForm.apiKey })
+                                    Just (AIProviderProvider.GeminiCredentials { defaultGeminiCredentials | geminiApiKey = Just ap.addForm.apiKey })
 
                                 AddOpenAIProvider ->
-                                    Just (AIModelProviderProvider.OpenaiCredentials { defaultOpenAICredentials | openaiApiKey = Just ap.addForm.apiKey })
+                                    Just (AIProviderProvider.OpenaiCredentials { defaultOpenAICredentials | openaiApiKey = Just ap.addForm.apiKey })
 
                                 AddDigitalOceanProvider ->
-                                    Just (AIModelProviderProvider.DigitaloceanCredentials { defaultDigitalOceanCredentials | digitaloceanApiKey = Just ap.addForm.apiKey })
+                                    Just (AIProviderProvider.DigitaloceanCredentials { defaultDigitalOceanCredentials | digitaloceanApiKey = Just ap.addForm.apiKey })
                     }
             in
-            ( { model | aiModelProviders = mapAIModelProviderAddForm (\f -> { f | status = Submitting }) ap }
-            , performForOwner shared model (\accountServer -> AIModelProviders.createAIModelProvider shared.accounts accountServer newProvider)
-                |> Task.attempt GotAIModelProviderAddResult
+            ( { model | aiProviders = mapAIProviderAddForm (\f -> { f | status = Submitting }) ap }
+            , performForOwner shared model (\accountServer -> AIProviders.createAIProvider shared.accounts accountServer newProvider)
+                |> Task.attempt GotAIProviderAddResult
                 |> Effect.fromCmd
             )
 
-        GotAIModelProviderAddResult (Ok ( maybeAccountsPanelMsg, _ )) ->
+        GotAIProviderAddResult (Ok ( maybeAccountsPanelMsg, _ )) ->
             let
                 addedModel : Model
                 addedModel =
-                    { model | aiModelProviders = mapAIModelProviderAddForm (always defaultAIModelProviderAddForm) model.aiModelProviders }
+                    { model | aiProviders = mapAIProviderAddForm (always defaultAIProviderAddForm) model.aiProviders }
 
                 ( refetchedModel, refetchEffect ) =
                     refetch shared addedModel
             in
             ( refetchedModel, Effect.batch [ accountsPanelEffect maybeAccountsPanelMsg, refetchEffect ] )
 
-        GotAIModelProviderAddResult (Err err) ->
-            ( { model | aiModelProviders = mapAIModelProviderAddForm (\f -> { f | status = SubmitFailed (AccountsPanel.grpcErrorToString err) }) model.aiModelProviders }, Effect.none )
+        GotAIProviderAddResult (Err err) ->
+            ( { model | aiProviders = mapAIProviderAddForm (\f -> { f | status = SubmitFailed (AccountsPanel.grpcErrorToString err) }) model.aiProviders }, Effect.none )
 
         -- Deletes immediately, same as `SyncDestinationDeleteClicked` -- see
-        -- `AIModelProvidersState`'s own doc for why this skips the shared confirmation dialog.
-        AIModelProviderDeleteClicked provider ->
+        -- `AIProvidersState`'s own doc for why this skips the shared confirmation dialog.
+        AIProviderDeleteClicked provider ->
             let
-                ap : AIModelProvidersState
+                ap : AIProvidersState
                 ap =
-                    model.aiModelProviders
+                    model.aiProviders
             in
-            ( { model | aiModelProviders = { ap | deleteStatuses = Dict.insert provider.id Submitting ap.deleteStatuses } }
-            , performForOwner shared model (\accountServer -> AIModelProviders.deleteAIModelProvider shared.accounts accountServer provider)
-                |> Task.attempt (GotAIModelProviderDeleteResult provider.id)
+            ( { model | aiProviders = { ap | deleteStatuses = Dict.insert provider.id Submitting ap.deleteStatuses } }
+            , performForOwner shared model (\accountServer -> AIProviders.deleteAIProvider shared.accounts accountServer provider)
+                |> Task.attempt (GotAIProviderDeleteResult provider.id)
                 |> Effect.fromCmd
             )
 
-        GotAIModelProviderDeleteResult id (Ok ( maybeAccountsPanelMsg, () )) ->
+        GotAIProviderDeleteResult id (Ok ( maybeAccountsPanelMsg, () )) ->
             let
-                ap : AIModelProvidersState
+                ap : AIProvidersState
                 ap =
-                    model.aiModelProviders
+                    model.aiProviders
 
                 clearedModel : Model
                 clearedModel =
-                    { model | aiModelProviders = { ap | deleteStatuses = Dict.remove id ap.deleteStatuses } }
+                    { model | aiProviders = { ap | deleteStatuses = Dict.remove id ap.deleteStatuses } }
 
                 ( refetchedModel, refetchEffect ) =
                     refetch shared clearedModel
             in
             ( refetchedModel, Effect.batch [ accountsPanelEffect maybeAccountsPanelMsg, refetchEffect ] )
 
-        GotAIModelProviderDeleteResult id (Err err) ->
+        GotAIProviderDeleteResult id (Err err) ->
             let
-                ap : AIModelProvidersState
+                ap : AIProvidersState
                 ap =
-                    model.aiModelProviders
+                    model.aiProviders
             in
-            ( { model | aiModelProviders = { ap | deleteStatuses = Dict.insert id (SubmitFailed (AccountsPanel.grpcErrorToString err)) ap.deleteStatuses } }
+            ( { model | aiProviders = { ap | deleteStatuses = Dict.insert id (SubmitFailed (AccountsPanel.grpcErrorToString err)) ap.deleteStatuses } }
             , Effect.none
             )
 
-        AIModelProvidersExpandedToggled ->
-            ( { model | aiModelProvidersExpanded = not model.aiModelProvidersExpanded }, Effect.none )
+        AIProvidersExpandedToggled ->
+            ( { model | aiProvidersExpanded = not model.aiProvidersExpanded }, Effect.none )
 
-        -- Manual refresh -- overlays just `availableAiModels` onto the resolved `User` (see
+        -- Manual refresh -- overlays just `aiModels` onto the resolved `User` (see
         -- `withResolvedUser`, and `SyncSourcesRefreshClicked`'s identical shape) rather than a
         -- whole-profile `refetch`. `response.providers` is a convenience duplicate of data already
-        -- in `response.availableAiModels` (see `GetAIModelProvidersResponse`'s own proto doc) --
-        -- `ownedAIModelProviders` re-derives it from `user.availableAiModels` the same way it
+        -- in `response.aiModels` (see `GetAIProvidersResponse`'s own proto doc) --
+        -- `ownedAIProviders` re-derives it from `user.aiModels` the same way it
         -- always does, so there's nothing else to overlay here.
-        AIModelProvidersRefreshClicked ->
+        AIProvidersRefreshClicked ->
             case ( model.resolver.status, serverAndAccount shared model ) of
                 ( Resolver.Loaded user, Just ( server, account ) ) ->
                     let
-                        ap : AIModelProvidersState
+                        ap : AIProvidersState
                         ap =
-                            model.aiModelProviders
+                            model.aiProviders
                     in
-                    ( { model | aiModelProviders = { ap | refreshStatus = Submitting } }
-                    , AIModelProviders.getAIModelProviders shared.accounts ( Just account.userId, server.frontendHost ) user.id
-                        |> Task.attempt GotAIModelProvidersRefreshResult
+                    ( { model | aiProviders = { ap | refreshStatus = Submitting } }
+                    , AIProviders.getAIProviders shared.accounts ( Just account.userId, server.frontendHost ) user.id
+                        |> Task.attempt GotAIProvidersRefreshResult
                         |> Effect.fromCmd
                     )
 
                 _ ->
                     ( model, Effect.none )
 
-        GotAIModelProvidersRefreshResult (Ok ( maybeAccountsPanelMsg, response )) ->
+        GotAIProvidersRefreshResult (Ok ( maybeAccountsPanelMsg, response )) ->
             let
-                ap : AIModelProvidersState
+                ap : AIProvidersState
                 ap =
-                    model.aiModelProviders
+                    model.aiProviders
 
                 refreshedModel : Model
                 refreshedModel =
                     case model.resolver.status of
                         Resolver.Loaded user ->
-                            { model | resolver = withResolvedUser { user | availableAiModels = response.availableAiModels } model.resolver }
+                            { model | resolver = withResolvedUser { user | aiModels = response.aiModels } model.resolver }
 
                         _ ->
                             model
             in
-            ( { refreshedModel | aiModelProviders = { ap | refreshStatus = Idle } }
+            ( { refreshedModel | aiProviders = { ap | refreshStatus = Idle } }
             , accountsPanelEffect maybeAccountsPanelMsg
             )
 
-        GotAIModelProvidersRefreshResult (Err err) ->
+        GotAIProvidersRefreshResult (Err err) ->
             let
-                ap : AIModelProvidersState
+                ap : AIProvidersState
                 ap =
-                    model.aiModelProviders
+                    model.aiProviders
             in
-            ( { model | aiModelProviders = { ap | refreshStatus = SubmitFailed (AccountsPanel.grpcErrorToString err) } }
+            ( { model | aiProviders = { ap | refreshStatus = SubmitFailed (AccountsPanel.grpcErrorToString err) } }
             , Effect.none
             )
 
-        AIModelProviderGrantsSectionToggled ->
-            ( { model | aiModelProviderGrantsExpanded = not model.aiModelProviderGrantsExpanded }, Effect.none )
+        AIProviderGrantsSectionToggled ->
+            ( { model | aiProviderGrantsExpanded = not model.aiProviderGrantsExpanded }, Effect.none )
 
-        AIModelProviderGrantsToggled providerId ->
+        AIProviderGrantsToggled providerId ->
             let
-                ap : AIModelProvidersState
+                ap : AIProvidersState
                 ap =
-                    model.aiModelProviders
+                    model.aiProviders
 
                 expanded : List String
                 expanded =
@@ -3016,59 +3016,59 @@ updateInner shared msg model =
                     else
                         providerId :: ap.expandedGrants
             in
-            ( { model | aiModelProviders = { ap | expandedGrants = expanded } }, Effect.none )
+            ( { model | aiProviders = { ap | expandedGrants = expanded } }, Effect.none )
 
-        AIModelProviderGrantUserIdChanged providerId userId ->
+        AIProviderGrantUserIdChanged providerId userId ->
             let
-                ap : AIModelProvidersState
+                ap : AIProvidersState
                 ap =
-                    model.aiModelProviders
+                    model.aiProviders
 
-                form : AIModelProviderGrantForm
+                form : AIProviderGrantForm
                 form =
-                    aiModelProviderGrantFormFor providerId ap
+                    aiProviderGrantFormFor providerId ap
             in
-            ( { model | aiModelProviders = { ap | grantForms = Dict.insert providerId { form | userId = userId } ap.grantForms } }, Effect.none )
+            ( { model | aiProviders = { ap | grantForms = Dict.insert providerId { form | userId = userId } ap.grantForms } }, Effect.none )
 
-        AIModelProviderGrantTokensChanged providerId tokens ->
+        AIProviderGrantTokensChanged providerId tokens ->
             let
-                ap : AIModelProvidersState
+                ap : AIProvidersState
                 ap =
-                    model.aiModelProviders
+                    model.aiProviders
 
-                form : AIModelProviderGrantForm
+                form : AIProviderGrantForm
                 form =
-                    aiModelProviderGrantFormFor providerId ap
+                    aiProviderGrantFormFor providerId ap
             in
-            ( { model | aiModelProviders = { ap | grantForms = Dict.insert providerId { form | tokens = tokens } ap.grantForms } }, Effect.none )
+            ( { model | aiProviders = { ap | grantForms = Dict.insert providerId { form | tokens = tokens } ap.grantForms } }, Effect.none )
 
-        AIModelProviderGrantModelNamesChanged providerId modelNames ->
+        AIProviderGrantModelNamesChanged providerId modelNames ->
             let
-                ap : AIModelProvidersState
+                ap : AIProvidersState
                 ap =
-                    model.aiModelProviders
+                    model.aiProviders
 
-                form : AIModelProviderGrantForm
+                form : AIProviderGrantForm
                 form =
-                    aiModelProviderGrantFormFor providerId ap
+                    aiProviderGrantFormFor providerId ap
             in
-            ( { model | aiModelProviders = { ap | grantForms = Dict.insert providerId { form | modelNames = modelNames } ap.grantForms } }, Effect.none )
+            ( { model | aiProviders = { ap | grantForms = Dict.insert providerId { form | modelNames = modelNames } ap.grantForms } }, Effect.none )
 
         -- Pre-fills the provider's grant form with `grant`'s own current values (rather than a
-        -- blank "add a new grant" form) -- submitting it (`AIModelProviderGrantClicked`) then just
-        -- re-grants the same user, which upserts in place (see `GrantAIModelProviderRequest`'s own
-        -- doc: same `(ai_model_provider_id, user_id)` pair replaces, not adds to, the existing grant).
-        AIModelProviderGrantEditClicked provider grant ->
+        -- blank "add a new grant" form) -- submitting it (`AIProviderGrantClicked`) then just
+        -- re-grants the same user, which upserts in place (see `GrantAIProviderRequest`'s own
+        -- doc: same `(ai_provider_id, user_id)` pair replaces, not adds to, the existing grant).
+        AIProviderGrantEditClicked provider grant ->
             let
-                ap : AIModelProvidersState
+                ap : AIProvidersState
                 ap =
-                    model.aiModelProviders
+                    model.aiProviders
 
                 granteeId : String
                 granteeId =
                     grant.aiModelGrantee |> Maybe.map .userId |> Maybe.withDefault ""
 
-                form : AIModelProviderGrantForm
+                form : AIProviderGrantForm
                 form =
                     { userId = granteeId
                     , tokens = String.fromInt (Conversions.int64ToInt grant.tokensRemaining)
@@ -3076,66 +3076,66 @@ updateInner shared msg model =
                     , status = Idle
                     }
             in
-            ( { model | aiModelProviders = { ap | grantForms = Dict.insert provider.id form ap.grantForms } }, Effect.none )
+            ( { model | aiProviders = { ap | grantForms = Dict.insert provider.id form ap.grantForms } }, Effect.none )
 
-        AIModelProviderGrantClicked provider ->
+        AIProviderGrantClicked provider ->
             let
-                ap : AIModelProvidersState
+                ap : AIProvidersState
                 ap =
-                    model.aiModelProviders
+                    model.aiProviders
 
-                form : AIModelProviderGrantForm
+                form : AIProviderGrantForm
                 form =
-                    aiModelProviderGrantFormFor provider.id ap
+                    aiProviderGrantFormFor provider.id ap
 
-                request : Proto.Rellm.GrantAIModelProviderRequest
+                request : Proto.Rellm.GrantAIProviderRequest
                 request =
                     { userId = form.userId
-                    , aiModelProviderId = provider.id
+                    , aiProviderId = provider.id
                     , tokens = Conversions.int64FromInt (String.toInt form.tokens |> Maybe.withDefault 0)
                     , modelNames = parseModelNames form.modelNames
                     }
             in
-            ( { model | aiModelProviders = { ap | grantForms = Dict.insert provider.id { form | status = Submitting } ap.grantForms } }
-            , performForOwner shared model (\accountServer -> AIModelProviders.grantAIModelProvider shared.accounts accountServer request)
-                |> Task.attempt (GotAIModelProviderGrantResult provider.id)
+            ( { model | aiProviders = { ap | grantForms = Dict.insert provider.id { form | status = Submitting } ap.grantForms } }
+            , performForOwner shared model (\accountServer -> AIProviders.grantAIProvider shared.accounts accountServer request)
+                |> Task.attempt (GotAIProviderGrantResult provider.id)
                 |> Effect.fromCmd
             )
 
-        GotAIModelProviderGrantResult providerId (Ok ( maybeAccountsPanelMsg, _ )) ->
+        GotAIProviderGrantResult providerId (Ok ( maybeAccountsPanelMsg, _ )) ->
             let
-                ap : AIModelProvidersState
+                ap : AIProvidersState
                 ap =
-                    model.aiModelProviders
+                    model.aiProviders
 
                 grantedModel : Model
                 grantedModel =
-                    { model | aiModelProviders = { ap | grantForms = Dict.remove providerId ap.grantForms } }
+                    { model | aiProviders = { ap | grantForms = Dict.remove providerId ap.grantForms } }
 
                 ( refetchedModel, refetchEffect ) =
                     refetch shared grantedModel
             in
             ( refetchedModel, Effect.batch [ accountsPanelEffect maybeAccountsPanelMsg, refetchEffect ] )
 
-        GotAIModelProviderGrantResult providerId (Err err) ->
+        GotAIProviderGrantResult providerId (Err err) ->
             let
-                ap : AIModelProvidersState
+                ap : AIProvidersState
                 ap =
-                    model.aiModelProviders
+                    model.aiProviders
 
-                form : AIModelProviderGrantForm
+                form : AIProviderGrantForm
                 form =
-                    aiModelProviderGrantFormFor providerId ap
+                    aiProviderGrantFormFor providerId ap
             in
-            ( { model | aiModelProviders = { ap | grantForms = Dict.insert providerId { form | status = SubmitFailed (AccountsPanel.grpcErrorToString err) } ap.grantForms } }
+            ( { model | aiProviders = { ap | grantForms = Dict.insert providerId { form | status = SubmitFailed (AccountsPanel.grpcErrorToString err) } ap.grantForms } }
             , Effect.none
             )
 
-        AIModelProviderRevokeClicked provider grant ->
+        AIProviderRevokeClicked provider grant ->
             let
-                ap : AIModelProvidersState
+                ap : AIProvidersState
                 ap =
-                    model.aiModelProviders
+                    model.aiProviders
 
                 granteeId : String
                 granteeId =
@@ -3143,40 +3143,40 @@ updateInner shared msg model =
 
                 key : String
                 key =
-                    aiModelProviderGrantKey provider.id granteeId
+                    aiProviderGrantKey provider.id granteeId
 
-                request : Proto.Rellm.RevokeAIModelProviderRequest
+                request : Proto.Rellm.RevokeAIProviderRequest
                 request =
-                    { userId = granteeId, aiModelProviderId = provider.id }
+                    { userId = granteeId, aiProviderId = provider.id }
             in
-            ( { model | aiModelProviders = { ap | revokeStatuses = Dict.insert key Submitting ap.revokeStatuses } }
-            , performForOwner shared model (\accountServer -> AIModelProviders.revokeAIModelProvider shared.accounts accountServer request)
-                |> Task.attempt (GotAIModelProviderRevokeResult key)
+            ( { model | aiProviders = { ap | revokeStatuses = Dict.insert key Submitting ap.revokeStatuses } }
+            , performForOwner shared model (\accountServer -> AIProviders.revokeAIProvider shared.accounts accountServer request)
+                |> Task.attempt (GotAIProviderRevokeResult key)
                 |> Effect.fromCmd
             )
 
-        GotAIModelProviderRevokeResult key (Ok ( maybeAccountsPanelMsg, () )) ->
+        GotAIProviderRevokeResult key (Ok ( maybeAccountsPanelMsg, () )) ->
             let
-                ap : AIModelProvidersState
+                ap : AIProvidersState
                 ap =
-                    model.aiModelProviders
+                    model.aiProviders
 
                 revokedModel : Model
                 revokedModel =
-                    { model | aiModelProviders = { ap | revokeStatuses = Dict.remove key ap.revokeStatuses } }
+                    { model | aiProviders = { ap | revokeStatuses = Dict.remove key ap.revokeStatuses } }
 
                 ( refetchedModel, refetchEffect ) =
                     refetch shared revokedModel
             in
             ( refetchedModel, Effect.batch [ accountsPanelEffect maybeAccountsPanelMsg, refetchEffect ] )
 
-        GotAIModelProviderRevokeResult key (Err err) ->
+        GotAIProviderRevokeResult key (Err err) ->
             let
-                ap : AIModelProvidersState
+                ap : AIProvidersState
                 ap =
-                    model.aiModelProviders
+                    model.aiProviders
             in
-            ( { model | aiModelProviders = { ap | revokeStatuses = Dict.insert key (SubmitFailed (AccountsPanel.grpcErrorToString err)) ap.revokeStatuses } }
+            ( { model | aiProviders = { ap | revokeStatuses = Dict.insert key (SubmitFailed (AccountsPanel.grpcErrorToString err)) ap.revokeStatuses } }
             , Effect.none
             )
 
@@ -3459,7 +3459,7 @@ refetch shared model =
 already-loaded user -- called after a successful Sync Source
 sync/update/delete (see `GotSyncSourceRowSaveResult` and `SharedMsg`'s
 `Shared.GotSyncSourceDeleteResult` case), since a source's sync can
-create, update, or remove Events/EventInstances that the already-`init`ed
+create, update, or remove Events/Occasions that the already-`init`ed
 `EventsPage.Model` has no way to know about on its own. Mirrors the
 resolver-loaded `init` branch's own `EventsPage.init` call. A no-op if the
 profile's own user hasn't loaded yet.
@@ -4013,8 +4013,8 @@ profileDetail shared model server maybeAccount user =
                 text ""
         , syncSourcesSection shared model canEdit maybeAccount user
         , syncDestinationsSection shared model maybeAccount user
-        , aiModelProvidersSection model canEdit (isOwnProfile maybeAccount user) user
-        , aiModelProviderGrantedSection model canEdit user
+        , aiProvidersSection model canEdit (isOwnProfile maybeAccount user) user
+        , aiProviderGrantedSection model canEdit user
         , case model.posts of
             Just postsModel ->
                 div [ class "posts-embedded-heading-row" ]
@@ -4645,7 +4645,7 @@ profileCounts postsHref repliesHref followersHref followingHref friendsHref even
             -- , ( "Groups", user.groupCount, Nothing )
             , ( "Posts", user.postCount, Just postsHref )
             , ( "Replies", user.responseCount, Just repliesHref )
-            , ( "Events", user.eventInstanceCount, Just eventsHref )
+            , ( "Events", user.occasionCount, Just eventsHref )
             ]
                 |> List.filterMap (\( label, maybeCount, maybeHref ) -> maybeCount |> Maybe.map (\c -> ( label, c, maybeHref )))
     in
@@ -5025,25 +5025,25 @@ mapEventSyncAddForm fn es =
     { es | addForm = fn es.addForm }
 
 
-aiModelProviderRowEditFor : AIModelProvider -> AIModelProvidersState -> AIModelProviderRowEdit
-aiModelProviderRowEditFor provider ap =
+aiProviderRowEditFor : AIProvider -> AIProvidersState -> AIProviderRowEdit
+aiProviderRowEditFor provider ap =
     Dict.get provider.id ap.rowEdits
         |> Maybe.withDefault { pendingName = provider.name, pendingApiKey = "", status = Idle }
 
 
-mapAIModelProviderAddForm : (AIModelProviderAddForm -> AIModelProviderAddForm) -> AIModelProvidersState -> AIModelProvidersState
-mapAIModelProviderAddForm fn ap =
+mapAIProviderAddForm : (AIProviderAddForm -> AIProviderAddForm) -> AIProvidersState -> AIProvidersState
+mapAIProviderAddForm fn ap =
     { ap | addForm = fn ap.addForm }
 
 
-aiModelProviderGrantFormFor : String -> AIModelProvidersState -> AIModelProviderGrantForm
-aiModelProviderGrantFormFor providerId ap =
+aiProviderGrantFormFor : String -> AIProvidersState -> AIProviderGrantForm
+aiProviderGrantFormFor providerId ap =
     Dict.get providerId ap.grantForms
-        |> Maybe.withDefault defaultAIModelProviderGrantForm
+        |> Maybe.withDefault defaultAIProviderGrantForm
 
 
-aiModelProviderGrantKey : String -> String -> String
-aiModelProviderGrantKey providerId granteeId =
+aiProviderGrantKey : String -> String -> String
+aiProviderGrantKey providerId granteeId =
     providerId ++ ":" ++ granteeId
 
 
@@ -5100,7 +5100,7 @@ syncSourcesSection shared model canManage maybeAccount user =
 
 
 {-| Shared by every section with a manual "Refresh" button (`SyncSourcesRefreshClicked`/
-`AIModelProvidersRefreshClicked`) -- these overlay just their own field onto the resolved `User`
+`AIProvidersRefreshClicked`) -- these overlay just their own field onto the resolved `User`
 (see `withResolvedUser`) rather than the whole-profile `refetch` every mutation already triggers,
 for a cheaper "did something change on another device" check.
 -}
@@ -5259,24 +5259,24 @@ syncSourceAddRowView targetHost availableKinds addForm =
 {-| `canManage` is self-or-Admin (an Admin may rename/rekey/delete anyone's provider) -- mirrors
 `syncSourcesSection`'s own split. `canAdd` is self-only (create -- and, by extension,
 grant/revoke, which are owner-only server-side regardless of who's viewing -- is always for the
-current user, matching `create_ai_model_provider.rs`'s "always for `current_user`" behavior), and
+current user, matching `create_ai_provider.rs`'s "always for `current_user`" behavior), and
 also gates the Delete button, since only the owner (or an Admin, already covered by `canManage`)
 should be deleting their own providers.
 -}
-aiModelProvidersSection : Model -> Bool -> Bool -> User -> Html Msg
-aiModelProvidersSection model canManage canAdd user =
+aiProvidersSection : Model -> Bool -> Bool -> User -> Html Msg
+aiProvidersSection model canManage canAdd user =
     if not canManage then
         text ""
 
     else
         expandableProfileSection "ai-model-providers-section"
             "AI Providers"
-            model.aiModelProvidersExpanded
-            AIModelProvidersExpandedToggled
-            (refreshRowView AIModelProvidersRefreshClicked model.aiModelProviders.refreshStatus
-                :: div [ class "ai-model-providers-list" ] (aiModelProvidersContentView canAdd model.aiModelProviders (ownedAIModelProviders user))
+            model.aiProvidersExpanded
+            AIProvidersExpandedToggled
+            (refreshRowView AIProvidersRefreshClicked model.aiProviders.refreshStatus
+                :: div [ class "ai-model-providers-list" ] (aiProvidersContentView canAdd model.aiProviders (ownedAIProviders user))
                 :: (if canAdd then
-                        [ aiModelProviderAddRowView model.aiModelProviders.addForm ]
+                        [ aiProviderAddRowView model.aiProviders.addForm ]
 
                     else
                         []
@@ -5284,49 +5284,49 @@ aiModelProvidersSection model canManage canAdd user =
             )
 
 
-aiModelProvidersContentView : Bool -> AIModelProvidersState -> List AIModelProvider -> List (Html Msg)
-aiModelProvidersContentView canAdd ap providers =
+aiProvidersContentView : Bool -> AIProvidersState -> List AIProvider -> List (Html Msg)
+aiProvidersContentView canAdd ap providers =
     if not (List.isEmpty providers) then
-        List.map (aiModelProviderRowView canAdd ap) providers
+        List.map (aiProviderRowView canAdd ap) providers
 
     else
         [ div [ class "ai-model-providers-message" ] [ text "No AI model providers yet." ] ]
 
 
 {-| `gemini_credentials`/`openai_credentials`/`digitalocean_credentials` are all creatable (see
-`AIModelProvider`'s own proto doc); this covers all four variants for whenever an
+`AIProvider`'s own proto doc); this covers all four variants for whenever an
 `anthropic_credentials` connect flow is added.
 -}
-aiModelProviderProviderLabel : AIModelProvider -> String
-aiModelProviderProviderLabel provider =
+aiProviderProviderLabel : AIProvider -> String
+aiProviderProviderLabel provider =
     case provider.provider of
-        Just (AIModelProviderProvider.GeminiCredentials _) ->
+        Just (AIProviderProvider.GeminiCredentials _) ->
             "Gemini"
 
-        Just (AIModelProviderProvider.OpenaiCredentials _) ->
+        Just (AIProviderProvider.OpenaiCredentials _) ->
             "OpenAI"
 
-        Just (AIModelProviderProvider.AnthropicCredentials _) ->
+        Just (AIProviderProvider.AnthropicCredentials _) ->
             "Anthropic"
 
-        Just (AIModelProviderProvider.DigitaloceanCredentials _) ->
+        Just (AIProviderProvider.DigitaloceanCredentials _) ->
             "DigitalOcean"
 
         Nothing ->
-            "AI Model Provider"
+            "AI Provider"
 
 
 {-| A row is either its plain read-only display (name, provider type, "API Key: Never shown" --
 the server never sends the real key back, same convention as
 `ServerInformationPage.FederationTab`'s `facebookAppSecretRow`) or, once "Edit" is clicked (which
-just fires `AIModelProviderRowNameChanged` with the provider's own current name, lazily seeding
-`rowEdits` via `aiModelProviderRowEditFor` -- see that Msg's handling), an editable Name field plus
-a blank password-type API Key field (see `AIModelProviderRowEdit`'s own doc on why blank means
+just fires `AIProviderRowNameChanged` with the provider's own current name, lazily seeding
+`rowEdits` via `aiProviderRowEditFor` -- see that Msg's handling), an editable Name field plus
+a blank password-type API Key field (see `AIProviderRowEdit`'s own doc on why blank means
 "leave the stored key alone"). Clicking a row's grants-count button toggles its
-`AIModelProviderGrantsView` open/closed (`ap.expandedGrants`).
+`AIProviderGrantsView` open/closed (`ap.expandedGrants`).
 -}
-aiModelProviderRowView : Bool -> AIModelProvidersState -> AIModelProvider -> Html Msg
-aiModelProviderRowView canAdd ap provider =
+aiProviderRowView : Bool -> AIProvidersState -> AIProvider -> Html Msg
+aiProviderRowView canAdd ap provider =
     let
         editing : Bool
         editing =
@@ -5340,9 +5340,9 @@ aiModelProviderRowView canAdd ap provider =
         (div [ classes [ "ai-model-provider-row", "list-item-bordered-color-primary" ] ]
             (if editing then
                 let
-                    edit : AIModelProviderRowEdit
+                    edit : AIProviderRowEdit
                     edit =
-                        aiModelProviderRowEditFor provider ap
+                        aiProviderRowEditFor provider ap
 
                     submitting : Bool
                     submitting =
@@ -5354,7 +5354,7 @@ aiModelProviderRowView canAdd ap provider =
                     , value edit.pendingName
                     , placeholder "Name"
                     , disabled submitting
-                    , onInput (AIModelProviderRowNameChanged provider)
+                    , onInput (AIProviderRowNameChanged provider)
                     ]
                     []
                 , input
@@ -5363,13 +5363,13 @@ aiModelProviderRowView canAdd ap provider =
                     , value edit.pendingApiKey
                     , placeholder "New API Key (leave blank to keep current)"
                     , disabled submitting
-                    , onInput (AIModelProviderRowApiKeyChanged provider)
+                    , onInput (AIProviderRowApiKeyChanged provider)
                     ]
                     []
                 , div [ class "ai-model-provider-actions" ]
                     [ button
                         [ classes [ "ai-model-provider-save", "background-color-nav" ]
-                        , onClick (AIModelProviderRowSaveClicked provider)
+                        , onClick (AIProviderRowSaveClicked provider)
                         , disabled (submitting || String.isEmpty (String.trim edit.pendingName))
                         ]
                         [ text
@@ -5381,7 +5381,7 @@ aiModelProviderRowView canAdd ap provider =
                             )
                         ]
                     , button
-                        [ class "ai-model-provider-cancel", onClick (AIModelProviderRowCancelClicked provider), disabled submitting ]
+                        [ class "ai-model-provider-cancel", onClick (AIProviderRowCancelClicked provider), disabled submitting ]
                         [ text "Cancel" ]
                     ]
                 , case edit.status of
@@ -5409,19 +5409,19 @@ aiModelProviderRowView canAdd ap provider =
                                )
                 in
                 [ span [ class "ai-model-provider-name" ] [ text provider.name ]
-                , span [ class "ai-model-provider-type" ] [ text (aiModelProviderProviderLabel provider) ]
+                , span [ class "ai-model-provider-type" ] [ text (aiProviderProviderLabel provider) ]
                 , span [ class "ai-model-provider-key-status" ] [ text "API Key: Never shown" ]
                 , div [ class "ai-model-provider-actions" ]
                     [ button
-                        [ class "ai-model-provider-edit", onClick (AIModelProviderRowNameChanged provider provider.name) ]
+                        [ class "ai-model-provider-edit", onClick (AIProviderRowNameChanged provider provider.name) ]
                         [ text "Edit AI Provider" ]
                     , button
-                        [ class "ai-model-provider-grants-toggle", onClick (AIModelProviderGrantsToggled provider.id) ]
+                        [ class "ai-model-provider-grants-toggle", onClick (AIProviderGrantsToggled provider.id) ]
                         [ text grantsLabel ]
                     , if canAdd then
                         button
                             [ class "ai-model-provider-delete"
-                            , onClick (AIModelProviderDeleteClicked provider)
+                            , onClick (AIProviderDeleteClicked provider)
                             , disabled (deleteStatus == Submitting)
                             ]
                             [ text
@@ -5445,7 +5445,7 @@ aiModelProviderRowView canAdd ap provider =
                 ]
             )
             :: (if grantsExpanded then
-                    [ aiModelProviderGrantsView ap provider ]
+                    [ aiProviderGrantsView ap provider ]
 
                 else
                     []
@@ -5453,36 +5453,36 @@ aiModelProviderRowView canAdd ap provider =
         )
 
 
-{-| A provider's own grant list -- one row per `AIModelProviderGrant` (via the shared
-`aiModelProviderGrantRowView`, with Edit/Revoke controls since this is always the owner's own view
+{-| A provider's own grant list -- one row per `AIProviderGrant` (via the shared
+`aiProviderGrantRowView`, with Edit/Revoke controls since this is always the owner's own view
 of their own provider -- see that view's own doc) plus a "grant access" form (grantee user id,
-token budget, and allowed models), submitted via `AIModelProviderGrantClicked`. Clicking an
-existing row's Edit button (`AIModelProviderGrantEditClicked`) pre-fills this same form with that
+token budget, and allowed models), submitted via `AIProviderGrantClicked`. Clicking an
+existing row's Edit button (`AIProviderGrantEditClicked`) pre-fills this same form with that
 grant's current values rather than opening a separate editor -- see that Msg's own doc. Only ever
-shown once a row's grants toggle is clicked (`AIModelProviderGrantsToggled`), and only reachable
-for the provider's owner in the first place (`GetAIModelProviders` never returns another user's
+shown once a row's grants toggle is clicked (`AIProviderGrantsToggled`), and only reachable
+for the provider's owner in the first place (`GetAIProviders` never returns another user's
 providers to a non-Admin caller -- see that RPC's own doc) -- matches
-`GrantAIModelProvider`/`RevokeAIModelProvider` being owner-only server-side.
+`GrantAIProvider`/`RevokeAIProvider` being owner-only server-side.
 -}
-aiModelProviderGrantsView : AIModelProvidersState -> AIModelProvider -> Html Msg
-aiModelProviderGrantsView ap provider =
+aiProviderGrantsView : AIProvidersState -> AIProvider -> Html Msg
+aiProviderGrantsView ap provider =
     let
-        form : AIModelProviderGrantForm
+        form : AIProviderGrantForm
         form =
-            aiModelProviderGrantFormFor provider.id ap
+            aiProviderGrantFormFor provider.id ap
 
-        revokeStatusFor : AIModelProviderGrant -> SubmitStatus
+        revokeStatusFor : AIProviderGrant -> SubmitStatus
         revokeStatusFor grant =
             let
                 granteeId : String
                 granteeId =
                     grant.aiModelGrantee |> Maybe.map .userId |> Maybe.withDefault ""
             in
-            Dict.get (aiModelProviderGrantKey provider.id granteeId) ap.revokeStatuses |> Maybe.withDefault Idle
+            Dict.get (aiProviderGrantKey provider.id granteeId) ap.revokeStatuses |> Maybe.withDefault Idle
     in
     div [ class "ai-model-provider-grants" ]
         (List.map
-            (\grant -> aiModelProviderGrantRowView { showProviderName = False, canManage = True } provider (revokeStatusFor grant) grant)
+            (\grant -> aiProviderGrantRowView { showProviderName = False, canManage = True } provider (revokeStatusFor grant) grant)
             provider.grants
             ++ [ div [ class "ai-model-provider-grant-add-row" ]
                     [ input
@@ -5491,7 +5491,7 @@ aiModelProviderGrantsView ap provider =
                         , value form.userId
                         , placeholder "User ID to grant access to"
                         , disabled (form.status == Submitting)
-                        , onInput (AIModelProviderGrantUserIdChanged provider.id)
+                        , onInput (AIProviderGrantUserIdChanged provider.id)
                         ]
                         []
                     , input
@@ -5500,7 +5500,7 @@ aiModelProviderGrantsView ap provider =
                         , value form.tokens
                         , placeholder "Tokens"
                         , disabled (form.status == Submitting)
-                        , onInput (AIModelProviderGrantTokensChanged provider.id)
+                        , onInput (AIProviderGrantTokensChanged provider.id)
                         ]
                         []
                     , input
@@ -5509,12 +5509,12 @@ aiModelProviderGrantsView ap provider =
                         , value form.modelNames
                         , placeholder "Models (comma-separated, blank = all)"
                         , disabled (form.status == Submitting)
-                        , onInput (AIModelProviderGrantModelNamesChanged provider.id)
+                        , onInput (AIProviderGrantModelNamesChanged provider.id)
                         ]
                         []
                     , button
                         [ classes [ "ai-model-provider-grant-add", "background-color-primary" ]
-                        , onClick (AIModelProviderGrantClicked provider)
+                        , onClick (AIProviderGrantClicked provider)
                         , disabled (form.status == Submitting || String.isEmpty (String.trim form.userId) || String.toInt form.tokens == Nothing)
                         ]
                         [ text
@@ -5536,18 +5536,18 @@ aiModelProviderGrantsView ap provider =
         )
 
 
-{-| Shared by both places an `AIModelProviderGrant` is shown -- nested under its own
-`AIModelProvider` (`aiModelProviderGrantsView`, above: the owner's view of who they've granted
-access to) and standalone in `aiModelProviderGrantedSection` (below: a grantee's own view of the
+{-| Shared by both places an `AIProviderGrant` is shown -- nested under its own
+`AIProvider` (`aiProviderGrantsView`, above: the owner's view of who they've granted
+access to) and standalone in `aiProviderGrantedSection` (below: a grantee's own view of the
 access they've been given, possibly on providers they don't own). Always shows the grantee's name,
-the models it covers (`AIModelProviderGrant.modelNames`, or "All models" if empty), and tokens
+the models it covers (`AIProviderGrant.modelNames`, or "All models" if empty), and tokens
 remaining. `showProviderName` additionally shows which provider this grant is for (needed once it's
 not nested under that provider already); `canManage` shows Edit/Revoke controls (only true for the
-owner's own view -- `GrantAIModelProvider`/`RevokeAIModelProvider` are owner-only server-side
+owner's own view -- `GrantAIProvider`/`RevokeAIProvider` are owner-only server-side
 regardless, so a grantee viewing their own access has nothing to manage here).
 -}
-aiModelProviderGrantRowView : { showProviderName : Bool, canManage : Bool } -> AIModelProvider -> SubmitStatus -> AIModelProviderGrant -> Html Msg
-aiModelProviderGrantRowView config provider revokeStatus grant =
+aiProviderGrantRowView : { showProviderName : Bool, canManage : Bool } -> AIProvider -> SubmitStatus -> AIProviderGrant -> Html Msg
+aiProviderGrantRowView config provider revokeStatus grant =
     let
         granteeName : String
         granteeName =
@@ -5590,10 +5590,10 @@ aiModelProviderGrantRowView config provider revokeStatus grant =
                ]
             ++ (if config.canManage then
                     [ div [ class "ai-model-provider-grant-actions" ]
-                        [ button [ class "ai-model-provider-grant-edit", onClick (AIModelProviderGrantEditClicked provider grant) ] [ text "Edit Grant" ]
+                        [ button [ class "ai-model-provider-grant-edit", onClick (AIProviderGrantEditClicked provider grant) ] [ text "Edit Grant" ]
                         , button
                             [ class "ai-model-provider-grant-revoke"
-                            , onClick (AIModelProviderRevokeClicked provider grant)
+                            , onClick (AIProviderRevokeClicked provider grant)
                             , disabled (revokeStatus == Submitting)
                             ]
                             [ text
@@ -5619,13 +5619,13 @@ aiModelProviderGrantRowView config provider revokeStatus grant =
         )
 
 
-{-| "Gemini"/"OpenAI" -- `addAIModelProviderTypeLabel`'s own counterpart for the add-form's `<select>`
-`value`s (`AIModelProviderAddProviderTypeChanged`'s own string decoding), kept distinct from
-`aiModelProviderProviderLabel` (which reads an already-created `AIModelProvider`'s real `provider`,
+{-| "Gemini"/"OpenAI" -- `addAIProviderTypeLabel`'s own counterpart for the add-form's `<select>`
+`value`s (`AIProviderAddProviderTypeChanged`'s own string decoding), kept distinct from
+`aiProviderProviderLabel` (which reads an already-created `AIProvider`'s real `provider`,
 not this in-progress form's own choice of what to create).
 -}
-addAIModelProviderTypeValue : AddAIModelProviderType -> String
-addAIModelProviderTypeValue providerType =
+addAIProviderTypeValue : AddAIProviderType -> String
+addAIProviderTypeValue providerType =
     case providerType of
         AddGeminiProvider ->
             "gemini"
@@ -5637,8 +5637,8 @@ addAIModelProviderTypeValue providerType =
             "digitalocean"
 
 
-addAIModelProviderTypeLabel : AddAIModelProviderType -> String
-addAIModelProviderTypeLabel providerType =
+addAIProviderTypeLabel : AddAIProviderType -> String
+addAIProviderTypeLabel providerType =
     case providerType of
         AddGeminiProvider ->
             "Gemini"
@@ -5650,21 +5650,21 @@ addAIModelProviderTypeLabel providerType =
             "DigitalOcean"
 
 
-aiModelProviderAddRowView : AIModelProviderAddForm -> Html Msg
-aiModelProviderAddRowView addForm =
+aiProviderAddRowView : AIProviderAddForm -> Html Msg
+aiProviderAddRowView addForm =
     div [ classes [ "ai-model-provider-row", "ai-model-provider-add-row" ] ]
         [ select
             [ class "ai-model-provider-add-type"
             , disabled (addForm.status == Submitting)
-            , onInput AIModelProviderAddProviderTypeChanged
+            , onInput AIProviderAddProviderTypeChanged
             ]
             (List.map
                 (\providerType ->
                     option
-                        [ value (addAIModelProviderTypeValue providerType)
+                        [ value (addAIProviderTypeValue providerType)
                         , selected (providerType == addForm.providerType)
                         ]
-                        [ text (addAIModelProviderTypeLabel providerType) ]
+                        [ text (addAIProviderTypeLabel providerType) ]
                 )
                 [ AddGeminiProvider, AddOpenAIProvider, AddDigitalOceanProvider ]
             )
@@ -5674,21 +5674,21 @@ aiModelProviderAddRowView addForm =
             , value addForm.name
             , placeholder "Name"
             , disabled (addForm.status == Submitting)
-            , onInput AIModelProviderAddNameChanged
+            , onInput AIProviderAddNameChanged
             ]
             []
         , input
             [ class "ai-model-provider-api-key"
             , type_ "password"
             , value addForm.apiKey
-            , placeholder (addAIModelProviderTypeLabel addForm.providerType ++ " API Key")
+            , placeholder (addAIProviderTypeLabel addForm.providerType ++ " API Key")
             , disabled (addForm.status == Submitting)
-            , onInput AIModelProviderAddApiKeyChanged
+            , onInput AIProviderAddApiKeyChanged
             ]
             []
         , button
             [ classes [ "ai-model-provider-add", "background-color-primary" ]
-            , onClick AIModelProviderAddClicked
+            , onClick AIProviderAddClicked
             , disabled (addForm.status == Submitting || String.isEmpty (String.trim addForm.name) || String.isEmpty (String.trim addForm.apiKey))
             ]
             [ text
@@ -5696,7 +5696,7 @@ aiModelProviderAddRowView addForm =
                     "Adding…"
 
                  else
-                    "+ Add " ++ addAIModelProviderTypeLabel addForm.providerType ++ " Provider"
+                    "+ Add " ++ addAIProviderTypeLabel addForm.providerType ++ " Provider"
                 )
             ]
         , case addForm.status of
@@ -5709,31 +5709,31 @@ aiModelProviderAddRowView addForm =
 
 
 {-| "AI Model Access" -- the access _granted to_ this profile's own user, on any provider (their
-own or someone else's), as opposed to `aiModelProvidersSection` (the providers _they themselves_
-own). Read-only: renders each `(AIModelProvider, AIModelProviderGrant)` pair (see
-`grantedAIModelAccess`) via the same `aiModelProviderGrantRowView` used under a provider's own row,
-just with `showProviderName = True` (there's no parent `AIModelProvider` here to already show it)
+own or someone else's), as opposed to `aiProvidersSection` (the providers _they themselves_
+own). Read-only: renders each `(AIProvider, AIProviderGrant)` pair (see
+`grantedAIModelAccess`) via the same `aiProviderGrantRowView` used under a provider's own row,
+just with `showProviderName = True` (there's no parent `AIProvider` here to already show it)
 and `canManage = False` (granting/revoking one's own access isn't something a grantee can do -- see
-that view's own doc). `canView` mirrors `aiModelProvidersSection`'s own `canManage` (self-or-Admin,
-matching `GetAIModelProviders`' own gate).
+that view's own doc). `canView` mirrors `aiProvidersSection`'s own `canManage` (self-or-Admin,
+matching `GetAIProviders`' own gate).
 -}
-aiModelProviderGrantedSection : Model -> Bool -> User -> Html Msg
-aiModelProviderGrantedSection model canView user =
+aiProviderGrantedSection : Model -> Bool -> User -> Html Msg
+aiProviderGrantedSection model canView user =
     if not canView then
         text ""
 
     else
         expandableProfileSection "ai-model-providers-section"
             "AI Model Access"
-            model.aiModelProviderGrantsExpanded
-            AIModelProviderGrantsSectionToggled
-            [ div [ class "ai-model-providers-list" ] (aiModelProviderGrantedContentView (grantedAIModelAccess user)) ]
+            model.aiProviderGrantsExpanded
+            AIProviderGrantsSectionToggled
+            [ div [ class "ai-model-providers-list" ] (aiProviderGrantedContentView (grantedAIModelAccess user)) ]
 
 
-aiModelProviderGrantedContentView : List ( AIModelProvider, AIModelProviderGrant ) -> List (Html Msg)
-aiModelProviderGrantedContentView granted =
+aiProviderGrantedContentView : List ( AIProvider, AIProviderGrant ) -> List (Html Msg)
+aiProviderGrantedContentView granted =
     if not (List.isEmpty granted) then
-        List.map (\( provider, grant ) -> aiModelProviderGrantRowView { showProviderName = True, canManage = False } provider Idle grant) granted
+        List.map (\( provider, grant ) -> aiProviderGrantRowView { showProviderName = True, canManage = False } provider Idle grant) granted
 
     else
         [ div [ class "ai-model-providers-message" ] [ text "No AI model access granted to you yet." ] ]
@@ -5831,7 +5831,7 @@ syncDestinationRowView ed destination =
 
         count : Int
         count =
-            destination.syncedEventInstanceCount |> Maybe.map Conversions.int64ToInt |> Maybe.withDefault 0
+            destination.syncedOccasionCount |> Maybe.map Conversions.int64ToInt |> Maybe.withDefault 0
 
         deleting : Bool
         deleting =

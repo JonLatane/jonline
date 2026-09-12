@@ -88,18 +88,18 @@
   
 - [events.proto](#events-proto)
     - [AnonymousAttendee](#rellm-AnonymousAttendee)
-    - [DeleteEventInstanceSyncDestinationRequest](#rellm-DeleteEventInstanceSyncDestinationRequest)
+    - [DeleteOccasionSyncDestinationRequest](#rellm-DeleteOccasionSyncDestinationRequest)
     - [Event](#rellm-Event)
     - [EventAttendance](#rellm-EventAttendance)
     - [EventAttendances](#rellm-EventAttendances)
     - [EventInfo](#rellm-EventInfo)
-    - [EventInstance](#rellm-EventInstance)
-    - [EventInstanceInfo](#rellm-EventInstanceInfo)
-    - [EventInstanceRsvpInfo](#rellm-EventInstanceRsvpInfo)
     - [GetEventAttendancesRequest](#rellm-GetEventAttendancesRequest)
     - [GetEventsRequest](#rellm-GetEventsRequest)
     - [GetEventsResponse](#rellm-GetEventsResponse)
-    - [SyncEventInstanceRequest](#rellm-SyncEventInstanceRequest)
+    - [Occasion](#rellm-Occasion)
+    - [OccasionInfo](#rellm-OccasionInfo)
+    - [OccasionRsvpInfo](#rellm-OccasionRsvpInfo)
+    - [SyncOccasionRequest](#rellm-SyncOccasionRequest)
     - [TimeFilter](#rellm-TimeFilter)
     - [UserAttendee](#rellm-UserAttendee)
   
@@ -162,19 +162,19 @@
     - [ThreadsAccount](#rellm-ThreadsAccount)
     - [XTwitterAccount](#rellm-XTwitterAccount)
   
-- [ai_model_providers.proto](#ai_model_providers-proto)
-    - [AIModelProvider](#rellm-AIModelProvider)
-    - [AIModelProviderGrant](#rellm-AIModelProviderGrant)
+- [ai_providers.proto](#ai_providers-proto)
+    - [AIModel](#rellm-AIModel)
+    - [AIProvider](#rellm-AIProvider)
+    - [AIProviderGrant](#rellm-AIProviderGrant)
     - [AnthropicCredentials](#rellm-AnthropicCredentials)
-    - [AvailableAIModel](#rellm-AvailableAIModel)
-    - [DeleteAIModelProviderRequest](#rellm-DeleteAIModelProviderRequest)
+    - [DeleteAIProviderRequest](#rellm-DeleteAIProviderRequest)
     - [DigitalOceanCredentials](#rellm-DigitalOceanCredentials)
     - [GeminiCredentials](#rellm-GeminiCredentials)
     - [GenerateMediaRequest](#rellm-GenerateMediaRequest)
-    - [GetAIModelProvidersResponse](#rellm-GetAIModelProvidersResponse)
-    - [GrantAIModelProviderRequest](#rellm-GrantAIModelProviderRequest)
+    - [GetAIProvidersResponse](#rellm-GetAIProvidersResponse)
+    - [GrantAIProviderRequest](#rellm-GrantAIProviderRequest)
     - [OpenAICredentials](#rellm-OpenAICredentials)
-    - [RevokeAIModelProviderRequest](#rellm-RevokeAIModelProviderRequest)
+    - [RevokeAIProviderRequest](#rellm-RevokeAIProviderRequest)
   
     - [AIModelCapability](#rellm-AIModelCapability)
   
@@ -274,16 +274,16 @@ through Rust code implementing APIs, to both functional React code and more-OOP 
 The use of composition over inheritance also means that Rellm APIs can be *predictably* non-atomic based on their compositional structure.
 For instance, [`UpdatePost`](#grpc-api-UpdatePost) is fully atomic.
 
-[`UpdateEvent`](#grpc-api-UpdateEvent), however, is non-atomic. Given that an [`Event`](#rellm-Event) has a [`Post`](#rellm-Post) and many [`EventInstance`](#rellm-EventInstance)s,
+[`UpdateEvent`](#grpc-api-UpdateEvent), however, is non-atomic. Given that an [`Event`](#rellm-Event) has a [`Post`](#rellm-Post) and many [`Occasion`](#rellm-Occasion)s,
 [`UpdateEvent`](#grpc-api-UpdateEvent) is implemented as a composition of four other RPCs - each independently callable and individually atomic --
 run in a fixed order: [`UpdateEventDetails`](#grpc-api-UpdateEventDetails) (which itself first updates the [`Event`](#rellm-Event)&#39;s own [`Post`](#rellm-Post)
-atomically, literally calling the [`UpdatePost`](#grpc-api-UpdatePost) RPC), then [`CreateNewEventInstances`](#grpc-api-CreateNewEventInstances),
-[`UpdateEventInstances`](#grpc-api-UpdateEventInstances), and finally [`DeleteRemovedEventInstances`](#grpc-api-DeleteRemovedEventInstances).
-Create must run before Delete so that a request which both drops an old [`EventInstance`](#rellm-EventInstance) and adds a new one never transiently
+atomically, literally calling the [`UpdatePost`](#grpc-api-UpdatePost) RPC), then [`CreateNewOccasions`](#grpc-api-CreateNewOccasions),
+[`UpdateOccasions`](#grpc-api-UpdateOccasions), and finally [`DeleteRemovedOccasions`](#grpc-api-DeleteRemovedOccasions).
+Create must run before Delete so that a request which both drops an old [`Occasion`](#rellm-Occasion) and adds a new one never transiently
 leaves the [`Event`](#rellm-Event) with zero instances.
 
 Because moderation/visibility lives at the [`Post`](#rellm-Post) level, and [`UpdateEventDetails`](#grpc-api-UpdateEventDetails) runs first, this means that a developer error in the
-later [`EventInstance`](#rellm-EventInstance)-processing steps cannot prevent visibility and moderation changes from being made in Events, even if there are errors elsewhere.
+later [`Occasion`](#rellm-Occasion)-processing steps cannot prevent visibility and moderation changes from being made in Events, even if there are errors elsewhere.
 This should prove a robust pattern for any future entities intended to be shareable at a Group level with visibility and
 moderation controls (for instance, `Sheet`, `SharedExpenseReport`, `SharedCalendar`, etc.). The entire architecture should promote this
 approach to predictable atomicity.
@@ -411,13 +411,13 @@ While Federation is a first-class feature of Rellm, a [`User`](#rellm-User) can 
 [`SyncSource`](#rellm-SyncSource)s - server-owned external origins to sync [`Post`](#rellm-Post)s in from other
 fediverse and less-open platforms, via a `oneof configuration` naming which source type it is: an iCal
 subscription URL (`configuration.ics_subscription_url`, syncing in [`Event`](#rellm-Event)s/
-[`EventInstance`](#rellm-EventInstance)s), or an RSS/Atom subscription URL (`configuration.rss_subscription_url`/
+[`Occasion`](#rellm-Occasion)s), or an RSS/Atom subscription URL (`configuration.rss_subscription_url`/
 `configuration.atom_subscription_url`, syncing in plain [`Post`](#rellm-Post)s). Every kind of synced content is
 tagged via its own `Post.sync_source` - an [`Event`](#rellm-Event)&#39;s own Post, each of its
-[`EventInstance`](#rellm-EventInstance)s&#39; own Post, or a plain synced Post - since a single source can back many
+[`Occasion`](#rellm-Occasion)s&#39; own Post, or a plain synced Post - since a single source can back many
 synced Posts but each Post has at most one source it came from; see the Event and Post sections below for how
 these attach. A background job re-pulls each source on its own `sync_interval_seconds` cadence, recomputing
-`event_count`/`event_instance_count` (iCal) or `post_count` (RSS/Atom) on every sync.
+`event_count`/`occasion_count` (iCal) or `post_count` (RSS/Atom) on every sync.
 
 Sources are managed via [`GetSyncSources`](#grpc-api-GetSyncSources), [`CreateSyncSource`](#grpc-api-CreateSyncSource)
 (requires `SYNC_EVENTS_FROM_ICS`/`SYNC_POSTS_FROM_RSS`/`SYNC_POSTS_FROM_ATOM` - whichever matches
@@ -428,11 +428,11 @@ See also: [`SyncDestination`](#rellm-SyncDestination)
 
 ###### iCal
 `configuration.ics_subscription_url` is a plain iCal (`.ics`) subscription URL. The background job fetches and
-parses it on each sync, creating/updating one [`Event`](#rellm-Event) (and one [`EventInstance`](#rellm-EventInstance)
+parses it on each sync, creating/updating one [`Event`](#rellm-Event) (and one [`Occasion`](#rellm-Occasion)
 per occurrence) per iCal `VEVENT` - each occurrence&#39;s own Post is keyed by `(sync_source_id, sync_source_uid,
 sync_source_recurrence_anchor)`, the iCal UID plus that occurrence&#39;s stable identity within its series (its own
 start time, or its original scheduled time if since rescheduled) - and recomputing `event_count`/
-`event_instance_count`. An `EventInstance`&#39;s `sync_missing_since` is set the first time it stops appearing in
+`occasion_count`. An `Occasion`&#39;s `sync_missing_since` is set the first time it stops appearing in
 the feed, letting the owner decide whether that means it should be deleted. No auth/credentials are supported
 yet - only public iCal URLs.
 
@@ -454,14 +454,14 @@ behavior - pick whichever a given source actually publishes.
 
 ##### SyncDestinations
 A [`User`](#rellm-User) can also own many [`SyncDestination`](#rellm-SyncDestination)s - user-owned external
-targets to push [`EventInstance`](#rellm-EventInstance)s and [`Post`](#rellm-Post)s out to (see the Event and
+targets to push [`Occasion`](#rellm-Occasion)s and [`Post`](#rellm-Post)s out to (see the Event and
 Post sections below for how these attach), via a `oneof configuration` naming which platform it is. This is a
-many-to-many relationship: it&#39;s each [`EventInstance`](#rellm-EventInstance) or [`Post`](#rellm-Post) (not,
+many-to-many relationship: it&#39;s each [`Occasion`](#rellm-Occasion) or [`Post`](#rellm-Post) (not,
 say, the parent [`Event`](#rellm-Event)) that syncs out, and each may push to several destinations at once,
-tracked per-destination via the repeated `EventInstance.sync_destinations`/`Post.sync_destinations` (each a
+tracked per-destination via the repeated `Occasion.sync_destinations`/`Post.sync_destinations` (each a
 [`SyncDestinationStatus`](#rellm-SyncDestinationStatus), carrying the destination&#39;s resulting post ID/URL and
 last-synced time). Destinations are pushed to on demand rather than synced in bulk on an interval, so
-`synced_event_instance_count`/`synced_post_count` are computed with a `COUNT` at request time instead of being
+`synced_occasion_count`/`synced_post_count` are computed with a `COUNT` at request time instead of being
 recomputed-and-stored. All API keys for these external platforms are stored in
 [`ServerConfiguration`](#rellm-ServerConfiguration)&#39;s `federation_info`.
 
@@ -469,9 +469,9 @@ Destinations are managed via [`GetSyncDestinations`](#grpc-api-GetSyncDestinatio
 [`CreateSyncDestination`](#grpc-api-CreateSyncDestination), [`UpdateSyncDestination`](#grpc-api-UpdateSyncDestination),
 and [`DeleteSyncDestination`](#grpc-api-DeleteSyncDestination) - each gated on the `SYNC_EVENTS_TO_*`/
 `SYNC_POSTS_TO_*` permission pair matching the destination&#39;s own platform (or Admin; see each platform&#39;s own
-section below). Actually syncing (or un-syncing) a given [`EventInstance`](#rellm-EventInstance) or [`Post`](#rellm-Post) to a destination is a separate
-step, via [`SyncEventInstance`](#grpc-api-SyncEventInstance)/
-[`DeleteEventInstanceSyncDestination`](#grpc-api-DeleteEventInstanceSyncDestination) and
+section below). Actually syncing (or un-syncing) a given [`Occasion`](#rellm-Occasion) or [`Post`](#rellm-Post) to a destination is a separate
+step, via [`SyncOccasion`](#grpc-api-SyncOccasion)/
+[`DeleteOccasionSyncDestination`](#grpc-api-DeleteOccasionSyncDestination) and
 [`SyncPost`](#grpc-api-SyncPost)/[`DeletePostSyncDestination`](#grpc-api-DeletePostSyncDestination), gated the same
 way (the `_EVENTS_`/`_POSTS_` half matching which RPC).
 
@@ -490,7 +490,7 @@ Business/Creator account. Instagram posting is only possible for an account link
 connecting one reuses the exact same Facebook Login flow/app credentials as Facebook above - the server exchanges
 the token for the chosen Page&#39;s access token, then looks up that Page&#39;s linked Instagram Business account
 (`instagram_business_account_id`). Unlike Facebook, Instagram&#39;s Graph API has no text-only post type; syncing a
-[`Post`](#rellm-Post)/[`EventInstance`](#rellm-EventInstance) with no attached media fails with `instagram_requires_media`. Gated on
+[`Post`](#rellm-Post)/[`Occasion`](#rellm-Occasion) with no attached media fails with `instagram_requires_media`. Gated on
 `SYNC_EVENTS_TO_INSTAGRAM`/`SYNC_POSTS_TO_INSTAGRAM`.
 
 ###### Mastodon
@@ -526,28 +526,28 @@ short-lived token, then a long-lived one (~60 day expiry, refreshable via `grant
 implemented, so a connected destination needs reconnecting after ~60 days). Unlike Instagram, Threads supports
 text-only posts. Gated on `SYNC_EVENTS_TO_THREADS`/`SYNC_POSTS_TO_THREADS`.
 
-##### AIModelProviders
-A [`User`](#rellm-User) can also own many [`AIModelProvider`](#rellm-AIModelProvider)s -
+##### AIProviders
+A [`User`](#rellm-User) can also own many [`AIProvider`](#rellm-AIProvider)s -
 connections to external AI model APIs (e.g. a Gemini or OpenAI API key) - and grant other users metered access to
-them via [`AIModelProviderGrant`](#rellm-AIModelProviderGrant)s. See `ai_model_providers.proto` and the
-AIModelProvider section below. Which models are actually available, and what each can do
+them via [`AIProviderGrant`](#rellm-AIProviderGrant)s. See `ai_providers.proto` and the
+AIProvider section below. Which models are actually available, and what each can do
 ([`AIModelCapability`](#rellm-AIModelCapability)), is a hand-maintained catalog (no provider exposes a stable
 &#34;list models&#34; API to build this from at request time) - see
 [`backend/src/logic/ai_model_catalog.rs`](https://github.com/JonLatane/rellm/blob/main/backend/src/logic/ai_model_catalog.rs)
 on GitHub for the actual source of truth.
 
-#### AIModelProvider
-An [`AIModelProvider`](#rellm-AIModelProvider) is a user-owned connection to an external AI model API (e.g. a
+#### AIProvider
+An [`AIProvider`](#rellm-AIProvider) is a user-owned connection to an external AI model API (e.g. a
 Gemini API key), via a `oneof provider` naming which service it is - structurally similar to
 [`SyncDestination`](#rellm-SyncDestination)/[`SyncSource`](#rellm-SyncSource), but rather than pushing/pulling
 content, it&#39;s metered *access* an owner can share out to other users of this server. As with
 [`SyncDestination`](#rellm-SyncDestination)&#39;s platform credentials, the actual API key is write-only - accepted
-on [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider)/[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider)
+on [`CreateAIProvider`](#grpc-api-CreateAIProvider)/[`UpdateAIProvider`](#grpc-api-UpdateAIProvider)
 but never populated back in a response.
 
-Providers are managed via [`GetAIModelProviders`](#grpc-api-GetAIModelProviders),
-[`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider) (requires `CREATE_AI_MODEL_PROVIDERS`, or Admin),
-[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider), and [`DeleteAIModelProvider`](#grpc-api-DeleteAIModelProvider)
+Providers are managed via [`GetAIProviders`](#grpc-api-GetAIProviders),
+[`CreateAIProvider`](#grpc-api-CreateAIProvider) (requires `CREATE_AI_PROVIDERS`, or Admin),
+[`UpdateAIProvider`](#grpc-api-UpdateAIProvider), and [`DeleteAIProvider`](#grpc-api-DeleteAIProvider)
 - each gated self-or-Admin, the same shape as [`SyncDestination`](#rellm-SyncDestination)&#39;s RPCs.
 
 ##### Gemini
@@ -572,12 +572,12 @@ used for image *generation only* (no editing - DigitalOcean&#39;s Serverless Inf
 `/v1/images/edits`-equivalent endpoint) via its OpenAI-Images-API-shaped `/v1/images/generations` endpoint (GPT
 Image and Stable Diffusion models, re-hosted under DigitalOcean&#39;s own billing).
 
-##### AIModelProviderGrants
+##### AIProviderGrants
 A provider&#39;s owner may share metered access to it with other users via
-[`AIModelProviderGrant`](#rellm-AIModelProviderGrant)s, each carrying a `tokens_remaining` budget for that grantee.
-Granted/reset via [`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider) (upserted on the unique
-`(ai_model_provider_id, grantee)` pair - granting again *resets*, rather than adds to, `tokens_remaining`) and
-removed via [`RevokeAIModelProvider`](#grpc-api-RevokeAIModelProvider). Unlike every other RPC pair in this section,
+[`AIProviderGrant`](#rellm-AIProviderGrant)s, each carrying a `tokens_remaining` budget for that grantee.
+Granted/reset via [`GrantAIProvider`](#grpc-api-GrantAIProvider) (upserted on the unique
+`(ai_provider_id, grantee)` pair - granting again *resets*, rather than adds to, `tokens_remaining`) and
+removed via [`RevokeAIProvider`](#grpc-api-RevokeAIProvider). Unlike every other RPC pair in this section,
 these two are **owner-only, with no Admin override** - an Admin may manage the provider record itself, but only
 its owner may hand out access to it.
 
@@ -590,7 +590,7 @@ its metadata (content type, name, visibility, moderation) is managed like any ot
 #### Post
 [`Post`](#rellm-Post) is Rellm&#39;s fundamental content/building-block type: it&#39;s what actually carries a
 title/link/content body, visibility, and moderation, and is reused (via [`PostContext`](#rellm-PostContext)) as the backing data for
-replies, [`Event`](#rellm-Event)s, and [`EventInstance`](#rellm-EventInstance)s alike. Posts can be replied to (threaded via
+replies, [`Event`](#rellm-Event)s, and [`Occasion`](#rellm-Occasion)s alike. Posts can be replied to (threaded via
 `reply_to_post_id`), cross-posted to [`Group`](#rellm-Group)s ([`GroupPost`](#rellm-GroupPost)), and shared directly with users ([`UserPost`](#rellm-UserPost)).
 
 ##### GroupPosts
@@ -604,37 +604,37 @@ A [`UserPost`](#rellm-UserPost) is a &#34;direct share&#34; of a [`Post`](#rellm
 ##### SyncDestinations
 A [`Post`](#rellm-Post) may also be synced (cross-posted) out to a user-owned
 [`SyncDestination`](#rellm-SyncDestination) (e.g. a connected Facebook Page), the same mechanism
-[`EventInstance`](#rellm-EventInstance)s use (see below) - each Post may push to several destinations at once, tracked via the
+[`Occasion`](#rellm-Occasion)s use (see below) - each Post may push to several destinations at once, tracked via the
 repeated `Post.sync_destinations` (each a [`SyncDestinationStatus`](#rellm-SyncDestinationStatus)).
 
 #### Event
 An [`Event`](#rellm-Event) is a wrapper for *at least two* [`Post`](#rellm-Post)s. It always has its own top-level [`Post`](#rellm-Post)
 (`PostContext.EVENT`, holding the event&#39;s overall title/description) *and* it must have at least one
-[`EventInstance`](#rellm-EventInstance) (see below), each of which in turn must have its own [`Post`](#rellm-Post)
-(`PostContext.EVENT_INSTANCE`, carrying that instance&#39;s start/end time, [`Location`](#rellm-Location), and optional per-instance
+[`Occasion`](#rellm-Occasion) (see below), each of which in turn must have its own [`Post`](#rellm-Post)
+(`PostContext.OCCASION`, carrying that instance&#39;s start/end time, [`Location`](#rellm-Location), and optional per-instance
 title/link/content override). So the smallest possible Event already backs 2 Posts, and events with recurring/multiple
 instances back one Post per instance beyond that.
 
-##### EventInstances
-An [`EventInstance`](#rellm-EventInstance) is the actual time-boxed occurrence of an [`Event`](#rellm-Event) -
+##### Occasions
+An [`Occasion`](#rellm-Occasion) is the actual time-boxed occurrence of an [`Event`](#rellm-Event) -
 it carries the `starts_at`/`ends_at` timestamps and optional [`Location`](#rellm-Location) that the parent [`Event`](#rellm-Event) itself does not have.
 An [`Event`](#rellm-Event) with zero instances is meaningless (no time or place to attach to), so every [`Event`](#rellm-Event) must have at least one.
 
     - **EventAttendances**: An [`EventAttendance`](#rellm-EventAttendance) (an &#34;RSVP&#34;) tracks one attendee&#39;s status
-    (`INTERESTED`, `REQUESTED`, `GOING`, `NOT_GOING`) for a specific [`EventInstance`](#rellm-EventInstance). Attendees may be logged-in [`User`](#rellm-User)s
+    (`INTERESTED`, `REQUESTED`, `GOING`, `NOT_GOING`) for a specific [`Occasion`](#rellm-Occasion). Attendees may be logged-in [`User`](#rellm-User)s
     or anonymous (tracked via [`AnonymousAttendee`](#rellm-AnonymousAttendee) plus an `auth_token`), and are subject to their own [`Moderation`](#rellm-Moderation),
     independent of the Event&#39;s/Instance&#39;s own Post moderation.
 
-    - **SyncSource**: It&#39;s actually the parent [`Event`](#rellm-Event) (not the [`EventInstance`](#rellm-EventInstance)) that can be synced *in* from a
+    - **SyncSource**: It&#39;s actually the parent [`Event`](#rellm-Event) (not the [`Occasion`](#rellm-Occasion)) that can be synced *in* from a
     user-owned [`SyncSource`](#rellm-SyncSource) (e.g. an iCal subscription). The relationship is
     1:(0 or 1): a single source can back many synced [`Event`](#rellm-Event)s, but each [`Event`](#rellm-Event) has *at most one* source it came from
     (`Event.sync_source` is a single optional field, not repeated).
 
-    - **SyncDestinations**: Conversely, it&#39;s each [`EventInstance`](#rellm-EventInstance) (not the parent [`Event`](#rellm-Event)) that syncs *out* to
+    - **SyncDestinations**: Conversely, it&#39;s each [`Occasion`](#rellm-Occasion) (not the parent [`Event`](#rellm-Event)) that syncs *out* to
     [`SyncDestination`](#rellm-SyncDestination)s (e.g. connected Facebook Pages) - the same mechanism [`Post`](#rellm-Post)s use
     (see above). Unlike [`SyncSource`](#rellm-SyncSource), this is the outlier&#39;s counterpart - a many-to-many relationship: each
     instance may push to several destinations at once, tracked per-destination via the repeated
-    `EventInstance.sync_destinations` (each a [`SyncDestinationStatus`](#rellm-SyncDestinationStatus)), carrying
+    `Occasion.sync_destinations` (each a [`SyncDestinationStatus`](#rellm-SyncDestinationStatus)), carrying
     the destination&#39;s resulting post ID/URL and last-synced time.
 
 #### Group
@@ -917,14 +917,14 @@ The community&#39;s latest activity.
 The Posts listing.
 
 ##### `/post/{postId}[@{host}]`: Post
-An individual [`Post`](#rellm-Post) - including [`Event`](#rellm-Event)/[`EventInstance`](#rellm-EventInstance) posts and replies, which are [`Post`](#rellm-Post)s
+An individual [`Post`](#rellm-Post) - including [`Event`](#rellm-Event)/[`Occasion`](#rellm-Occasion) posts and replies, which are [`Post`](#rellm-Post)s
 themselves (see [Post](#post) above).
 
 #### `/events`: Events
 The Events listing.
 
 #### `/[-._~:/?[]@!$&amp;&#39;()*&#43;,;%=]{postId}`: Short Post/Event URLs
-A [`Post`](#rellm-Post) or [`Event`](#rellm-Event)/[`EventInstance`](#rellm-EventInstance), reached at its own `post.id` prefixed
+A [`Post`](#rellm-Post) or [`Event`](#rellm-Event)/[`Occasion`](#rellm-Occasion), reached at its own `post.id` prefixed
 with any single character a username/custom tab path could never legally start with (see
 [`validate_username`](https://github.com/JonLatane/rellm/blob/main/backend/src/rpcs/validations/validate_fields.rs)&#39;s
 own reserved-lead-character check) - e.g. `jonline.io/:4rAfoSKAuJo` or `ato.band/~4rAfoSKAuJo`.
@@ -935,7 +935,7 @@ deliberately excluded from the reserved set: URL fragments never reach the serve
 can&#39;t be used for this.
 
 ##### `/event/{postId}[@{host}]`: Event
-An individual [`Event`](#rellm-Event), looked up by its own `post.id` or any of its [`EventInstance`](#rellm-EventInstance)s&#39; `post.id`s.
+An individual [`Event`](#rellm-Event), looked up by its own `post.id` or any of its [`Occasion`](#rellm-Occasion)s&#39; `post.id`s.
 
 ##### `/event_ai`: AI Event Importer
 Tamagui-only, for now - an AI-assisted bulk [`Event`](#rellm-Event) importer. Elm doesn&#39;t have this page yet.
@@ -973,7 +973,7 @@ A [`Group`](#rellm-Group)&#39;s pages. Tamagui-only for now - the Elm frontend d
 An individual [`Post`](#rellm-Post) cross-posted into the group.
 
 ##### `/g/{shortname}/events`: Events
-##### `/g/{shortname}/e/{eventInstanceId}[@{host}]`: Event
+##### `/g/{shortname}/e/{occasionId}[@{host}]`: Event
 ##### `/g/{shortname}/members`: Members
 ##### `/g/{shortname}/m/{username}`: Member
 An individual [`Member`](#rellm-Member)&#39;s details.
@@ -1078,12 +1078,12 @@ discarded and a fresh keypair generated, so it&#39;s single-use per completed/fa
 | DeleteGroupPost | [GroupPost](#rellm-GroupPost) | [.google.protobuf.Empty](#google-protobuf-Empty) | Delete a GroupPost. *Authenticated.* |
 | GetEvents | [GetEventsRequest](#rellm-GetEventsRequest) | [GetEventsResponse](#rellm-GetEventsResponse) | Gets Events. *Publicly accessible **or** Authenticated.* Unauthenticated calls only return Events of `GLOBAL_PUBLIC` visibility. |
 | CreateEvent | [Event](#rellm-Event) | [Event](#rellm-Event) | Creates an Event. *Authenticated.* |
-| UpdateEvent | [Event](#rellm-Event) | [Event](#rellm-Event) | Updates an Event. Automatically creates/updates/deletes child EventInstances of the Event. *Authenticated.* Since Events are more complex structures, [`UpdateEventDetails`](#grpc-api-UpdateEventDetails), [`CreateNewEventInstances`](#grpc-api-CreateNewEventInstances), [`UpdateEventInstances`](#grpc-api-UpdateEventInstances), and [`DeleteRemovedEventInstances`](#grpc-api-DeleteRemovedEventInstances) are provided as separate RPCs to break down what happens during this request. |
+| UpdateEvent | [Event](#rellm-Event) | [Event](#rellm-Event) | Updates an Event. Automatically creates/updates/deletes child Occasions of the Event. *Authenticated.* Since Events are more complex structures, [`UpdateEventDetails`](#grpc-api-UpdateEventDetails), [`CreateNewOccasions`](#grpc-api-CreateNewOccasions), [`UpdateOccasions`](#grpc-api-UpdateOccasions), and [`DeleteRemovedOccasions`](#grpc-api-DeleteRemovedOccasions) are provided as separate RPCs to break down what happens during this request. |
 | DeleteEvent | [Event](#rellm-Event) | [Event](#rellm-Event) | (Soft) deletes a Event. Returns the deleted version of the Event. *Authenticated.* |
-| UpdateEventDetails | [Event](#rellm-Event) | [Event](#rellm-Event) | Updates only the [`Event`](#rellm-Event)&#39;s top-level details and those of its [`Post`](#rellm-Post) (not any [`EventInstance`](#rellm-EventInstance)s or their [`Post`](#rellm-Post)s). *Authenticated.* |
-| CreateNewEventInstances | [Event](#rellm-Event) | [Event](#rellm-Event) | Creates EventInstances in an existing Event for every EventInstance in the request that isn&#39;t already on the event. *Authenticated.* Any other instances in the request are ignored. |
-| UpdateEventInstances | [Event](#rellm-Event) | [Event](#rellm-Event) | Updates EventInstances in an existing Event for every EventInstance in the request that&#39;s already on the event. Any other instances in the request are ignored. *Authenticated.* |
-| DeleteRemovedEventInstances | [Event](#rellm-Event) | [Event](#rellm-Event) | Deletes EventInstances in an existing Event that aren&#39;t present in the input Event. *Authenticated.* |
+| UpdateEventDetails | [Event](#rellm-Event) | [Event](#rellm-Event) | Updates only the [`Event`](#rellm-Event)&#39;s top-level details and those of its [`Post`](#rellm-Post) (not any [`Occasion`](#rellm-Occasion)s or their [`Post`](#rellm-Post)s). *Authenticated.* |
+| CreateNewOccasions | [Event](#rellm-Event) | [Event](#rellm-Event) | Creates Occasions in an existing Event for every Occasion in the request that isn&#39;t already on the event. *Authenticated.* Any other instances in the request are ignored. |
+| UpdateOccasions | [Event](#rellm-Event) | [Event](#rellm-Event) | Updates Occasions in an existing Event for every Occasion in the request that&#39;s already on the event. Any other instances in the request are ignored. *Authenticated.* |
+| DeleteRemovedOccasions | [Event](#rellm-Event) | [Event](#rellm-Event) | Deletes Occasions in an existing Event that aren&#39;t present in the input Event. *Authenticated.* |
 | GetSyncSources | [User](#rellm-User) | [GetSyncSourcesResponse](#rellm-GetSyncSourcesResponse) | Gets a user&#39;s SyncSources. *Authenticated* (self, or Admin for any user). |
 | CreateSyncSource | [SyncSource](#rellm-SyncSource) | [SyncSource](#rellm-SyncSource) | Creates a SyncSource for the current user. *Authenticated*, requires `SYNC_EVENTS_FROM_ICS`/ `SYNC_POSTS_FROM_RSS`/`SYNC_POSTS_FROM_ATOM` (whichever matches `configuration`, or Admin). |
 | UpdateSyncSource | [SyncSource](#rellm-SyncSource) | [SyncSource](#rellm-SyncSource) | Updates a SyncSource. *Authenticated* (owner, or Admin for any user&#39;s), requires `SYNC_EVENTS_FROM_ICS`/`SYNC_POSTS_FROM_RSS`/`SYNC_POSTS_FROM_ATOM` (whichever matches the effective `configuration` - the request&#39;s own if set, else the existing source&#39;s - or Admin). |
@@ -1092,16 +1092,16 @@ discarded and a fresh keypair generated, so it&#39;s single-use per completed/fa
 | CreateSyncDestination | [SyncDestination](#rellm-SyncDestination) | [SyncDestination](#rellm-SyncDestination) | Creates a SyncDestination for the current user. *Authenticated*, requires `SYNC_EVENTS_TO_FACEBOOK` or `SYNC_POSTS_TO_FACEBOOK` (or Admin). |
 | UpdateSyncDestination | [SyncDestination](#rellm-SyncDestination) | [SyncDestination](#rellm-SyncDestination) | Updates a SyncDestination. *Authenticated* (owner, or Admin for any user&#39;s), requires `SYNC_EVENTS_TO_FACEBOOK` or `SYNC_POSTS_TO_FACEBOOK` (or Admin). |
 | DeleteSyncDestination | [DeleteSyncDestinationRequest](#rellm-DeleteSyncDestinationRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes a SyncDestination. *Authenticated* (owner, or Admin). |
-| SyncEventInstance | [SyncEventInstanceRequest](#rellm-SyncEventInstanceRequest) | [EventInstance](#rellm-EventInstance) | Syncs (cross-posts) an EventInstance to a SyncDestination. *Authenticated* (destination owner, or Admin), requires `SYNC_EVENTS_TO_FACEBOOK` (or Admin). |
-| DeleteEventInstanceSyncDestination | [DeleteEventInstanceSyncDestinationRequest](#rellm-DeleteEventInstanceSyncDestinationRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Removes an EventInstance&#39;s sync (cross-post) to a SyncDestination, the reverse of [`SyncEventInstance`](#grpc-api-SyncEventInstance). *Authenticated* (destination owner, or Admin), requires `SYNC_EVENTS_TO_FACEBOOK` (or Admin). |
-| GetAIModelProviders | [User](#rellm-User) | [GetAIModelProvidersResponse](#rellm-GetAIModelProvidersResponse) | Gets a user&#39;s AIModelProviders. *Authenticated* (self, or Admin for any user). |
-| CreateAIModelProvider | [AIModelProvider](#rellm-AIModelProvider) | [AIModelProvider](#rellm-AIModelProvider) | Creates an AIModelProvider for the current user. *Authenticated*, requires `CREATE_AI_MODEL_PROVIDERS` (or Admin). |
-| UpdateAIModelProvider | [AIModelProvider](#rellm-AIModelProvider) | [AIModelProvider](#rellm-AIModelProvider) | Updates an AIModelProvider&#39;s name, provider, or credentials. *Authenticated* (owner, or Admin for any user&#39;s). |
-| DeleteAIModelProvider | [DeleteAIModelProviderRequest](#rellm-DeleteAIModelProviderRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes an AIModelProvider (and its AIModelProviderGrants). *Authenticated* (owner, or Admin). |
-| GrantAIModelProvider | [GrantAIModelProviderRequest](#rellm-GrantAIModelProviderRequest) | [AIModelProviderGrant](#rellm-AIModelProviderGrant) | Grants (or resets) another user&#39;s metered access to one of the current user&#39;s AIModelProviders. *Authenticated*, owner-only (no Admin override). |
-| RevokeAIModelProvider | [RevokeAIModelProviderRequest](#rellm-RevokeAIModelProviderRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Revokes another user&#39;s access to one of the current user&#39;s AIModelProviders. *Authenticated*, owner-only (no Admin override). |
-| GenerateMedia | [GenerateMediaRequest](#rellm-GenerateMediaRequest) | [Media](#rellm-Media) | Generates (or edits, given reference `media_ids`) an image via one of the current user&#39;s AvailableAIModels, storing it as a new Media and, if `target` is set, attaching it to that Post/Event. *Authenticated* - caller must own or have been granted access to the chosen AIModelProvider, and (if `target` is set) have edit access to that Post/Event. A grantee (never the provider&#39;s own owner) spends real AIModelProviderGrant.tokens_remaining on every call - the provider&#39;s own reported token usage once generation succeeds, or (rejected before any request is even sent to the provider) a rough pre-flight estimate of the request&#39;s input cost alone, whichever catches an insufficient balance first. |
-| GetEventAttendances | [GetEventAttendancesRequest](#rellm-GetEventAttendancesRequest) | [EventAttendances](#rellm-EventAttendances) | Gets EventAttendances for an EventInstance. *Publicly accessible **or** Authenticated.* |
+| SyncOccasion | [SyncOccasionRequest](#rellm-SyncOccasionRequest) | [Occasion](#rellm-Occasion) | Syncs (cross-posts) an Occasion to a SyncDestination. *Authenticated* (destination owner, or Admin), requires `SYNC_EVENTS_TO_FACEBOOK` (or Admin). |
+| DeleteOccasionSyncDestination | [DeleteOccasionSyncDestinationRequest](#rellm-DeleteOccasionSyncDestinationRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Removes an Occasion&#39;s sync (cross-post) to a SyncDestination, the reverse of [`SyncOccasion`](#grpc-api-SyncOccasion). *Authenticated* (destination owner, or Admin), requires `SYNC_EVENTS_TO_FACEBOOK` (or Admin). |
+| GetAIProviders | [User](#rellm-User) | [GetAIProvidersResponse](#rellm-GetAIProvidersResponse) | Gets a user&#39;s AIProviders. *Authenticated* (self, or Admin for any user). |
+| CreateAIProvider | [AIProvider](#rellm-AIProvider) | [AIProvider](#rellm-AIProvider) | Creates an AIProvider for the current user. *Authenticated*, requires `CREATE_AI_PROVIDERS` (or Admin). |
+| UpdateAIProvider | [AIProvider](#rellm-AIProvider) | [AIProvider](#rellm-AIProvider) | Updates an AIProvider&#39;s name, provider, or credentials. *Authenticated* (owner, or Admin for any user&#39;s). |
+| DeleteAIProvider | [DeleteAIProviderRequest](#rellm-DeleteAIProviderRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes an AIProvider (and its AIProviderGrants). *Authenticated* (owner, or Admin). |
+| GrantAIProvider | [GrantAIProviderRequest](#rellm-GrantAIProviderRequest) | [AIProviderGrant](#rellm-AIProviderGrant) | Grants (or resets) another user&#39;s metered access to one of the current user&#39;s AIProviders. *Authenticated*, owner-only (no Admin override). |
+| RevokeAIProvider | [RevokeAIProviderRequest](#rellm-RevokeAIProviderRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Revokes another user&#39;s access to one of the current user&#39;s AIProviders. *Authenticated*, owner-only (no Admin override). |
+| GenerateMedia | [GenerateMediaRequest](#rellm-GenerateMediaRequest) | [Media](#rellm-Media) | Generates (or edits, given reference `media_ids`) an image via one of the current user&#39;s AIModels, storing it as a new Media and, if `target` is set, attaching it to that Post/Event. *Authenticated* - caller must own or have been granted access to the chosen AIProvider, and (if `target` is set) have edit access to that Post/Event. A grantee (never the provider&#39;s own owner) spends real AIProviderGrant.tokens_remaining on every call - the provider&#39;s own reported token usage once generation succeeds, or (rejected before any request is even sent to the provider) a rough pre-flight estimate of the request&#39;s input cost alone, whichever catches an insufficient balance first. |
+| GetEventAttendances | [GetEventAttendancesRequest](#rellm-GetEventAttendancesRequest) | [EventAttendances](#rellm-EventAttendances) | Gets EventAttendances for an Occasion. *Publicly accessible **or** Authenticated.* |
 | UpsertEventAttendance | [EventAttendance](#rellm-EventAttendance) | [EventAttendance](#rellm-EventAttendance) | Upsert an EventAttendance. *Publicly accessible **or** Authenticated, with anonymous RSVP support.* See [EventAttendance](#rellm-EventAttendance) and [AnonymousAttendee](#rellm-AnonymousAttendee) for details. tl;dr: Anonymous RSVPs may updated/deleted with the `AnonymousAttendee.auth_token` returned by this RPC (the client should save this for the user, and ideally, offer a link with the token). |
 | DeleteEventAttendance | [EventAttendance](#rellm-EventAttendance) | [.google.protobuf.Empty](#google-protobuf-Empty) | Delete an EventAttendance. *Publicly accessible **or** Authenticated, with anonymous RSVP support.* |
 | FederateProfile | [FederatedAccount](#rellm-FederatedAccount) | [FederatedAccount](#rellm-FederatedAccount) | Federate the current user&#39;s profile with another user profile. *Authenticated*. |
@@ -1446,7 +1446,7 @@ and to Group non-members via [`non_member_permissions` in `Group`](#rellm-Group)
 | REPLY_TO_POSTS | 25 | Allow the user to reply to posts. |
 | EDIT_POST_TITLES_AND_LINKS | 26 | Allow the user to edit post titles and/or links. |
 | VIEW_EVENTS | 30 | As a user permission, allow the user to view posts with `SERVER_PUBLIC` or higher visibility. As a group permission, allow the user to view [`GroupPost`](#rellm-GroupPost)s whose [`Event`](#rellm-Event) [`Post`](#rellm-Post)s have `LIMITED` or higher visibility. Allow anonymous users to view events with `GLOBAL_PUBLIC` visibility (when configured as an anonymous user permission). |
-| CREATE_EVENTS | 31 | As a user permission, allow the user to create [`Event`](#rellm-Event)s of `PRIVATE` and `LIMITED` visibility. As a group permission, allow the user to create [`GroupPost`](#rellm-GroupPost)s for `EVENT` and `FEDERATED_EVENT_INSTANCE` [`PostContext`](#rellm-PostContext)s.. |
+| CREATE_EVENTS | 31 | As a user permission, allow the user to create [`Event`](#rellm-Event)s of `PRIVATE` and `LIMITED` visibility. As a group permission, allow the user to create [`GroupPost`](#rellm-GroupPost)s for `EVENT` and `FEDERATED_OCCASION` [`PostContext`](#rellm-PostContext)s.. |
 | PUBLISH_EVENTS_LOCALLY | 32 | Allow the user to publish events with `SERVER_PUBLIC` visibility. |
 | PUBLISH_EVENTS_GLOBALLY | 33 | Allow the user to publish events with `GLOBAL_PUBLIC` visibility. |
 | MODERATE_EVENTS | 34 | Allow the user to moderate events. |
@@ -1458,21 +1458,21 @@ and to Group non-members via [`non_member_permissions` in `Group`](#rellm-Group)
 | MODERATE_MEDIA | 44 | Allow the user to moderate events. |
 | READ_PERSONAL_MESSAGES | 50 |  |
 | READ_ALL_SYSTEM_MESSAGES | 51 |  |
-| CREATE_AI_MODEL_PROVIDERS | 60 | Allow the user to create/update their own [`AIModelProvider`](#rellm-AIModelProvider)s (see `ai_model_providers.proto`) and grant/revoke other users&#39; access to them. |
+| CREATE_AI_PROVIDERS | 60 | Allow the user to create/update their own [`AIProvider`](#rellm-AIProvider)s (see `ai_providers.proto`) and grant/revoke other users&#39; access to them. |
 | SYNC_EVENTS_FROM_ICS | 700 | Allow the user to create/update [`SyncSource`](#rellm-SyncSource)s (iCal subscriptions) that synchronize [`Event`](#rellm-Event)s in. |
 | SYNC_POSTS_FROM_RSS | 701 | Allow the user to create/update [`SyncSource`](#rellm-SyncSource)s (RSS subscriptions) that synchronize [`Post`](#rellm-Post)s in. |
 | SYNC_POSTS_FROM_ATOM | 702 | Allow the user to create/update [`SyncSource`](#rellm-SyncSource)s (Atom subscriptions) that synchronize [`Post`](#rellm-Post)s in. |
-| SYNC_EVENTS_TO_FACEBOOK | 1000 | Allow the user to create/update [`SyncDestination`](#rellm-SyncDestination)s that cross-post EventInstances to a connected Facebook Page, and to sync EventInstances to them. |
+| SYNC_EVENTS_TO_FACEBOOK | 1000 | Allow the user to create/update [`SyncDestination`](#rellm-SyncDestination)s that cross-post Occasions to a connected Facebook Page, and to sync Occasions to them. |
 | SYNC_POSTS_TO_FACEBOOK | 1001 | Allow the user to create/update [`SyncDestination`](#rellm-SyncDestination)s that cross-post Posts to a connected Facebook Page, and to sync Posts to them. |
-| SYNC_EVENTS_TO_INSTAGRAM | 1010 | Allow the user to create/update [`SyncDestination`](#rellm-SyncDestination)s that cross-post EventInstances to a connected Instagram Business/Creator account, and to sync EventInstances to them. |
+| SYNC_EVENTS_TO_INSTAGRAM | 1010 | Allow the user to create/update [`SyncDestination`](#rellm-SyncDestination)s that cross-post Occasions to a connected Instagram Business/Creator account, and to sync Occasions to them. |
 | SYNC_POSTS_TO_INSTAGRAM | 1011 | Allow the user to create/update [`SyncDestination`](#rellm-SyncDestination)s that cross-post Posts to a connected Instagram Business/Creator account, and to sync Posts to them. |
-| SYNC_EVENTS_TO_MASTODON | 1020 | Allow the user to create/update [`SyncDestination`](#rellm-SyncDestination)s that cross-post EventInstances to a connected Mastodon account, and to sync EventInstances to them. |
+| SYNC_EVENTS_TO_MASTODON | 1020 | Allow the user to create/update [`SyncDestination`](#rellm-SyncDestination)s that cross-post Occasions to a connected Mastodon account, and to sync Occasions to them. |
 | SYNC_POSTS_TO_MASTODON | 1021 | Allow the user to create/update [`SyncDestination`](#rellm-SyncDestination)s that cross-post Posts to a connected Mastodon account, and to sync Posts to them. |
-| SYNC_EVENTS_TO_BLUESKY | 1030 | Allow the user to create/update [`SyncDestination`](#rellm-SyncDestination)s that cross-post EventInstances to a connected Bluesky account, and to sync EventInstances to them. |
+| SYNC_EVENTS_TO_BLUESKY | 1030 | Allow the user to create/update [`SyncDestination`](#rellm-SyncDestination)s that cross-post Occasions to a connected Bluesky account, and to sync Occasions to them. |
 | SYNC_POSTS_TO_BLUESKY | 1031 | Allow the user to create/update [`SyncDestination`](#rellm-SyncDestination)s that cross-post Posts to a connected Bluesky account, and to sync Posts to them. |
-| SYNC_EVENTS_TO_X_TWITTER | 1040 | Allow the user to create/update [`SyncDestination`](#rellm-SyncDestination)s that cross-post EventInstances to a connected X (Twitter) account, and to sync EventInstances to them. |
+| SYNC_EVENTS_TO_X_TWITTER | 1040 | Allow the user to create/update [`SyncDestination`](#rellm-SyncDestination)s that cross-post Occasions to a connected X (Twitter) account, and to sync Occasions to them. |
 | SYNC_POSTS_TO_X_TWITTER | 1041 | Allow the user to create/update [`SyncDestination`](#rellm-SyncDestination)s that cross-post Posts to a connected X (Twitter) account, and to sync Posts to them. |
-| SYNC_EVENTS_TO_THREADS | 1050 | Allow the user to create/update [`SyncDestination`](#rellm-SyncDestination)s that cross-post EventInstances to a connected Threads account, and to sync EventInstances to them. |
+| SYNC_EVENTS_TO_THREADS | 1050 | Allow the user to create/update [`SyncDestination`](#rellm-SyncDestination)s that cross-post Occasions to a connected Threads account, and to sync Occasions to them. |
 | SYNC_POSTS_TO_THREADS | 1051 | Allow the user to create/update [`SyncDestination`](#rellm-SyncDestination)s that cross-post Posts to a connected Threads account, and to sync Posts to them. |
 | BUSINESS | 9998 | Indicates the user is a business. Used purely for display purposes. |
 | RUN_BOTS | 9999 | Allow the user to run bots. There is no enforcement of this permission (yet), but it lets other users know that the user is allowed to run bots. |
@@ -1645,7 +1645,7 @@ Model for a Rellm user. This user may have [`Media`](#rellm-Media), [`Group`](#r
 | post_count | [int32](#int32) | optional | The number of posts this user has made. |
 | response_count | [int32](#int32) | optional | The number of responses to [`Post`](#rellm-Post)s and [`Event`](#rellm-Event)s this user has made. |
 | event_count | [int32](#int32) | optional | The number of events this user has created. |
-| event_instance_count | [int32](#int32) | optional | The number of event instances this user has created (across all of their events). |
+| occasion_count | [int32](#int32) | optional | The number of event instances this user has created (across all of their events). |
 | current_user_follow | [Follow](#rellm-Follow) | optional | Presence indicates the current user is following or has a pending follow request for this user. |
 | target_current_user_follow | [Follow](#rellm-Follow) | optional | Presence indicates this user is following or has a pending follow request for the current user. |
 | current_group_membership | [Membership](#rellm-Membership) | optional | Returned by [`GetMembers`](#grpc-api-GetMembers) calls, for use when managing [`Group`](#rellm-Group) [`Membership`](#rellm-Membership)s. The [`Membership`](#rellm-Membership) should match the [`Group`](#rellm-Group) from the originating [`GetMembersRequest`](#rellm-GetMembersRequest), providing whether the user is a member of that [`Group`](#rellm-Group), has been invited, requested to join, etc.. |
@@ -1653,7 +1653,7 @@ Model for a Rellm user. This user may have [`Media`](#rellm-Media), [`Group`](#r
 | federated_profiles | [FederatedAccount](#rellm-FederatedAccount) | repeated | Federated profiles for the user. *Not always loaded.* This is a list of profiles from other servers that the user has connected to their account. Managed by the user via `Federate` |
 | sync_destinations | [SyncDestination](#rellm-SyncDestination) | repeated | The target user&#39;s own linked SyncDestinations (e.g. Facebook Pages). Populated by [`GetUsers`](#grpc-api-GetUsers)&#39; single-user lookups (by username or by user_id) when the viewer is the target user themselves (and holds `SYNC_EVENTS_TO_FACEBOOK` or `SYNC_POSTS_TO_FACEBOOK`) or an Admin, and by [`Login`](#grpc-api-Login)/[`CreateAccount`](#grpc-api-CreateAccount)/[`GetCurrentUser`](#grpc-api-GetCurrentUser) (always a self-view) - always empty otherwise, including via every other [`GetUsers`](#grpc-api-GetUsers) listing type. |
 | sync_sources | [SyncSource](#rellm-SyncSource) | repeated | The target user&#39;s own [`SyncSource`](#rellm-SyncSource)s. Unlike `sync_destinations`, also populated for the target user themselves *or an Admin* across every [`GetUsers`](#grpc-api-GetUsers) listing type (not just single-user lookups) - e.g. an Admin&#39;s `EVERYONE` listing gets every returned user&#39;s sources filled in, batch-loaded in one query rather than per-user. Also populated by [`Login`](#grpc-api-Login)/[`CreateAccount`](#grpc-api-CreateAccount)/[`GetCurrentUser`](#grpc-api-GetCurrentUser) (always a self-view). Always empty for any other viewer. |
-| available_ai_models | [AvailableAIModel](#rellm-AvailableAIModel) | repeated | Every [`AIModelProvider`](#rellm-AIModelProvider) model the target user may currently call - their own providers&#39; models, plus any models granted to them on other users&#39; providers (see [`AvailableAIModel`](#rellm-AvailableAIModel)). Gated and populated the same way as `sync_sources` (target user themselves, or an Admin, across any [`GetUsers`](#grpc-api-GetUsers) listing type, plus [`Login`](#grpc-api-Login)/[`CreateAccount`](#grpc-api-CreateAccount)/[`GetCurrentUser`](#grpc-api-GetCurrentUser)). |
+| ai_models | [AIModel](#rellm-AIModel) | repeated | Every [`AIProvider`](#rellm-AIProvider) model the target user may currently call - their own providers&#39; models, plus any models granted to them on other users&#39; providers (see [`AIModel`](#rellm-AIModel)). Gated and populated the same way as `sync_sources` (target user themselves, or an Admin, across any [`GetUsers`](#grpc-api-GetUsers) listing type, plus [`Login`](#grpc-api-Login)/[`CreateAccount`](#grpc-api-CreateAccount)/[`GetCurrentUser`](#grpc-api-GetCurrentUser)). |
 | created_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the user was created. |
 | updated_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time the user was last updated. |
 
@@ -2415,7 +2415,7 @@ see it and where.
 
 `Post`s are also a fundamental unit of the system. They provide a building block
 of Visibility and Moderation management that is used throughout Posts, Replies, Events,
-and Event Instances.
+and Occasions.
 
 
 | Field | Type | Label | Description |
@@ -2433,7 +2433,7 @@ and Event Instances.
 | media_generated | [bool](#bool) |  | Flag indicating whether Media has been generated for this Post. Currently previews are generated for any Link post. |
 | embed_link | [bool](#bool) |  | Flag indicating |
 | shareable | [bool](#bool) |  | Flag indicating a `LIMITED` or `SERVER_PUBLIC` post can be shared with groups and individuals, and a `DIRECT` post can be shared with individuals. |
-| context | [PostContext](#rellm-PostContext) |  | Context of the Post (`POST`, `REPLY`, `EVENT`, or `EVENT_INSTANCE`.) |
+| context | [PostContext](#rellm-PostContext) |  | Context of the Post (`POST`, `REPLY`, `EVENT`, or `OCCASION`.) |
 | visibility | [Visibility](#rellm-Visibility) |  | The visibility of the Post. |
 | moderation | [Moderation](#rellm-Moderation) |  | The moderation of the Post. |
 | post_media_layout | [PostMediaLayout](#rellm-PostMediaLayout) |  | The desired end-user layout of Media attached to the post. |
@@ -2445,7 +2445,7 @@ and Event Instances.
 | last_activity_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the post was last interacted with (replied to, etc.) |
 | unauthenticated_star_count | [int64](#int64) |  | The number of unauthenticated stars on the post. |
 | sync_destinations | [SyncDestinationStatus](#rellm-SyncDestinationStatus) | repeated | SyncDestinations this post has been synced (cross-posted) to, and their status. |
-| sync_source | [SyncSource](#rellm-SyncSource) | optional | If the Post was created/is kept in sync from a [`SyncSource`](#rellm-SyncSource) (an ICS Event/EventInstance, or an RSS/Atom feed item), this is the source it was synced from. Only its media should be considered editable for such a Post. |
+| sync_source | [SyncSource](#rellm-SyncSource) | optional | If the Post was created/is kept in sync from a [`SyncSource`](#rellm-SyncSource) (an ICS Event/Occasion, or an RSS/Atom feed item), this is the source it was synced from. Only its media should be considered editable for such a Post. |
 
 
 
@@ -2496,9 +2496,9 @@ Differentiates the context of a Post, as in Rellm&#39;s data models, Post is the
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | POST | 0 | &#34;Standard&#34; or &#34;Top-Level&#34; Post. Can have media, a link, a title, and/or content. If provided, its `link` and `title` are permanent. |
-| REPLY | 1 | Reply to a `POST`, `REPLY`, `EVENT`, or `EVENT_INSTANCE` Does not support a `link`. Requires a `reply_to_post_id`. |
-| EVENT | 2 | Post behind an &#34;Event&#34; (which does not actually have a start/end time - it&#39;s a group of EventInstances, at least one, which each do). The Events table should have a row for this Post. Never created by the CreatePost RPC (this is an error); use CreateEvent. These Posts&#39; `link` and `title` fields are modifiable. |
-| EVENT_INSTANCE | 3 | An &#34;Event Instance&#34; Post (which relates to an event with a start and end time). The EventInstances table should have a row for this Post. Never created by the CreatePost RPC (this is an error); use CreateEvent/UpdateEvent to manage EventInstances implicitly. These Posts&#39; `link` and `title` fields are modifiable. |
+| REPLY | 1 | Reply to a `POST`, `REPLY`, `EVENT`, or `OCCASION` Does not support a `link`. Requires a `reply_to_post_id`. |
+| EVENT | 2 | Post behind an &#34;Event&#34; (which does not actually have a start/end time - it&#39;s a group of Occasions, at least one, which each do). The Events table should have a row for this Post. Never created by the CreatePost RPC (this is an error); use CreateEvent. These Posts&#39; `link` and `title` fields are modifiable. |
+| OCCASION | 3 | An &#34;Occasion&#34; Post (which relates to an event with a start and end time). The Occasions table should have a row for this Post. Never created by the CreatePost RPC (this is an error); use CreateEvent/UpdateEvent to manage Occasions implicitly. These Posts&#39; `link` and `title` fields are modifiable. |
 | FEDERATED_REPLY | 10 | A reply to a Post on another server. The post *must* have a link of the format `http[s]://&lt;server/post/&lt;post_id&gt;` in its `link` field. It will not have a `reply_to_post_id` value. |
 
 
@@ -2550,7 +2550,7 @@ A high-level enumeration of general ways of requesting posts.
 <a name="rellm-AnonymousAttendee"></a>
 
 ### AnonymousAttendee
-An anonymous internet user who has RSVP&#39;d to an [`EventInstance`](#rellm-EventInstance).
+An anonymous internet user who has RSVP&#39;d to an [`Occasion`](#rellm-Occasion).
 
 (TODO:) The visibility on `AnonymousAttendee` [`ContactMethod`](#rellm-ContactMethod)s should support the `LIMITED` visibility, which will
 make them visible to the event creator.
@@ -2560,23 +2560,23 @@ make them visible to the event creator.
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | A name for the anonymous user. For instance, &#34;Bob Gomez&#34; or &#34;The guy on your front porch.&#34; |
 | contact_methods | [ContactMethod](#rellm-ContactMethod) | repeated | Contact methods for anonymous attendees. Currently not linked to Contact methods for users. |
-| auth_token | [string](#string) | optional | Used to allow anonymous users to RSVP to an event. Generated by the server when an event attendance is upserted for the first time. Subsequent attendance upserts, with the same event_instance_id and anonymous_attendee.auth_token, will update existing anonymous attendance records. Invalid auth tokens used during upserts will always create a new [`EventAttendance`](#rellm-EventAttendance). |
+| auth_token | [string](#string) | optional | Used to allow anonymous users to RSVP to an event. Generated by the server when an event attendance is upserted for the first time. Subsequent attendance upserts, with the same occasion_id and anonymous_attendee.auth_token, will update existing anonymous attendance records. Invalid auth tokens used during upserts will always create a new [`EventAttendance`](#rellm-EventAttendance). |
 
 
 
 
 
 
-<a name="rellm-DeleteEventInstanceSyncDestinationRequest"></a>
+<a name="rellm-DeleteOccasionSyncDestinationRequest"></a>
 
-### DeleteEventInstanceSyncDestinationRequest
-Removes a single EventInstance&#39;s sync (cross-post) to one SyncDestination - the reverse of [`SyncEventInstance`](#grpc-api-SyncEventInstance).
+### DeleteOccasionSyncDestinationRequest
+Removes a single Occasion&#39;s sync (cross-post) to one SyncDestination - the reverse of [`SyncOccasion`](#grpc-api-SyncOccasion).
 Does not delete the post already made on the destination (e.g. the Facebook Page post), only the local sync record.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| event_instance_id | [string](#string) |  | The EventInstance to un-sync. |
+| occasion_id | [string](#string) |  | The Occasion to un-sync. |
 | sync_destination_id | [string](#string) |  | The SyncDestination to un-sync it from. |
 
 
@@ -2588,7 +2588,7 @@ Does not delete the post already made on the destination (e.g. the Facebook Page
 
 ### Event
 An `Event` is a top-level type used to organize calendar events, RSVPs, and messaging/posting
-about the `Event`. Actual time data lies in its `EventInstances`.
+about the `Event`. Actual time data lies in its `Occasions`.
 
 (Eventually, Rellm Events should also support ticketing.)
 
@@ -2597,7 +2597,7 @@ about the `Event`. Actual time data lies in its `EventInstances`.
 | ----- | ---- | ----- | ----------- |
 | post | [Post](#rellm-Post) |  | The Post containing the underlying data for the event (title, content, moderation, visibility, etc.). Its [`PostContext`](#rellm-PostContext) should be `EVENT`. An `Event`&#39;s ID *is* its `post.id` - there is no separate surrogate ID. |
 | info | [EventInfo](#rellm-EventInfo) |  | Event configuration like whether to allow (anonymous) RSVPs, etc. |
-| instances | [EventInstance](#rellm-EventInstance) | repeated | A list of instances for the Event. *Events will only include all instances if the request is for a single event.* |
+| instances | [Occasion](#rellm-Occasion) | repeated | A list of instances for the Event. *Events will only include all instances if the request is for a single event.* |
 
 
 
@@ -2607,24 +2607,24 @@ about the `Event`. Actual time data lies in its `EventInstances`.
 <a name="rellm-EventAttendance"></a>
 
 ### EventAttendance
-Could be called an &#34;RSVP.&#34; Describes the attendance of a user at an [`EventInstance`](#rellm-EventInstance). Such as:
-* A user&#39;s RSVP to an [`EventInstance`](#rellm-EventInstance) (one of `INTERESTED`, `GOING`, `NOT_GOING`, or , `REQUESTED` (i.e. invited)).
-* Invitation status of a user to an [`EventInstance`](#rellm-EventInstance).
-* [`ContactMethod`](#rellm-ContactMethod)-driven management for anonymous RSVPs to an [`EventInstance`](#rellm-EventInstance).
+Could be called an &#34;RSVP.&#34; Describes the attendance of a user at an [`Occasion`](#rellm-Occasion). Such as:
+* A user&#39;s RSVP to an [`Occasion`](#rellm-Occasion) (one of `INTERESTED`, `GOING`, `NOT_GOING`, or , `REQUESTED` (i.e. invited)).
+* Invitation status of a user to an [`Occasion`](#rellm-Occasion).
+* [`ContactMethod`](#rellm-ContactMethod)-driven management for anonymous RSVPs to an [`Occasion`](#rellm-Occasion).
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | id | [string](#string) |  | Unique server-generated ID for the attendance. |
-| event_instance_id | [string](#string) |  | ID of the [`EventInstance`](#rellm-EventInstance) the attendance is for. |
+| occasion_id | [string](#string) |  | ID of the [`Occasion`](#rellm-Occasion) the attendance is for. |
 | user_attendee | [UserAttendee](#rellm-UserAttendee) |  | If the attendance is non-anonymous, core data about the user. |
 | anonymous_attendee | [AnonymousAttendee](#rellm-AnonymousAttendee) |  | If the attendance is anonymous, core data about the anonymous attendee. |
 | number_of_guests | [uint32](#uint32) |  | Number of guests including the RSVPing user. (Minimum 1). |
-| status | [AttendanceStatus](#rellm-AttendanceStatus) |  | The user&#39;s RSVP to an [`EventInstance`](#rellm-EventInstance) (one of `INTERESTED`, `REQUESTED` (i.e. invited), `GOING`, `NOT_GOING`) |
+| status | [AttendanceStatus](#rellm-AttendanceStatus) |  | The user&#39;s RSVP to an [`Occasion`](#rellm-Occasion) (one of `INTERESTED`, `REQUESTED` (i.e. invited), `GOING`, `NOT_GOING`) |
 | inviting_user_id | [string](#string) | optional | User who invited the attendee. (Not yet used.) |
 | private_note | [string](#string) |  | Public note for everyone who can see the event to see. |
 | public_note | [string](#string) |  | Private note for the event owner. |
-| moderation | [Moderation](#rellm-Moderation) |  | Moderation status for the attendance. Moderated by the [`Event`](#rellm-Event) owner (or [`EventInstance`](#rellm-EventInstance) owner if applicable). |
+| moderation | [Moderation](#rellm-Moderation) |  | Moderation status for the attendance. Moderated by the [`Event`](#rellm-Event) owner (or [`Occasion`](#rellm-Occasion) owner if applicable). |
 | created_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the attendance was created. |
 | updated_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time the attendance was last updated. |
 
@@ -2669,73 +2669,6 @@ Stored as JSON in the database.
 
 
 
-<a name="rellm-EventInstance"></a>
-
-### EventInstance
-The time-based component of an [`Event`](#rellm-Event). Has a `starts_at` and `ends_at` time,
-a [`Location`](#rellm-Location), and an optional [`Post`](#rellm-Post) (and discussion thread) specific to this particular
-`EventInstance` in addition to the parent [`Event`](#rellm-Event).
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| event_id | [string](#string) |  | ID of the parent [`Event`](#rellm-Event) (i.e. the parent `Event.post.id`). |
-| post | [Post](#rellm-Post) |  | Optional [`Post`](#rellm-Post) containing alternate title/link/description for this particular instance. Its [`PostContext`](#rellm-PostContext) should be `EVENT_INSTANCE`. An `EventInstance`&#39;s ID *is* its `post.id` - there is no separate surrogate ID. |
-| info | [EventInstanceInfo](#rellm-EventInstanceInfo) |  | Additional configuration for this instance of this [`EventInstance`](#rellm-EventInstance) beyond the [`EventInfo`](#rellm-EventInfo) in its parent [`Event`](#rellm-Event). |
-| starts_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the event starts (UTC/Timestamp format). |
-| ends_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the event ends (UTC/Timestamp format). |
-| location | [Location](#rellm-Location) | optional | The location of the event. |
-| sync_missing_since | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time since this event &#34;disappeared&#34; from the sync source. It is up to the owner whether this means it should be deleted. |
-| attendances | [EventAttendances](#rellm-EventAttendances) | optional | RSVP &#43; invite data for this instance. |
-| current_user_attendance | [EventAttendance](#rellm-EventAttendance) | optional | If the request was made by a logged-in user, this is the current user&#39;s attendance for this instance. |
-| sync_destinations | [SyncDestinationStatus](#rellm-SyncDestinationStatus) | repeated | SyncDestinations this instance has been synced (cross-posted) to, and their status. |
-| timezone | [string](#string) | optional | A time zone for the event instance. Used when serializing it for, e.g., Facebook or Instagram posts, or generating media. |
-
-
-
-
-
-
-<a name="rellm-EventInstanceInfo"></a>
-
-### EventInstanceInfo
-To be used for ticketing, RSVPs, etc.
-Stored as JSON in the database.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| rsvp_info | [EventInstanceRsvpInfo](#rellm-EventInstanceRsvpInfo) | optional | RSVP configuration and metadata for the event instance. |
-
-
-
-
-
-
-<a name="rellm-EventInstanceRsvpInfo"></a>
-
-### EventInstanceRsvpInfo
-Consolidated type for RSVP info for an [`EventInstance`](#rellm-EventInstance).
-Curently, the `optional` counts below are *never* returned by the API.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| allows_rsvps | [bool](#bool) | optional | Overrides `EventInfo.allows_rsvps`, if set, for this instance. |
-| allows_anonymous_rsvps | [bool](#bool) | optional | Overrides `EventInfo.allows_anonymous_rsvps`, if set, for this instance. |
-| max_attendees | [uint32](#uint32) | optional | Overrides `EventInfo.max_attendees`, if set, for this instance. Not yet supported. |
-| going_rsvps | [uint32](#uint32) | optional | The number of users who have RSVP&#39;d to the event. |
-| going_attendees | [uint32](#uint32) | optional | The number of attendees who have RSVP&#39;d to the event. (RSVPs may have multiple attendees, i.e. guests.) |
-| interested_rsvps | [uint32](#uint32) | optional | The number of users who have signaled interest in the event. |
-| interested_attendees | [uint32](#uint32) | optional | The number of attendees who have signaled interest in the event. (RSVPs may have multiple attendees, i.e. guests.) |
-| invited_rsvps | [uint32](#uint32) | optional | The number of users who have been invited to the event. |
-| invited_attendees | [uint32](#uint32) | optional | The number of attendees who have been invited to the event. (RSVPs may have multiple attendees, i.e. guests.) |
-
-
-
-
-
-
 <a name="rellm-GetEventAttendancesRequest"></a>
 
 ### GetEventAttendancesRequest
@@ -2744,7 +2677,7 @@ Request to get RSVP data for an event.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| event_instance_id | [string](#string) |  | The ID of the event to get RSVP data for. |
+| occasion_id | [string](#string) |  | The ID of the event to get RSVP data for. |
 | anonymous_attendee_auth_token | [string](#string) | optional | If set, and if the token has an RSVP for this even, request that RSVP data in addition to the rest of the RSVP data. (The event creator can always see and moderate anonymous RSVPs.) |
 
 
@@ -2755,15 +2688,15 @@ Request to get RSVP data for an event.
 <a name="rellm-GetEventsRequest"></a>
 
 ### GetEventsRequest
-Request to get Events in a formatted *per-EventInstance* structure. i.e. the response will carry duplicate [`Event`](#rellm-Event)s with the same ID
-if that [`Event`](#rellm-Event) has multiple [`EventInstance`](#rellm-EventInstance)s in the time frame the client asked for.
+Request to get Events in a formatted *per-Occasion* structure. i.e. the response will carry duplicate [`Event`](#rellm-Event)s with the same ID
+if that [`Event`](#rellm-Event) has multiple [`Occasion`](#rellm-Occasion)s in the time frame the client asked for.
 
-These structured EventInstances are ordered by start time unless otherwise specified (specifically, `EventListingType.NEWLY_ADDED_EVENTS`).
+These structured Occasions are ordered by start time unless otherwise specified (specifically, `EventListingType.NEWLY_ADDED_EVENTS`).
 
 Valid GetEventsRequest formats:
 - `{[listing_type: PublicEvents]}`                 (TODO: get ServerPublic/GlobalPublic events you can see)
 - `{listing_type:MyGroupsEvents|FollowingEvents}`  (TODO: get events for groups joined or user followed; auth required)
-- `{post_id:}`                                     (get a single event, by its own Post ID or one of its EventInstances&#39; Post IDs)
+- `{post_id:}`                                     (get a single event, by its own Post ID or one of its Occasions&#39; Post IDs)
 - `{listing_type: GroupEvents| GroupEventsPendingModeration, group_id:}`
                                                    (TODO: get events/events needing moderation for a group)
 - `{author_user_id:, group_id:}`                   (TODO: get events by a user for a group)
@@ -2774,14 +2707,14 @@ Valid GetEventsRequest formats:
 | ----- | ---- | ----- | ----------- |
 | author_user_id | [string](#string) | optional | Limits results to those by the given author user ID. |
 | group_id | [string](#string) | optional | Limits results to those in the given group ID (via [`GroupPost`](#rellm-GroupPost) association&#39;s for the Event&#39;s internal [`Post`](#rellm-Post)). |
-| time_filter | [TimeFilter](#rellm-TimeFilter) | optional | Filters returned [`EventInstance`](#rellm-EventInstance)s by time. |
+| time_filter | [TimeFilter](#rellm-TimeFilter) | optional | Filters returned [`Occasion`](#rellm-Occasion)s by time. |
 | attendee_id | [string](#string) | optional | If set, only returns events that the given user is attending. If `attendance_statuses` is also set, returns events where that user&#39;s status is one of the given statuses. |
 | attendance_statuses | [AttendanceStatus](#rellm-AttendanceStatus) | repeated | If set, only return events for which the current user&#39;s attendance status matches one of the given statuses. If `attendee_id` is also set, only returns events where the given user&#39;s status matches one of the given statuses. |
-| post_id | [string](#string) | optional | Finds Events for the Post with the given ID. The Post should have a [`PostContext`](#rellm-PostContext) of `EVENT` or `EVENT_INSTANCE`. |
+| post_id | [string](#string) | optional | Finds Events for the Post with the given ID. The Post should have a [`PostContext`](#rellm-PostContext) of `EVENT` or `OCCASION`. |
 | listing_type | [EventListingType](#rellm-EventListingType) |  | The listing type, e.g. `ALL_ACCESSIBLE_EVENTS`, `FOLLOWING_EVENTS`, `MY_GROUPS_EVENTS`, `DIRECT_EVENTS`, `GROUP_EVENTS`, `GROUP_EVENTS_PENDING_MODERATION`. |
 | search_text | [string](#string) | optional | Search text for full-text search. |
-| event_instance_post_ids | [string](#string) | repeated | Loads multiple events by their event instances&#39; Post IDs - returns one Event per matching EventInstance (see GetEventsResponse&#39;s own doc), not the requested EventInstance&#39;s whole parent Event&#39;s full instance list. |
-| anonymous_attendee_auth_token | [string](#string) | optional | Auth token proving ownership of an anonymous RSVP, mirroring `GetEventAttendancesRequest.anonymous_attendee_auth_token`. Lets an anonymous attendee&#39;s own (possibly still-`PENDING`) [`EventAttendance`](#rellm-EventAttendance) and its `EventInstance.location` (when `EventInfo.hide_location_until_rsvp_approved` is set) surface via each returned `EventInstance.attendances`/`current_user_attendance`, same as a logged-in user&#39;s own RSVP does automatically. |
+| occasion_post_ids | [string](#string) | repeated | Loads multiple events by their event instances&#39; Post IDs - returns one Event per matching Occasion (see GetEventsResponse&#39;s own doc), not the requested Occasion&#39;s whole parent Event&#39;s full instance list. |
+| anonymous_attendee_auth_token | [string](#string) | optional | Auth token proving ownership of an anonymous RSVP, mirroring `GetEventAttendancesRequest.anonymous_attendee_auth_token`. Lets an anonymous attendee&#39;s own (possibly still-`PENDING`) [`EventAttendance`](#rellm-EventAttendance) and its `Occasion.location` (when `EventInfo.hide_location_until_rsvp_approved` is set) surface via each returned `Occasion.attendances`/`current_user_attendance`, same as a logged-in user&#39;s own RSVP does automatically. |
 
 
 
@@ -2791,7 +2724,7 @@ Valid GetEventsRequest formats:
 <a name="rellm-GetEventsResponse"></a>
 
 ### GetEventsResponse
-A list of [`Event`](#rellm-Event)s with a maybe-incomplete (see [`GetEventsRequest`](#rellm-GetEventsRequest)) set of their [`EventInstance`](#rellm-EventInstance)s.
+A list of [`Event`](#rellm-Event)s with a maybe-incomplete (see [`GetEventsRequest`](#rellm-GetEventsRequest)) set of their [`Occasion`](#rellm-Occasion)s.
 
 Note that `GetEventsResponse` may often include duplicate Events with the same ID.
 I.E. something like: `{events: [{id: a, instances: [{id: x}]}, {id: a, instances: [{id: y}]}, ]}` is a valid response.
@@ -2813,15 +2746,82 @@ effectively &#34;compacts&#34; all response into its own internal Events store, 
 
 
 
-<a name="rellm-SyncEventInstanceRequest"></a>
+<a name="rellm-Occasion"></a>
 
-### SyncEventInstanceRequest
-Syncs (cross-posts) a single EventInstance to one SyncDestination.
+### Occasion
+The time-based component of an [`Event`](#rellm-Event). Has a `starts_at` and `ends_at` time,
+a [`Location`](#rellm-Location), and an optional [`Post`](#rellm-Post) (and discussion thread) specific to this particular
+`Occasion` in addition to the parent [`Event`](#rellm-Event).
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| event_instance_id | [string](#string) |  | The EventInstance to sync. |
+| event_id | [string](#string) |  | ID of the parent [`Event`](#rellm-Event) (i.e. the parent `Event.post.id`). |
+| post | [Post](#rellm-Post) |  | Optional [`Post`](#rellm-Post) containing alternate title/link/description for this particular instance. Its [`PostContext`](#rellm-PostContext) should be `OCCASION`. An `Occasion`&#39;s ID *is* its `post.id` - there is no separate surrogate ID. |
+| info | [OccasionInfo](#rellm-OccasionInfo) |  | Additional configuration for this instance of this [`Occasion`](#rellm-Occasion) beyond the [`EventInfo`](#rellm-EventInfo) in its parent [`Event`](#rellm-Event). |
+| starts_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the event starts (UTC/Timestamp format). |
+| ends_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the event ends (UTC/Timestamp format). |
+| location | [Location](#rellm-Location) | optional | The location of the event. |
+| sync_missing_since | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time since this event &#34;disappeared&#34; from the sync source. It is up to the owner whether this means it should be deleted. |
+| attendances | [EventAttendances](#rellm-EventAttendances) | optional | RSVP &#43; invite data for this instance. |
+| current_user_attendance | [EventAttendance](#rellm-EventAttendance) | optional | If the request was made by a logged-in user, this is the current user&#39;s attendance for this instance. |
+| sync_destinations | [SyncDestinationStatus](#rellm-SyncDestinationStatus) | repeated | SyncDestinations this instance has been synced (cross-posted) to, and their status. |
+| timezone | [string](#string) | optional | A time zone for the event instance. Used when serializing it for, e.g., Facebook or Instagram posts, or generating media. |
+
+
+
+
+
+
+<a name="rellm-OccasionInfo"></a>
+
+### OccasionInfo
+To be used for ticketing, RSVPs, etc.
+Stored as JSON in the database.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| rsvp_info | [OccasionRsvpInfo](#rellm-OccasionRsvpInfo) | optional | RSVP configuration and metadata for the event instance. |
+
+
+
+
+
+
+<a name="rellm-OccasionRsvpInfo"></a>
+
+### OccasionRsvpInfo
+Consolidated type for RSVP info for an [`Occasion`](#rellm-Occasion).
+Curently, the `optional` counts below are *never* returned by the API.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| allows_rsvps | [bool](#bool) | optional | Overrides `EventInfo.allows_rsvps`, if set, for this instance. |
+| allows_anonymous_rsvps | [bool](#bool) | optional | Overrides `EventInfo.allows_anonymous_rsvps`, if set, for this instance. |
+| max_attendees | [uint32](#uint32) | optional | Overrides `EventInfo.max_attendees`, if set, for this instance. Not yet supported. |
+| going_rsvps | [uint32](#uint32) | optional | The number of users who have RSVP&#39;d to the event. |
+| going_attendees | [uint32](#uint32) | optional | The number of attendees who have RSVP&#39;d to the event. (RSVPs may have multiple attendees, i.e. guests.) |
+| interested_rsvps | [uint32](#uint32) | optional | The number of users who have signaled interest in the event. |
+| interested_attendees | [uint32](#uint32) | optional | The number of attendees who have signaled interest in the event. (RSVPs may have multiple attendees, i.e. guests.) |
+| invited_rsvps | [uint32](#uint32) | optional | The number of users who have been invited to the event. |
+| invited_attendees | [uint32](#uint32) | optional | The number of attendees who have been invited to the event. (RSVPs may have multiple attendees, i.e. guests.) |
+
+
+
+
+
+
+<a name="rellm-SyncOccasionRequest"></a>
+
+### SyncOccasionRequest
+Syncs (cross-posts) a single Occasion to one SyncDestination.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| occasion_id | [string](#string) |  | The Occasion to sync. |
 | sync_destination_id | [string](#string) |  | The SyncDestination to sync it to. |
 
 
@@ -2832,7 +2832,7 @@ Syncs (cross-posts) a single EventInstance to one SyncDestination.
 <a name="rellm-TimeFilter"></a>
 
 ### TimeFilter
-Time filter that works on the `starts_at` and `ends_at` fields of [`EventInstance`](#rellm-EventInstance).
+Time filter that works on the `starts_at` and `ends_at` fields of [`Occasion`](#rellm-Occasion).
 API currently only supports `ends_after`.
 
 
@@ -2872,11 +2872,11 @@ Wire-identical to [Author](#rellm-Author), but with a different name to avoid co
 <a name="rellm-AttendanceStatus"></a>
 
 ### AttendanceStatus
-EventInstance attendance statuses. State transitions may generally happen
+Occasion attendance statuses. State transitions may generally happen
 in any direction, but:
 * `REQUESTED` can only be selected if another user invited the user whose attendance is being described.
-* `GOING` and `NOT_GOING` cannot be selected if the EventInstance has ended (end time is in the past).
-* `WENT` and `DID_NOT_GO` cannot be selected if the EventInstance has not started (start time is in the future).
+* `GOING` and `NOT_GOING` cannot be selected if the Occasion has ended (end time is in the past).
+* `WENT` and `DID_NOT_GO` cannot be selected if the Occasion has not started (start time is in the future).
 `INTERESTED` and `REQUESTED` can apply regardless of whether an event has started or ended.
 
 | Name | Number | Description |
@@ -2905,7 +2905,7 @@ Events returned are ordered by start time unless otherwise specified (specifical
 | EVENT_TEXT_SEARCH | 5 | Returns posts matching the full-text `search_text` query, scoped the same way ALL_ACCESSIBLE_POSTS is (plus author_user_id, if provided). Requires search_text parameter. |
 | GROUP_EVENTS | 10 | Returns events from a specific group. Requires group_id parameterRequires group_id parameter |
 | GROUP_EVENTS_PENDING_MODERATION | 11 | Returns pending_moderation events from a specific group. Requires group_id parameter and user must have group (or server) admin permissions. |
-| NEWLY_ADDED_EVENTS | 20 | Returns events from either `ALL_ACCESSIBLE_EVENTS` or a specific author (with optional author_user_id parameter). Returned EventInstances will be ordered by creation time rather than start time. |
+| NEWLY_ADDED_EVENTS | 20 | Returns events from either `ALL_ACCESSIBLE_EVENTS` or a specific author (with optional author_user_id parameter). Returned Occasions will be ordered by creation time rather than start time. |
 
 
  
@@ -3551,8 +3551,8 @@ The federation configuration for a Rellm server.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | servers | [FederatedServer](#rellm-FederatedServer) | repeated | A list of servers that this server will federate with. |
-| facebook_auth_config | [FacebookAuthConfig](#rellm-FacebookAuthConfig) | optional | Facebook authentication configuration for the server. If set, allows users to create Facebook (and Instagram) SyncDestinations for their Posts and EventInstances. |
-| x_twitter_auth_config | [XTwitterAuthConfig](#rellm-XTwitterAuthConfig) | optional | X (Twitter) authentication configuration for the server. If set, allows users to create X (Twitter) SyncDestinations for their Posts and EventInstances - an admin registers one X Developer App here, and every user on the server connects their own X account through it via OAuth, the same relationship `facebook_auth_config` has to individual Facebook Pages. Until set, [`XTwitterAccount`](#rellm-XTwitterAccount) SyncDestinations always fail with `x_twitter_app_not_configured`. |
+| facebook_auth_config | [FacebookAuthConfig](#rellm-FacebookAuthConfig) | optional | Facebook authentication configuration for the server. If set, allows users to create Facebook (and Instagram) SyncDestinations for their Posts and Occasions. |
+| x_twitter_auth_config | [XTwitterAuthConfig](#rellm-XTwitterAuthConfig) | optional | X (Twitter) authentication configuration for the server. If set, allows users to create X (Twitter) SyncDestinations for their Posts and Occasions - an admin registers one X Developer App here, and every user on the server connects their own X account through it via OAuth, the same relationship `facebook_auth_config` has to individual Facebook Pages. Until set, [`XTwitterAccount`](#rellm-XTwitterAccount) SyncDestinations always fail with `x_twitter_app_not_configured`. |
 | mastodon_servers | [MastodonServer](#rellm-MastodonServer) | repeated | Mastodon instances this server has a registered OAuth app on, letting users connect/read their own account on that instance. Unlike Facebook/X, Mastodon has no single central platform to register an app against - every instance is its own separate OAuth authority, so an admin has to register an app on each instance individually before users on it can connect. If a user&#39;s instance isn&#39;t listed here, clients should surface a &#34;not configured&#34; alert rather than attempting to open an OAuth popup with no app to authorize against. (A client could instead dynamically self-register a throwaway app with the instance directly, via Mastodon&#39;s own `POST /api/v1/apps`, and skip this entirely - Mastodon itself supports that. But that&#39;s a client-side choice the Rellm protocol doesn&#39;t get involved in either way: this field only covers the admin-pre-registered path, which is what lets an app ID be shown/reused consistently across every client on this server rather than each one self-registering its own.) |
 
 
@@ -3633,7 +3633,7 @@ A Bluesky (AT Protocol) account connected as a [`SyncDestination`](#rellm-SyncDe
 (generated at Settings &gt; App Passwords - not the account&#39;s main password), rather than an
 OAuth popup.
 
-Media limitation: only attached *images* on a synced Post/EventInstance are posted (up to 4,
+Media limitation: only attached *images* on a synced Post/Occasion are posted (up to 4,
 downloaded and re-uploaded as Bluesky blobs) - video is silently dropped entirely. Bluesky
 video embeds need a separate, more complex upload-and-processing flow not yet built.
 
@@ -3694,7 +3694,7 @@ this: Facebook *Events* specifically are also unreachable, even for Pages - see
 `docs/facebook_and_x_twitter_federation.md`&#39;s &#34;It posts to the Page&#39;s feed, not a real Facebook
 Event&#34; for that separate, independent 2018-era lockdown.)
 
-Media limitation: a synced Post/EventInstance&#39;s attached video and images are mutually
+Media limitation: a synced Post/Occasion&#39;s attached video and images are mutually
 exclusive on Facebook - if both are present, the video is posted and any images are silently
 dropped (Facebook Pages can&#39;t attach both to a single feed post).
 
@@ -3753,7 +3753,7 @@ to be linked to a Facebook Page, so this reuses the same Facebook Login popup an
 as [`FacebookPage`](#rellm-FacebookPage) - the server exchanges the token for the Page&#39;s access token, then looks up
 that Page&#39;s linked Instagram Business account.
 
-Media limitation: only the *first* attached image/video on a synced Post/EventInstance is
+Media limitation: only the *first* attached image/video on a synced Post/Occasion is
 posted - no carousel/multi-image support yet. A post with no media at all is rejected
 (`instagram_requires_media`) - Instagram&#39;s Graph API has no text-only post type.
 
@@ -3778,7 +3778,7 @@ A Mastodon account connected as a [`SyncDestination`](#rellm-SyncDestination) vi
 popup - Mastodon instances are user-chosen arbitrary domains, so there&#39;s no single app to
 register ahead of time the way Facebook/Instagram have one.
 
-Media: up to 4 attached images/videos on a synced Post/EventInstance are downloaded and
+Media: up to 4 attached images/videos on a synced Post/Occasion are downloaded and
 re-uploaded as real Mastodon media attachments (any mix of image/video types); a failed
 individual upload is skipped rather than failing the whole post.
 
@@ -3799,8 +3799,8 @@ individual upload is skipped rather than failing the whole post.
 ### SyncDestination
 A user-owned destination to sync (cross-post) content out to. Mirrors [`SyncSource`](#rellm-SyncSource),
 but for pushing content out rather than pulling content in. Originally Event-specific
-(as `EventSyncDestination`), now shared by both [`EventInstance`](#rellm-EventInstance)s (see `events.proto`&#39;s
-[`SyncEventInstanceRequest`](#rellm-SyncEventInstanceRequest)) and [`Post`](#rellm-Post)s (see `posts.proto`&#39;s [`SyncPostRequest`](#rellm-SyncPostRequest)).
+(as `EventSyncDestination`), now shared by both [`Occasion`](#rellm-Occasion)s (see `events.proto`&#39;s
+[`SyncOccasionRequest`](#rellm-SyncOccasionRequest)) and [`Post`](#rellm-Post)s (see `posts.proto`&#39;s [`SyncPostRequest`](#rellm-SyncPostRequest)).
 
 
 | Field | Type | Label | Description |
@@ -3809,14 +3809,14 @@ but for pushing content out rather than pulling content in. Originally Event-spe
 | owner | [Author](#rellm-Author) |  | The user information for the owner of this destination. |
 | created_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the SyncDestination was created. |
 | updated_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time the SyncDestination was last updated. |
-| synced_event_instance_count | [uint64](#uint64) | optional | The number of EventInstances synced to this destination so far. Computed with a `COUNT` at request time (unlike [`SyncSource`](#rellm-SyncSource)&#39;s `event_count`/`event_instance_count`, which are recomputed-and-stored on each sync) since destinations are pushed to on demand, not synced in bulk on an interval. |
-| synced_post_count | [uint64](#uint64) | optional | The number of Posts synced to this destination so far. Computed the same way as `synced_event_instance_count`, just against Posts instead of EventInstances. |
-| facebook_page | [FacebookPage](#rellm-FacebookPage) |  | A connected Facebook Page to post EventInstances/Posts to. |
-| instagram_account | [InstagramAccount](#rellm-InstagramAccount) |  | A connected Instagram Business/Creator account to post EventInstances/Posts to. |
-| mastodon_account | [MastodonAccount](#rellm-MastodonAccount) |  | A connected Mastodon account to post EventInstances/Posts to. |
-| bluesky_account | [BlueskyAccount](#rellm-BlueskyAccount) |  | A connected Bluesky account to post EventInstances/Posts to. |
-| x_twitter_account | [XTwitterAccount](#rellm-XTwitterAccount) |  | A connected X (Twitter) account to post EventInstances/Posts to. |
-| threads_account | [ThreadsAccount](#rellm-ThreadsAccount) |  | A connected Threads account to post EventInstances/Posts to. |
+| synced_occasion_count | [uint64](#uint64) | optional | The number of Occasions synced to this destination so far. Computed with a `COUNT` at request time (unlike [`SyncSource`](#rellm-SyncSource)&#39;s `event_count`/`occasion_count`, which are recomputed-and-stored on each sync) since destinations are pushed to on demand, not synced in bulk on an interval. |
+| synced_post_count | [uint64](#uint64) | optional | The number of Posts synced to this destination so far. Computed the same way as `synced_occasion_count`, just against Posts instead of Occasions. |
+| facebook_page | [FacebookPage](#rellm-FacebookPage) |  | A connected Facebook Page to post Occasions/Posts to. |
+| instagram_account | [InstagramAccount](#rellm-InstagramAccount) |  | A connected Instagram Business/Creator account to post Occasions/Posts to. |
+| mastodon_account | [MastodonAccount](#rellm-MastodonAccount) |  | A connected Mastodon account to post Occasions/Posts to. |
+| bluesky_account | [BlueskyAccount](#rellm-BlueskyAccount) |  | A connected Bluesky account to post Occasions/Posts to. |
+| x_twitter_account | [XTwitterAccount](#rellm-XTwitterAccount) |  | A connected X (Twitter) account to post Occasions/Posts to. |
+| threads_account | [ThreadsAccount](#rellm-ThreadsAccount) |  | A connected Threads account to post Occasions/Posts to. |
 
 
 
@@ -3826,8 +3826,8 @@ but for pushing content out rather than pulling content in. Originally Event-spe
 <a name="rellm-SyncDestinationStatus"></a>
 
 ### SyncDestinationStatus
-The status of a single piece of content&#39;s (an [`EventInstance`](#rellm-EventInstance) or [`Post`](#rellm-Post)) sync (cross-post) to
-one [`SyncDestination`](#rellm-SyncDestination). Shared/generic so both `EventInstance.sync_destinations` and
+The status of a single piece of content&#39;s (an [`Occasion`](#rellm-Occasion) or [`Post`](#rellm-Post)) sync (cross-post) to
+one [`SyncDestination`](#rellm-SyncDestination). Shared/generic so both `Occasion.sync_destinations` and
 `Post.sync_destinations` can reuse it.
 
 
@@ -3858,9 +3858,9 @@ A user-owned source to sync events from.
 | updated_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time the SyncSource was last updated. |
 | last_synced_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time the SyncSource was last synced. |
 | event_count | [uint64](#uint64) |  | The number of events total associated with this SyncSource. Recomputed on each sync. |
-| event_instance_count | [uint64](#uint64) |  | The number of event instances total associated with this SyncSource. Recomputed on each sync. |
-| post_count | [uint64](#uint64) |  | The number of posts total associated with this SyncSource. Populated for an RSS/Atom source (recomputed on each sync, like `event_count`/`event_instance_count` are for an ICS source); always 0 for an ICS source, which syncs Events/EventInstances instead. |
-| ics_subscription_url | [string](#string) |  | The iCal subscription URL for the calendar sync. Creates/updates Events/EventInstances. |
+| occasion_count | [uint64](#uint64) |  | The number of event instances total associated with this SyncSource. Recomputed on each sync. |
+| post_count | [uint64](#uint64) |  | The number of posts total associated with this SyncSource. Populated for an RSS/Atom source (recomputed on each sync, like `event_count`/`occasion_count` are for an ICS source); always 0 for an ICS source, which syncs Events/Occasions instead. |
+| ics_subscription_url | [string](#string) |  | The iCal subscription URL for the calendar sync. Creates/updates Events/Occasions. |
 | rss_subscription_url | [string](#string) |  | The RSS subscription URL for the feed sync. Creates/updates plain Posts. |
 | atom_subscription_url | [string](#string) |  | The Atom subscription URL for the feed sync. Creates/updates plain Posts. |
 
@@ -3884,7 +3884,7 @@ for a short-lived token, then a long-lived one (~60 day expiry, refreshable via
 `grant_type=th_refresh_token` - not yet implemented; a connected destination will need
 reconnecting after ~60 days until a refresh job exists).
 
-Media limitation: only the *first* attached image/video on a synced Post/EventInstance is
+Media limitation: only the *first* attached image/video on a synced Post/Occasion is
 posted - no carousel/multi-image support yet. Unlike [`InstagramAccount`](#rellm-InstagramAccount), a text-only post
 (no media at all) is valid.
 
@@ -3911,7 +3911,7 @@ fails with `x_twitter_app_not_configured` until an admin sets one, mirroring
 Meta App), an admin registers this app once and every user on the server connects their own X
 account through it - no per-user API keys needed.
 
-Media limitation: up to 4 attached *images* on a synced Post/EventInstance are downloaded and
+Media limitation: up to 4 attached *images* on a synced Post/Occasion are downloaded and
 re-uploaded via X&#39;s media upload endpoint. Video is not yet supported - X&#39;s video upload
 requires a chunked upload-and-processing flow (mirroring Bluesky&#39;s own documented video gap)
 not yet built; a video attachment is silently skipped.
@@ -3938,29 +3938,54 @@ not yet built; a video attachment is silently skipped.
 
 
 
-<a name="ai_model_providers-proto"></a>
+<a name="ai_providers-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
-## ai_model_providers.proto
+## ai_providers.proto
 
 
 
-<a name="rellm-AIModelProvider"></a>
+<a name="rellm-AIModel"></a>
 
-### AIModelProvider
-An AIModelProvider is a user-owned connection to an external AI model API (e.g. a Gemini API
+### AIModel
+One specific model a user may call right now, and how - via an [`AIProvider`](#rellm-AIProvider)
+they own outright (`grant` unset), or via an [`AIProviderGrant`](#rellm-AIProviderGrant) someone else
+granted them (`grant` set). Only ever defined relative to a user - see
+[`User.ai_models`](#rellm-User)/[`GetAIProvidersResponse.ai_models`](#rellm-GetAIProvidersResponse).
+One `AIModel` exists per (provider, model) pair: an owner gets one row per model their
+provider supports (see the server&#39;s own model catalog per provider type); a grantee gets one row
+per model their grant actually covers - expanded from `AIProviderGrant.model_names`, or
+every model the provider supports if that list is empty.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| model_name | [string](#string) |  | The exact model name to use when calling the provider (e.g. `&#34;gemini-3.1-flash-image&#34;`). |
+| capabilities | [AIModelCapability](#rellm-AIModelCapability) | repeated | What this model can actually do - from the server&#39;s own hardcoded catalog for `provider.provider`&#39;s variant (see [`AIModelCapability`](#rellm-AIModelCapability)), not anything reported by the provider&#39;s API itself. Feature gating keys off this rather than `model_name` directly, so e.g. [`GenerateMedia`](#grpc-api-GenerateMedia) (which needs `AI_MODEL_CAPABILITY_IMAGE_EDITING` whenever `GenerateMediaRequest.media_ids` is non-empty, or just `AI_MODEL_CAPABILITY_IMAGE_GENERATION` when it&#39;s empty) doesn&#39;t need its own hardcoded list of model names. |
+| grant | [AIProviderGrant](#rellm-AIProviderGrant) | optional | The grant that allows this access, when the current user isn&#39;t `provider.owner` themselves. Unset when the current user owns `provider` outright (full, ungated access - no grant needed). |
+| provider | [AIProvider](#rellm-AIProvider) |  | The provider this model belongs to. Its own `grants` list is only populated when the current user is `provider.owner` (or an Admin) - see [`GetAIProviders`](#grpc-api-GetAIProviders)&#39;s own doc; a mere grantee never sees who else has been granted access to a provider they don&#39;t own. |
+
+
+
+
+
+
+<a name="rellm-AIProvider"></a>
+
+### AIProvider
+An AIProvider is a user-owned connection to an external AI model API (e.g. a Gemini API
 key), which its owner can grant other users of this server metered, budgeted access to. Mirrors
 [`SyncDestination`](#rellm-SyncDestination)/[`SyncSource`](#rellm-SyncSource) (also user-owned integrations
 with an [`Author`](#rellm-Author) `owner` and a `oneof` naming which external system is configured), but where
-those push/pull content, an AIModelProvider is metered *access* to a third-party LLM API - shared out to
-other users via [`AIModelProviderGrant`](#rellm-AIModelProviderGrant)s rather than posted-to/subscribed-from.
+those push/pull content, an AIProvider is metered *access* to a third-party LLM API - shared out to
+other users via [`AIProviderGrant`](#rellm-AIProviderGrant)s rather than posted-to/subscribed-from.
 
-Providers are managed via [`GetAIModelProviders`](#grpc-api-GetAIModelProviders),
-[`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider) (requires `CREATE_AI_MODEL_PROVIDERS`, or Admin),
-[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider) (owner, or Admin for any user&#39;s), and
-[`DeleteAIModelProvider`](#grpc-api-DeleteAIModelProvider) (owner, or Admin) - the same self-or-Admin shape as
+Providers are managed via [`GetAIProviders`](#grpc-api-GetAIProviders),
+[`CreateAIProvider`](#grpc-api-CreateAIProvider) (requires `CREATE_AI_PROVIDERS`, or Admin),
+[`UpdateAIProvider`](#grpc-api-UpdateAIProvider) (owner, or Admin for any user&#39;s), and
+[`DeleteAIProvider`](#grpc-api-DeleteAIProvider) (owner, or Admin) - the same self-or-Admin shape as
 [`SyncDestination`](#rellm-SyncDestination)&#39;s RPCs. Access to a provider is granted/revoked to other users via
-[`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider)/[`RevokeAIModelProvider`](#grpc-api-RevokeAIModelProvider) which,
+[`GrantAIProvider`](#grpc-api-GrantAIProvider)/[`RevokeAIProvider`](#grpc-api-RevokeAIProvider) which,
 unlike every other RPC pair here, are **owner-only with no Admin override**: an Admin can manage the provider
 record itself (rename it, rotate its key, delete it), but handing out access to *someone else&#39;s* API budget is a
 call only its owner should be able to make.
@@ -3970,19 +3995,19 @@ call only its owner should be able to make.
 Interactions API, OpenAI&#39;s Images API, DigitalOcean&#39;s Serverless Inference API - the last of which is also
 OpenAI-Images-API-shaped, just a different base URL/key and generation-only, no editing endpoint);
 [`AnthropicCredentials`](#rellm-AnthropicCredentials) is defined for forward compatibility but is not yet
-accepted by [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider) (Anthropic doesn&#39;t offer image generation).
+accepted by [`CreateAIProvider`](#grpc-api-CreateAIProvider) (Anthropic doesn&#39;t offer image generation).
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| id | [string](#string) |  | Unique ID for the AIModelProvider. |
-| owner | [Author](#rellm-Author) |  | The user information for the owner of this AIModelProvider - the only user (besides Admins) who may rename it or change its credentials/provider, and the *only* user (not even Admins) who may grant/revoke other users&#39; access to it. |
+| id | [string](#string) |  | Unique ID for the AIProvider. |
+| owner | [Author](#rellm-Author) |  | The user information for the owner of this AIProvider - the only user (besides Admins) who may rename it or change its credentials/provider, and the *only* user (not even Admins) who may grant/revoke other users&#39; access to it. |
 | name | [string](#string) |  | A display name for the provider, chosen by its owner (e.g. &#34;My Gemini Key&#34;, &#34;Team OpenAI Account&#34;). Purely cosmetic - has no effect on behavior. |
 | gemini_credentials | [GeminiCredentials](#rellm-GeminiCredentials) |  | A [Google Gemini API](https://ai.google.dev/gemini-api) connection, used for image generation/editing (e.g. generating Event posters) via its [Interactions API](https://ai.google.dev/gemini-api/docs/image-generation). |
 | openai_credentials | [OpenAICredentials](#rellm-OpenAICredentials) |  | An [OpenAI API](https://platform.openai.com/docs/api-reference) connection, used for image generation/editing via its [Images API](https://platform.openai.com/docs/guides/image-generation) (GPT Image models). |
 | anthropic_credentials | [AnthropicCredentials](#rellm-AnthropicCredentials) |  | An [Anthropic API](https://docs.anthropic.com) connection. *Not yet creatable* - Anthropic doesn&#39;t offer an image generation API. |
 | digitalocean_credentials | [DigitalOceanCredentials](#rellm-DigitalOceanCredentials) |  | A [DigitalOcean Gradient AI Platform](https://docs.digitalocean.com/products/gradient-ai-platform/) / Serverless Inference connection, used for image generation (no editing - DigitalOcean&#39;s [Serverless Inference API](https://docs.digitalocean.com/products/gradient-ai-platform/reference/api/serverless-inference/) has no `/v1/images/edits`-equivalent endpoint) via its OpenAI-Images-API-shaped `/v1/images/generations` endpoint (GPT Image and Stable Diffusion models, re-hosted under DigitalOcean&#39;s own billing). |
-| grants | [AIModelProviderGrant](#rellm-AIModelProviderGrant) | repeated | Other users this provider&#39;s owner has granted metered access to, via [`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider). Only ever populated for the owner (or an Admin) -- see [`GetAIModelProviders`](#grpc-api-GetAIModelProviders). |
+| grants | [AIProviderGrant](#rellm-AIProviderGrant) | repeated | Other users this provider&#39;s owner has granted metered access to, via [`GrantAIProvider`](#grpc-api-GrantAIProvider). Only ever populated for the owner (or an Admin) -- see [`GetAIProviders`](#grpc-api-GetAIProviders). |
 | created_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the provider was created. |
 | updated_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time the provider was last updated (renamed, or had its provider/credentials changed). |
 
@@ -3991,26 +4016,26 @@ accepted by [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider) (Anthropi
 
 
 
-<a name="rellm-AIModelProviderGrant"></a>
+<a name="rellm-AIProviderGrant"></a>
 
-### AIModelProviderGrant
-A grant of metered access to someone else&#39;s [`AIModelProvider`](#rellm-AIModelProvider), created/reset via
-[`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider) and removed via
-[`RevokeAIModelProvider`](#grpc-api-RevokeAIModelProvider). Upserted on the unique
-`(ai_model_provider_id, ai_model_grantee)` pair - calling [`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider)
+### AIProviderGrant
+A grant of metered access to someone else&#39;s [`AIProvider`](#rellm-AIProvider), created/reset via
+[`GrantAIProvider`](#grpc-api-GrantAIProvider) and removed via
+[`RevokeAIProvider`](#grpc-api-RevokeAIProvider). Upserted on the unique
+`(ai_provider_id, ai_model_grantee)` pair - calling [`GrantAIProvider`](#grpc-api-GrantAIProvider)
 again for a user who already has a grant *resets* `tokens_remaining` to the newly-requested amount, it does not
 add to it.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| ai_model_provider_id | [string](#string) |  | The ID of the [`AIModelProvider`](#rellm-AIModelProvider) this grant is for. |
+| ai_provider_id | [string](#string) |  | The ID of the [`AIProvider`](#rellm-AIProvider) this grant is for. |
 | ai_model_grantee | [Author](#rellm-Author) |  | The user this access was granted to. |
 | model_names | [string](#string) | repeated | The model name (that will be used to call the provider) that the grantee is allowed to use by this grant. If blank, allows access to any models the provider supports. If non-blank, the grantee is only allowed to use the model(s) specified here. Allows granters to set per-model (or per-model-group) token budgets, e.g. &#34;gpt-4&#34; vs &#34;gpt-3.5-turbo&#34;. |
-| tokens_remaining | [uint64](#uint64) |  | The number of tokens the grantee may still spend against this provider. Set (and reset) by the owner via [`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider). Once this reaches 0, [`GenerateMedia`](#grpc-api-GenerateMedia) stops working for the grantee entirely, until the owner grants more via [`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider) again. |
-| overage | [uint64](#uint64) |  | How far a single [`GenerateMedia`](#grpc-api-GenerateMedia) call&#39;s actual token usage overshot `tokens_remaining` the moment it hit 0 - effectively a &#34;negative `tokens_remaining`&#34; (which, being `uint64`, can&#39;t represent a negative value directly), recorded here instead as a positive debt for the owner&#39;s own visibility. E.g. a grantee with 30 tokens left whose next call actually costs 45 ends up with `tokens_remaining = 0` and `overage = 15`. Always 0 immediately after a fresh [`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider) call (any prior debt is cleared, not carried forward) - see that RPC&#39;s own doc. |
+| tokens_remaining | [uint64](#uint64) |  | The number of tokens the grantee may still spend against this provider. Set (and reset) by the owner via [`GrantAIProvider`](#grpc-api-GrantAIProvider). Once this reaches 0, [`GenerateMedia`](#grpc-api-GenerateMedia) stops working for the grantee entirely, until the owner grants more via [`GrantAIProvider`](#grpc-api-GrantAIProvider) again. |
+| overage | [uint64](#uint64) |  | How far a single [`GenerateMedia`](#grpc-api-GenerateMedia) call&#39;s actual token usage overshot `tokens_remaining` the moment it hit 0 - effectively a &#34;negative `tokens_remaining`&#34; (which, being `uint64`, can&#39;t represent a negative value directly), recorded here instead as a positive debt for the owner&#39;s own visibility. E.g. a grantee with 30 tokens left whose next call actually costs 45 ends up with `tokens_remaining = 0` and `overage = 15`. Always 0 immediately after a fresh [`GrantAIProvider`](#grpc-api-GrantAIProvider) call (any prior debt is cleared, not carried forward) - see that RPC&#39;s own doc. |
 | created_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the grant was first created. |
-| updated_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time the grant was last updated (i.e. last reset by another [`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider) call). |
+| updated_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time the grant was last updated (i.e. last reset by another [`GrantAIProvider`](#grpc-api-GrantAIProvider) call). |
 
 
 
@@ -4033,40 +4058,15 @@ forward compatibility only.
 
 
 
-<a name="rellm-AvailableAIModel"></a>
+<a name="rellm-DeleteAIProviderRequest"></a>
 
-### AvailableAIModel
-One specific model a user may call right now, and how - via an [`AIModelProvider`](#rellm-AIModelProvider)
-they own outright (`grant` unset), or via an [`AIModelProviderGrant`](#rellm-AIModelProviderGrant) someone else
-granted them (`grant` set). Only ever defined relative to a user - see
-[`User.available_ai_models`](#rellm-User)/[`GetAIModelProvidersResponse.available_ai_models`](#rellm-GetAIModelProvidersResponse).
-One `AvailableAIModel` exists per (provider, model) pair: an owner gets one row per model their
-provider supports (see the server&#39;s own model catalog per provider type); a grantee gets one row
-per model their grant actually covers - expanded from `AIModelProviderGrant.model_names`, or
-every model the provider supports if that list is empty.
+### DeleteAIProviderRequest
+Request to delete an AIProvider. Also deletes any of its [`AIProviderGrant`](#rellm-AIProviderGrant)s.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| model_name | [string](#string) |  | The exact model name to use when calling the provider (e.g. `&#34;gemini-3.1-flash-image&#34;`). |
-| capabilities | [AIModelCapability](#rellm-AIModelCapability) | repeated | What this model can actually do - from the server&#39;s own hardcoded catalog for `provider.provider`&#39;s variant (see [`AIModelCapability`](#rellm-AIModelCapability)), not anything reported by the provider&#39;s API itself. Feature gating keys off this rather than `model_name` directly, so e.g. [`GenerateMedia`](#grpc-api-GenerateMedia) (which needs `AI_MODEL_CAPABILITY_IMAGE_EDITING` whenever `GenerateMediaRequest.media_ids` is non-empty, or just `AI_MODEL_CAPABILITY_IMAGE_GENERATION` when it&#39;s empty) doesn&#39;t need its own hardcoded list of model names. |
-| grant | [AIModelProviderGrant](#rellm-AIModelProviderGrant) | optional | The grant that allows this access, when the current user isn&#39;t `provider.owner` themselves. Unset when the current user owns `provider` outright (full, ungated access - no grant needed). |
-| provider | [AIModelProvider](#rellm-AIModelProvider) |  | The provider this model belongs to. Its own `grants` list is only populated when the current user is `provider.owner` (or an Admin) - see [`GetAIModelProviders`](#grpc-api-GetAIModelProviders)&#39;s own doc; a mere grantee never sees who else has been granted access to a provider they don&#39;t own. |
-
-
-
-
-
-
-<a name="rellm-DeleteAIModelProviderRequest"></a>
-
-### DeleteAIModelProviderRequest
-Request to delete an AIModelProvider. Also deletes any of its [`AIModelProviderGrant`](#rellm-AIModelProviderGrant)s.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| provider | [AIModelProvider](#rellm-AIModelProvider) |  | The provider to be deleted. |
+| provider | [AIProvider](#rellm-AIProvider) |  | The provider to be deleted. |
 
 
 
@@ -4078,8 +4078,8 @@ Request to delete an AIModelProvider. Also deletes any of its [`AIModelProviderG
 ### DigitalOceanCredentials
 Credentials for a [DigitalOcean Gradient AI Platform](https://docs.digitalocean.com/products/gradient-ai-platform/) /
 Serverless Inference connection, accepted by
-[`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider)/[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider).
-Used for image *generation only* (no editing - see `AIModelProvider.provider`&#39;s own doc on this variant) via its
+[`CreateAIProvider`](#grpc-api-CreateAIProvider)/[`UpdateAIProvider`](#grpc-api-UpdateAIProvider).
+Used for image *generation only* (no editing - see `AIProvider.provider`&#39;s own doc on this variant) via its
 [Serverless Inference API](https://docs.digitalocean.com/products/gradient-ai-platform/reference/api/serverless-inference/)
 `/v1/images/generations` endpoint, OpenAI-Images-API-shaped and re-hosting GPT Image and Stable Diffusion models --
 see [`GenerateMedia`](#grpc-api-GenerateMedia).
@@ -4087,7 +4087,7 @@ see [`GenerateMedia`](#grpc-api-GenerateMedia).
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| digitalocean_api_key | [string](#string) | optional | The DigitalOcean Serverless Inference API token. Required (and only used) on [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider)/[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider) -- never populated in responses (see [`GeminiCredentials.gemini_api_key`](#rellm-GeminiCredentials)). |
+| digitalocean_api_key | [string](#string) | optional | The DigitalOcean Serverless Inference API token. Required (and only used) on [`CreateAIProvider`](#grpc-api-CreateAIProvider)/[`UpdateAIProvider`](#grpc-api-UpdateAIProvider) -- never populated in responses (see [`GeminiCredentials.gemini_api_key`](#rellm-GeminiCredentials)). |
 
 
 
@@ -4098,15 +4098,15 @@ see [`GenerateMedia`](#grpc-api-GenerateMedia).
 
 ### GeminiCredentials
 Credentials for a [Google Gemini API](https://ai.google.dev/gemini-api) connection - the only
-[`AIModelProvider.provider`](#rellm-AIModelProvider) variant currently accepted by
-[`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider)/[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider).
+[`AIProvider.provider`](#rellm-AIProvider) variant currently accepted by
+[`CreateAIProvider`](#grpc-api-CreateAIProvider)/[`UpdateAIProvider`](#grpc-api-UpdateAIProvider).
 Used for image generation/editing via Gemini&#39;s [Interactions API](https://ai.google.dev/gemini-api/docs/image-generation),
 e.g. to generate/edit Event posters from an Event&#39;s own content - see [`GenerateMedia`](#grpc-api-GenerateMedia).
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| gemini_api_key | [string](#string) | optional | The Gemini API key. Required (and only used) on [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider)/[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider) -- **never populated in responses**, the same write-only convention as e.g. [`MastodonAccount.access_token`](#rellm-MastodonAccount) in `sync.proto`. |
+| gemini_api_key | [string](#string) | optional | The Gemini API key. Required (and only used) on [`CreateAIProvider`](#grpc-api-CreateAIProvider)/[`UpdateAIProvider`](#grpc-api-UpdateAIProvider) -- **never populated in responses**, the same write-only convention as e.g. [`MastodonAccount.access_token`](#rellm-MastodonAccount) in `sync.proto`. |
 
 
 
@@ -4117,53 +4117,53 @@ e.g. to generate/edit Event posters from an Event&#39;s own content - see [`Gene
 
 ### GenerateMediaRequest
 Request to generate (or edit) an image via one of the current user&#39;s
-[`AvailableAIModel`](#rellm-AvailableAIModel)s - see [`GenerateMedia`](#grpc-api-GenerateMedia). The resulting
+[`AIModel`](#rellm-AIModel)s - see [`GenerateMedia`](#grpc-api-GenerateMedia). The resulting
 image is stored as a new [`Media`](#rellm-Media) (`generated = true`) owned by the current user, and - if
 `target` is set - prepended as the *first* item in that Post&#39;s (or Event&#39;s own Post&#39;s) `media` list.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| model | [AvailableAIModel](#rellm-AvailableAIModel) |  | Which of the current user&#39;s `AvailableAIModel`s to generate with - `model.model_name` selects the actual model, `model.provider.id` identifies whose `AIModelProvider` (the current user&#39;s own, or one they&#39;ve been granted access to) to call it through. Only `model_name`/`provider.id` are read server-side - any other field sent here (e.g. a spoofed `grant`) is ignored in favor of the caller&#39;s real access, re-derived from `provider.id` and the current user. |
+| model | [AIModel](#rellm-AIModel) |  | Which of the current user&#39;s `AIModel`s to generate with - `model.model_name` selects the actual model, `model.provider.id` identifies whose `AIProvider` (the current user&#39;s own, or one they&#39;ve been granted access to) to call it through. Only `model_name`/`provider.id` are read server-side - any other field sent here (e.g. a spoofed `grant`) is ignored in favor of the caller&#39;s real access, re-derived from `provider.id` and the current user. |
 | user_prompt | [string](#string) |  | The user-editable prompt describing what to generate, e.g. &#34;Please generate a square headline poster for the following event.&#34; Combined server-side with `target`&#39;s own formatted content (title/description/date-time range/location - the same formatting [`SyncDestination`](#rellm-SyncDestination)s use) before being sent to the model, so the user never has to paste that context in by hand. |
 | media_ids | [string](#string) | repeated | Existing [`Media`](#rellm-Media) to pass to the model alongside `user_prompt`, for image editing/ reference-based generation (e.g. a target Post/Event&#39;s own current photos), in the order given here. Leave empty for plain text-to-image generation instead - `model` must have the matching capability either way (`AI_MODEL_CAPABILITY_IMAGE_EDITING` here, `AI_MODEL_CAPABILITY_IMAGE_GENERATION` if empty - see [`AIModelCapability`](#rellm-AIModelCapability)&#39;s own doc). Every id must be owned by the current user (or the current user must be an Admin). |
 | post_id | [string](#string) |  | Attach to (and use the content of) this Post. Caller must be its author, or an Admin. |
-| event_instance_id | [string](#string) |  | Attach to (and use the content of) this EventInstance&#39;s parent Event&#39;s own Post - named by EventInstance, not Event, since that&#39;s what a viewer is actually looking at (and what gives the generated prompt its date/time/location context, the same way [`SyncEventInstance`](#grpc-api-SyncEventInstance) does). Caller must be the Event&#39;s own Post&#39;s author, or hold `MODERATE_POSTS`/`MODERATE_EVENTS`, or be an Admin. |
+| occasion_id | [string](#string) |  | Attach to (and use the content of) this Occasion&#39;s parent Event&#39;s own Post - named by Occasion, not Event, since that&#39;s what a viewer is actually looking at (and what gives the generated prompt its date/time/location context, the same way [`SyncOccasion`](#grpc-api-SyncOccasion) does). Caller must be the Event&#39;s own Post&#39;s author, or hold `MODERATE_POSTS`/`MODERATE_EVENTS`, or be an Admin. |
 
 
 
 
 
 
-<a name="rellm-GetAIModelProvidersResponse"></a>
+<a name="rellm-GetAIProvidersResponse"></a>
 
-### GetAIModelProvidersResponse
-Response to a request for a user&#39;s [`AIModelProvider`](#rellm-AIModelProvider)s.
+### GetAIProvidersResponse
+Response to a request for a user&#39;s [`AIProvider`](#rellm-AIProvider)s.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| providers | [AIModelProvider](#rellm-AIModelProvider) | repeated | The requested user&#39;s own AIModelProviders (those they own) - exactly the distinct `provider`s in `available_ai_models` whose `owner` is the requested user, each with its own `grants` populated (who else can use it). A convenience duplicate of data already in `available_ai_models`, so callers managing a user&#39;s own providers (rename/rekey/delete/grant/ revoke) don&#39;t have to de-duplicate that list themselves. |
-| available_ai_models | [AvailableAIModel](#rellm-AvailableAIModel) | repeated | Every model the requested user may currently call - their own providers&#39; models, plus any models granted to them on other users&#39; providers. See [`AvailableAIModel`](#rellm-AvailableAIModel)&#39;s own doc. |
+| providers | [AIProvider](#rellm-AIProvider) | repeated | The requested user&#39;s own AIProviders (those they own) - exactly the distinct `provider`s in `ai_models` whose `owner` is the requested user, each with its own `grants` populated (who else can use it). A convenience duplicate of data already in `ai_models`, so callers managing a user&#39;s own providers (rename/rekey/delete/grant/ revoke) don&#39;t have to de-duplicate that list themselves. |
+| ai_models | [AIModel](#rellm-AIModel) | repeated | Every model the requested user may currently call - their own providers&#39; models, plus any models granted to them on other users&#39; providers. See [`AIModel`](#rellm-AIModel)&#39;s own doc. |
 
 
 
 
 
 
-<a name="rellm-GrantAIModelProviderRequest"></a>
+<a name="rellm-GrantAIProviderRequest"></a>
 
-### GrantAIModelProviderRequest
+### GrantAIProviderRequest
 Request to grant (or reset) another user&#39;s metered access to one of the current user&#39;s
-[`AIModelProvider`](#rellm-AIModelProvider)s. *Authenticated, owner-only - no Admin override.*
+[`AIProvider`](#rellm-AIProvider)s. *Authenticated, owner-only - no Admin override.*
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | user_id | [string](#string) |  | The user to grant access to. |
-| ai_model_provider_id | [string](#string) |  | The AIModelProvider to grant access to. Must be owned by the caller. |
-| tokens | [uint64](#uint64) |  | The number of tokens the grantee may spend. Calling this RPC again for the same (`ai_model_provider_id`, `user_id`) pair *replaces*, rather than adds to, this value. |
-| model_names | [string](#string) | repeated | The models the grantee is allowed to use, mirroring [`AIModelProviderGrant.model_names`](#rellm-AIModelProviderGrant) - if empty, allows access to any model the provider supports. Also replaced (not merged) on a repeat call, same as `tokens`. |
+| ai_provider_id | [string](#string) |  | The AIProvider to grant access to. Must be owned by the caller. |
+| tokens | [uint64](#uint64) |  | The number of tokens the grantee may spend. Calling this RPC again for the same (`ai_provider_id`, `user_id`) pair *replaces*, rather than adds to, this value. |
+| model_names | [string](#string) | repeated | The models the grantee is allowed to use, mirroring [`AIProviderGrant.model_names`](#rellm-AIProviderGrant) - if empty, allows access to any model the provider supports. Also replaced (not merged) on a repeat call, same as `tokens`. |
 
 
 
@@ -4174,7 +4174,7 @@ Request to grant (or reset) another user&#39;s metered access to one of the curr
 
 ### OpenAICredentials
 Credentials for an [OpenAI API](https://platform.openai.com/docs/api-reference) connection, accepted by
-[`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider)/[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider).
+[`CreateAIProvider`](#grpc-api-CreateAIProvider)/[`UpdateAIProvider`](#grpc-api-UpdateAIProvider).
 Used for image generation/editing via OpenAI&#39;s [Images API](https://platform.openai.com/docs/guides/image-generation)
 (the GPT Image model family) - same use case as [`GeminiCredentials`](#rellm-GeminiCredentials), see
 [`GenerateMedia`](#grpc-api-GenerateMedia).
@@ -4182,25 +4182,25 @@ Used for image generation/editing via OpenAI&#39;s [Images API](https://platform
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| openai_api_key | [string](#string) | optional | The OpenAI API key. Required (and only used) on [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider)/[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider) -- never populated in responses (see [`GeminiCredentials.gemini_api_key`](#rellm-GeminiCredentials)). |
+| openai_api_key | [string](#string) | optional | The OpenAI API key. Required (and only used) on [`CreateAIProvider`](#grpc-api-CreateAIProvider)/[`UpdateAIProvider`](#grpc-api-UpdateAIProvider) -- never populated in responses (see [`GeminiCredentials.gemini_api_key`](#rellm-GeminiCredentials)). |
 
 
 
 
 
 
-<a name="rellm-RevokeAIModelProviderRequest"></a>
+<a name="rellm-RevokeAIProviderRequest"></a>
 
-### RevokeAIModelProviderRequest
+### RevokeAIProviderRequest
 Request to revoke another user&#39;s access to one of the current user&#39;s
-[`AIModelProvider`](#rellm-AIModelProvider)s, the reverse of
-[`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider). *Authenticated, owner-only - no Admin override.*
+[`AIProvider`](#rellm-AIProvider)s, the reverse of
+[`GrantAIProvider`](#grpc-api-GrantAIProvider). *Authenticated, owner-only - no Admin override.*
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | user_id | [string](#string) |  | The user whose access should be revoked. |
-| ai_model_provider_id | [string](#string) |  | The AIModelProvider to revoke access to. Must be owned by the caller. |
+| ai_provider_id | [string](#string) |  | The AIProvider to revoke access to. Must be owned by the caller. |
 
 
 
@@ -4212,7 +4212,7 @@ Request to revoke another user&#39;s access to one of the current user&#39;s
 <a name="rellm-AIModelCapability"></a>
 
 ### AIModelCapability
-What an [`AvailableAIModel`](#rellm-AvailableAIModel) can actually do - drives feature gating
+What an [`AIModel`](#rellm-AIModel) can actually do - drives feature gating
 (e.g. [`GenerateMedia`](#grpc-api-GenerateMedia)&#39;s &#34;Generate Media…&#34; buttons/panel only offer
 models carrying `AI_MODEL_CAPABILITY_IMAGE_EDITING`/`AI_MODEL_CAPABILITY_IMAGE_GENERATION`)
 without the gated feature needing its own hardcoded list of model names to check against. A

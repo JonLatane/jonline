@@ -14,7 +14,7 @@ pub fn delete_post_sync_destination(
     conn: &mut PgPooledConnection,
 ) -> Result<(), Status> {
     // Widened from a Facebook-only check to any `SYNC_POSTS_TO_*` -- see
-    // `delete_event_instance_sync_destination`'s identical comment.
+    // `delete_occasion_sync_destination`'s identical comment.
     validate_any_permission(
         &Some(current_user),
         vec![

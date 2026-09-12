@@ -13,8 +13,8 @@ const { useParam: useTokenParam } = createParam<{ anonymousAuthToken: string }>(
 //    * Here, multiple instances' auth tokens can be stored in a single query parameter.
 //      Multiple EventRsvpManagers on the same page can share the same query parameter
 //      and manage multiple simultaenous auth tokens. (Note that each EventRsvpManager
-//      on the page is still assumed to have a distinct EventInstance.)
-export function useAnonymousAuthToken(eventInstanceId: string) {
+//      on the page is still assumed to have a distinct Occasion.)
+export function useAnonymousAuthToken(occasionId: string) {
   const [_queryAnonAuthToken, _setQueryAnonAuthToken] = useTokenParam('anonymousAuthToken');
   const tokenPairSeparator = '--';
   const instanceTokenSeparator = '-';
@@ -29,14 +29,14 @@ export function useAnonymousAuthToken(eventInstanceId: string) {
     };
 
     const updatedTokens = [
-      ...anonymousAuthTokens.filter(t => t[0] != eventInstanceId)
+      ...anonymousAuthTokens.filter(t => t[0] != occasionId)
         .map(t => t.join(instanceTokenSeparator)),
-      `${eventInstanceId}${instanceTokenSeparator}${token}`
+      `${occasionId}${instanceTokenSeparator}${token}`
     ];
     _setQueryAnonAuthToken(updatedTokens.join(tokenPairSeparator));
   }
   function removeAnonymousAuthToken() {
-    const updatedTokens = anonymousAuthTokens.filter(t => eventInstanceId && t[0] === eventInstanceId);
+    const updatedTokens = anonymousAuthTokens.filter(t => occasionId && t[0] === occasionId);
     _setQueryAnonAuthToken(updatedTokens.join(tokenPairSeparator));
   }
   const firstAuthToken = anonymousAuthTokens[0];
@@ -44,14 +44,14 @@ export function useAnonymousAuthToken(eventInstanceId: string) {
     // console.log("firstAuthToken", firstAuthToken);
     if (firstAuthToken && firstAuthToken[0].length > 0 && !firstAuthToken[1]) {
       const updatedTokens = [
-        `${eventInstanceId}${instanceTokenSeparator}${firstAuthToken[0]}`,
+        `${occasionId}${instanceTokenSeparator}${firstAuthToken[0]}`,
         ...anonymousAuthTokens.slice(1).map(t => t.join(instanceTokenSeparator)),
       ];
       _setQueryAnonAuthToken(updatedTokens.join(tokenPairSeparator));
     }
   }, [firstAuthToken]);
 
-  const token = anonymousAuthTokens.find(t => t[0] === eventInstanceId)?.[1];
+  const token = anonymousAuthTokens.find(t => t[0] === occasionId)?.[1];
   const anonymousAuthToken = token && token.length > 0 ? token : undefined;
 
   return { anonymousAuthToken, setAnonymousAuthToken, removeAnonymousAuthToken };

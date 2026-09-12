@@ -6,7 +6,7 @@ use crate::db_connection::PgPooledConnection;
 use crate::marshaling::*;
 use crate::models;
 use crate::protos::*;
-use crate::schema::{event_instances, events, posts};
+use crate::schema::{occasions, events, posts};
 
 use crate::rpcs::validations::*;
 
@@ -128,7 +128,7 @@ pub fn create_event(
                 info: serde_json::to_value(request.info).unwrap_or(json!({})),
             })
             .get_result::<models::Event>(conn)?;
-        let mut inserted_instances: Vec<MarshalableEventInstance> = vec![];
+        let mut inserted_instances: Vec<MarshalableOccasion> = vec![];
         for instance in &instances {
             let new_post = instance.post.as_ref().map_or(
                 models::NewPost {
@@ -139,7 +139,7 @@ pub fn create_event(
                     content: None,
                     visibility: post.visibility.to_string_visibility(),
                     embed_link: false,
-                    context: PostContext::EventInstance.as_str_name().to_string(),
+                    context: PostContext::Occasion.as_str_name().to_string(),
                     moderation: moderation.to_string(),
                     media: vec![],
                 },
@@ -151,7 +151,7 @@ pub fn create_event(
                     content: p.content.to_owned(),
                     visibility: p.visibility.to_string_visibility(),
                     embed_link: p.embed_link.to_owned(),
-                    context: PostContext::EventInstance.as_str_name().to_string(),
+                    context: PostContext::Occasion.as_str_name().to_string(),
                     moderation: moderation.to_string(),
                     media: p.media.iter().map(|m| m.id.to_db_id().unwrap()).collect(),
                 },
@@ -171,7 +171,7 @@ pub fn create_event(
             //                 content: p.content.to_owned(),
             //                 visibility: p.visibility.to_string_visibility(),
             //                 embed_link: p.embed_link.to_owned(),
-            //                 context: PostContext::EventInstance.as_str_name().to_string(),
+            //                 context: PostContext::Occasion.as_str_name().to_string(),
             //                 moderation: moderation.to_string(),
             //                 media: p.media.iter().map(|m| m.id.to_db_id().unwrap()).collect(),
             //             })
@@ -179,8 +179,8 @@ pub fn create_event(
             //     ),
             //     None => None,
             // };
-            let inserted_instance = insert_into(event_instances::table)
-                .values(&models::NewEventInstance {
+            let inserted_instance = insert_into(occasions::table)
+                .values(&models::NewOccasion {
                     event_id: inserted_event.post_id,
                     post_id: instance_post.id,
                     starts_at: instance.starts_at.as_ref().unwrap().to_db(),
@@ -192,9 +192,9 @@ pub fn create_event(
                     info: json!({}),
                     timezone: instance.timezone.clone(),
                 })
-                .returning(models::EVENT_INSTANCE_COLUMNS)
-                .get_result::<models::EventInstance>(conn)?;
-            let marshalable_instance = MarshalableEventInstance(
+                .returning(models::OCCASION_COLUMNS)
+                .get_result::<models::Occasion>(conn)?;
+            let marshalable_instance = MarshalableOccasion(
                 inserted_instance,
                 MarshalablePost(instance_post, Some(author.clone()), None, None, vec![]),
             );
@@ -220,7 +220,7 @@ pub fn create_event(
             media_ids.append(
                 &mut instances
                     .iter()
-                    .map(|MarshalableEventInstance(_, p)| p.0.media.clone())
+                    .map(|MarshalableOccasion(_, p)| p.0.media.clone())
                     .flatten()
                     .filter(|v| v.is_some())
                     // .map(|v| v.unwrap())

@@ -10,7 +10,7 @@ module Components.Pages.PostOrEventPage exposing
     )
 
 {-| A short Post/Event URL's own page: given a raw id (with no way to know up front whether it's a
-plain `Post`'s own id or an `Event`/`EventInstance`'s), resolves which one it is, then embeds the
+plain `Post`'s own id or an `Event`/`Occasion`'s), resolves which one it is, then embeds the
 same `Components.Pages.PostPage`/`Components.Pages.EventPage` either `Pages.Post.PostId_`/
 `Pages.Event.PostId_` themselves mount -- so `/{postId}` (see `Pages.UsernameOrCustomTab_`'s own
 doc for when this gets used instead of a plain username/custom-tab lookup) renders exactly the
@@ -18,8 +18,8 @@ same content as `/post/:id`/`/event/:id`, in place, without ever redirecting the
 from the short URL.
 
 Resolution is a `GetEvents{post_id}` fetch (`Components.Events.fetchEvent`, which already looks up
-either an Event's own post or one of its EventInstances' posts): on success, it's an Event; on
-failure (e.g. `"event_not_found"` -- the id doesn't belong to any Event/EventInstance at all), it's
+either an Event's own post or one of its Occasions' posts): on success, it's an Event; on
+failure (e.g. `"event_not_found"` -- the id doesn't belong to any Event/Occasion at all), it's
 tried as a plain Post instead. This means resolving an Event id takes two round trips total (one
 here, one more inside `Components.Pages.EventPage.init` itself) -- a known, accepted inefficiency,
 not a bug: `EventPage`/`PostPage`'s own `init` aren't designed to accept already-fetched data, and
@@ -157,7 +157,7 @@ update shared msg model =
                 asEvent shared resolving
 
         ( GotResolveResult (Err _), Resolving resolving ) ->
-            -- Not an Event/EventInstance id (e.g. "event_not_found") -- try it as a Post instead.
+            -- Not an Event/Occasion id (e.g. "event_not_found") -- try it as a Post instead.
             asPost shared resolving
 
         ( PostMsg subMsg, Post subModel ) ->

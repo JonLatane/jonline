@@ -1,4 +1,4 @@
-import { FederatedEvent, IdentifiedEventInstance, federateId, useServerTheme } from "app/store";
+import { FederatedEvent, IdentifiedOccasion, federateId, useServerTheme } from "app/store";
 import React from "react";
 
 import { Group } from "@rellm/api";
@@ -12,13 +12,13 @@ import { ThemedStar } from "../post/star_button";
 
 interface Props {
   event: FederatedEvent;
-  instance: IdentifiedEventInstance;
+  instance: IdentifiedOccasion;
   linkToInstance?: boolean;
   highlight?: boolean;
   noAutoScroll?: boolean;
 }
 
-export const useInstanceLink = (event: FederatedEvent, instance: IdentifiedEventInstance, group?: Group) => {
+export const useInstanceLink = (event: FederatedEvent, instance: IdentifiedOccasion, group?: Group) => {
   const { server } = useFederatedAccountOrServer(event);
   const showServerInfo = server?.host !== useCurrentServer()?.host;
   const detailsLinkId = showServerInfo

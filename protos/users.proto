@@ -8,7 +8,7 @@ import "visibility_moderation.proto";
 import "media.proto";
 import "federation.proto";
 import "sync.proto";
-import "ai_model_providers.proto";
+import "ai_providers.proto";
 
 // Model for a Rellm user. This user may have [`Media`](#rellm-Media), [`Group`](#rellm-Group) [`Membership`](#rellm-Membership)s,
 // [`Post`](#rellm-Post)s, [`Event`](#rellm-Event)s, and other objects associated with them.
@@ -58,7 +58,7 @@ message User {
   // The number of events this user has created.
   optional int32 event_count = 37;
   // The number of event instances this user has created (across all of their events).
-  optional int32 event_instance_count = 38;
+  optional int32 occasion_count = 38;
 
   // Presence indicates the current user is following
   // or has a pending follow request for this user.
@@ -94,12 +94,12 @@ message User {
   // any other viewer.
   repeated SyncSource sync_sources = 83;
 
-  // Every [`AIModelProvider`](#rellm-AIModelProvider) model the target user may currently call - their own
+  // Every [`AIProvider`](#rellm-AIProvider) model the target user may currently call - their own
   // providers' models, plus any models granted to them on other users' providers (see
-  // [`AvailableAIModel`](#rellm-AvailableAIModel)). Gated and populated the same way as `sync_sources`
+  // [`AIModel`](#rellm-AIModel)). Gated and populated the same way as `sync_sources`
   // (target user themselves, or an Admin, across any [`GetUsers`](#grpc-api-GetUsers) listing type, plus
   // [`Login`](#grpc-api-Login)/[`CreateAccount`](#grpc-api-CreateAccount)/[`GetCurrentUser`](#grpc-api-GetCurrentUser)).
-  repeated AvailableAIModel available_ai_models = 84;
+  repeated AIModel ai_models = 84;
 
 
   // The time the user was created.

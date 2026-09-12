@@ -63,8 +63,8 @@ pub fn delete_post(
     let transaction_result: Result<models::Post, diesel::result::Error> = conn
         .transaction::<models::Post, diesel::result::Error, _>(|conn| {
             if admin || self_update {
-                // Only Events/EventInstances support title updates.
-                if vec![PostContext::Event, PostContext::EventInstance]
+                // Only Events/Occasions support title updates.
+                if vec![PostContext::Event, PostContext::Occasion]
                     .iter()
                     .map(|c| c.to_string_post_context())
                     .any(|s| s == existing_post.context)

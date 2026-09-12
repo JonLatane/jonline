@@ -1,5 +1,5 @@
 //! Connects a `SyncDestination` to a Threads account (Meta's text-first app) via a
-//! `response_type=code` OAuth flow at `threads.net` and posts `EventInstance`s/`Post`s to it via
+//! `response_type=code` OAuth flow at `threads.net` and posts `Occasion`s/`Post`s to it via
 //! the Threads Graph API (`graph.threads.net`).
 //!
 //! Threads is architecturally the odd one out among this server's platforms:
@@ -42,7 +42,7 @@ const API_VERSION: &str = "v1.0";
 ///
 /// There's no per-RPC HTTP `Host` header available here to derive the origin from at request time
 /// (`CreateSyncDestination`/`UpdateSyncDestination` are plain gRPC calls, not web-facing routes),
-/// so this mirrors how `sync_post`/`sync_event_instance` already build `post_url`/`event_url`:
+/// so this mirrors how `sync_post`/`sync_occasion` already build `post_url`/`event_url`:
 /// from this server's own configured `external_cdn_config.frontend_host`, assuming the frontend is
 /// served at that domain's root (`rellmBasePath == ""`) -- the exact same assumption
 /// `post_url`/`event_url` already make, so this isn't a new limitation. **Judgment call worth

@@ -90,22 +90,22 @@ enum PostContext {
   // If provided, its `link` and `title` are permanent.
   POST = 0;
 
-  // Reply to a `POST`, `REPLY`, `EVENT`, or `EVENT_INSTANCE`
+  // Reply to a `POST`, `REPLY`, `EVENT`, or `OCCASION`
   // Does not support a `link`. Requires a `reply_to_post_id`.
   REPLY = 1;
 
   // Post behind an "Event" (which does not actually have a start/end time - 
-  // it's a group of EventInstances, at least one, which each do).
+  // it's a group of Occasions, at least one, which each do).
   // The Events table should have a row for this Post.
   // Never created by the CreatePost RPC (this is an error); use CreateEvent.
   // These Posts' `link` and `title` fields are modifiable.
   EVENT = 2;
 
-  // An "Event Instance" Post (which relates to an event with a start and end time).
-  // The EventInstances table should have a row for this Post.
-  // Never created by the CreatePost RPC (this is an error); use CreateEvent/UpdateEvent to manage EventInstances implicitly.
+  // An "Occasion" Post (which relates to an event with a start and end time).
+  // The Occasions table should have a row for this Post.
+  // Never created by the CreatePost RPC (this is an error); use CreateEvent/UpdateEvent to manage Occasions implicitly.
   // These Posts' `link` and `title` fields are modifiable.
-  EVENT_INSTANCE = 3;
+  OCCASION = 3;
 
  // A reply to a Post on another server. The post *must* have a link of the format `http[s]://<server/post/<post_id>`
  // in its `link` field. It will not have a `reply_to_post_id` value.
@@ -118,7 +118,7 @@ enum PostContext {
 //
 // `Post`s are also a fundamental unit of the system. They provide a building block
 // of Visibility and Moderation management that is used throughout Posts, Replies, Events,
-// and Event Instances.
+// and Occasions.
 message Post {
   // Unique ID of the post.
   string id = 1;
@@ -151,7 +151,7 @@ message Post {
   // Flag indicating a `LIMITED` or `SERVER_PUBLIC` post can be shared with groups and individuals,
   // and a `DIRECT` post can be shared with individuals.
   bool shareable = 13;
-  // Context of the Post (`POST`, `REPLY`, `EVENT`, or `EVENT_INSTANCE`.)
+  // Context of the Post (`POST`, `REPLY`, `EVENT`, or `OCCASION`.)
   PostContext context = 14;
   // The visibility of the Post.
   Visibility visibility = 15;
@@ -187,7 +187,7 @@ message Post {
   repeated SyncDestinationStatus sync_destinations = 25;
 
   // If the Post was created/is kept in sync from a [`SyncSource`](#rellm-SyncSource) (an ICS
-  // Event/EventInstance, or an RSS/Atom feed item), this is the source it was synced from.
+  // Event/Occasion, or an RSS/Atom feed item), this is the source it was synced from.
   // Only its media should be considered editable for such a Post.
   optional SyncSource sync_source = 26;
 }

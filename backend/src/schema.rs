@@ -12,9 +12,9 @@ pub mod sql_types {
 }
 
 diesel::table! {
-    ai_model_provider_grants (id) {
+    ai_provider_grants (id) {
         id -> Int8,
-        ai_model_provider_id -> Int8,
+        ai_provider_id -> Int8,
         grantee_id -> Int8,
         model_names -> Array<Varchar>,
         tokens_remaining -> Int8,
@@ -25,7 +25,7 @@ diesel::table! {
 }
 
 diesel::table! {
-    ai_model_providers (id) {
+    ai_providers (id) {
         id -> Int8,
         user_id -> Int8,
         name -> Varchar,
@@ -38,7 +38,7 @@ diesel::table! {
 diesel::table! {
     event_attendances (id) {
         id -> Int8,
-        event_instance_id -> Int8,
+        occasion_id -> Int8,
         user_id -> Nullable<Int8>,
         anonymous_attendee -> Nullable<Jsonb>,
         number_of_guests -> Int4,
@@ -53,8 +53,8 @@ diesel::table! {
 }
 
 diesel::table! {
-    event_instance_sync_destinations (event_instance_id, sync_destination_id) {
-        event_instance_id -> Int8,
+    occasion_sync_destinations (occasion_id, sync_destination_id) {
+        occasion_id -> Int8,
         sync_destination_id -> Int8,
         destination_instance_id -> Nullable<Varchar>,
         destination_url -> Nullable<Varchar>,
@@ -67,7 +67,7 @@ diesel::table! {
     use diesel::sql_types::*;
     use diesel_full_text_search::TsVector;
 
-    event_instances (post_id) {
+    occasions (post_id) {
         event_id -> Int8,
         post_id -> Int8,
         info -> Jsonb,
@@ -356,7 +356,7 @@ diesel::table! {
         created_at -> Timestamp,
         updated_at -> Nullable<Timestamp>,
         event_count -> Int8,
-        event_instance_count -> Int8,
+        occasion_count -> Int8,
         post_count -> Int8,
     }
 }
@@ -428,18 +428,18 @@ diesel::table! {
         updated_at -> Timestamp,
         search_text -> TsVector,
         friend_count -> Int4,
-        event_instance_count -> Int4,
+        occasion_count -> Int4,
     }
 }
 
-diesel::joinable!(ai_model_provider_grants -> ai_model_providers (ai_model_provider_id));
-diesel::joinable!(ai_model_provider_grants -> users (grantee_id));
-diesel::joinable!(ai_model_providers -> users (user_id));
-diesel::joinable!(event_attendances -> event_instances (event_instance_id));
-diesel::joinable!(event_instance_sync_destinations -> event_instances (event_instance_id));
-diesel::joinable!(event_instance_sync_destinations -> sync_destinations (sync_destination_id));
-diesel::joinable!(event_instances -> events (event_id));
-diesel::joinable!(event_instances -> posts (post_id));
+diesel::joinable!(ai_provider_grants -> ai_providers (ai_provider_id));
+diesel::joinable!(ai_provider_grants -> users (grantee_id));
+diesel::joinable!(ai_providers -> users (user_id));
+diesel::joinable!(event_attendances -> occasions (occasion_id));
+diesel::joinable!(occasion_sync_destinations -> occasions (occasion_id));
+diesel::joinable!(occasion_sync_destinations -> sync_destinations (sync_destination_id));
+diesel::joinable!(occasions -> events (event_id));
+diesel::joinable!(occasions -> posts (post_id));
 diesel::joinable!(events -> posts (post_id));
 diesel::joinable!(federated_accounts -> federated_servers (federated_server_id));
 diesel::joinable!(federated_accounts -> users (user_id));
@@ -471,11 +471,11 @@ diesel::joinable!(user_posts -> users (user_id));
 diesel::joinable!(user_refresh_tokens -> users (user_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
-    ai_model_provider_grants,
-    ai_model_providers,
+    ai_provider_grants,
+    ai_providers,
     event_attendances,
-    event_instance_sync_destinations,
-    event_instances,
+    occasion_sync_destinations,
+    occasions,
     events,
     federated_accounts,
     federated_profiles,

@@ -26,8 +26,8 @@ function getEventsPages(events: EventsState, listingType: EventListingType, time
 
 function getEventsPage(events: EventsState, listingType: EventListingType, timeFilter: string, page: number, servers: AccountOrServer[]): FederatedEvent[] {
   const pageInstanceIds: string[] = servers.flatMap(server => {
-    const serverEventInstancePages = getFederated(events.eventInstancePages, server.server);
-    return ((serverEventInstancePages[listingType] ?? {})[timeFilter] ?? {})[page] ?? [];
+    const serverOccasionPages = getFederated(events.occasionPages, server.server);
+    return ((serverOccasionPages[listingType] ?? {})[timeFilter] ?? {})[page] ?? [];
   });
 
   const pageEvents = instancesToEvents(events, pageInstanceIds);
@@ -65,12 +65,12 @@ export function getServersMissingEventsPage(events: EventsState, listingType: Ev
 
 function isMissingServerPage(events: EventsState, listingType: EventListingType, timeFilter: string, page: number) {
   return (server: AccountOrServer) => {
-    const serverEventInstancePages = getFederated(events.eventInstancePages, server.server);
-    return ((serverEventInstancePages[listingType] ?? {})[timeFilter] ?? {})[page] === undefined;
+    const serverOccasionPages = getFederated(events.occasionPages, server.server);
+    return ((serverOccasionPages[listingType] ?? {})[timeFilter] ?? {})[page] === undefined;
   }
 }
 export function getHasMoreEventPages(events: EventsState, listingType: EventListingType, timeFilter: string, currentPage: number, servers: AccountOrServer[]): boolean {
-  return servers.some(server => server.server && ((events.eventInstancePages[server.server!.host]?.[listingType] ?? {})[currentPage]?.length ?? 0) > 0);
+  return servers.some(server => server.server && ((events.occasionPages[server.server!.host]?.[listingType] ?? {})[currentPage]?.length ?? 0) > 0);
 
 }
 

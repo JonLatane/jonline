@@ -1,13 +1,13 @@
 //! Pulls events from a `SyncSource`'s external calendar (currently only ICS subscription
-//! URLs) and upserts them into `events`/`event_instances`/`posts`.
+//! URLs) and upserts them into `events`/`occasions`/`posts`.
 //!
 //! Recurring `VEVENT`s (an `RRULE`) are expanded with the `rrule` crate: one ICS `UID` maps to
-//! one `Event`, and each occurrence maps to one `EventInstance`, keyed by
+//! one `Event`, and each occurrence maps to one `Occasion`, keyed by
 //! `(sync_source_id, sync_source_uid, sync_source_recurrence_anchor)` -- real, indexed columns
 //! (and a hard DB unique constraint) on the occurrence's own `Post` (see migration
 //! 2026-09-11-000000_move_sync_source_to_posts -- these columns started out on
-//! `events`/`event_instances` themselves, denormalized down onto `posts` so any kind of synced
-//! Post, not just Events/EventInstances, gets the same guarantee) rather than an app-level JSON
+//! `events`/`occasions` themselves, denormalized down onto `posts` so any kind of synced
+//! Post, not just Events/Occasions, gets the same guarantee) rather than an app-level JSON
 //! key or a hand-built/parsed string, so re-syncing finds and updates the same rows rather than
 //! duplicating them, and a bug that breaks that matching fails loudly (a constraint violation)
 //! instead of silently creating duplicates -- see 2026-09-04's duplicate-events incident, which is
@@ -44,7 +44,7 @@ use crate::db_connection::PgPooledConnection;
 use crate::marshaling::*;
 use crate::models;
 use crate::protos::*;
-use crate::schema::{event_instances, events, posts, sync_sources};
+use crate::schema::{occasions, events, posts, sync_sources};
 
 const SYNC_PAST_WINDOW_DAYS: i64 = 365;
 const SYNC_FUTURE_WINDOW_DAYS: i64 = 365;
@@ -111,7 +111,7 @@ struct Occurrence {
     title: Option<String>,
     content: Option<String>,
     /// The IANA timezone (`TZID`) `starts_at` was expressed in in the source feed, if any -- e.g.
-    /// `DTSTART;TZID=America/New_York:...` -- so `EventInstance.timezone` can be populated
+    /// `DTSTART;TZID=America/New_York:...` -- so `Occasion.timezone` can be populated
     /// straight from the feed rather than only ever coming from `logic::resolve_timezone`'s
     /// Nominatim guess or a hand-picked selector value. `None` for a floating or UTC `DTSTART`
     /// (no `TZID` to read).
@@ -157,9 +157,9 @@ pub fn sync_source_text(
         // indexed columns (see the module doc comment) instead of an app-level JSON key. Multiple
         // instances of a recurring series share the same `event_id`, so a plain overwrite while
         // building this map is correct.
-        let existing_event_ids_by_uid: HashMap<String, i64> = event_instances::table
-            .inner_join(posts::table.on(posts::id.eq(event_instances::post_id)))
-            .select((posts::sync_source_uid, event_instances::event_id))
+        let existing_event_ids_by_uid: HashMap<String, i64> = occasions::table
+            .inner_join(posts::table.on(posts::id.eq(occasions::post_id)))
+            .select((posts::sync_source_uid, occasions::event_id))
             .filter(posts::sync_source_id.eq(source.id))
             .load::<(Option<String>, i64)>(conn)?
             .into_iter()
@@ -222,8 +222,8 @@ pub fn sync_source_text(
                 now,
             )?;
 
-            let remaining: i64 = event_instances::table
-                .filter(event_instances::event_id.eq(event_id))
+            let remaining: i64 = occasions::table
+                .filter(occasions::event_id.eq(event_id))
                 .count()
                 .get_result(conn)?;
             if remaining == 0 {
@@ -236,8 +236,8 @@ pub fn sync_source_text(
             .filter(posts::sync_source_id.eq(source.id))
             .count()
             .get_result(conn)?;
-        let event_instance_count: i64 = event_instances::table
-            .inner_join(posts::table.on(posts::id.eq(event_instances::post_id)))
+        let occasion_count: i64 = occasions::table
+            .inner_join(posts::table.on(posts::id.eq(occasions::post_id)))
             .filter(posts::sync_source_id.eq(source.id))
             .count()
             .get_result(conn)?;
@@ -246,7 +246,7 @@ pub fn sync_source_text(
             .set((
                 sync_sources::last_synced_at.eq(SystemTime::now()),
                 sync_sources::event_count.eq(event_count),
-                sync_sources::event_instance_count.eq(event_instance_count),
+                sync_sources::occasion_count.eq(occasion_count),
             ))
             .execute(conn)?;
 
@@ -301,7 +301,7 @@ fn create_event_for_group(
     // codebase that never set a SyncSource, and every nullable column a struct doesn't name is
     // simply left at its SQL default (NULL) on INSERT, so this is the only place that actually
     // needs to touch these columns at creation time. `sync_source_recurrence_anchor` stays NULL
-    // here -- it's specific to a recurring EventInstance's own occurrence identity, not this
+    // here -- it's specific to a recurring Occasion's own occurrence identity, not this
     // series-level Post (see `models::Post`'s field doc).
     diesel::update(posts::table.filter(posts::id.eq(post.id)))
         .set((
@@ -352,7 +352,7 @@ fn location_json(location: &Option<String>) -> Option<serde_json::Value> {
     })
 }
 
-/// Creates/updates `EventInstance`s (+ their `Post`s) for `group`'s occurrences under
+/// Creates/updates `Occasion`s (+ their `Post`s) for `group`'s occurrences under
 /// `event_id`, then reconciles any existing instance under `event_id` that's no longer present
 /// in `group.occurrences` -- but only if that instance's `ends_at` is still within the sync
 /// window (`>= window_start_db`); older ones are left untouched no matter what the feed says now.
@@ -370,12 +370,12 @@ fn reconcile_instances(
     window_start_db: SystemTime,
     now: DateTime<Utc>,
 ) -> Result<(), diesel::result::Error> {
-    let existing_instances: Vec<(models::EventInstance, Option<SystemTime>)> = event_instances::table
-        .inner_join(posts::table.on(posts::id.eq(event_instances::post_id)))
-        .select((models::EVENT_INSTANCE_COLUMNS, posts::sync_source_recurrence_anchor))
-        .filter(event_instances::event_id.eq(event_id))
+    let existing_instances: Vec<(models::Occasion, Option<SystemTime>)> = occasions::table
+        .inner_join(posts::table.on(posts::id.eq(occasions::post_id)))
+        .select((models::OCCASION_COLUMNS, posts::sync_source_recurrence_anchor))
+        .filter(occasions::event_id.eq(event_id))
         .load(conn)?;
-    let mut existing_by_anchor: HashMap<SystemTime, models::EventInstance> = existing_instances
+    let mut existing_by_anchor: HashMap<SystemTime, models::Occasion> = existing_instances
         .into_iter()
         .filter_map(|(i, anchor)| anchor.map(|anchor| (anchor, i)))
         .collect();
@@ -395,15 +395,15 @@ fn reconcile_instances(
                     || existing_instance.sync_missing_since.is_some()
                 {
                     diesel::update(
-                        event_instances::table
-                            .filter(event_instances::post_id.eq(existing_instance.post_id)),
+                        occasions::table
+                            .filter(occasions::post_id.eq(existing_instance.post_id)),
                     )
                     .set((
-                        event_instances::starts_at.eq(starts_at_db),
-                        event_instances::ends_at.eq(ends_at_db),
-                        event_instances::location.eq(&loc_json),
-                        event_instances::timezone.eq(&occ.timezone),
-                        event_instances::sync_missing_since.eq(None::<SystemTime>),
+                        occasions::starts_at.eq(starts_at_db),
+                        occasions::ends_at.eq(ends_at_db),
+                        occasions::location.eq(&loc_json),
+                        occasions::timezone.eq(&occ.timezone),
+                        occasions::sync_missing_since.eq(None::<SystemTime>),
                     ))
                     .execute(conn)?;
                 }
@@ -435,14 +435,14 @@ fn reconcile_instances(
                         },
                         visibility: Visibility::GlobalPublic.to_string_visibility(),
                         embed_link: false,
-                        context: PostContext::EventInstance.as_str_name().to_string(),
+                        context: PostContext::Occasion.as_str_name().to_string(),
                         moderation: moderation.to_string(),
                         media: vec![],
                     })
                     .returning(models::POST_COLUMNS)
                     .get_result::<models::Post>(conn)?;
-                insert_into(event_instances::table)
-                    .values(&models::NewEventInstance {
+                insert_into(occasions::table)
+                    .values(&models::NewOccasion {
                         event_id,
                         post_id: instance_post.id,
                         info: json!({}),
@@ -486,13 +486,13 @@ fn reconcile_instances(
     }
     if !newly_missing_ids.is_empty() {
         diesel::update(
-            event_instances::table.filter(event_instances::post_id.eq_any(newly_missing_ids)),
+            occasions::table.filter(occasions::post_id.eq_any(newly_missing_ids)),
         )
-        .set(event_instances::sync_missing_since.eq(now_db))
+        .set(occasions::sync_missing_since.eq(now_db))
         .execute(conn)?;
     }
     if !expired_ids.is_empty() {
-        diesel::delete(event_instances::table.filter(event_instances::post_id.eq_any(expired_ids)))
+        diesel::delete(occasions::table.filter(occasions::post_id.eq_any(expired_ids)))
             .execute(conn)?;
     }
 

@@ -6,14 +6,14 @@ mod event_permissions;
 mod update_event_details;
 pub use update_event_details::update_event_details;
 
-mod create_new_event_instances;
-pub use create_new_event_instances::create_new_event_instances;
+mod create_new_occasions;
+pub use create_new_occasions::create_new_occasions;
 
-mod update_event_instances;
-pub use update_event_instances::update_event_instances;
+mod update_occasions;
+pub use update_occasions::update_occasions;
 
-mod delete_removed_event_instances;
-pub use delete_removed_event_instances::delete_removed_event_instances;
+mod delete_removed_occasions;
+pub use delete_removed_occasions::delete_removed_occasions;
 
 mod update_event;
 pub use update_event::update_event;
@@ -33,8 +33,8 @@ pub use delete_event_attendance::delete_event_attendance;
 mod get_event_attendances;
 pub use get_event_attendances::get_event_attendances;
 
-mod sync_event_instance;
-pub use sync_event_instance::sync_event_instance;
+mod sync_occasion;
+pub use sync_occasion::sync_occasion;
 
-mod delete_event_instance_sync_destination;
-pub use delete_event_instance_sync_destination::delete_event_instance_sync_destination;
+mod delete_occasion_sync_destination;
+pub use delete_occasion_sync_destination::delete_occasion_sync_destination;

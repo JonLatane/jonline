@@ -25,15 +25,15 @@ import 'visibility_moderation.pbenum.dart' as $13;
 
 export 'events.pbenum.dart';
 
-///  Request to get Events in a formatted *per-EventInstance* structure. i.e. the response will carry duplicate [`Event`](#rellm-Event)s with the same ID
-///  if that [`Event`](#rellm-Event) has multiple [`EventInstance`](#rellm-EventInstance)s in the time frame the client asked for.
+///  Request to get Events in a formatted *per-Occasion* structure. i.e. the response will carry duplicate [`Event`](#rellm-Event)s with the same ID
+///  if that [`Event`](#rellm-Event) has multiple [`Occasion`](#rellm-Occasion)s in the time frame the client asked for.
 ///
-///  These structured EventInstances are ordered by start time unless otherwise specified (specifically, `EventListingType.NEWLY_ADDED_EVENTS`).
+///  These structured Occasions are ordered by start time unless otherwise specified (specifically, `EventListingType.NEWLY_ADDED_EVENTS`).
 ///
 ///  Valid GetEventsRequest formats:
 ///  - `{[listing_type: PublicEvents]}`                 (TODO: get ServerPublic/GlobalPublic events you can see)
 ///  - `{listing_type:MyGroupsEvents|FollowingEvents}`  (TODO: get events for groups joined or user followed; auth required)
-///  - `{post_id:}`                                     (get a single event, by its own Post ID or one of its EventInstances' Post IDs)
+///  - `{post_id:}`                                     (get a single event, by its own Post ID or one of its Occasions' Post IDs)
 ///  - `{listing_type: GroupEvents| GroupEventsPendingModeration, group_id:}`
 ///                                                     (TODO: get events/events needing moderation for a group)
 ///  - `{author_user_id:, group_id:}`                   (TODO: get events by a user for a group)
@@ -48,7 +48,7 @@ class GetEventsRequest extends $pb.GeneratedMessage {
     $core.String? postId,
     EventListingType? listingType,
     $core.String? searchText,
-    $core.Iterable<$core.String>? eventInstancePostIds,
+    $core.Iterable<$core.String>? occasionPostIds,
     $core.String? anonymousAttendeeAuthToken,
   }) {
     final $result = create();
@@ -76,8 +76,8 @@ class GetEventsRequest extends $pb.GeneratedMessage {
     if (searchText != null) {
       $result.searchText = searchText;
     }
-    if (eventInstancePostIds != null) {
-      $result.eventInstancePostIds.addAll(eventInstancePostIds);
+    if (occasionPostIds != null) {
+      $result.occasionPostIds.addAll(occasionPostIds);
     }
     if (anonymousAttendeeAuthToken != null) {
       $result.anonymousAttendeeAuthToken = anonymousAttendeeAuthToken;
@@ -97,7 +97,7 @@ class GetEventsRequest extends $pb.GeneratedMessage {
     ..aOS(8, _omitFieldNames ? '' : 'postId')
     ..e<EventListingType>(10, _omitFieldNames ? '' : 'listingType', $pb.PbFieldType.OE, defaultOrMaker: EventListingType.ALL_ACCESSIBLE_EVENTS, valueOf: EventListingType.valueOf, enumValues: EventListingType.values)
     ..aOS(11, _omitFieldNames ? '' : 'searchText')
-    ..pPS(12, _omitFieldNames ? '' : 'eventInstancePostIds')
+    ..pPS(12, _omitFieldNames ? '' : 'occasionPostIds')
     ..aOS(13, _omitFieldNames ? '' : 'anonymousAttendeeAuthToken')
     ..hasRequiredFields = false
   ;
@@ -143,7 +143,7 @@ class GetEventsRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(3)
   void clearGroupId() => clearField(3);
 
-  /// Filters returned [`EventInstance`](#rellm-EventInstance)s by time.
+  /// Filters returned [`Occasion`](#rellm-Occasion)s by time.
   @$pb.TagNumber(5)
   TimeFilter get timeFilter => $_getN(2);
   @$pb.TagNumber(5)
@@ -171,7 +171,7 @@ class GetEventsRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(7)
   $core.List<AttendanceStatus> get attendanceStatuses => $_getList(4);
 
-  /// Finds Events for the Post with the given ID. The Post should have a [`PostContext`](#rellm-PostContext) of `EVENT` or `EVENT_INSTANCE`.
+  /// Finds Events for the Post with the given ID. The Post should have a [`PostContext`](#rellm-PostContext) of `EVENT` or `OCCASION`.
   @$pb.TagNumber(8)
   $core.String get postId => $_getSZ(5);
   @$pb.TagNumber(8)
@@ -202,16 +202,16 @@ class GetEventsRequest extends $pb.GeneratedMessage {
   void clearSearchText() => clearField(11);
 
   /// Loads multiple events by their event instances' Post IDs - returns one
-  /// Event per matching EventInstance (see GetEventsResponse's own doc), not
-  /// the requested EventInstance's whole parent Event's full instance list.
+  /// Event per matching Occasion (see GetEventsResponse's own doc), not
+  /// the requested Occasion's whole parent Event's full instance list.
   @$pb.TagNumber(12)
-  $core.List<$core.String> get eventInstancePostIds => $_getList(8);
+  $core.List<$core.String> get occasionPostIds => $_getList(8);
 
   /// Auth token proving ownership of an anonymous RSVP, mirroring
   /// `GetEventAttendancesRequest.anonymous_attendee_auth_token`. Lets an anonymous attendee's own
-  /// (possibly still-`PENDING`) [`EventAttendance`](#rellm-EventAttendance) and its `EventInstance.location` (when
+  /// (possibly still-`PENDING`) [`EventAttendance`](#rellm-EventAttendance) and its `Occasion.location` (when
   /// `EventInfo.hide_location_until_rsvp_approved` is set) surface via each returned
-  /// `EventInstance.attendances`/`current_user_attendance`, same as a logged-in user's own RSVP
+  /// `Occasion.attendances`/`current_user_attendance`, same as a logged-in user's own RSVP
   /// does automatically.
   @$pb.TagNumber(13)
   $core.String get anonymousAttendeeAuthToken => $_getSZ(9);
@@ -223,7 +223,7 @@ class GetEventsRequest extends $pb.GeneratedMessage {
   void clearAnonymousAttendeeAuthToken() => clearField(13);
 }
 
-/// Time filter that works on the `starts_at` and `ends_at` fields of [`EventInstance`](#rellm-EventInstance).
+/// Time filter that works on the `starts_at` and `ends_at` fields of [`Occasion`](#rellm-Occasion).
 /// API currently only supports `ends_after`.
 class TimeFilter extends $pb.GeneratedMessage {
   factory TimeFilter({
@@ -329,7 +329,7 @@ class TimeFilter extends $pb.GeneratedMessage {
   $12.Timestamp ensureEndsBefore() => $_ensure(3);
 }
 
-///  A list of [`Event`](#rellm-Event)s with a maybe-incomplete (see [`GetEventsRequest`](#rellm-GetEventsRequest)) set of their [`EventInstance`](#rellm-EventInstance)s.
+///  A list of [`Event`](#rellm-Event)s with a maybe-incomplete (see [`GetEventsRequest`](#rellm-GetEventsRequest)) set of their [`Occasion`](#rellm-Occasion)s.
 ///
 ///  Note that `GetEventsResponse` may often include duplicate Events with the same ID.
 ///  I.E. something like: `{events: [{id: a, instances: [{id: x}]}, {id: a, instances: [{id: y}]}, ]}` is a valid response.
@@ -385,14 +385,14 @@ class GetEventsResponse extends $pb.GeneratedMessage {
 }
 
 ///  An `Event` is a top-level type used to organize calendar events, RSVPs, and messaging/posting
-///  about the `Event`. Actual time data lies in its `EventInstances`.
+///  about the `Event`. Actual time data lies in its `Occasions`.
 ///
 ///  (Eventually, Rellm Events should also support ticketing.)
 class Event extends $pb.GeneratedMessage {
   factory Event({
     $8.Post? post,
     EventInfo? info,
-    $core.Iterable<EventInstance>? instances,
+    $core.Iterable<Occasion>? instances,
   }) {
     final $result = create();
     if (post != null) {
@@ -413,7 +413,7 @@ class Event extends $pb.GeneratedMessage {
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'Event', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..aOM<$8.Post>(2, _omitFieldNames ? '' : 'post', subBuilder: $8.Post.create)
     ..aOM<EventInfo>(3, _omitFieldNames ? '' : 'info', subBuilder: EventInfo.create)
-    ..pc<EventInstance>(4, _omitFieldNames ? '' : 'instances', $pb.PbFieldType.PM, subBuilder: EventInstance.create)
+    ..pc<Occasion>(4, _omitFieldNames ? '' : 'instances', $pb.PbFieldType.PM, subBuilder: Occasion.create)
     ..hasRequiredFields = false
   ;
 
@@ -465,30 +465,30 @@ class Event extends $pb.GeneratedMessage {
 
   /// A list of instances for the Event. *Events will only include all instances if the request is for a single event.*
   @$pb.TagNumber(4)
-  $core.List<EventInstance> get instances => $_getList(2);
+  $core.List<Occasion> get instances => $_getList(2);
 }
 
-/// Syncs (cross-posts) a single EventInstance to one SyncDestination.
-class SyncEventInstanceRequest extends $pb.GeneratedMessage {
-  factory SyncEventInstanceRequest({
-    $core.String? eventInstanceId,
+/// Syncs (cross-posts) a single Occasion to one SyncDestination.
+class SyncOccasionRequest extends $pb.GeneratedMessage {
+  factory SyncOccasionRequest({
+    $core.String? occasionId,
     $core.String? syncDestinationId,
   }) {
     final $result = create();
-    if (eventInstanceId != null) {
-      $result.eventInstanceId = eventInstanceId;
+    if (occasionId != null) {
+      $result.occasionId = occasionId;
     }
     if (syncDestinationId != null) {
       $result.syncDestinationId = syncDestinationId;
     }
     return $result;
   }
-  SyncEventInstanceRequest._() : super();
-  factory SyncEventInstanceRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory SyncEventInstanceRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+  SyncOccasionRequest._() : super();
+  factory SyncOccasionRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory SyncOccasionRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'SyncEventInstanceRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
-    ..aOS(1, _omitFieldNames ? '' : 'eventInstanceId')
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'SyncOccasionRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'occasionId')
     ..aOS(2, _omitFieldNames ? '' : 'syncDestinationId')
     ..hasRequiredFields = false
   ;
@@ -497,32 +497,32 @@ class SyncEventInstanceRequest extends $pb.GeneratedMessage {
   'Using this can add significant overhead to your binary. '
   'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
   'Will be removed in next major version')
-  SyncEventInstanceRequest clone() => SyncEventInstanceRequest()..mergeFromMessage(this);
+  SyncOccasionRequest clone() => SyncOccasionRequest()..mergeFromMessage(this);
   @$core.Deprecated(
   'Using this can add significant overhead to your binary. '
   'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
   'Will be removed in next major version')
-  SyncEventInstanceRequest copyWith(void Function(SyncEventInstanceRequest) updates) => super.copyWith((message) => updates(message as SyncEventInstanceRequest)) as SyncEventInstanceRequest;
+  SyncOccasionRequest copyWith(void Function(SyncOccasionRequest) updates) => super.copyWith((message) => updates(message as SyncOccasionRequest)) as SyncOccasionRequest;
 
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
-  static SyncEventInstanceRequest create() => SyncEventInstanceRequest._();
-  SyncEventInstanceRequest createEmptyInstance() => create();
-  static $pb.PbList<SyncEventInstanceRequest> createRepeated() => $pb.PbList<SyncEventInstanceRequest>();
+  static SyncOccasionRequest create() => SyncOccasionRequest._();
+  SyncOccasionRequest createEmptyInstance() => create();
+  static $pb.PbList<SyncOccasionRequest> createRepeated() => $pb.PbList<SyncOccasionRequest>();
   @$core.pragma('dart2js:noInline')
-  static SyncEventInstanceRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<SyncEventInstanceRequest>(create);
-  static SyncEventInstanceRequest? _defaultInstance;
+  static SyncOccasionRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<SyncOccasionRequest>(create);
+  static SyncOccasionRequest? _defaultInstance;
 
-  /// The EventInstance to sync.
+  /// The Occasion to sync.
   @$pb.TagNumber(1)
-  $core.String get eventInstanceId => $_getSZ(0);
+  $core.String get occasionId => $_getSZ(0);
   @$pb.TagNumber(1)
-  set eventInstanceId($core.String v) { $_setString(0, v); }
+  set occasionId($core.String v) { $_setString(0, v); }
   @$pb.TagNumber(1)
-  $core.bool hasEventInstanceId() => $_has(0);
+  $core.bool hasOccasionId() => $_has(0);
   @$pb.TagNumber(1)
-  void clearEventInstanceId() => clearField(1);
+  void clearOccasionId() => clearField(1);
 
   /// The SyncDestination to sync it to.
   @$pb.TagNumber(2)
@@ -535,28 +535,28 @@ class SyncEventInstanceRequest extends $pb.GeneratedMessage {
   void clearSyncDestinationId() => clearField(2);
 }
 
-/// Removes a single EventInstance's sync (cross-post) to one SyncDestination - the reverse of [`SyncEventInstance`](#grpc-api-SyncEventInstance).
+/// Removes a single Occasion's sync (cross-post) to one SyncDestination - the reverse of [`SyncOccasion`](#grpc-api-SyncOccasion).
 /// Does not delete the post already made on the destination (e.g. the Facebook Page post), only the local sync record.
-class DeleteEventInstanceSyncDestinationRequest extends $pb.GeneratedMessage {
-  factory DeleteEventInstanceSyncDestinationRequest({
-    $core.String? eventInstanceId,
+class DeleteOccasionSyncDestinationRequest extends $pb.GeneratedMessage {
+  factory DeleteOccasionSyncDestinationRequest({
+    $core.String? occasionId,
     $core.String? syncDestinationId,
   }) {
     final $result = create();
-    if (eventInstanceId != null) {
-      $result.eventInstanceId = eventInstanceId;
+    if (occasionId != null) {
+      $result.occasionId = occasionId;
     }
     if (syncDestinationId != null) {
       $result.syncDestinationId = syncDestinationId;
     }
     return $result;
   }
-  DeleteEventInstanceSyncDestinationRequest._() : super();
-  factory DeleteEventInstanceSyncDestinationRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory DeleteEventInstanceSyncDestinationRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+  DeleteOccasionSyncDestinationRequest._() : super();
+  factory DeleteOccasionSyncDestinationRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory DeleteOccasionSyncDestinationRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'DeleteEventInstanceSyncDestinationRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
-    ..aOS(1, _omitFieldNames ? '' : 'eventInstanceId')
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'DeleteOccasionSyncDestinationRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'occasionId')
     ..aOS(2, _omitFieldNames ? '' : 'syncDestinationId')
     ..hasRequiredFields = false
   ;
@@ -565,32 +565,32 @@ class DeleteEventInstanceSyncDestinationRequest extends $pb.GeneratedMessage {
   'Using this can add significant overhead to your binary. '
   'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
   'Will be removed in next major version')
-  DeleteEventInstanceSyncDestinationRequest clone() => DeleteEventInstanceSyncDestinationRequest()..mergeFromMessage(this);
+  DeleteOccasionSyncDestinationRequest clone() => DeleteOccasionSyncDestinationRequest()..mergeFromMessage(this);
   @$core.Deprecated(
   'Using this can add significant overhead to your binary. '
   'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
   'Will be removed in next major version')
-  DeleteEventInstanceSyncDestinationRequest copyWith(void Function(DeleteEventInstanceSyncDestinationRequest) updates) => super.copyWith((message) => updates(message as DeleteEventInstanceSyncDestinationRequest)) as DeleteEventInstanceSyncDestinationRequest;
+  DeleteOccasionSyncDestinationRequest copyWith(void Function(DeleteOccasionSyncDestinationRequest) updates) => super.copyWith((message) => updates(message as DeleteOccasionSyncDestinationRequest)) as DeleteOccasionSyncDestinationRequest;
 
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
-  static DeleteEventInstanceSyncDestinationRequest create() => DeleteEventInstanceSyncDestinationRequest._();
-  DeleteEventInstanceSyncDestinationRequest createEmptyInstance() => create();
-  static $pb.PbList<DeleteEventInstanceSyncDestinationRequest> createRepeated() => $pb.PbList<DeleteEventInstanceSyncDestinationRequest>();
+  static DeleteOccasionSyncDestinationRequest create() => DeleteOccasionSyncDestinationRequest._();
+  DeleteOccasionSyncDestinationRequest createEmptyInstance() => create();
+  static $pb.PbList<DeleteOccasionSyncDestinationRequest> createRepeated() => $pb.PbList<DeleteOccasionSyncDestinationRequest>();
   @$core.pragma('dart2js:noInline')
-  static DeleteEventInstanceSyncDestinationRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<DeleteEventInstanceSyncDestinationRequest>(create);
-  static DeleteEventInstanceSyncDestinationRequest? _defaultInstance;
+  static DeleteOccasionSyncDestinationRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<DeleteOccasionSyncDestinationRequest>(create);
+  static DeleteOccasionSyncDestinationRequest? _defaultInstance;
 
-  /// The EventInstance to un-sync.
+  /// The Occasion to un-sync.
   @$pb.TagNumber(1)
-  $core.String get eventInstanceId => $_getSZ(0);
+  $core.String get occasionId => $_getSZ(0);
   @$pb.TagNumber(1)
-  set eventInstanceId($core.String v) { $_setString(0, v); }
+  set occasionId($core.String v) { $_setString(0, v); }
   @$pb.TagNumber(1)
-  $core.bool hasEventInstanceId() => $_has(0);
+  $core.bool hasOccasionId() => $_has(0);
   @$pb.TagNumber(1)
-  void clearEventInstanceId() => clearField(1);
+  void clearOccasionId() => clearField(1);
 
   /// The SyncDestination to un-sync it from.
   @$pb.TagNumber(2)
@@ -722,12 +722,12 @@ class EventInfo extends $pb.GeneratedMessage {
 
 /// The time-based component of an [`Event`](#rellm-Event). Has a `starts_at` and `ends_at` time,
 /// a [`Location`](#rellm-Location), and an optional [`Post`](#rellm-Post) (and discussion thread) specific to this particular
-/// `EventInstance` in addition to the parent [`Event`](#rellm-Event).
-class EventInstance extends $pb.GeneratedMessage {
-  factory EventInstance({
+/// `Occasion` in addition to the parent [`Event`](#rellm-Event).
+class Occasion extends $pb.GeneratedMessage {
+  factory Occasion({
     $core.String? eventId,
     $8.Post? post,
-    EventInstanceInfo? info,
+    OccasionInfo? info,
     $12.Timestamp? startsAt,
     $12.Timestamp? endsAt,
     $16.Location? location,
@@ -773,14 +773,14 @@ class EventInstance extends $pb.GeneratedMessage {
     }
     return $result;
   }
-  EventInstance._() : super();
-  factory EventInstance.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory EventInstance.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+  Occasion._() : super();
+  factory Occasion.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory Occasion.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'EventInstance', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'Occasion', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..aOS(2, _omitFieldNames ? '' : 'eventId')
     ..aOM<$8.Post>(3, _omitFieldNames ? '' : 'post', subBuilder: $8.Post.create)
-    ..aOM<EventInstanceInfo>(4, _omitFieldNames ? '' : 'info', subBuilder: EventInstanceInfo.create)
+    ..aOM<OccasionInfo>(4, _omitFieldNames ? '' : 'info', subBuilder: OccasionInfo.create)
     ..aOM<$12.Timestamp>(5, _omitFieldNames ? '' : 'startsAt', subBuilder: $12.Timestamp.create)
     ..aOM<$12.Timestamp>(6, _omitFieldNames ? '' : 'endsAt', subBuilder: $12.Timestamp.create)
     ..aOM<$16.Location>(7, _omitFieldNames ? '' : 'location', subBuilder: $16.Location.create)
@@ -796,22 +796,22 @@ class EventInstance extends $pb.GeneratedMessage {
   'Using this can add significant overhead to your binary. '
   'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
   'Will be removed in next major version')
-  EventInstance clone() => EventInstance()..mergeFromMessage(this);
+  Occasion clone() => Occasion()..mergeFromMessage(this);
   @$core.Deprecated(
   'Using this can add significant overhead to your binary. '
   'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
   'Will be removed in next major version')
-  EventInstance copyWith(void Function(EventInstance) updates) => super.copyWith((message) => updates(message as EventInstance)) as EventInstance;
+  Occasion copyWith(void Function(Occasion) updates) => super.copyWith((message) => updates(message as Occasion)) as Occasion;
 
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
-  static EventInstance create() => EventInstance._();
-  EventInstance createEmptyInstance() => create();
-  static $pb.PbList<EventInstance> createRepeated() => $pb.PbList<EventInstance>();
+  static Occasion create() => Occasion._();
+  Occasion createEmptyInstance() => create();
+  static $pb.PbList<Occasion> createRepeated() => $pb.PbList<Occasion>();
   @$core.pragma('dart2js:noInline')
-  static EventInstance getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<EventInstance>(create);
-  static EventInstance? _defaultInstance;
+  static Occasion getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<Occasion>(create);
+  static Occasion? _defaultInstance;
 
   /// ID of the parent [`Event`](#rellm-Event) (i.e. the parent `Event.post.id`).
   @$pb.TagNumber(2)
@@ -823,8 +823,8 @@ class EventInstance extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   void clearEventId() => clearField(2);
 
-  /// Optional [`Post`](#rellm-Post) containing alternate title/link/description for this particular instance. Its [`PostContext`](#rellm-PostContext) should be `EVENT_INSTANCE`.
-  /// An `EventInstance`'s ID *is* its `post.id` - there is no separate surrogate ID.
+  /// Optional [`Post`](#rellm-Post) containing alternate title/link/description for this particular instance. Its [`PostContext`](#rellm-PostContext) should be `OCCASION`.
+  /// An `Occasion`'s ID *is* its `post.id` - there is no separate surrogate ID.
   @$pb.TagNumber(3)
   $8.Post get post => $_getN(1);
   @$pb.TagNumber(3)
@@ -836,17 +836,17 @@ class EventInstance extends $pb.GeneratedMessage {
   @$pb.TagNumber(3)
   $8.Post ensurePost() => $_ensure(1);
 
-  /// Additional configuration for this instance of this [`EventInstance`](#rellm-EventInstance) beyond the [`EventInfo`](#rellm-EventInfo) in its parent [`Event`](#rellm-Event).
+  /// Additional configuration for this instance of this [`Occasion`](#rellm-Occasion) beyond the [`EventInfo`](#rellm-EventInfo) in its parent [`Event`](#rellm-Event).
   @$pb.TagNumber(4)
-  EventInstanceInfo get info => $_getN(2);
+  OccasionInfo get info => $_getN(2);
   @$pb.TagNumber(4)
-  set info(EventInstanceInfo v) { setField(4, v); }
+  set info(OccasionInfo v) { setField(4, v); }
   @$pb.TagNumber(4)
   $core.bool hasInfo() => $_has(2);
   @$pb.TagNumber(4)
   void clearInfo() => clearField(4);
   @$pb.TagNumber(4)
-  EventInstanceInfo ensureInfo() => $_ensure(2);
+  OccasionInfo ensureInfo() => $_ensure(2);
 
   /// The time the event starts (UTC/Timestamp format).
   @$pb.TagNumber(5)
@@ -939,9 +939,9 @@ class EventInstance extends $pb.GeneratedMessage {
 
 /// To be used for ticketing, RSVPs, etc.
 /// Stored as JSON in the database.
-class EventInstanceInfo extends $pb.GeneratedMessage {
-  factory EventInstanceInfo({
-    EventInstanceRsvpInfo? rsvpInfo,
+class OccasionInfo extends $pb.GeneratedMessage {
+  factory OccasionInfo({
+    OccasionRsvpInfo? rsvpInfo,
   }) {
     final $result = create();
     if (rsvpInfo != null) {
@@ -949,12 +949,12 @@ class EventInstanceInfo extends $pb.GeneratedMessage {
     }
     return $result;
   }
-  EventInstanceInfo._() : super();
-  factory EventInstanceInfo.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory EventInstanceInfo.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+  OccasionInfo._() : super();
+  factory OccasionInfo.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory OccasionInfo.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'EventInstanceInfo', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
-    ..aOM<EventInstanceRsvpInfo>(1, _omitFieldNames ? '' : 'rsvpInfo', subBuilder: EventInstanceRsvpInfo.create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'OccasionInfo', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
+    ..aOM<OccasionRsvpInfo>(1, _omitFieldNames ? '' : 'rsvpInfo', subBuilder: OccasionRsvpInfo.create)
     ..hasRequiredFields = false
   ;
 
@@ -962,40 +962,40 @@ class EventInstanceInfo extends $pb.GeneratedMessage {
   'Using this can add significant overhead to your binary. '
   'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
   'Will be removed in next major version')
-  EventInstanceInfo clone() => EventInstanceInfo()..mergeFromMessage(this);
+  OccasionInfo clone() => OccasionInfo()..mergeFromMessage(this);
   @$core.Deprecated(
   'Using this can add significant overhead to your binary. '
   'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
   'Will be removed in next major version')
-  EventInstanceInfo copyWith(void Function(EventInstanceInfo) updates) => super.copyWith((message) => updates(message as EventInstanceInfo)) as EventInstanceInfo;
+  OccasionInfo copyWith(void Function(OccasionInfo) updates) => super.copyWith((message) => updates(message as OccasionInfo)) as OccasionInfo;
 
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
-  static EventInstanceInfo create() => EventInstanceInfo._();
-  EventInstanceInfo createEmptyInstance() => create();
-  static $pb.PbList<EventInstanceInfo> createRepeated() => $pb.PbList<EventInstanceInfo>();
+  static OccasionInfo create() => OccasionInfo._();
+  OccasionInfo createEmptyInstance() => create();
+  static $pb.PbList<OccasionInfo> createRepeated() => $pb.PbList<OccasionInfo>();
   @$core.pragma('dart2js:noInline')
-  static EventInstanceInfo getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<EventInstanceInfo>(create);
-  static EventInstanceInfo? _defaultInstance;
+  static OccasionInfo getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<OccasionInfo>(create);
+  static OccasionInfo? _defaultInstance;
 
   /// RSVP configuration and metadata for the event instance.
   @$pb.TagNumber(1)
-  EventInstanceRsvpInfo get rsvpInfo => $_getN(0);
+  OccasionRsvpInfo get rsvpInfo => $_getN(0);
   @$pb.TagNumber(1)
-  set rsvpInfo(EventInstanceRsvpInfo v) { setField(1, v); }
+  set rsvpInfo(OccasionRsvpInfo v) { setField(1, v); }
   @$pb.TagNumber(1)
   $core.bool hasRsvpInfo() => $_has(0);
   @$pb.TagNumber(1)
   void clearRsvpInfo() => clearField(1);
   @$pb.TagNumber(1)
-  EventInstanceRsvpInfo ensureRsvpInfo() => $_ensure(0);
+  OccasionRsvpInfo ensureRsvpInfo() => $_ensure(0);
 }
 
-/// Consolidated type for RSVP info for an [`EventInstance`](#rellm-EventInstance).
+/// Consolidated type for RSVP info for an [`Occasion`](#rellm-Occasion).
 /// Curently, the `optional` counts below are *never* returned by the API.
-class EventInstanceRsvpInfo extends $pb.GeneratedMessage {
-  factory EventInstanceRsvpInfo({
+class OccasionRsvpInfo extends $pb.GeneratedMessage {
+  factory OccasionRsvpInfo({
     $core.bool? allowsRsvps,
     $core.bool? allowsAnonymousRsvps,
     $core.int? maxAttendees,
@@ -1036,11 +1036,11 @@ class EventInstanceRsvpInfo extends $pb.GeneratedMessage {
     }
     return $result;
   }
-  EventInstanceRsvpInfo._() : super();
-  factory EventInstanceRsvpInfo.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory EventInstanceRsvpInfo.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+  OccasionRsvpInfo._() : super();
+  factory OccasionRsvpInfo.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory OccasionRsvpInfo.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'EventInstanceRsvpInfo', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'OccasionRsvpInfo', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..aOB(1, _omitFieldNames ? '' : 'allowsRsvps')
     ..aOB(2, _omitFieldNames ? '' : 'allowsAnonymousRsvps')
     ..a<$core.int>(3, _omitFieldNames ? '' : 'maxAttendees', $pb.PbFieldType.OU3)
@@ -1057,22 +1057,22 @@ class EventInstanceRsvpInfo extends $pb.GeneratedMessage {
   'Using this can add significant overhead to your binary. '
   'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
   'Will be removed in next major version')
-  EventInstanceRsvpInfo clone() => EventInstanceRsvpInfo()..mergeFromMessage(this);
+  OccasionRsvpInfo clone() => OccasionRsvpInfo()..mergeFromMessage(this);
   @$core.Deprecated(
   'Using this can add significant overhead to your binary. '
   'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
   'Will be removed in next major version')
-  EventInstanceRsvpInfo copyWith(void Function(EventInstanceRsvpInfo) updates) => super.copyWith((message) => updates(message as EventInstanceRsvpInfo)) as EventInstanceRsvpInfo;
+  OccasionRsvpInfo copyWith(void Function(OccasionRsvpInfo) updates) => super.copyWith((message) => updates(message as OccasionRsvpInfo)) as OccasionRsvpInfo;
 
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
-  static EventInstanceRsvpInfo create() => EventInstanceRsvpInfo._();
-  EventInstanceRsvpInfo createEmptyInstance() => create();
-  static $pb.PbList<EventInstanceRsvpInfo> createRepeated() => $pb.PbList<EventInstanceRsvpInfo>();
+  static OccasionRsvpInfo create() => OccasionRsvpInfo._();
+  OccasionRsvpInfo createEmptyInstance() => create();
+  static $pb.PbList<OccasionRsvpInfo> createRepeated() => $pb.PbList<OccasionRsvpInfo>();
   @$core.pragma('dart2js:noInline')
-  static EventInstanceRsvpInfo getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<EventInstanceRsvpInfo>(create);
-  static EventInstanceRsvpInfo? _defaultInstance;
+  static OccasionRsvpInfo getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<OccasionRsvpInfo>(create);
+  static OccasionRsvpInfo? _defaultInstance;
 
   /// Overrides `EventInfo.allows_rsvps`, if set, for this instance.
   @$pb.TagNumber(1)
@@ -1168,12 +1168,12 @@ class EventInstanceRsvpInfo extends $pb.GeneratedMessage {
 /// Request to get RSVP data for an event.
 class GetEventAttendancesRequest extends $pb.GeneratedMessage {
   factory GetEventAttendancesRequest({
-    $core.String? eventInstanceId,
+    $core.String? occasionId,
     $core.String? anonymousAttendeeAuthToken,
   }) {
     final $result = create();
-    if (eventInstanceId != null) {
-      $result.eventInstanceId = eventInstanceId;
+    if (occasionId != null) {
+      $result.occasionId = occasionId;
     }
     if (anonymousAttendeeAuthToken != null) {
       $result.anonymousAttendeeAuthToken = anonymousAttendeeAuthToken;
@@ -1185,7 +1185,7 @@ class GetEventAttendancesRequest extends $pb.GeneratedMessage {
   factory GetEventAttendancesRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetEventAttendancesRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
-    ..aOS(1, _omitFieldNames ? '' : 'eventInstanceId')
+    ..aOS(1, _omitFieldNames ? '' : 'occasionId')
     ..aOS(2, _omitFieldNames ? '' : 'anonymousAttendeeAuthToken')
     ..hasRequiredFields = false
   ;
@@ -1213,13 +1213,13 @@ class GetEventAttendancesRequest extends $pb.GeneratedMessage {
 
   /// The ID of the event to get RSVP data for.
   @$pb.TagNumber(1)
-  $core.String get eventInstanceId => $_getSZ(0);
+  $core.String get occasionId => $_getSZ(0);
   @$pb.TagNumber(1)
-  set eventInstanceId($core.String v) { $_setString(0, v); }
+  set occasionId($core.String v) { $_setString(0, v); }
   @$pb.TagNumber(1)
-  $core.bool hasEventInstanceId() => $_has(0);
+  $core.bool hasOccasionId() => $_has(0);
   @$pb.TagNumber(1)
-  void clearEventInstanceId() => clearField(1);
+  void clearOccasionId() => clearField(1);
 
   /// If set, and if the token has an RSVP for this even, request that RSVP data
   /// in addition to the rest of the RSVP data. (The event creator can always
@@ -1303,14 +1303,14 @@ enum EventAttendance_Attendee {
   notSet
 }
 
-/// Could be called an "RSVP." Describes the attendance of a user at an [`EventInstance`](#rellm-EventInstance). Such as:
-/// * A user's RSVP to an [`EventInstance`](#rellm-EventInstance) (one of `INTERESTED`, `GOING`, `NOT_GOING`, or , `REQUESTED` (i.e. invited)).
-/// * Invitation status of a user to an [`EventInstance`](#rellm-EventInstance).
-/// * [`ContactMethod`](#rellm-ContactMethod)-driven management for anonymous RSVPs to an [`EventInstance`](#rellm-EventInstance).
+/// Could be called an "RSVP." Describes the attendance of a user at an [`Occasion`](#rellm-Occasion). Such as:
+/// * A user's RSVP to an [`Occasion`](#rellm-Occasion) (one of `INTERESTED`, `GOING`, `NOT_GOING`, or , `REQUESTED` (i.e. invited)).
+/// * Invitation status of a user to an [`Occasion`](#rellm-Occasion).
+/// * [`ContactMethod`](#rellm-ContactMethod)-driven management for anonymous RSVPs to an [`Occasion`](#rellm-Occasion).
 class EventAttendance extends $pb.GeneratedMessage {
   factory EventAttendance({
     $core.String? id,
-    $core.String? eventInstanceId,
+    $core.String? occasionId,
     UserAttendee? userAttendee,
     AnonymousAttendee? anonymousAttendee,
     $core.int? numberOfGuests,
@@ -1326,8 +1326,8 @@ class EventAttendance extends $pb.GeneratedMessage {
     if (id != null) {
       $result.id = id;
     }
-    if (eventInstanceId != null) {
-      $result.eventInstanceId = eventInstanceId;
+    if (occasionId != null) {
+      $result.occasionId = occasionId;
     }
     if (userAttendee != null) {
       $result.userAttendee = userAttendee;
@@ -1373,7 +1373,7 @@ class EventAttendance extends $pb.GeneratedMessage {
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'EventAttendance', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..oo(0, [3, 4])
     ..aOS(1, _omitFieldNames ? '' : 'id')
-    ..aOS(2, _omitFieldNames ? '' : 'eventInstanceId')
+    ..aOS(2, _omitFieldNames ? '' : 'occasionId')
     ..aOM<UserAttendee>(3, _omitFieldNames ? '' : 'userAttendee', subBuilder: UserAttendee.create)
     ..aOM<AnonymousAttendee>(4, _omitFieldNames ? '' : 'anonymousAttendee', subBuilder: AnonymousAttendee.create)
     ..a<$core.int>(5, _omitFieldNames ? '' : 'numberOfGuests', $pb.PbFieldType.OU3)
@@ -1421,15 +1421,15 @@ class EventAttendance extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   void clearId() => clearField(1);
 
-  /// ID of the [`EventInstance`](#rellm-EventInstance) the attendance is for.
+  /// ID of the [`Occasion`](#rellm-Occasion) the attendance is for.
   @$pb.TagNumber(2)
-  $core.String get eventInstanceId => $_getSZ(1);
+  $core.String get occasionId => $_getSZ(1);
   @$pb.TagNumber(2)
-  set eventInstanceId($core.String v) { $_setString(1, v); }
+  set occasionId($core.String v) { $_setString(1, v); }
   @$pb.TagNumber(2)
-  $core.bool hasEventInstanceId() => $_has(1);
+  $core.bool hasOccasionId() => $_has(1);
   @$pb.TagNumber(2)
-  void clearEventInstanceId() => clearField(2);
+  void clearOccasionId() => clearField(2);
 
   /// If the attendance is non-anonymous, core data about the user.
   @$pb.TagNumber(3)
@@ -1465,7 +1465,7 @@ class EventAttendance extends $pb.GeneratedMessage {
   @$pb.TagNumber(5)
   void clearNumberOfGuests() => clearField(5);
 
-  /// The user's RSVP to an [`EventInstance`](#rellm-EventInstance) (one of `INTERESTED`, `REQUESTED` (i.e. invited), `GOING`, `NOT_GOING`)
+  /// The user's RSVP to an [`Occasion`](#rellm-Occasion) (one of `INTERESTED`, `REQUESTED` (i.e. invited), `GOING`, `NOT_GOING`)
   @$pb.TagNumber(6)
   AttendanceStatus get status => $_getN(5);
   @$pb.TagNumber(6)
@@ -1505,7 +1505,7 @@ class EventAttendance extends $pb.GeneratedMessage {
   @$pb.TagNumber(9)
   void clearPublicNote() => clearField(9);
 
-  /// Moderation status for the attendance. Moderated by the [`Event`](#rellm-Event) owner (or [`EventInstance`](#rellm-EventInstance) owner if applicable).
+  /// Moderation status for the attendance. Moderated by the [`Event`](#rellm-Event) owner (or [`Occasion`](#rellm-Occasion) owner if applicable).
   @$pb.TagNumber(10)
   $13.Moderation get moderation => $_getN(9);
   @$pb.TagNumber(10)
@@ -1540,7 +1540,7 @@ class EventAttendance extends $pb.GeneratedMessage {
   $12.Timestamp ensureUpdatedAt() => $_ensure(11);
 }
 
-///  An anonymous internet user who has RSVP'd to an [`EventInstance`](#rellm-EventInstance).
+///  An anonymous internet user who has RSVP'd to an [`Occasion`](#rellm-Occasion).
 ///
 ///  (TODO:) The visibility on `AnonymousAttendee` [`ContactMethod`](#rellm-ContactMethod)s should support the `LIMITED` visibility, which will
 ///  make them visible to the event creator.
@@ -1610,7 +1610,7 @@ class AnonymousAttendee extends $pb.GeneratedMessage {
 
   /// Used to allow anonymous users to RSVP to an event. Generated by the server
   /// when an event attendance is upserted for the first time. Subsequent attendance
-  /// upserts, with the same event_instance_id and anonymous_attendee.auth_token,
+  /// upserts, with the same occasion_id and anonymous_attendee.auth_token,
   /// will update existing anonymous attendance records. Invalid auth tokens used during upserts will always create a new [`EventAttendance`](#rellm-EventAttendance).
   @$pb.TagNumber(3)
   $core.String get authToken => $_getSZ(2);

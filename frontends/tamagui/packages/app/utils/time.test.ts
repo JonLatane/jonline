@@ -1,9 +1,9 @@
-import { EventInstance } from '@rellm/api';
+import { Occasion } from '@rellm/api';
 import { describe, expect, test } from 'vitest';
 import { instanceTimeSort, isNotPastInstance, isPastInstance, timeSort } from './time';
 
-function instance(startsAt: string, endsAt: string): EventInstance {
-  return EventInstance.fromPartial({ startsAt, endsAt });
+function instance(startsAt: string, endsAt: string): Occasion {
+  return Occasion.fromPartial({ startsAt, endsAt });
 }
 
 describe('timeSort', () => {

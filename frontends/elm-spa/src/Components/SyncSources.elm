@@ -18,8 +18,8 @@ token refresh mid-request can still be forwarded on by the caller (see
 `User.sync_sources`, already carried by the resolved `User`), and every mutation now triggers
 a full `refetch` of that `User`. `getSyncSources` is still used, though -- by that section's
 manual "Refresh" button (`SyncSourcesRefreshClicked`), which overlays just the fresh `sources`
-onto the resolved `User` without a whole-profile refetch -- see `Components.AIModelProviders`' own
-matching doc comment on `getAIModelProviders`.
+onto the resolved `User` without a whole-profile refetch -- see `Components.AIProviders`' own
+matching doc comment on `getAIProviders`.
 -}
 
 import Grpc
@@ -52,7 +52,7 @@ syncedCountsLabel source =
 
                 instanceCount : Int
                 instanceCount =
-                    Conversions.int64ToInt source.eventInstanceCount
+                    Conversions.int64ToInt source.occasionCount
             in
             if eventCount == instanceCount then
                 pluralCount eventCount "event"

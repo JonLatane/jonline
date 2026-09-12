@@ -15,7 +15,7 @@ import 'dart:core' as $core;
 import 'package:grpc/service_api.dart' as $grpc;
 import 'package:protobuf/protobuf.dart' as $pb;
 
-import 'ai_model_providers.pb.dart' as $11;
+import 'ai_providers.pb.dart' as $11;
 import 'authentication.pb.dart' as $3;
 import 'events.pb.dart' as $9;
 import 'federation.pb.dart' as $1;
@@ -224,16 +224,16 @@ class RellmClient extends $grpc.Client {
       '/rellm.Rellm/UpdateEventDetails',
       ($9.Event value) => value.writeToBuffer(),
       ($core.List<$core.int> value) => $9.Event.fromBuffer(value));
-  static final _$createNewEventInstances = $grpc.ClientMethod<$9.Event, $9.Event>(
-      '/rellm.Rellm/CreateNewEventInstances',
+  static final _$createNewOccasions = $grpc.ClientMethod<$9.Event, $9.Event>(
+      '/rellm.Rellm/CreateNewOccasions',
       ($9.Event value) => value.writeToBuffer(),
       ($core.List<$core.int> value) => $9.Event.fromBuffer(value));
-  static final _$updateEventInstances = $grpc.ClientMethod<$9.Event, $9.Event>(
-      '/rellm.Rellm/UpdateEventInstances',
+  static final _$updateOccasions = $grpc.ClientMethod<$9.Event, $9.Event>(
+      '/rellm.Rellm/UpdateOccasions',
       ($9.Event value) => value.writeToBuffer(),
       ($core.List<$core.int> value) => $9.Event.fromBuffer(value));
-  static final _$deleteRemovedEventInstances = $grpc.ClientMethod<$9.Event, $9.Event>(
-      '/rellm.Rellm/DeleteRemovedEventInstances',
+  static final _$deleteRemovedOccasions = $grpc.ClientMethod<$9.Event, $9.Event>(
+      '/rellm.Rellm/DeleteRemovedOccasions',
       ($9.Event value) => value.writeToBuffer(),
       ($core.List<$core.int> value) => $9.Event.fromBuffer(value));
   static final _$getSyncSources = $grpc.ClientMethod<$4.User, $10.GetSyncSourcesResponse>(
@@ -268,37 +268,37 @@ class RellmClient extends $grpc.Client {
       '/rellm.Rellm/DeleteSyncDestination',
       ($10.DeleteSyncDestinationRequest value) => value.writeToBuffer(),
       ($core.List<$core.int> value) => $0.Empty.fromBuffer(value));
-  static final _$syncEventInstance = $grpc.ClientMethod<$9.SyncEventInstanceRequest, $9.EventInstance>(
-      '/rellm.Rellm/SyncEventInstance',
-      ($9.SyncEventInstanceRequest value) => value.writeToBuffer(),
-      ($core.List<$core.int> value) => $9.EventInstance.fromBuffer(value));
-  static final _$deleteEventInstanceSyncDestination = $grpc.ClientMethod<$9.DeleteEventInstanceSyncDestinationRequest, $0.Empty>(
-      '/rellm.Rellm/DeleteEventInstanceSyncDestination',
-      ($9.DeleteEventInstanceSyncDestinationRequest value) => value.writeToBuffer(),
+  static final _$syncOccasion = $grpc.ClientMethod<$9.SyncOccasionRequest, $9.Occasion>(
+      '/rellm.Rellm/SyncOccasion',
+      ($9.SyncOccasionRequest value) => value.writeToBuffer(),
+      ($core.List<$core.int> value) => $9.Occasion.fromBuffer(value));
+  static final _$deleteOccasionSyncDestination = $grpc.ClientMethod<$9.DeleteOccasionSyncDestinationRequest, $0.Empty>(
+      '/rellm.Rellm/DeleteOccasionSyncDestination',
+      ($9.DeleteOccasionSyncDestinationRequest value) => value.writeToBuffer(),
       ($core.List<$core.int> value) => $0.Empty.fromBuffer(value));
-  static final _$getAIModelProviders = $grpc.ClientMethod<$4.User, $11.GetAIModelProvidersResponse>(
-      '/rellm.Rellm/GetAIModelProviders',
+  static final _$getAIProviders = $grpc.ClientMethod<$4.User, $11.GetAIProvidersResponse>(
+      '/rellm.Rellm/GetAIProviders',
       ($4.User value) => value.writeToBuffer(),
-      ($core.List<$core.int> value) => $11.GetAIModelProvidersResponse.fromBuffer(value));
-  static final _$createAIModelProvider = $grpc.ClientMethod<$11.AIModelProvider, $11.AIModelProvider>(
-      '/rellm.Rellm/CreateAIModelProvider',
-      ($11.AIModelProvider value) => value.writeToBuffer(),
-      ($core.List<$core.int> value) => $11.AIModelProvider.fromBuffer(value));
-  static final _$updateAIModelProvider = $grpc.ClientMethod<$11.AIModelProvider, $11.AIModelProvider>(
-      '/rellm.Rellm/UpdateAIModelProvider',
-      ($11.AIModelProvider value) => value.writeToBuffer(),
-      ($core.List<$core.int> value) => $11.AIModelProvider.fromBuffer(value));
-  static final _$deleteAIModelProvider = $grpc.ClientMethod<$11.DeleteAIModelProviderRequest, $0.Empty>(
-      '/rellm.Rellm/DeleteAIModelProvider',
-      ($11.DeleteAIModelProviderRequest value) => value.writeToBuffer(),
+      ($core.List<$core.int> value) => $11.GetAIProvidersResponse.fromBuffer(value));
+  static final _$createAIProvider = $grpc.ClientMethod<$11.AIProvider, $11.AIProvider>(
+      '/rellm.Rellm/CreateAIProvider',
+      ($11.AIProvider value) => value.writeToBuffer(),
+      ($core.List<$core.int> value) => $11.AIProvider.fromBuffer(value));
+  static final _$updateAIProvider = $grpc.ClientMethod<$11.AIProvider, $11.AIProvider>(
+      '/rellm.Rellm/UpdateAIProvider',
+      ($11.AIProvider value) => value.writeToBuffer(),
+      ($core.List<$core.int> value) => $11.AIProvider.fromBuffer(value));
+  static final _$deleteAIProvider = $grpc.ClientMethod<$11.DeleteAIProviderRequest, $0.Empty>(
+      '/rellm.Rellm/DeleteAIProvider',
+      ($11.DeleteAIProviderRequest value) => value.writeToBuffer(),
       ($core.List<$core.int> value) => $0.Empty.fromBuffer(value));
-  static final _$grantAIModelProvider = $grpc.ClientMethod<$11.GrantAIModelProviderRequest, $11.AIModelProviderGrant>(
-      '/rellm.Rellm/GrantAIModelProvider',
-      ($11.GrantAIModelProviderRequest value) => value.writeToBuffer(),
-      ($core.List<$core.int> value) => $11.AIModelProviderGrant.fromBuffer(value));
-  static final _$revokeAIModelProvider = $grpc.ClientMethod<$11.RevokeAIModelProviderRequest, $0.Empty>(
-      '/rellm.Rellm/RevokeAIModelProvider',
-      ($11.RevokeAIModelProviderRequest value) => value.writeToBuffer(),
+  static final _$grantAIProvider = $grpc.ClientMethod<$11.GrantAIProviderRequest, $11.AIProviderGrant>(
+      '/rellm.Rellm/GrantAIProvider',
+      ($11.GrantAIProviderRequest value) => value.writeToBuffer(),
+      ($core.List<$core.int> value) => $11.AIProviderGrant.fromBuffer(value));
+  static final _$revokeAIProvider = $grpc.ClientMethod<$11.RevokeAIProviderRequest, $0.Empty>(
+      '/rellm.Rellm/RevokeAIProvider',
+      ($11.RevokeAIProviderRequest value) => value.writeToBuffer(),
       ($core.List<$core.int> value) => $0.Empty.fromBuffer(value));
   static final _$generateMedia = $grpc.ClientMethod<$11.GenerateMediaRequest, $5.Media>(
       '/rellm.Rellm/GenerateMedia',
@@ -543,16 +543,16 @@ class RellmClient extends $grpc.Client {
     return $createUnaryCall(_$updateEventDetails, request, options: options);
   }
 
-  $grpc.ResponseFuture<$9.Event> createNewEventInstances($9.Event request, {$grpc.CallOptions? options}) {
-    return $createUnaryCall(_$createNewEventInstances, request, options: options);
+  $grpc.ResponseFuture<$9.Event> createNewOccasions($9.Event request, {$grpc.CallOptions? options}) {
+    return $createUnaryCall(_$createNewOccasions, request, options: options);
   }
 
-  $grpc.ResponseFuture<$9.Event> updateEventInstances($9.Event request, {$grpc.CallOptions? options}) {
-    return $createUnaryCall(_$updateEventInstances, request, options: options);
+  $grpc.ResponseFuture<$9.Event> updateOccasions($9.Event request, {$grpc.CallOptions? options}) {
+    return $createUnaryCall(_$updateOccasions, request, options: options);
   }
 
-  $grpc.ResponseFuture<$9.Event> deleteRemovedEventInstances($9.Event request, {$grpc.CallOptions? options}) {
-    return $createUnaryCall(_$deleteRemovedEventInstances, request, options: options);
+  $grpc.ResponseFuture<$9.Event> deleteRemovedOccasions($9.Event request, {$grpc.CallOptions? options}) {
+    return $createUnaryCall(_$deleteRemovedOccasions, request, options: options);
   }
 
   $grpc.ResponseFuture<$10.GetSyncSourcesResponse> getSyncSources($4.User request, {$grpc.CallOptions? options}) {
@@ -587,36 +587,36 @@ class RellmClient extends $grpc.Client {
     return $createUnaryCall(_$deleteSyncDestination, request, options: options);
   }
 
-  $grpc.ResponseFuture<$9.EventInstance> syncEventInstance($9.SyncEventInstanceRequest request, {$grpc.CallOptions? options}) {
-    return $createUnaryCall(_$syncEventInstance, request, options: options);
+  $grpc.ResponseFuture<$9.Occasion> syncOccasion($9.SyncOccasionRequest request, {$grpc.CallOptions? options}) {
+    return $createUnaryCall(_$syncOccasion, request, options: options);
   }
 
-  $grpc.ResponseFuture<$0.Empty> deleteEventInstanceSyncDestination($9.DeleteEventInstanceSyncDestinationRequest request, {$grpc.CallOptions? options}) {
-    return $createUnaryCall(_$deleteEventInstanceSyncDestination, request, options: options);
+  $grpc.ResponseFuture<$0.Empty> deleteOccasionSyncDestination($9.DeleteOccasionSyncDestinationRequest request, {$grpc.CallOptions? options}) {
+    return $createUnaryCall(_$deleteOccasionSyncDestination, request, options: options);
   }
 
-  $grpc.ResponseFuture<$11.GetAIModelProvidersResponse> getAIModelProviders($4.User request, {$grpc.CallOptions? options}) {
-    return $createUnaryCall(_$getAIModelProviders, request, options: options);
+  $grpc.ResponseFuture<$11.GetAIProvidersResponse> getAIProviders($4.User request, {$grpc.CallOptions? options}) {
+    return $createUnaryCall(_$getAIProviders, request, options: options);
   }
 
-  $grpc.ResponseFuture<$11.AIModelProvider> createAIModelProvider($11.AIModelProvider request, {$grpc.CallOptions? options}) {
-    return $createUnaryCall(_$createAIModelProvider, request, options: options);
+  $grpc.ResponseFuture<$11.AIProvider> createAIProvider($11.AIProvider request, {$grpc.CallOptions? options}) {
+    return $createUnaryCall(_$createAIProvider, request, options: options);
   }
 
-  $grpc.ResponseFuture<$11.AIModelProvider> updateAIModelProvider($11.AIModelProvider request, {$grpc.CallOptions? options}) {
-    return $createUnaryCall(_$updateAIModelProvider, request, options: options);
+  $grpc.ResponseFuture<$11.AIProvider> updateAIProvider($11.AIProvider request, {$grpc.CallOptions? options}) {
+    return $createUnaryCall(_$updateAIProvider, request, options: options);
   }
 
-  $grpc.ResponseFuture<$0.Empty> deleteAIModelProvider($11.DeleteAIModelProviderRequest request, {$grpc.CallOptions? options}) {
-    return $createUnaryCall(_$deleteAIModelProvider, request, options: options);
+  $grpc.ResponseFuture<$0.Empty> deleteAIProvider($11.DeleteAIProviderRequest request, {$grpc.CallOptions? options}) {
+    return $createUnaryCall(_$deleteAIProvider, request, options: options);
   }
 
-  $grpc.ResponseFuture<$11.AIModelProviderGrant> grantAIModelProvider($11.GrantAIModelProviderRequest request, {$grpc.CallOptions? options}) {
-    return $createUnaryCall(_$grantAIModelProvider, request, options: options);
+  $grpc.ResponseFuture<$11.AIProviderGrant> grantAIProvider($11.GrantAIProviderRequest request, {$grpc.CallOptions? options}) {
+    return $createUnaryCall(_$grantAIProvider, request, options: options);
   }
 
-  $grpc.ResponseFuture<$0.Empty> revokeAIModelProvider($11.RevokeAIModelProviderRequest request, {$grpc.CallOptions? options}) {
-    return $createUnaryCall(_$revokeAIModelProvider, request, options: options);
+  $grpc.ResponseFuture<$0.Empty> revokeAIProvider($11.RevokeAIProviderRequest request, {$grpc.CallOptions? options}) {
+    return $createUnaryCall(_$revokeAIProvider, request, options: options);
   }
 
   $grpc.ResponseFuture<$5.Media> generateMedia($11.GenerateMediaRequest request, {$grpc.CallOptions? options}) {
@@ -1006,22 +1006,22 @@ abstract class RellmServiceBase extends $grpc.Service {
         ($core.List<$core.int> value) => $9.Event.fromBuffer(value),
         ($9.Event value) => value.writeToBuffer()));
     $addMethod($grpc.ServiceMethod<$9.Event, $9.Event>(
-        'CreateNewEventInstances',
-        createNewEventInstances_Pre,
+        'CreateNewOccasions',
+        createNewOccasions_Pre,
         false,
         false,
         ($core.List<$core.int> value) => $9.Event.fromBuffer(value),
         ($9.Event value) => value.writeToBuffer()));
     $addMethod($grpc.ServiceMethod<$9.Event, $9.Event>(
-        'UpdateEventInstances',
-        updateEventInstances_Pre,
+        'UpdateOccasions',
+        updateOccasions_Pre,
         false,
         false,
         ($core.List<$core.int> value) => $9.Event.fromBuffer(value),
         ($9.Event value) => value.writeToBuffer()));
     $addMethod($grpc.ServiceMethod<$9.Event, $9.Event>(
-        'DeleteRemovedEventInstances',
-        deleteRemovedEventInstances_Pre,
+        'DeleteRemovedOccasions',
+        deleteRemovedOccasions_Pre,
         false,
         false,
         ($core.List<$core.int> value) => $9.Event.fromBuffer(value),
@@ -1082,61 +1082,61 @@ abstract class RellmServiceBase extends $grpc.Service {
         false,
         ($core.List<$core.int> value) => $10.DeleteSyncDestinationRequest.fromBuffer(value),
         ($0.Empty value) => value.writeToBuffer()));
-    $addMethod($grpc.ServiceMethod<$9.SyncEventInstanceRequest, $9.EventInstance>(
-        'SyncEventInstance',
-        syncEventInstance_Pre,
+    $addMethod($grpc.ServiceMethod<$9.SyncOccasionRequest, $9.Occasion>(
+        'SyncOccasion',
+        syncOccasion_Pre,
         false,
         false,
-        ($core.List<$core.int> value) => $9.SyncEventInstanceRequest.fromBuffer(value),
-        ($9.EventInstance value) => value.writeToBuffer()));
-    $addMethod($grpc.ServiceMethod<$9.DeleteEventInstanceSyncDestinationRequest, $0.Empty>(
-        'DeleteEventInstanceSyncDestination',
-        deleteEventInstanceSyncDestination_Pre,
+        ($core.List<$core.int> value) => $9.SyncOccasionRequest.fromBuffer(value),
+        ($9.Occasion value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$9.DeleteOccasionSyncDestinationRequest, $0.Empty>(
+        'DeleteOccasionSyncDestination',
+        deleteOccasionSyncDestination_Pre,
         false,
         false,
-        ($core.List<$core.int> value) => $9.DeleteEventInstanceSyncDestinationRequest.fromBuffer(value),
+        ($core.List<$core.int> value) => $9.DeleteOccasionSyncDestinationRequest.fromBuffer(value),
         ($0.Empty value) => value.writeToBuffer()));
-    $addMethod($grpc.ServiceMethod<$4.User, $11.GetAIModelProvidersResponse>(
-        'GetAIModelProviders',
-        getAIModelProviders_Pre,
+    $addMethod($grpc.ServiceMethod<$4.User, $11.GetAIProvidersResponse>(
+        'GetAIProviders',
+        getAIProviders_Pre,
         false,
         false,
         ($core.List<$core.int> value) => $4.User.fromBuffer(value),
-        ($11.GetAIModelProvidersResponse value) => value.writeToBuffer()));
-    $addMethod($grpc.ServiceMethod<$11.AIModelProvider, $11.AIModelProvider>(
-        'CreateAIModelProvider',
-        createAIModelProvider_Pre,
+        ($11.GetAIProvidersResponse value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$11.AIProvider, $11.AIProvider>(
+        'CreateAIProvider',
+        createAIProvider_Pre,
         false,
         false,
-        ($core.List<$core.int> value) => $11.AIModelProvider.fromBuffer(value),
-        ($11.AIModelProvider value) => value.writeToBuffer()));
-    $addMethod($grpc.ServiceMethod<$11.AIModelProvider, $11.AIModelProvider>(
-        'UpdateAIModelProvider',
-        updateAIModelProvider_Pre,
+        ($core.List<$core.int> value) => $11.AIProvider.fromBuffer(value),
+        ($11.AIProvider value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$11.AIProvider, $11.AIProvider>(
+        'UpdateAIProvider',
+        updateAIProvider_Pre,
         false,
         false,
-        ($core.List<$core.int> value) => $11.AIModelProvider.fromBuffer(value),
-        ($11.AIModelProvider value) => value.writeToBuffer()));
-    $addMethod($grpc.ServiceMethod<$11.DeleteAIModelProviderRequest, $0.Empty>(
-        'DeleteAIModelProvider',
-        deleteAIModelProvider_Pre,
+        ($core.List<$core.int> value) => $11.AIProvider.fromBuffer(value),
+        ($11.AIProvider value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$11.DeleteAIProviderRequest, $0.Empty>(
+        'DeleteAIProvider',
+        deleteAIProvider_Pre,
         false,
         false,
-        ($core.List<$core.int> value) => $11.DeleteAIModelProviderRequest.fromBuffer(value),
+        ($core.List<$core.int> value) => $11.DeleteAIProviderRequest.fromBuffer(value),
         ($0.Empty value) => value.writeToBuffer()));
-    $addMethod($grpc.ServiceMethod<$11.GrantAIModelProviderRequest, $11.AIModelProviderGrant>(
-        'GrantAIModelProvider',
-        grantAIModelProvider_Pre,
+    $addMethod($grpc.ServiceMethod<$11.GrantAIProviderRequest, $11.AIProviderGrant>(
+        'GrantAIProvider',
+        grantAIProvider_Pre,
         false,
         false,
-        ($core.List<$core.int> value) => $11.GrantAIModelProviderRequest.fromBuffer(value),
-        ($11.AIModelProviderGrant value) => value.writeToBuffer()));
-    $addMethod($grpc.ServiceMethod<$11.RevokeAIModelProviderRequest, $0.Empty>(
-        'RevokeAIModelProvider',
-        revokeAIModelProvider_Pre,
+        ($core.List<$core.int> value) => $11.GrantAIProviderRequest.fromBuffer(value),
+        ($11.AIProviderGrant value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$11.RevokeAIProviderRequest, $0.Empty>(
+        'RevokeAIProvider',
+        revokeAIProvider_Pre,
         false,
         false,
-        ($core.List<$core.int> value) => $11.RevokeAIModelProviderRequest.fromBuffer(value),
+        ($core.List<$core.int> value) => $11.RevokeAIProviderRequest.fromBuffer(value),
         ($0.Empty value) => value.writeToBuffer()));
     $addMethod($grpc.ServiceMethod<$11.GenerateMediaRequest, $5.Media>(
         'GenerateMedia',
@@ -1409,16 +1409,16 @@ abstract class RellmServiceBase extends $grpc.Service {
     return updateEventDetails(call, await request);
   }
 
-  $async.Future<$9.Event> createNewEventInstances_Pre($grpc.ServiceCall call, $async.Future<$9.Event> request) async {
-    return createNewEventInstances(call, await request);
+  $async.Future<$9.Event> createNewOccasions_Pre($grpc.ServiceCall call, $async.Future<$9.Event> request) async {
+    return createNewOccasions(call, await request);
   }
 
-  $async.Future<$9.Event> updateEventInstances_Pre($grpc.ServiceCall call, $async.Future<$9.Event> request) async {
-    return updateEventInstances(call, await request);
+  $async.Future<$9.Event> updateOccasions_Pre($grpc.ServiceCall call, $async.Future<$9.Event> request) async {
+    return updateOccasions(call, await request);
   }
 
-  $async.Future<$9.Event> deleteRemovedEventInstances_Pre($grpc.ServiceCall call, $async.Future<$9.Event> request) async {
-    return deleteRemovedEventInstances(call, await request);
+  $async.Future<$9.Event> deleteRemovedOccasions_Pre($grpc.ServiceCall call, $async.Future<$9.Event> request) async {
+    return deleteRemovedOccasions(call, await request);
   }
 
   $async.Future<$10.GetSyncSourcesResponse> getSyncSources_Pre($grpc.ServiceCall call, $async.Future<$4.User> request) async {
@@ -1453,36 +1453,36 @@ abstract class RellmServiceBase extends $grpc.Service {
     return deleteSyncDestination(call, await request);
   }
 
-  $async.Future<$9.EventInstance> syncEventInstance_Pre($grpc.ServiceCall call, $async.Future<$9.SyncEventInstanceRequest> request) async {
-    return syncEventInstance(call, await request);
+  $async.Future<$9.Occasion> syncOccasion_Pre($grpc.ServiceCall call, $async.Future<$9.SyncOccasionRequest> request) async {
+    return syncOccasion(call, await request);
   }
 
-  $async.Future<$0.Empty> deleteEventInstanceSyncDestination_Pre($grpc.ServiceCall call, $async.Future<$9.DeleteEventInstanceSyncDestinationRequest> request) async {
-    return deleteEventInstanceSyncDestination(call, await request);
+  $async.Future<$0.Empty> deleteOccasionSyncDestination_Pre($grpc.ServiceCall call, $async.Future<$9.DeleteOccasionSyncDestinationRequest> request) async {
+    return deleteOccasionSyncDestination(call, await request);
   }
 
-  $async.Future<$11.GetAIModelProvidersResponse> getAIModelProviders_Pre($grpc.ServiceCall call, $async.Future<$4.User> request) async {
-    return getAIModelProviders(call, await request);
+  $async.Future<$11.GetAIProvidersResponse> getAIProviders_Pre($grpc.ServiceCall call, $async.Future<$4.User> request) async {
+    return getAIProviders(call, await request);
   }
 
-  $async.Future<$11.AIModelProvider> createAIModelProvider_Pre($grpc.ServiceCall call, $async.Future<$11.AIModelProvider> request) async {
-    return createAIModelProvider(call, await request);
+  $async.Future<$11.AIProvider> createAIProvider_Pre($grpc.ServiceCall call, $async.Future<$11.AIProvider> request) async {
+    return createAIProvider(call, await request);
   }
 
-  $async.Future<$11.AIModelProvider> updateAIModelProvider_Pre($grpc.ServiceCall call, $async.Future<$11.AIModelProvider> request) async {
-    return updateAIModelProvider(call, await request);
+  $async.Future<$11.AIProvider> updateAIProvider_Pre($grpc.ServiceCall call, $async.Future<$11.AIProvider> request) async {
+    return updateAIProvider(call, await request);
   }
 
-  $async.Future<$0.Empty> deleteAIModelProvider_Pre($grpc.ServiceCall call, $async.Future<$11.DeleteAIModelProviderRequest> request) async {
-    return deleteAIModelProvider(call, await request);
+  $async.Future<$0.Empty> deleteAIProvider_Pre($grpc.ServiceCall call, $async.Future<$11.DeleteAIProviderRequest> request) async {
+    return deleteAIProvider(call, await request);
   }
 
-  $async.Future<$11.AIModelProviderGrant> grantAIModelProvider_Pre($grpc.ServiceCall call, $async.Future<$11.GrantAIModelProviderRequest> request) async {
-    return grantAIModelProvider(call, await request);
+  $async.Future<$11.AIProviderGrant> grantAIProvider_Pre($grpc.ServiceCall call, $async.Future<$11.GrantAIProviderRequest> request) async {
+    return grantAIProvider(call, await request);
   }
 
-  $async.Future<$0.Empty> revokeAIModelProvider_Pre($grpc.ServiceCall call, $async.Future<$11.RevokeAIModelProviderRequest> request) async {
-    return revokeAIModelProvider(call, await request);
+  $async.Future<$0.Empty> revokeAIProvider_Pre($grpc.ServiceCall call, $async.Future<$11.RevokeAIProviderRequest> request) async {
+    return revokeAIProvider(call, await request);
   }
 
   $async.Future<$5.Media> generateMedia_Pre($grpc.ServiceCall call, $async.Future<$11.GenerateMediaRequest> request) async {
@@ -1577,9 +1577,9 @@ abstract class RellmServiceBase extends $grpc.Service {
   $async.Future<$9.Event> updateEvent($grpc.ServiceCall call, $9.Event request);
   $async.Future<$9.Event> deleteEvent($grpc.ServiceCall call, $9.Event request);
   $async.Future<$9.Event> updateEventDetails($grpc.ServiceCall call, $9.Event request);
-  $async.Future<$9.Event> createNewEventInstances($grpc.ServiceCall call, $9.Event request);
-  $async.Future<$9.Event> updateEventInstances($grpc.ServiceCall call, $9.Event request);
-  $async.Future<$9.Event> deleteRemovedEventInstances($grpc.ServiceCall call, $9.Event request);
+  $async.Future<$9.Event> createNewOccasions($grpc.ServiceCall call, $9.Event request);
+  $async.Future<$9.Event> updateOccasions($grpc.ServiceCall call, $9.Event request);
+  $async.Future<$9.Event> deleteRemovedOccasions($grpc.ServiceCall call, $9.Event request);
   $async.Future<$10.GetSyncSourcesResponse> getSyncSources($grpc.ServiceCall call, $4.User request);
   $async.Future<$10.SyncSource> createSyncSource($grpc.ServiceCall call, $10.SyncSource request);
   $async.Future<$10.SyncSource> updateSyncSource($grpc.ServiceCall call, $10.SyncSource request);
@@ -1588,14 +1588,14 @@ abstract class RellmServiceBase extends $grpc.Service {
   $async.Future<$10.SyncDestination> createSyncDestination($grpc.ServiceCall call, $10.SyncDestination request);
   $async.Future<$10.SyncDestination> updateSyncDestination($grpc.ServiceCall call, $10.SyncDestination request);
   $async.Future<$0.Empty> deleteSyncDestination($grpc.ServiceCall call, $10.DeleteSyncDestinationRequest request);
-  $async.Future<$9.EventInstance> syncEventInstance($grpc.ServiceCall call, $9.SyncEventInstanceRequest request);
-  $async.Future<$0.Empty> deleteEventInstanceSyncDestination($grpc.ServiceCall call, $9.DeleteEventInstanceSyncDestinationRequest request);
-  $async.Future<$11.GetAIModelProvidersResponse> getAIModelProviders($grpc.ServiceCall call, $4.User request);
-  $async.Future<$11.AIModelProvider> createAIModelProvider($grpc.ServiceCall call, $11.AIModelProvider request);
-  $async.Future<$11.AIModelProvider> updateAIModelProvider($grpc.ServiceCall call, $11.AIModelProvider request);
-  $async.Future<$0.Empty> deleteAIModelProvider($grpc.ServiceCall call, $11.DeleteAIModelProviderRequest request);
-  $async.Future<$11.AIModelProviderGrant> grantAIModelProvider($grpc.ServiceCall call, $11.GrantAIModelProviderRequest request);
-  $async.Future<$0.Empty> revokeAIModelProvider($grpc.ServiceCall call, $11.RevokeAIModelProviderRequest request);
+  $async.Future<$9.Occasion> syncOccasion($grpc.ServiceCall call, $9.SyncOccasionRequest request);
+  $async.Future<$0.Empty> deleteOccasionSyncDestination($grpc.ServiceCall call, $9.DeleteOccasionSyncDestinationRequest request);
+  $async.Future<$11.GetAIProvidersResponse> getAIProviders($grpc.ServiceCall call, $4.User request);
+  $async.Future<$11.AIProvider> createAIProvider($grpc.ServiceCall call, $11.AIProvider request);
+  $async.Future<$11.AIProvider> updateAIProvider($grpc.ServiceCall call, $11.AIProvider request);
+  $async.Future<$0.Empty> deleteAIProvider($grpc.ServiceCall call, $11.DeleteAIProviderRequest request);
+  $async.Future<$11.AIProviderGrant> grantAIProvider($grpc.ServiceCall call, $11.GrantAIProviderRequest request);
+  $async.Future<$0.Empty> revokeAIProvider($grpc.ServiceCall call, $11.RevokeAIProviderRequest request);
   $async.Future<$5.Media> generateMedia($grpc.ServiceCall call, $11.GenerateMediaRequest request);
   $async.Future<$9.EventAttendances> getEventAttendances($grpc.ServiceCall call, $9.GetEventAttendancesRequest request);
   $async.Future<$9.EventAttendance> upsertEventAttendance($grpc.ServiceCall call, $9.EventAttendance request);

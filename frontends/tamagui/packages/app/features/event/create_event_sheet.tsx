@@ -1,4 +1,4 @@
-import { Event, EventInstance, EventListingType, Group, Location, Permission, Post, TimeFilter } from '@rellm/api';
+import { Event, Occasion, EventListingType, Group, Location, Permission, Post, TimeFilter } from '@rellm/api';
 import { Button, DateTimePicker, Heading, Paragraph, XStack, YStack, getThemes, supportDateInput, toProtoISOString, useTheme } from '@rellm/ui';
 import { FederatedGroup, createEvent, createGroupPost, federatedEntity, identifyEvent, useServerTheme, loadEventsPage, loadGroupEventsPage, resetEvents } from 'app/store';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -15,7 +15,7 @@ import { themedButtonBackground } from 'app/utils';
 import { EventsFullCalendar } from './events_full_calendar';
 import { useUpcomingEventsFilter } from 'app/hooks/use_upcoming_events_filter';
 
-export const defaultEventInstance: () => EventInstance = () => EventInstance.create({ startsAt: moment().toISOString(), endsAt: moment().add(1, 'hour').toISOString() });
+export const defaultOccasion: () => Occasion = () => Occasion.create({ startsAt: moment().toISOString(), endsAt: moment().add(1, 'hour').toISOString() });
 
 export type CreateEventSheetProps = {
   selectedGroup?: FederatedGroup;
@@ -56,7 +56,7 @@ export function CreateEventSheet({ selectedGroup, button }: CreateEventSheetProp
     const event = Event.create({
       post: post,
       instances: [
-        EventInstance.create({
+        Occasion.create({
           location,
           startsAt: toProtoISOString(startsAt),
           endsAt: toProtoISOString(endsAt),

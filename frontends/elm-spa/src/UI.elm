@@ -3134,7 +3134,7 @@ deleteConfirmationModal shared =
                             , "Delete"
                             )
 
-                        Shared.ConfirmEventInstanceDelete instance event _ ->
+                        Shared.ConfirmOccasionDelete instance event _ ->
                             ( "Delete This Date?"
                             , "Delete "
                                 ++ Events.instanceWhenText shared.time instance
@@ -3152,7 +3152,7 @@ deleteConfirmationModal shared =
                             , "Delete"
                             )
 
-                        Shared.ConfirmEventInstanceSyncDestinationDelete _ _ destinationLabel _ ->
+                        Shared.ConfirmOccasionSyncDestinationDelete _ _ destinationLabel _ ->
                             ( "Delete Sync?"
                             , "Stop syncing this event to "
                                 ++ destinationLabel
@@ -3302,7 +3302,7 @@ starredPanel shared currentRoute =
             shared.basePath
             shared.accounts
             (currentStarredPostKey shared currentRoute)
-            (currentStarredEventInstanceKey shared currentRoute)
+            (currentStarredOccasionKey shared currentRoute)
             shared.panels.starredPanel
         )
 
@@ -3327,13 +3327,13 @@ currentStarredPostKey shared currentRoute =
             Nothing
 
 
-{-| The currently-viewed `EventInstance`'s own `Post` id (see
+{-| The currently-viewed `Occasion`'s own `Post` id (see
 `Pages.Event.PostId_`), if `currentRoute` is that page -- mirrors
 `currentStarredPostKey` exactly, just for `Shared.StarredPanel`'s Event
 highlighting (see `Components.Events.eventCard`'s own `current` param).
 -}
-currentStarredEventInstanceKey : Shared.Model -> Route -> Maybe String
-currentStarredEventInstanceKey shared currentRoute =
+currentStarredOccasionKey : Shared.Model -> Route -> Maybe String
+currentStarredOccasionKey shared currentRoute =
     case currentRoute of
         Route.Event__PostId_ params ->
             let

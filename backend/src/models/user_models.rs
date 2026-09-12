@@ -22,7 +22,7 @@ pub fn get_author(user_id: i64, conn: &mut PgPooledConnection) -> Result<Author,
 }
 
 /// Batched variant of `get_author` -- every `Author` for `user_ids`, in one query. Used wherever a
-/// batch-attach step (e.g. `marshaling::build_available_ai_models_for_users`) needs several users'
+/// batch-attach step (e.g. `marshaling::build_ai_models_for_users`) needs several users'
 /// `Author`s at once instead of one `get_author` call per row.
 pub fn get_authors(user_ids: &[i64], conn: &mut PgPooledConnection) -> Vec<Author> {
     if user_ids.is_empty() {
@@ -69,7 +69,7 @@ pub struct User {
     pub created_at: SystemTime,
     pub updated_at: SystemTime,
     pub friend_count: i32,
-    pub event_instance_count: i32,
+    pub occasion_count: i32,
 }
 
 /// Explicit column list for `users`, excluding `search_text` (a generated tsvector used only for
@@ -97,7 +97,7 @@ pub const USER_COLUMNS: (
     users::created_at,
     users::updated_at,
     users::friend_count,
-    users::event_instance_count,
+    users::occasion_count,
 ) = (
     users::id,
     users::username,
@@ -120,7 +120,7 @@ pub const USER_COLUMNS: (
     users::created_at,
     users::updated_at,
     users::friend_count,
-    users::event_instance_count,
+    users::occasion_count,
 );
 
 pub const AUTHOR_COLUMNS: (

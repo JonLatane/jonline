@@ -1,6 +1,6 @@
 //! Connects a `SyncDestination` to a Mastodon account (via a user-pasted Personal Access Token --
 //! Mastodon instances are user-chosen arbitrary domains, so there's no single app to register ahead
-//! of time the way Facebook has one) and posts `EventInstance`s/`Post`s to it as a status, with
+//! of time the way Facebook has one) and posts `Occasion`s/`Post`s to it as a status, with
 //! attached media (up to Mastodon's own 4-attachment-per-status limit).
 //!
 //! No text-length truncation here -- unlike Bluesky's hard 300-grapheme limit, Mastodon's status

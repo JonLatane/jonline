@@ -1,6 +1,6 @@
 //! `SyncDestination` -- a user-owned destination to sync (cross-post) content out to (today
 //! always a connected Facebook Page). Originally Event-specific (`EventSyncDestination`), now
-//! shared by both `EventInstance`s (`event_instance_sync_destinations`, still in
+//! shared by both `Occasion`s (`occasion_sync_destinations`, still in
 //! `event_models.rs`/`event_loaders.rs` since that join table stays Event-specific) and `Post`s
 //! (`post_sync_destinations`, in `post_models.rs`).
 
@@ -12,7 +12,7 @@ use tonic::{Code, Status};
 
 use super::{Author, AUTHOR_COLUMNS};
 use crate::db_connection::PgPooledConnection;
-use crate::schema::{event_instance_sync_destinations, post_sync_destinations, sync_destinations, users};
+use crate::schema::{occasion_sync_destinations, post_sync_destinations, sync_destinations, users};
 
 #[derive(Debug, Queryable, Identifiable, AsChangeset, Clone)]
 pub struct SyncDestination {
@@ -58,8 +58,8 @@ pub fn get_sync_destinations_for_user(
         })
 }
 
-/// The number of EventInstances synced to each of `destination_ids` so far, batched into one
-/// `GROUP BY` query (mirrors `get_events.rs`'s `attach_event_instance_attendances`: fetch the
+/// The number of Occasions synced to each of `destination_ids` so far, batched into one
+/// `GROUP BY` query (mirrors `get_events.rs`'s `attach_occasion_attendances`: fetch the
 /// primary rows first, then attach a derived count/list in a second, batched query rather than
 /// one query per row) -- see `marshaling::attach_synced_counts`, which mutates already-built
 /// `SyncDestination` protos with this. A destination with zero synced instances is simply absent
@@ -71,11 +71,11 @@ pub fn get_sync_destination_synced_counts(
     if destination_ids.is_empty() {
         return HashMap::new();
     }
-    event_instance_sync_destinations::table
-        .filter(event_instance_sync_destinations::sync_destination_id.eq_any(destination_ids))
-        .group_by(event_instance_sync_destinations::sync_destination_id)
+    occasion_sync_destinations::table
+        .filter(occasion_sync_destinations::sync_destination_id.eq_any(destination_ids))
+        .group_by(occasion_sync_destinations::sync_destination_id)
         .select((
-            event_instance_sync_destinations::sync_destination_id,
+            occasion_sync_destinations::sync_destination_id,
             count_star(),
         ))
         .load::<(i64, i64)>(conn)
@@ -85,7 +85,7 @@ pub fn get_sync_destination_synced_counts(
 }
 
 /// Same as `get_sync_destination_synced_counts`, but the number of Posts synced to each
-/// destination (`post_sync_destinations`) instead of EventInstances.
+/// destination (`post_sync_destinations`) instead of Occasions.
 pub fn get_post_sync_destination_synced_counts(
     destination_ids: Vec<i64>,
     conn: &mut PgPooledConnection,

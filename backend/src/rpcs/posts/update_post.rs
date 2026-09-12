@@ -31,13 +31,13 @@ pub fn update_post(
         .first::<models::Post>(conn)
         .map_err(|_| Status::new(Code::NotFound, "post_not_found"))?;
 
-    let is_event_context = vec![PostContext::Event, PostContext::EventInstance]
+    let is_event_context = vec![PostContext::Event, PostContext::Occasion]
         .iter()
         .map(|c| c.to_string_post_context())
         .any(|s| s == existing_post.context);
 
     // A plain Post/Reply's moderator needs `ModeratePosts`; an Event/
-    // EventInstance's own Post needs `ModerateEvents` instead -- mirrors the
+    // Occasion's own Post needs `ModerateEvents` instead -- mirrors the
     // `PublishEvents*`/`PublishPosts*` split just below, for the same reason
     // (this Post's `context` decides which permission family governs it).
     let moderator = validate_permission(&Some(user), Permission::ModeratePosts).is_ok()
@@ -102,8 +102,8 @@ pub fn update_post(
         .transaction::<models::Post, diesel::result::Error, _>(|conn| {
             let now = SystemTime::now();
             if admin || self_update {
-                // Only Events/EventInstances support title and link updates.
-                if vec![PostContext::Event, PostContext::EventInstance]
+                // Only Events/Occasions support title and link updates.
+                if vec![PostContext::Event, PostContext::Occasion]
                     .iter()
                     .map(|c| c.to_string_post_context())
                     .any(|s| s == existing_post.context)

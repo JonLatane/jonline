@@ -21,7 +21,7 @@ const SyncDestination$json = {
     {'1': 'owner', '3': 2, '4': 1, '5': 11, '6': '.rellm.Author', '10': 'owner'},
     {'1': 'created_at', '3': 4, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'createdAt'},
     {'1': 'updated_at', '3': 5, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '9': 1, '10': 'updatedAt', '17': true},
-    {'1': 'synced_event_instance_count', '3': 6, '4': 1, '5': 4, '9': 2, '10': 'syncedEventInstanceCount', '17': true},
+    {'1': 'synced_occasion_count', '3': 6, '4': 1, '5': 4, '9': 2, '10': 'syncedOccasionCount', '17': true},
     {'1': 'synced_post_count', '3': 7, '4': 1, '5': 4, '9': 3, '10': 'syncedPostCount', '17': true},
     {'1': 'facebook_page', '3': 9, '4': 1, '5': 11, '6': '.rellm.FacebookPage', '9': 0, '10': 'facebookPage'},
     {'1': 'instagram_account', '3': 10, '4': 1, '5': 11, '6': '.rellm.InstagramAccount', '9': 0, '10': 'instagramAccount'},
@@ -33,7 +33,7 @@ const SyncDestination$json = {
   '8': [
     {'1': 'configuration'},
     {'1': '_updated_at'},
-    {'1': '_synced_event_instance_count'},
+    {'1': '_synced_occasion_count'},
     {'1': '_synced_post_count'},
   ],
 };
@@ -43,18 +43,18 @@ final $typed_data.Uint8List syncDestinationDescriptor = $convert.base64Decode(
     'Cg9TeW5jRGVzdGluYXRpb24SDgoCaWQYASABKAlSAmlkEiMKBW93bmVyGAIgASgLMg0ucmVsbG'
     '0uQXV0aG9yUgVvd25lchI5CgpjcmVhdGVkX2F0GAQgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRp'
     'bWVzdGFtcFIJY3JlYXRlZEF0Ej4KCnVwZGF0ZWRfYXQYBSABKAsyGi5nb29nbGUucHJvdG9idW'
-    'YuVGltZXN0YW1wSAFSCXVwZGF0ZWRBdIgBARJCChtzeW5jZWRfZXZlbnRfaW5zdGFuY2VfY291'
-    'bnQYBiABKARIAlIYc3luY2VkRXZlbnRJbnN0YW5jZUNvdW50iAEBEi8KEXN5bmNlZF9wb3N0X2'
-    'NvdW50GAcgASgESANSD3N5bmNlZFBvc3RDb3VudIgBARI6Cg1mYWNlYm9va19wYWdlGAkgASgL'
-    'MhMucmVsbG0uRmFjZWJvb2tQYWdlSABSDGZhY2Vib29rUGFnZRJGChFpbnN0YWdyYW1fYWNjb3'
-    'VudBgKIAEoCzIXLnJlbGxtLkluc3RhZ3JhbUFjY291bnRIAFIQaW5zdGFncmFtQWNjb3VudBJD'
-    'ChBtYXN0b2Rvbl9hY2NvdW50GAsgASgLMhYucmVsbG0uTWFzdG9kb25BY2NvdW50SABSD21hc3'
-    'RvZG9uQWNjb3VudBJACg9ibHVlc2t5X2FjY291bnQYDCABKAsyFS5yZWxsbS5CbHVlc2t5QWNj'
-    'b3VudEgAUg5ibHVlc2t5QWNjb3VudBJEChF4X3R3aXR0ZXJfYWNjb3VudBgNIAEoCzIWLnJlbG'
-    'xtLlhUd2l0dGVyQWNjb3VudEgAUg94VHdpdHRlckFjY291bnQSQAoPdGhyZWFkc19hY2NvdW50'
-    'GA4gASgLMhUucmVsbG0uVGhyZWFkc0FjY291bnRIAFIOdGhyZWFkc0FjY291bnRCDwoNY29uZm'
-    'lndXJhdGlvbkINCgtfdXBkYXRlZF9hdEIeChxfc3luY2VkX2V2ZW50X2luc3RhbmNlX2NvdW50'
-    'QhQKEl9zeW5jZWRfcG9zdF9jb3VudA==');
+    'YuVGltZXN0YW1wSAFSCXVwZGF0ZWRBdIgBARI3ChVzeW5jZWRfb2NjYXNpb25fY291bnQYBiAB'
+    'KARIAlITc3luY2VkT2NjYXNpb25Db3VudIgBARIvChFzeW5jZWRfcG9zdF9jb3VudBgHIAEoBE'
+    'gDUg9zeW5jZWRQb3N0Q291bnSIAQESOgoNZmFjZWJvb2tfcGFnZRgJIAEoCzITLnJlbGxtLkZh'
+    'Y2Vib29rUGFnZUgAUgxmYWNlYm9va1BhZ2USRgoRaW5zdGFncmFtX2FjY291bnQYCiABKAsyFy'
+    '5yZWxsbS5JbnN0YWdyYW1BY2NvdW50SABSEGluc3RhZ3JhbUFjY291bnQSQwoQbWFzdG9kb25f'
+    'YWNjb3VudBgLIAEoCzIWLnJlbGxtLk1hc3RvZG9uQWNjb3VudEgAUg9tYXN0b2RvbkFjY291bn'
+    'QSQAoPYmx1ZXNreV9hY2NvdW50GAwgASgLMhUucmVsbG0uQmx1ZXNreUFjY291bnRIAFIOYmx1'
+    'ZXNreUFjY291bnQSRAoReF90d2l0dGVyX2FjY291bnQYDSABKAsyFi5yZWxsbS5YVHdpdHRlck'
+    'FjY291bnRIAFIPeFR3aXR0ZXJBY2NvdW50EkAKD3RocmVhZHNfYWNjb3VudBgOIAEoCzIVLnJl'
+    'bGxtLlRocmVhZHNBY2NvdW50SABSDnRocmVhZHNBY2NvdW50Qg8KDWNvbmZpZ3VyYXRpb25CDQ'
+    'oLX3VwZGF0ZWRfYXRCGAoWX3N5bmNlZF9vY2Nhc2lvbl9jb3VudEIUChJfc3luY2VkX3Bvc3Rf'
+    'Y291bnQ=');
 
 @$core.Deprecated('Use getSyncDestinationsResponseDescriptor instead')
 const GetSyncDestinationsResponse$json = {
@@ -246,7 +246,7 @@ const SyncSource$json = {
     {'1': 'updated_at', '3': 5, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '9': 1, '10': 'updatedAt', '17': true},
     {'1': 'last_synced_at', '3': 6, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '9': 2, '10': 'lastSyncedAt', '17': true},
     {'1': 'event_count', '3': 7, '4': 1, '5': 4, '10': 'eventCount'},
-    {'1': 'event_instance_count', '3': 8, '4': 1, '5': 4, '10': 'eventInstanceCount'},
+    {'1': 'occasion_count', '3': 8, '4': 1, '5': 4, '10': 'occasionCount'},
     {'1': 'post_count', '3': 10, '4': 1, '5': 4, '10': 'postCount'},
     {'1': 'ics_subscription_url', '3': 9, '4': 1, '5': 9, '9': 0, '10': 'icsSubscriptionUrl'},
     {'1': 'rss_subscription_url', '3': 11, '4': 1, '5': 9, '9': 0, '10': 'rssSubscriptionUrl'},
@@ -267,12 +267,12 @@ final $typed_data.Uint8List syncSourceDescriptor = $convert.base64Decode(
     'ljcmVhdGVkQXQSPgoKdXBkYXRlZF9hdBgFIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3Rh'
     'bXBIAVIJdXBkYXRlZEF0iAEBEkUKDmxhc3Rfc3luY2VkX2F0GAYgASgLMhouZ29vZ2xlLnByb3'
     'RvYnVmLlRpbWVzdGFtcEgCUgxsYXN0U3luY2VkQXSIAQESHwoLZXZlbnRfY291bnQYByABKARS'
-    'CmV2ZW50Q291bnQSMAoUZXZlbnRfaW5zdGFuY2VfY291bnQYCCABKARSEmV2ZW50SW5zdGFuY2'
-    'VDb3VudBIdCgpwb3N0X2NvdW50GAogASgEUglwb3N0Q291bnQSMgoUaWNzX3N1YnNjcmlwdGlv'
-    'bl91cmwYCSABKAlIAFISaWNzU3Vic2NyaXB0aW9uVXJsEjIKFHJzc19zdWJzY3JpcHRpb25fdX'
-    'JsGAsgASgJSABSEnJzc1N1YnNjcmlwdGlvblVybBI0ChVhdG9tX3N1YnNjcmlwdGlvbl91cmwY'
-    'DCABKAlIAFITYXRvbVN1YnNjcmlwdGlvblVybEIPCg1jb25maWd1cmF0aW9uQg0KC191cGRhdG'
-    'VkX2F0QhEKD19sYXN0X3N5bmNlZF9hdA==');
+    'CmV2ZW50Q291bnQSJQoOb2NjYXNpb25fY291bnQYCCABKARSDW9jY2FzaW9uQ291bnQSHQoKcG'
+    '9zdF9jb3VudBgKIAEoBFIJcG9zdENvdW50EjIKFGljc19zdWJzY3JpcHRpb25fdXJsGAkgASgJ'
+    'SABSEmljc1N1YnNjcmlwdGlvblVybBIyChRyc3Nfc3Vic2NyaXB0aW9uX3VybBgLIAEoCUgAUh'
+    'Jyc3NTdWJzY3JpcHRpb25VcmwSNAoVYXRvbV9zdWJzY3JpcHRpb25fdXJsGAwgASgJSABSE2F0'
+    'b21TdWJzY3JpcHRpb25VcmxCDwoNY29uZmlndXJhdGlvbkINCgtfdXBkYXRlZF9hdEIRCg9fbG'
+    'FzdF9zeW5jZWRfYXQ=');
 
 @$core.Deprecated('Use getSyncSourcesResponseDescriptor instead')
 const GetSyncSourcesResponse$json = {

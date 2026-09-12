@@ -204,7 +204,7 @@ pub struct NewMessageRecipient {
 /// unread. Backs `Message.current_user_read`/`MarkMessageReadRequest` (see
 /// protos/messages.proto), read/written for the *authenticated caller's own* user id only --
 /// there's no notion of marking a message read on someone else's behalf. Composite primary key
-/// (no separate id column), same reasoning as `models::EventInstanceSyncDestination` (see
+/// (no separate id column), same reasoning as `models::OccasionSyncDestination` (see
 /// 2026-08-09-205953_create_event_sync_destinations): a user can only ever have one read record
 /// per Message, so there's nothing an extra surrogate key would let us express.
 #[derive(Debug, Queryable, Identifiable, Associations, Clone)]

@@ -1655,7 +1655,7 @@ sendUpdate req msg model =
                             -- this doesn't have to change if that's ever loosened.
                             , syncDestinations = user.syncDestinations
                             , syncSources = user.syncSources
-                            , availableAiModels = user.availableAiModels
+                            , aiModels = user.aiModels
                             }
 
                         newModel : Model
@@ -1724,7 +1724,7 @@ sendUpdate req msg model =
                 -- corrupted localStorage. When it's already connected, `GotReconnectResult`
                 -- won't fire again the way it does for a fresh reconnect below (which itself
                 -- calls `refreshPermissionsForServer` on success) -- so this account's
-                -- `permissions`/`syncDestinations`/`syncSources`/`availableAiModels`
+                -- `permissions`/`syncDestinations`/`syncSources`/`aiModels`
                 -- (see `RellmAccount`'s own doc) would otherwise sit stale (whatever `account`
                 -- carried across the SSO hand-off) until some later, unrelated reconnect.
                 -- Refresh it directly here instead so it's current immediately.

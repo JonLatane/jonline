@@ -161,7 +161,7 @@ export function UsernameDetailsScreen() {
   const paginatedPosts = postPagination.results;
 
   const [loadingEvents, setLoadingEvents] = useState(false);
-  const userEventIds = useAppSelector(state => userId ? state.users.idEventInstances[userId] : undefined);
+  const userEventIds = useAppSelector(state => userId ? state.users.idOccasions[userId] : undefined);
   const userEventData: FederatedEvent[] | undefined = useAppSelector(state => {
     return userEventIds?.map(instanceId => {
       const eventId = state.events.instanceEvents[instanceId];

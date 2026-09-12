@@ -718,7 +718,7 @@ fn post_summary(
             while let Some(parent_id) = ancestor_post.reply_to_post_id {
                 ancestor_post = get_post(parent_id, connection).unwrap();
             }
-            if ancestor_post.context() == PostContext::EventInstance {
+            if ancestor_post.context() == PostContext::Occasion {
                 let event = get_event_from_post(&ancestor_post.id, connection);
                 ancestor_post = match event {
                     Some(event) => match event.post {
@@ -732,7 +732,7 @@ fn post_summary(
                 // }
             }
             let ancestor_entity_type = match ancestor_post.context() {
-                PostContext::EventInstance | PostContext::Event => "Event".to_string(),
+                PostContext::Occasion | PostContext::Event => "Event".to_string(),
                 _ => entity_type,
             };
 
@@ -793,10 +793,10 @@ fn get_post(post_id: String, connection: &mut PgPooledConnection) -> Option<Post
     post
 }
 
-fn get_event(event_instance_id: String, connection: &mut PgPooledConnection) -> Option<Event> {
+fn get_event(occasion_id: String, connection: &mut PgPooledConnection) -> Option<Event> {
     let event = rpcs::get_events(
         GetEventsRequest {
-            post_id: Some(event_instance_id),
+            post_id: Some(occasion_id),
             ..Default::default()
         },
         &None,
@@ -812,7 +812,7 @@ fn get_event_from_post(post_id: &str, connection: &mut PgPooledConnection) -> Op
     let event = rpcs::get_events(
         GetEventsRequest {
             post_id: Some(post_id.to_string()),
-            // event_instance_id: Some(event_instance_id),
+            // occasion_id: Some(occasion_id),
             ..Default::default()
         },
         &None,

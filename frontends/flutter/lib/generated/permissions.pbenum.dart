@@ -53,7 +53,7 @@ class Permission extends $pb.ProtobufEnum {
   static const Permission MODERATE_MEDIA = Permission._(44, _omitEnumNames ? '' : 'MODERATE_MEDIA');
   static const Permission READ_PERSONAL_MESSAGES = Permission._(50, _omitEnumNames ? '' : 'READ_PERSONAL_MESSAGES');
   static const Permission READ_ALL_SYSTEM_MESSAGES = Permission._(51, _omitEnumNames ? '' : 'READ_ALL_SYSTEM_MESSAGES');
-  static const Permission CREATE_AI_MODEL_PROVIDERS = Permission._(60, _omitEnumNames ? '' : 'CREATE_AI_MODEL_PROVIDERS');
+  static const Permission CREATE_AI_PROVIDERS = Permission._(60, _omitEnumNames ? '' : 'CREATE_AI_PROVIDERS');
   static const Permission SYNC_EVENTS_FROM_ICS = Permission._(700, _omitEnumNames ? '' : 'SYNC_EVENTS_FROM_ICS');
   static const Permission SYNC_POSTS_FROM_RSS = Permission._(701, _omitEnumNames ? '' : 'SYNC_POSTS_FROM_RSS');
   static const Permission SYNC_POSTS_FROM_ATOM = Permission._(702, _omitEnumNames ? '' : 'SYNC_POSTS_FROM_ATOM');
@@ -110,7 +110,7 @@ class Permission extends $pb.ProtobufEnum {
     MODERATE_MEDIA,
     READ_PERSONAL_MESSAGES,
     READ_ALL_SYSTEM_MESSAGES,
-    CREATE_AI_MODEL_PROVIDERS,
+    CREATE_AI_PROVIDERS,
     SYNC_EVENTS_FROM_ICS,
     SYNC_POSTS_FROM_RSS,
     SYNC_POSTS_FROM_ATOM,

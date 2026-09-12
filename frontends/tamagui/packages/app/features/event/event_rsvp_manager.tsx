@@ -1,4 +1,4 @@
-import { FederatedEvent, IdentifiedEventInstance, RootState, accountOrServerId, federateId, getCredentialClient, loadRsvpData, useServerTheme } from "app/store";
+import { FederatedEvent, IdentifiedOccasion, RootState, accountOrServerId, federateId, getCredentialClient, loadRsvpData, useServerTheme } from "app/store";
 import React, { useEffect, useState } from "react";
 
 import { AttendanceStatus, EventAttendance, Permission } from "@rellm/api";
@@ -20,7 +20,7 @@ import { on } from '../../hooks/use_hash';
 
 export interface EventRsvpManagerProps {
   event: FederatedEvent;
-  instance: IdentifiedEventInstance;
+  instance: IdentifiedOccasion;
   newRsvpMode?: RsvpMode;
   setNewRsvpMode?: (mode: RsvpMode) => void;
   isPreview?: boolean;
@@ -167,7 +167,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
   useEffect(() => {
     if (instance && !loading && !loaded && !rsvpData) {
       setLoading(true);
-      dispatch(loadRsvpData({ eventInstanceId: instance.id, anonymousAttendeeAuthToken: anonymousAuthToken, ...accountOrServer }))
+      dispatch(loadRsvpData({ occasionId: instance.id, anonymousAttendeeAuthToken: anonymousAuthToken, ...accountOrServer }))
         .finally(() => {
           setLoaded(true);
           setLoading(false);
@@ -186,7 +186,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
   //         // console.log('loading attendance data with auth token', anonymousAuthToken);
   //         // const client = await getCredentialClient(accountOrServer);
   //         // const eventAttendancesResponse = await client.getEventAttendances({
-  //         //   eventInstanceId: instance?.id,
+  //         //   occasionId: instance?.id,
   //         //   anonymousAttendeeAuthToken: anonymousAuthToken
   //         // }, client.credential);
   //         // setAttendances(eventAttendancesResponse.attendances);
@@ -234,7 +234,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
   //   && rsvpValid;
 
   const upsertableAttendance = instance ? {
-    eventInstanceId: instance.id,
+    occasionId: instance.id,
     userAttendee: newRsvpMode === 'user'
       ? { userId: account?.user?.id }
       : undefined,
@@ -305,7 +305,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
 
     const client = await getCredentialClient(accountOrServer);
     client.deleteEventAttendance({
-      eventInstanceId: instance.id,
+      occasionId: instance.id,
       userAttendee: newRsvpMode === 'user'
         ? { userId: account?.user?.id }
         : undefined,

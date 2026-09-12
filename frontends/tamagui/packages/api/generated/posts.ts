@@ -116,25 +116,25 @@ export enum PostContext {
    */
   POST = 0,
   /**
-   * REPLY - Reply to a `POST`, `REPLY`, `EVENT`, or `EVENT_INSTANCE`
+   * REPLY - Reply to a `POST`, `REPLY`, `EVENT`, or `OCCASION`
    * Does not support a `link`. Requires a `reply_to_post_id`.
    */
   REPLY = 1,
   /**
    * EVENT - Post behind an "Event" (which does not actually have a start/end time -
-   * it's a group of EventInstances, at least one, which each do).
+   * it's a group of Occasions, at least one, which each do).
    * The Events table should have a row for this Post.
    * Never created by the CreatePost RPC (this is an error); use CreateEvent.
    * These Posts' `link` and `title` fields are modifiable.
    */
   EVENT = 2,
   /**
-   * EVENT_INSTANCE - An "Event Instance" Post (which relates to an event with a start and end time).
-   * The EventInstances table should have a row for this Post.
-   * Never created by the CreatePost RPC (this is an error); use CreateEvent/UpdateEvent to manage EventInstances implicitly.
+   * OCCASION - An "Occasion" Post (which relates to an event with a start and end time).
+   * The Occasions table should have a row for this Post.
+   * Never created by the CreatePost RPC (this is an error); use CreateEvent/UpdateEvent to manage Occasions implicitly.
    * These Posts' `link` and `title` fields are modifiable.
    */
-  EVENT_INSTANCE = 3,
+  OCCASION = 3,
   /**
    * FEDERATED_REPLY - A reply to a Post on another server. The post *must* have a link of the format `http[s]://<server/post/<post_id>`
    * in its `link` field. It will not have a `reply_to_post_id` value.
@@ -155,8 +155,8 @@ export function postContextFromJSON(object: any): PostContext {
     case "EVENT":
       return PostContext.EVENT;
     case 3:
-    case "EVENT_INSTANCE":
-      return PostContext.EVENT_INSTANCE;
+    case "OCCASION":
+      return PostContext.OCCASION;
     case 10:
     case "FEDERATED_REPLY":
       return PostContext.FEDERATED_REPLY;
@@ -175,8 +175,8 @@ export function postContextToJSON(object: PostContext): string {
       return "REPLY";
     case PostContext.EVENT:
       return "EVENT";
-    case PostContext.EVENT_INSTANCE:
-      return "EVENT_INSTANCE";
+    case PostContext.OCCASION:
+      return "OCCASION";
     case PostContext.FEDERATED_REPLY:
       return "FEDERATED_REPLY";
     case PostContext.UNRECOGNIZED:
@@ -292,7 +292,7 @@ export interface GetPostsResponse {
  *
  * `Post`s are also a fundamental unit of the system. They provide a building block
  * of Visibility and Moderation management that is used throughout Posts, Replies, Events,
- * and Event Instances.
+ * and Occasions.
  */
 export interface Post {
   /** Unique ID of the post. */
@@ -337,7 +337,7 @@ export interface Post {
    * and a `DIRECT` post can be shared with individuals.
    */
   shareable: boolean;
-  /** Context of the Post (`POST`, `REPLY`, `EVENT`, or `EVENT_INSTANCE`.) */
+  /** Context of the Post (`POST`, `REPLY`, `EVENT`, or `OCCASION`.) */
   context: PostContext;
   /** The visibility of the Post. */
   visibility: Visibility;
@@ -381,7 +381,7 @@ export interface Post {
   syncDestinations: SyncDestinationStatus[];
   /**
    * If the Post was created/is kept in sync from a [`SyncSource`](#rellm-SyncSource) (an ICS
-   * Event/EventInstance, or an RSS/Atom feed item), this is the source it was synced from.
+   * Event/Occasion, or an RSS/Atom feed item), this is the source it was synced from.
    * Only its media should be considered editable for such a Post.
    */
   syncSource?: SyncSource | undefined;

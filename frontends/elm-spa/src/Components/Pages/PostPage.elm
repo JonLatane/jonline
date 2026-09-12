@@ -24,7 +24,7 @@ the calling page's own `Request`.
 -}
 
 import Browser.Navigation
-import Components.AIModelProviders as AIModelProviders
+import Components.AIProviders as AIProviders
 import Components.PostReplies as PostReplies
 import Components.Posts as Posts
 import Components.ServerDependentView as ServerDependentView
@@ -879,14 +879,14 @@ postDetailView shared model post =
         onMediaClicked mediaId =
             MediaClicked displayPost mediaId
 
-        -- `Nothing` when the viewer has no image-capable `AvailableAIModel` at all -- see
+        -- `Nothing` when the viewer has no image-capable `AIModel` at all -- see
         -- `Posts.generateMediaButton`'s own doc on why this decision lives at the call site rather
         -- than inside `Components.Posts`.
         onGenerateMediaClicked : Maybe Msg
         onGenerateMediaClicked =
             case maybeAccount of
                 Just account ->
-                    if List.any AIModelProviders.hasAnyImageCapability account.availableAiModels then
+                    if List.any AIProviders.hasAnyImageCapability account.aiModels then
                         Just (GenerateMediaClicked displayPost)
 
                     else

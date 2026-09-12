@@ -86,7 +86,7 @@
   margin-bottom: 0.6rem;
 }
 
-/* Star + comment count for the currently-viewed `EventInstance`'s own `Post`
+/* Star + comment count for the currently-viewed `Occasion`'s own `Post`
    -- bottom-right of the detail view (`Pages.Event.EventId_.instanceMetaView`),
    below both `postSection`s. Just `.post-meta-right` (posts.css) -- its own
    `margin-left: auto` pins it to the right edge without needing a
@@ -125,7 +125,7 @@
 }
 
 /* The start/end time + location block sits between the Event's own Post
-   (title/link/content) and the EventInstance's own override Post -- styled
+   (title/link/content) and the Occasion's own override Post -- styled
    like an invitation's date/venue line, set off from the surrounding prose
    by its own border rather than blending into either Post section. */
 /* Row direction (not the time/location stack's own column direction below)
@@ -198,7 +198,7 @@
   color: inherit;
 }
 
-/* Links out to wherever an `EventInstance` was synced to (e.g. the
+/* Links out to wherever an `Occasion` was synced to (e.g. the
    resulting Facebook post) -- see `Components.Events.eventSyncDestinationsView`.
    One `.synced-to-line` per destination with a URL, same "clipped,
    not wrapped, muted" treatment (and `position: relative` overlay trick,
@@ -293,7 +293,7 @@
 
 /* The date-picker strip -- see Pages/Event/EventId_.elm's
    `instanceHistoryView`. Sits between the Event's own Post and the
-   currently-viewed EventInstance's start/end/location block. */
+   currently-viewed Occasion's start/end/location block. */
 .event-instance-history {
   margin: 0 0 1rem;
 }
@@ -1021,7 +1021,7 @@
 }
 
 /* Split into `.post-meta-left` (author/visibility) and `.post-meta-right`
-   (star + comment count, both keyed off the `EventInstance`'s own Post) --
+   (star + comment count, both keyed off the `Occasion`'s own Post) --
    same `posts.css` classes/layout `.post-card-meta` uses, see that file's own
    doc comment on the split. */
 .event-card-meta {
@@ -1041,8 +1041,8 @@
   pointer-events: auto;
 }
 
-/* The Starred panel entry for the Event Instance currently being viewed (see
-   `Shared.StarredPanel.view`/`UI.elm`'s `currentStarredEventInstanceKey`) --
+/* The Starred panel entry for the Occasion currently being viewed (see
+   `Shared.StarredPanel.view`/`UI.elm`'s `currentStarredOccasionKey`) --
    mirrors `posts.css`'s `.post-card-current .post-card-meta` exactly:
    `.event-card`'s own `background-color-primary` utility class (added
    alongside this marker class, see `Components.Events.eventCard`) already

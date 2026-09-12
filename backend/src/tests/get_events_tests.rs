@@ -2,7 +2,7 @@
 //! plus the visibility/moderation rules baked into `query_visible_events!` (see the macro in
 //! `get_events.rs`). The one rule that's easy to miss reading the RPC in isolation: an event's
 //! overall visibility is the *intersection* of its container `Event` post's
-//! visibility/moderation and each individual `EventInstance`'s own post's - `query_visible_events!`
+//! visibility/moderation and each individual `Occasion`'s own post's - `query_visible_events!`
 //! filters on both independently (see `requires_both_container_and_instance_post_to_pass`, below).
 //!
 //! Each test opens its own connection to `TEST_DATABASE_URL` and runs entirely inside a
@@ -37,15 +37,15 @@ fn from_now(seconds: u64) -> SystemTime {
 }
 
 /// Creates a single-instance event: a `PostContext::Event` container post/`Event`, plus one
-/// `PostContext::EventInstance` post/`EventInstance`. `event_opts`/`instance_opts` each default
-/// to `ServerPublic`/`Unmoderated` (see `EventOpts`/`EventInstanceOpts`) - tests override
+/// `PostContext::Occasion` post/`Occasion`. `event_opts`/`instance_opts` each default
+/// to `ServerPublic`/`Unmoderated` (see `EventOpts`/`OccasionOpts`) - tests override
 /// whichever side (container vs. instance) they're actually exercising.
 fn create_simple_event(
     conn: &mut crate::db_connection::PgPooledConnection,
     author: &crate::models::User,
     event_opts: EventOpts,
-    instance_opts: EventInstanceOpts,
-) -> (crate::models::Event, crate::models::EventInstance) {
+    instance_opts: OccasionOpts,
+) -> (crate::models::Event, crate::models::Occasion) {
     let (event, _event_post) = create_event(
         conn,
         author,
@@ -55,7 +55,7 @@ fn create_simple_event(
         },
     );
     let (instance, _instance_post) =
-        create_event_instance(conn, &event, Some(author), instance_opts);
+        create_occasion(conn, &event, Some(author), instance_opts);
     (event, instance)
 }
 
@@ -74,7 +74,7 @@ mod get_by_event_id {
                     visibility: Visibility::GlobalPublic,
                     ..Default::default()
                 },
-                EventInstanceOpts {
+                OccasionOpts {
                     visibility: Visibility::GlobalPublic,
                     ..Default::default()
                 },
@@ -140,7 +140,7 @@ mod get_by_event_id {
     }
 
     /// `query_visible_events!` filters on the container `Event` post's visibility *and* the
-    /// `EventInstance`'s own post's visibility as two independent `.filter(...)` calls (i.e.
+    /// `Occasion`'s own post's visibility as two independent `.filter(...)` calls (i.e.
     /// ANDed) - so a `Private` container post hides the event even when its instance post is
     /// `GlobalPublic`, and vice versa. Only when both sides pass (or the requester is the author)
     /// is the event visible.
@@ -158,7 +158,7 @@ mod get_by_event_id {
                     visibility: Visibility::Private,
                     ..Default::default()
                 },
-                EventInstanceOpts {
+                OccasionOpts {
                     visibility: Visibility::GlobalPublic,
                     ..Default::default()
                 },
@@ -170,7 +170,7 @@ mod get_by_event_id {
                     visibility: Visibility::GlobalPublic,
                     ..Default::default()
                 },
-                EventInstanceOpts {
+                OccasionOpts {
                     visibility: Visibility::Private,
                     ..Default::default()
                 },
@@ -217,7 +217,7 @@ mod get_by_instance_id {
                     visibility: Visibility::GlobalPublic,
                     ..Default::default()
                 },
-                EventInstanceOpts {
+                OccasionOpts {
                     visibility: Visibility::GlobalPublic,
                     ..Default::default()
                 },
@@ -253,7 +253,7 @@ mod get_by_instance_id {
             let err = result.unwrap_err();
             assert_eq!(err.code(), Code::NotFound);
             // Same message as `get_by_event_id::not_found_for_nonexistent_id` -- `post_id` no
-            // longer distinguishes an Event's own post from one of its EventInstances' posts, so
+            // longer distinguishes an Event's own post from one of its Occasions' posts, so
             // there's no way (or need) to tell the two "not found" cases apart in the response.
             assert_eq!(err.message(), "event_not_found");
             Ok(())
@@ -277,11 +277,11 @@ mod get_by_post_id {
                     ..Default::default()
                 },
             );
-            create_event_instance(
+            create_occasion(
                 conn,
                 &event,
                 Some(&author),
-                EventInstanceOpts {
+                OccasionOpts {
                     visibility: Visibility::GlobalPublic,
                     ..Default::default()
                 },
@@ -314,11 +314,11 @@ mod get_by_post_id {
                     ..Default::default()
                 },
             );
-            let (_instance, instance_post) = create_event_instance(
+            let (_instance, instance_post) = create_occasion(
                 conn,
                 &event,
                 Some(&author),
-                EventInstanceOpts {
+                OccasionOpts {
                     visibility: Visibility::GlobalPublic,
                     ..Default::default()
                 },
@@ -357,15 +357,15 @@ mod get_by_post_id {
     }
 }
 
-/// Specs for `GetEventsRequest.event_instance_post_ids` (`get_events_by_instance_post_ids` in
-/// `get_events.rs`) -- the Starred panel's batch lookup, keyed on `EventInstance` Post ids
+/// Specs for `GetEventsRequest.occasion_post_ids` (`get_events_by_instance_post_ids` in
+/// `get_events.rs`) -- the Starred panel's batch lookup, keyed on `Occasion` Post ids
 /// specifically (unlike `post_id`/`get_by_post_id`, above, which also accepts the container
 /// `Event`'s own post id). Unlike every other branch of `get_events`, this one is a *batch*
 /// lookup -- an id that doesn't resolve (nonexistent or invisible) is silently dropped from the
 /// response rather than erroring the whole request, and a request with no ids at all doesn't
-/// enter this branch (see `get_events`'s own `if !request.event_instance_post_ids.is_empty()`
+/// enter this branch (see `get_events`'s own `if !request.occasion_post_ids.is_empty()`
 /// guard) -- both mirror how a caller (e.g. `Shared.StarredPanel`) would resolve a mixed batch of
-/// starred post ids, some of which may not be `EventInstance` posts at all.
+/// starred post ids, some of which may not be `Occasion` posts at all.
 mod get_by_instance_post_ids {
     use super::*;
 
@@ -382,11 +382,11 @@ mod get_by_instance_post_ids {
                     ..Default::default()
                 },
             );
-            let (_instance, instance_post) = create_event_instance(
+            let (_instance, instance_post) = create_occasion(
                 conn,
                 &event,
                 Some(&author),
-                EventInstanceOpts {
+                OccasionOpts {
                     visibility: Visibility::GlobalPublic,
                     ..Default::default()
                 },
@@ -394,7 +394,7 @@ mod get_by_instance_post_ids {
 
             let response = get_events(
                 GetEventsRequest {
-                    event_instance_post_ids: vec![instance_post.id.to_proto_id()],
+                    occasion_post_ids: vec![instance_post.id.to_proto_id()],
                     ..Default::default()
                 },
                 &None,
@@ -408,7 +408,7 @@ mod get_by_instance_post_ids {
     }
 
     /// `post_id`/`get_by_post_id` resolves either the container `Event`'s own post id or an
-    /// `EventInstance`'s -- `event_instance_post_ids` only ever resolves the latter (see the
+    /// `Occasion`'s -- `occasion_post_ids` only ever resolves the latter (see the
     /// field's own doc comment in `events.proto`), so a container post id here should resolve to
     /// nothing at all rather than falling back to it.
     #[test]
@@ -424,11 +424,11 @@ mod get_by_instance_post_ids {
                     ..Default::default()
                 },
             );
-            create_event_instance(
+            create_occasion(
                 conn,
                 &event,
                 Some(&author),
-                EventInstanceOpts {
+                OccasionOpts {
                     visibility: Visibility::GlobalPublic,
                     ..Default::default()
                 },
@@ -436,7 +436,7 @@ mod get_by_instance_post_ids {
 
             let response = get_events(
                 GetEventsRequest {
-                    event_instance_post_ids: vec![event_post.id.to_proto_id()],
+                    occasion_post_ids: vec![event_post.id.to_proto_id()],
                     ..Default::default()
                 },
                 &None,
@@ -448,7 +448,7 @@ mod get_by_instance_post_ids {
         });
     }
 
-    /// A recurring `Event` (several `EventInstance`s) requested by just one of its instances'
+    /// A recurring `Event` (several `Occasion`s) requested by just one of its instances'
     /// post ids should come back scoped to that one instance -- not every sibling instance of the
     /// same `Event`, unlike `get_by_event_id`/`get_by_instance_id` (which intentionally return the
     /// whole parent `Event` for the single-event detail page's date-picker strip; see this
@@ -466,22 +466,22 @@ mod get_by_instance_post_ids {
                     ..Default::default()
                 },
             );
-            let (_instance1, instance1_post) = create_event_instance(
+            let (_instance1, instance1_post) = create_occasion(
                 conn,
                 &event,
                 Some(&author),
-                EventInstanceOpts {
+                OccasionOpts {
                     visibility: Visibility::GlobalPublic,
                     starts_at: from_now(3600),
                     ends_at: from_now(7200),
                     ..Default::default()
                 },
             );
-            create_event_instance(
+            create_occasion(
                 conn,
                 &event,
                 Some(&author),
-                EventInstanceOpts {
+                OccasionOpts {
                     visibility: Visibility::GlobalPublic,
                     starts_at: from_now(10_800),
                     ends_at: from_now(14_400),
@@ -491,7 +491,7 @@ mod get_by_instance_post_ids {
 
             let response = get_events(
                 GetEventsRequest {
-                    event_instance_post_ids: vec![instance1_post.id.to_proto_id()],
+                    occasion_post_ids: vec![instance1_post.id.to_proto_id()],
                     ..Default::default()
                 },
                 &None,
@@ -524,11 +524,11 @@ mod get_by_instance_post_ids {
                     ..Default::default()
                 },
             );
-            let (_instance1, instance1_post) = create_event_instance(
+            let (_instance1, instance1_post) = create_occasion(
                 conn,
                 &event1,
                 Some(&author),
-                EventInstanceOpts {
+                OccasionOpts {
                     visibility: Visibility::GlobalPublic,
                     ..Default::default()
                 },
@@ -541,11 +541,11 @@ mod get_by_instance_post_ids {
                     ..Default::default()
                 },
             );
-            let (_instance2, instance2_post) = create_event_instance(
+            let (_instance2, instance2_post) = create_occasion(
                 conn,
                 &event2,
                 Some(&author),
-                EventInstanceOpts {
+                OccasionOpts {
                     visibility: Visibility::GlobalPublic,
                     ..Default::default()
                 },
@@ -553,7 +553,7 @@ mod get_by_instance_post_ids {
 
             let response = get_events(
                 GetEventsRequest {
-                    event_instance_post_ids: vec![
+                    occasion_post_ids: vec![
                         instance1_post.id.to_proto_id(),
                         instance2_post.id.to_proto_id(),
                     ],
@@ -584,7 +584,7 @@ mod get_by_instance_post_ids {
         conn.test_transaction::<_, Status, _>(|conn| {
             let response = get_events(
                 GetEventsRequest {
-                    event_instance_post_ids: vec![
+                    occasion_post_ids: vec![
                         999_999_999i64.to_proto_id(),
                         "not-valid-base58!!".to_string(),
                     ],
@@ -601,8 +601,8 @@ mod get_by_instance_post_ids {
 
     /// Mirrors `get_by_event_id`'s own `requires_both_container_and_instance_post_to_pass`:
     /// `query_visible_events!` (which this branch reuses unmodified, just with an extra
-    /// `event_instances::post_id` filter -- see `get_events_by_instance_post_ids`'s doc) ANDs the
-    /// container `Event` post's visibility with the requested `EventInstance`'s own post
+    /// `occasions::post_id` filter -- see `get_events_by_instance_post_ids`'s doc) ANDs the
+    /// container `Event` post's visibility with the requested `Occasion`'s own post
     /// visibility, so either one being `Private` hides the event from a stranger even though the
     /// other side is `GlobalPublic`.
     #[test]
@@ -619,7 +619,7 @@ mod get_by_instance_post_ids {
                     visibility: Visibility::Private,
                     ..Default::default()
                 },
-                EventInstanceOpts {
+                OccasionOpts {
                     visibility: Visibility::GlobalPublic,
                     ..Default::default()
                 },
@@ -632,11 +632,11 @@ mod get_by_instance_post_ids {
                     ..Default::default()
                 },
             );
-            let (_private_instance, private_instance_post) = create_event_instance(
+            let (_private_instance, private_instance_post) = create_occasion(
                 conn,
                 &public_event,
                 Some(&author),
-                EventInstanceOpts {
+                OccasionOpts {
                     visibility: Visibility::Private,
                     ..Default::default()
                 },
@@ -644,7 +644,7 @@ mod get_by_instance_post_ids {
 
             let hidden = get_events(
                 GetEventsRequest {
-                    event_instance_post_ids: vec![private_instance_post.id.to_proto_id()],
+                    occasion_post_ids: vec![private_instance_post.id.to_proto_id()],
                     ..Default::default()
                 },
                 &Some(&stranger),
@@ -654,7 +654,7 @@ mod get_by_instance_post_ids {
 
             let visible_to_author = get_events(
                 GetEventsRequest {
-                    event_instance_post_ids: vec![private_instance_post.id.to_proto_id()],
+                    occasion_post_ids: vec![private_instance_post.id.to_proto_id()],
                     ..Default::default()
                 },
                 &Some(&author),
@@ -667,8 +667,8 @@ mod get_by_instance_post_ids {
 
     #[test]
     fn empty_ids_do_not_enter_this_branch() {
-        // An empty `event_instance_post_ids` falls through to the default listing branch (see
-        // `get_events`'s own `if !request.event_instance_post_ids.is_empty()` guard) rather than
+        // An empty `occasion_post_ids` falls through to the default listing branch (see
+        // `get_events`'s own `if !request.occasion_post_ids.is_empty()` guard) rather than
         // this one -- asserted indirectly here: requesting with an explicit empty vec must not
         // error, same as the default "list accessible events" behavior would for an
         // unauthenticated caller with nothing to see.
@@ -676,7 +676,7 @@ mod get_by_instance_post_ids {
         conn.test_transaction::<_, Status, _>(|conn| {
             let response = get_events(
                 GetEventsRequest {
-                    event_instance_post_ids: vec![],
+                    occasion_post_ids: vec![],
                     ..Default::default()
                 },
                 &None,
@@ -705,7 +705,7 @@ mod get_user_events {
                     visibility: Visibility::GlobalPublic,
                     ..Default::default()
                 },
-                EventInstanceOpts {
+                OccasionOpts {
                     visibility: Visibility::GlobalPublic,
                     ..Default::default()
                 },
@@ -717,7 +717,7 @@ mod get_user_events {
                     visibility: Visibility::GlobalPublic,
                     ..Default::default()
                 },
-                EventInstanceOpts {
+                OccasionOpts {
                     visibility: Visibility::GlobalPublic,
                     ..Default::default()
                 },
@@ -749,7 +749,7 @@ mod get_user_events {
                     visibility: Visibility::GlobalPublic,
                     ..Default::default()
                 },
-                EventInstanceOpts {
+                OccasionOpts {
                     visibility: Visibility::GlobalPublic,
                     ..Default::default()
                 },
@@ -761,7 +761,7 @@ mod get_user_events {
                     visibility: Visibility::Private,
                     ..Default::default()
                 },
-                EventInstanceOpts {
+                OccasionOpts {
                     visibility: Visibility::Private,
                     ..Default::default()
                 },
@@ -881,11 +881,11 @@ mod get_group_events {
                     ..Default::default()
                 },
             );
-            create_event_instance(
+            create_occasion(
                 conn,
                 &approved_event,
                 Some(&author),
-                EventInstanceOpts {
+                OccasionOpts {
                     visibility: Visibility::GlobalPublic,
                     ..Default::default()
                 },
@@ -900,11 +900,11 @@ mod get_group_events {
                     ..Default::default()
                 },
             );
-            create_event_instance(
+            create_occasion(
                 conn,
                 &pending_event,
                 Some(&author),
-                EventInstanceOpts {
+                OccasionOpts {
                     visibility: Visibility::GlobalPublic,
                     ..Default::default()
                 },
@@ -942,7 +942,7 @@ mod default_listing {
                     visibility: Visibility::GlobalPublic,
                     ..Default::default()
                 },
-                EventInstanceOpts {
+                OccasionOpts {
                     visibility: Visibility::GlobalPublic,
                     starts_at: from_now(7200),
                     ends_at: from_now(10800),
@@ -957,7 +957,7 @@ mod default_listing {
                     visibility: Visibility::GlobalPublic,
                     ..Default::default()
                 },
-                EventInstanceOpts {
+                OccasionOpts {
                     visibility: Visibility::GlobalPublic,
                     starts_at: from_now(60),
                     ends_at: from_now(120),
@@ -976,8 +976,8 @@ mod default_listing {
         });
     }
 
-    /// `time_filter.ends_after` filters on `event_instances.ends_at` directly (see
-    /// `query_visible_events!`'s `.filter(event_instances::ends_at.gt(ends_after))`) - an
+    /// `time_filter.ends_after` filters on `occasions.ends_at` directly (see
+    /// `query_visible_events!`'s `.filter(occasions::ends_at.gt(ends_after))`) - an
     /// instance that already ended before the given cutoff is excluded even though its `Event`
     /// itself is otherwise fully visible.
     #[test]
@@ -992,7 +992,7 @@ mod default_listing {
                     visibility: Visibility::GlobalPublic,
                     ..Default::default()
                 },
-                EventInstanceOpts {
+                OccasionOpts {
                     visibility: Visibility::GlobalPublic,
                     starts_at: ago(7200),
                     ends_at: ago(3600),
@@ -1007,7 +1007,7 @@ mod default_listing {
                     visibility: Visibility::GlobalPublic,
                     ..Default::default()
                 },
-                EventInstanceOpts {
+                OccasionOpts {
                     visibility: Visibility::GlobalPublic,
                     starts_at: from_now(3600),
                     ends_at: from_now(7200),
@@ -1051,7 +1051,7 @@ mod default_listing {
                     visibility: Visibility::Limited,
                     ..Default::default()
                 },
-                EventInstanceOpts {
+                OccasionOpts {
                     visibility: Visibility::Limited,
                     ..Default::default()
                 },
@@ -1069,7 +1069,7 @@ mod default_listing {
 
 /// Specs for `EVENT_TEXT_SEARCH` (`get_search_events` in `get_events.rs`) - mirrors
 /// `get_posts_tests::text_search` closely, but additionally covers matching via the parent
-/// `Event`'s own Post (not just the `EventInstance`'s own Post) and still respecting the request's
+/// `Event`'s own Post (not just the `Occasion`'s own Post) and still respecting the request's
 /// `time_filter` alongside `search_text`.
 mod text_search {
     use super::*;
@@ -1129,7 +1129,7 @@ mod text_search {
                     title: Some("Recurring Meetup".to_string()),
                     ..Default::default()
                 },
-                EventInstanceOpts {
+                OccasionOpts {
                     visibility: Visibility::GlobalPublic,
                     title: Some("A one-off about xylophones".to_string()),
                     ..Default::default()
@@ -1157,7 +1157,7 @@ mod text_search {
                     title: Some("Farmers Market".to_string()),
                     ..Default::default()
                 },
-                EventInstanceOpts {
+                OccasionOpts {
                     visibility: Visibility::GlobalPublic,
                     ..Default::default()
                 },
@@ -1181,7 +1181,7 @@ mod text_search {
                     visibility: Visibility::GlobalPublic,
                     ..Default::default()
                 },
-                EventInstanceOpts {
+                OccasionOpts {
                     visibility: Visibility::GlobalPublic,
                     ..Default::default()
                 },
@@ -1207,7 +1207,7 @@ mod text_search {
                     title: Some("wobblefest from author1".to_string()),
                     ..Default::default()
                 },
-                EventInstanceOpts {
+                OccasionOpts {
                     visibility: Visibility::GlobalPublic,
                     ..Default::default()
                 },
@@ -1220,7 +1220,7 @@ mod text_search {
                     title: Some("wobblefest from author2".to_string()),
                     ..Default::default()
                 },
-                EventInstanceOpts {
+                OccasionOpts {
                     visibility: Visibility::GlobalPublic,
                     ..Default::default()
                 },
@@ -1255,7 +1255,7 @@ mod text_search {
                     title: Some("wigglecon".to_string()),
                     ..Default::default()
                 },
-                EventInstanceOpts {
+                OccasionOpts {
                     visibility: Visibility::GlobalPublic,
                     starts_at: ago(7200),
                     ends_at: ago(3600),
@@ -1307,7 +1307,7 @@ mod text_search {
                     visibility: Visibility::GlobalPublic,
                     ..Default::default()
                 },
-                EventInstanceOpts {
+                OccasionOpts {
                     visibility: Visibility::GlobalPublic,
                     title: Some("gerbilmongoose special".to_string()),
                     starts_at: from_now(600),
@@ -1322,7 +1322,7 @@ mod text_search {
                     visibility: Visibility::GlobalPublic,
                     ..Default::default()
                 },
-                EventInstanceOpts {
+                OccasionOpts {
                     visibility: Visibility::GlobalPublic,
                     starts_at: from_now(10),
                     ends_at: from_now(20),
@@ -1344,8 +1344,8 @@ mod text_search {
         });
     }
 
-    /// `event_instances.search_text` is a denormalized column kept in sync by triggers (see
-    /// `backend/migrations/2026-07-30-170000_add_search_text_to_event_instances`) - editing
+    /// `occasions.search_text` is a denormalized column kept in sync by triggers (see
+    /// `backend/migrations/2026-07-30-170000_add_search_text_to_occasions`) - editing
     /// either the instance's own Post or its parent Event's Post *after* creation must still be
     /// searchable, not just the text present at insert time.
     #[test]
@@ -1361,7 +1361,7 @@ mod text_search {
                     title: Some("Book Club".to_string()),
                     ..Default::default()
                 },
-                EventInstanceOpts {
+                OccasionOpts {
                     visibility: Visibility::GlobalPublic,
                     ..Default::default()
                 },

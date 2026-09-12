@@ -1,7 +1,7 @@
 //! Connects a `SyncDestination` to a Facebook Page (OAuth token exchange) and posts
-//! `EventInstance`s/`Post`s to it via the Graph API.
+//! `Occasion`s/`Post`s to it via the Graph API.
 //!
-//! For `EventInstance`s, this creates a Page **post** formatted to read like an event
+//! For `Occasion`s, this creates a Page **post** formatted to read like an event
 //! announcement (title, date/time range -- in the event location's local timezone if
 //! `logic::resolve_timezone` can geocode it, else UTC -- location, description, and a link back
 //! to the event on this Rellm server), not a real Facebook **Event** object -- the Graph API's
@@ -169,20 +169,20 @@ fn find_page_access_token(
     })
 }
 
-/// Posts an `EventInstance`'s details (already formatted into `message.text` -- see
-/// `logic::sync_message::build_event_instance_message`) to `destination`'s connected Facebook
+/// Posts an `Occasion`'s details (already formatted into `message.text` -- see
+/// `logic::sync_message::build_occasion_message`) to `destination`'s connected Facebook
 /// Page's feed (there is no real Facebook "Event" created -- see the module doc). Returns the new
 /// post's ID and a link to it.
-pub fn post_event_instance(
+pub fn post_occasion(
     destination: &models::SyncDestination,
     message: &SyncMessage,
 ) -> Result<(String, String), Status> {
-    post_event_instance_at(DEFAULT_GRAPH_API_BASE_URL, destination, message)
+    post_occasion_at(DEFAULT_GRAPH_API_BASE_URL, destination, message)
 }
 
-/// Same as `post_event_instance`, but against an arbitrary `base_url` -- see
+/// Same as `post_occasion`, but against an arbitrary `base_url` -- see
 /// `connect_facebook_page_at`.
-pub fn post_event_instance_at(
+pub fn post_occasion_at(
     base_url: &str,
     destination: &models::SyncDestination,
     message: &SyncMessage,
@@ -197,10 +197,10 @@ pub fn post_event_instance_at(
 
 /// Posts a `Post`'s details (already formatted into `message.text` -- see
 /// `logic::sync_message::build_post_message`) to `destination`'s connected Facebook Page's feed.
-/// Returns the new post's ID and a link to it. Functionally identical to `post_event_instance` --
-/// kept as its own named function (rather than having `sync_post.rs` call `post_event_instance`
+/// Returns the new post's ID and a link to it. Functionally identical to `post_occasion` --
+/// kept as its own named function (rather than having `sync_post.rs` call `post_occasion`
 /// directly) purely so each call site's name mirrors the RPC it's dispatched from (`SyncPost` vs
-/// `SyncEventInstance`), matching every other platform's naming convention.
+/// `SyncOccasion`), matching every other platform's naming convention.
 pub fn post_post(
     destination: &models::SyncDestination,
     message: &SyncMessage,
@@ -222,8 +222,8 @@ pub fn post_post_at(
     )
 }
 
-/// Shared implementation of `post_event_instance_at`/`post_post_at` -- now that both take a plain
-/// `&SyncMessage`, there's nothing left distinguishing an EventInstance push from a Post push at
+/// Shared implementation of `post_occasion_at`/`post_post_at` -- now that both take a plain
+/// `&SyncMessage`, there's nothing left distinguishing an Occasion push from a Post push at
 /// all (see each function's own doc for why two names still exist).
 ///
 /// The Page Graph API doesn't support mixing photo attachments and a plain text `/feed` call the

@@ -1,6 +1,6 @@
 use super::{
-    Author, Event, EventAttendance, EventInstance, EventInstanceSyncDestination, Post, SyncSource,
-    User, AUTHOR_COLUMNS, EVENT_INSTANCE_COLUMNS, POST_COLUMNS,
+    Author, Event, EventAttendance, Occasion, OccasionSyncDestination, Post, SyncSource,
+    User, AUTHOR_COLUMNS, OCCASION_COLUMNS, POST_COLUMNS,
 };
 use diesel::{
     dsl::sql,
@@ -13,7 +13,7 @@ use crate::{
     db_connection::PgPooledConnection,
     // protos::Author,
     schema::{
-        event_attendances, event_instance_sync_destinations, event_instances, events, follows,
+        event_attendances, occasion_sync_destinations, occasions, events, follows,
         posts, sync_sources, users,
     },
 };
@@ -88,18 +88,18 @@ pub fn get_sync_sources_by_ids(
         .unwrap_or_default()
 }
 
-/// Loads sync status rows for a set of EventInstances, keyed for `event_marshaling` to group by
-/// `event_instance_id`.
-pub fn get_event_instance_sync_destinations(
-    event_instance_ids: Vec<i64>,
+/// Loads sync status rows for a set of Occasions, keyed for `event_marshaling` to group by
+/// `occasion_id`.
+pub fn get_occasion_sync_destinations(
+    occasion_ids: Vec<i64>,
     conn: &mut PgPooledConnection,
-) -> Vec<EventInstanceSyncDestination> {
-    if event_instance_ids.is_empty() {
+) -> Vec<OccasionSyncDestination> {
+    if occasion_ids.is_empty() {
         return vec![];
     }
-    event_instance_sync_destinations::table
-        .filter(event_instance_sync_destinations::event_instance_id.eq_any(event_instance_ids))
-        .load::<EventInstanceSyncDestination>(conn)
+    occasion_sync_destinations::table
+        .filter(occasion_sync_destinations::occasion_id.eq_any(occasion_ids))
+        .load::<OccasionSyncDestination>(conn)
         .unwrap_or_default()
 }
 
@@ -115,25 +115,25 @@ pub fn get_event(
         .map_err(|_| Status::new(Code::NotFound, "event_not_found"))
 }
 
-pub fn get_event_instance(
-    event_instance_id: i64,
+pub fn get_occasion(
+    occasion_id: i64,
     _user: &Option<&User>,
     conn: &mut PgPooledConnection,
-) -> Result<EventInstance, Status> {
-    event_instances::table
-        .select(EVENT_INSTANCE_COLUMNS)
-        .filter(event_instances::post_id.eq(event_instance_id))
-        .first::<EventInstance>(conn)
-        .map_err(|_| Status::new(Code::NotFound, "event_instance_not_found"))
+) -> Result<Occasion, Status> {
+    occasions::table
+        .select(OCCASION_COLUMNS)
+        .filter(occasions::post_id.eq(occasion_id))
+        .first::<Occasion>(conn)
+        .map_err(|_| Status::new(Code::NotFound, "occasion_not_found"))
 }
 
-pub fn get_event_instances(
+pub fn get_occasions(
     event_id: i64,
     user: &Option<&User>,
     conn: &mut PgPooledConnection,
-) -> Result<Vec<(EventInstance, Post, Option<Author>)>, Status> {
-    event_instances::table
-        .inner_join(posts::table.on(event_instances::post_id.eq(posts::id)))
+) -> Result<Vec<(Occasion, Post, Option<Author>)>, Status> {
+    occasions::table
+        .inner_join(posts::table.on(occasions::post_id.eq(posts::id)))
         .left_join(users::table.on(posts::user_id.eq(users::id.nullable())))
         .left_join(
             follows::table.on(posts::user_id.eq(follows::target_user_id.nullable()).and(
@@ -143,25 +143,25 @@ pub fn get_event_instances(
             )),
         )
         .select((
-            EVENT_INSTANCE_COLUMNS,
+            OCCASION_COLUMNS,
             POST_COLUMNS,
             AUTHOR_COLUMNS.nullable(),
         ))
-        .filter(event_instances::event_id.eq(event_id))
-        .load::<(EventInstance, Post, Option<Author>)>(conn)
+        .filter(occasions::event_id.eq(event_id))
+        .load::<(Occasion, Post, Option<Author>)>(conn)
         .map_err(|e| {
             log::error!(
                 "Failed to load event instances for event_id={}: {:?}",
                 event_id,
                 e
             );
-            Status::new(Code::Internal, "failed_to_load_event_instances")
+            Status::new(Code::Internal, "failed_to_load_occasions")
         })
 }
 
 // Gets an existing event attendance for update/deletion.
 pub fn get_event_attendance(
-    event_instance_id: i64,
+    occasion_id: i64,
     attendee_user_id: Option<i64>,
     attendee_auth_token: Option<String>,
     conn: &mut PgPooledConnection,
@@ -170,14 +170,14 @@ pub fn get_event_attendance(
         (Some(user_id), _) => event_attendances::table
             .left_join(users::table.on(event_attendances::user_id.eq(users::id.nullable())))
             .select((event_attendances::all_columns, AUTHOR_COLUMNS.nullable()))
-            .filter(event_attendances::event_instance_id.eq(event_instance_id))
+            .filter(event_attendances::occasion_id.eq(occasion_id))
             .filter(event_attendances::user_id.eq(Some(user_id)))
             .get_result::<(EventAttendance, Option<Author>)>(conn)
             .ok(),
         (_, Some(auth_token)) => event_attendances::table
             .left_join(users::table.on(event_attendances::user_id.eq(users::id.nullable())))
             .select((event_attendances::all_columns, AUTHOR_COLUMNS.nullable()))
-            .filter(event_attendances::event_instance_id.eq(event_instance_id))
+            .filter(event_attendances::occasion_id.eq(occasion_id))
             .filter(event_attendances::anonymous_attendee.is_not_null().and(
                 sql::<Bool>("anonymous_attendee->>'auth_token' = ").bind::<Text, _>(auth_token),
             ))
@@ -188,16 +188,16 @@ pub fn get_event_attendance(
 }
 
 pub fn get_event_attendances(
-    event_instance_id: i64,
+    occasion_id: i64,
     user: &Option<User>,
     conn: &mut PgPooledConnection,
 ) -> Result<Vec<EventAttendance>, Status> {
     event_attendances::table
         .inner_join(
-            event_instances::table
-                .on(event_attendances::event_instance_id.eq(event_instances::post_id)),
+            occasions::table
+                .on(event_attendances::occasion_id.eq(occasions::post_id)),
         )
-        .left_join(posts::table.on(event_instances::post_id.eq(posts::id)))
+        .left_join(posts::table.on(occasions::post_id.eq(posts::id)))
         .left_join(users::table.on(posts::user_id.eq(users::id.nullable())))
         .left_join(
             follows::table.on(posts::user_id.eq(follows::target_user_id.nullable()).and(
@@ -207,12 +207,12 @@ pub fn get_event_attendances(
             )),
         )
         .select(event_attendances::all_columns)
-        .filter(event_attendances::event_instance_id.eq(event_instance_id))
+        .filter(event_attendances::occasion_id.eq(occasion_id))
         .load::<EventAttendance>(conn)
         .map_err(|e| {
             log::error!(
-                "Failed to load event attendances for event_instance_id={}: {:?}",
-                event_instance_id,
+                "Failed to load event attendances for occasion_id={}: {:?}",
+                occasion_id,
                 e
             );
             Status::new(Code::Internal, "failed_to_load_event_attendances")

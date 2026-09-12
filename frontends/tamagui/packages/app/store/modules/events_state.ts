@@ -1,4 +1,4 @@
-import { Event, EventAttendances, EventInstance, EventListingType, TimeFilter } from "@rellm/api";
+import { Event, EventAttendances, Occasion, EventListingType, TimeFilter } from "@rellm/api";
 import {
   Dictionary,
   EntityAdapter,
@@ -9,39 +9,39 @@ import {
 import moment from "moment";
 import { Federated, FederatedEntity, HasServer, createFederated, federateId, federatedEntities, federatedId, federatedPayload, getFederated, parseFederatedId, setFederated } from '../federation';
 import { FederatedPagesStatus, PaginatedIds, createFederatedPagesStatus } from "../pagination";
-import { createEvent, defaultEventListingType, deleteEvent, IdentifiedEvent, IdentifiedEventInstance, loadEvent, loadEventsPage, loadRsvpData, updateEvent } from './event_actions';
+import { createEvent, defaultEventListingType, deleteEvent, IdentifiedEvent, IdentifiedOccasion, loadEvent, loadEventsPage, loadRsvpData, updateEvent } from './event_actions';
 import { loadGroupEventsPage } from "./group_actions";
 import { loadUserEvents } from "./user_actions";
 export * from './event_actions';
 
 export type FederatedEvent = FederatedEntity<IdentifiedEvent>;
-export type FederatedEventInstance = FederatedEntity<IdentifiedEventInstance>;
+export type FederatedOccasion = FederatedEntity<IdentifiedOccasion>;
 export interface EventsState {
   pagesStatus: FederatedPagesStatus;
   ids: EntityId[];
   entities: Dictionary<FederatedEvent>;
   // Links instance IDs to Event IDs.
   instanceEvents: Dictionary<string>;
-  // instances: Dictionary<EventInstance>;
-  eventInstancePages: Federated<GroupedEventInstancePages>;
+  // instances: Dictionary<Occasion>;
+  occasionPages: Federated<GroupedOccasionPages>;
   failedEventIds: string[];
   failedInstanceIds: string[];
   failedPostIds: string[];
   // Maps Post IDs to Event IDs.
   postEvents: Dictionary<string>;
-  // Maps Post IDs to EventInstance IDs.
+  // Maps Post IDs to Occasion IDs.
   postInstances: Dictionary<string>;
   upcomingEventsTime: string;
   upcomingEventsTimeFilter?: TimeFilter;
-  // Maps EventInstance IDs to RSVP data.
+  // Maps Occasion IDs to RSVP data.
   rsvpData: Dictionary<EventAttendances>;
 }
 
 // Stores pages of listed event *instances* for listing types used in the UI.
-// i.e.: eventPages[EventListingType.ALL_ACCESSIBLE_EVENTS]['{"ends_after":null}'][0]:  -> ["eventInstanceId1", "eventInstanceId2"].
+// i.e.: eventPages[EventListingType.ALL_ACCESSIBLE_EVENTS]['{"ends_after":null}'][0]:  -> ["occasionId1", "occasionId2"].
 // Events should be loaded from the adapter/slice's entities.
-// Maps EventListingType -> serialized timeFilter-> page (as a number) -> eventInstanceIds
-export type GroupedEventInstancePages = Dictionary<Dictionary<PaginatedIds>>
+// Maps EventListingType -> serialized timeFilter-> page (as a number) -> occasionIds
+export type GroupedOccasionPages = Dictionary<Dictionary<PaginatedIds>>
 export const unfilteredTime = 'unfiltered';
 export function serializeTimeFilter(filter: TimeFilter | undefined): string {
   if (!filter) return unfilteredTime;
@@ -58,7 +58,7 @@ const initialState: EventsState = {
   failedEventIds: [],
   failedInstanceIds: [],
   failedPostIds: [],
-  eventInstancePages: createFederated({}),
+  occasionPages: createFederated({}),
   instanceEvents: {},
   postEvents: {},
   postInstances: {},
@@ -90,7 +90,7 @@ export const eventsSlice = createSlice({
         .forEach(id => delete state.postInstances[id]);
       state.failedEventIds = state.failedEventIds.filter(id => parseFederatedId(id).serverHost !== action.payload.serverHost);
       state.failedInstanceIds = state.failedInstanceIds.filter(id => parseFederatedId(id).serverHost !== action.payload.serverHost);
-      delete state.eventInstancePages.values[action.payload.serverHost];
+      delete state.occasionPages.values[action.payload.serverHost];
       delete state.pagesStatus.values[action.payload.serverHost];
     },
     setUpcomingEventsTimeFilter: (state, action: PayloadAction<{ timeFilter: TimeFilter }>) => {
@@ -121,17 +121,17 @@ export const eventsSlice = createSlice({
         // Append the Events to ALL pages for any/all timefilters, etc.
         // This could be better done later, maybe. Refresh page data only without the
         // rest of the EventsState maybe?
-        const eventInstancePages = getFederated(state.eventInstancePages, action);
-        for (const listingTypeStr of Object.keys(eventInstancePages)) {
+        const occasionPages = getFederated(state.occasionPages, action);
+        for (const listingTypeStr of Object.keys(occasionPages)) {
           const listingType = parseInt(listingTypeStr) as EventListingType;
-          for (const filterStr of Object.keys(eventInstancePages[listingType]!)) {
-            for (const pageStr of Object.keys(eventInstancePages[listingType]![filterStr]!)) {
-              eventInstancePages[listingType]![filterStr]![pageStr]!.unshift(...instanceIds);
+          for (const filterStr of Object.keys(occasionPages[listingType]!)) {
+            for (const pageStr of Object.keys(occasionPages[listingType]![filterStr]!)) {
+              occasionPages[listingType]![filterStr]![pageStr]!.unshift(...instanceIds);
             }
           }
         }
 
-        setFederated(state.eventInstancePages, action, eventInstancePages);
+        setFederated(state.occasionPages, action, occasionPages);
       }
     });
     builder.addCase(updateEvent.fulfilled, (state, action) => {
@@ -156,13 +156,13 @@ export const eventsSlice = createSlice({
       const listingType = action.meta.arg.listingType ?? defaultEventListingType;
       const serializedFilter = serializeTimeFilter(action.meta.arg.filter);
 
-      const serverEventPages = getFederated(state.eventInstancePages, action);
+      const serverEventPages = getFederated(state.occasionPages, action);
       if (!serverEventPages[listingType]) serverEventPages[listingType] = {};
       if (!serverEventPages[listingType]![serializedFilter] || page === 0) serverEventPages[listingType]![serializedFilter] = [];
 
       const eventPages: string[][] = serverEventPages[listingType]![serializedFilter]!;
       eventPages[page] = instanceIds;
-      setFederated(state.eventInstancePages, action, serverEventPages);
+      setFederated(state.occasionPages, action, serverEventPages);
     });
     builder.addCase(loadEventsPage.rejected, (state, action) => {
       setFederated(state.pagesStatus, action, "errored");
@@ -203,7 +203,7 @@ export const eventsSlice = createSlice({
     });
     builder.addCase(loadRsvpData.fulfilled, (state, action) => {
       const rsvpData = action.payload;
-      const instanceId = federateId(action.meta.arg.eventInstanceId, action);
+      const instanceId = federateId(action.meta.arg.occasionId, action);
       state.rsvpData[instanceId] = rsvpData;
     })
   },

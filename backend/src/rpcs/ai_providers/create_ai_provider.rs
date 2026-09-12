@@ -6,19 +6,19 @@ use crate::marshaling::*;
 use crate::models;
 use crate::protos::*;
 use crate::rpcs::validate_permission;
-use crate::schema::ai_model_providers;
+use crate::schema::ai_providers;
 
-pub fn create_ai_model_provider(
-    request: AiModelProvider,
+pub fn create_ai_provider(
+    request: AiProvider,
     current_user: &models::User,
     conn: &mut PgPooledConnection,
-) -> Result<AiModelProvider, Status> {
+) -> Result<AiProvider, Status> {
     // Create is always for the current user -- admins may manage other users' providers (see
-    // `update_ai_model_provider`/`delete_ai_model_provider`) but never create one on their behalf.
-    validate_permission(&Some(current_user), Permission::CreateAiModelProviders)?;
+    // `update_ai_provider`/`delete_ai_provider`) but never create one on their behalf.
+    validate_permission(&Some(current_user), Permission::CreateAiProviders)?;
 
     match &request.provider {
-        Some(ai_model_provider::Provider::GeminiCredentials(credentials)) => {
+        Some(ai_provider::Provider::GeminiCredentials(credentials)) => {
             if credentials
                 .gemini_api_key
                 .as_ref()
@@ -28,7 +28,7 @@ pub fn create_ai_model_provider(
                 return Err(Status::new(Code::InvalidArgument, "gemini_api_key_required"));
             }
         }
-        Some(ai_model_provider::Provider::OpenaiCredentials(credentials)) => {
+        Some(ai_provider::Provider::OpenaiCredentials(credentials)) => {
             if credentials
                 .openai_api_key
                 .as_ref()
@@ -38,7 +38,7 @@ pub fn create_ai_model_provider(
                 return Err(Status::new(Code::InvalidArgument, "openai_api_key_required"));
             }
         }
-        Some(ai_model_provider::Provider::DigitaloceanCredentials(credentials)) => {
+        Some(ai_provider::Provider::DigitaloceanCredentials(credentials)) => {
             if credentials
                 .digitalocean_api_key
                 .as_ref()
@@ -51,7 +51,7 @@ pub fn create_ai_model_provider(
         Some(_) => {
             return Err(Status::new(
                 Code::InvalidArgument,
-                "ai_model_provider_not_yet_supported",
+                "ai_provider_not_yet_supported",
             ));
         }
         None => return Err(Status::new(Code::InvalidArgument, "provider_required")),
@@ -64,17 +64,17 @@ pub fn create_ai_model_provider(
 
     let configuration = provider_configuration_to_json(&request.provider);
 
-    let inserted = insert_into(ai_model_providers::table)
-        .values(&models::NewAIModelProvider {
+    let inserted = insert_into(ai_providers::table)
+        .values(&models::NewAIProvider {
             user_id: current_user.id,
             name: name.to_string(),
             configuration,
         })
-        .get_result::<models::AIModelProvider>(conn)
+        .get_result::<models::AIProvider>(conn)
         .map_err(|e| {
             log::error!("Failed to create AI model provider: {:?}", e);
-            Status::new(Code::Internal, "failed_to_create_ai_model_provider")
+            Status::new(Code::Internal, "failed_to_create_ai_provider")
         })?;
 
-    Ok(MarshalableAIModelProvider(inserted, current_user.to_author(), vec![]).to_proto())
+    Ok(MarshalableAIProvider(inserted, current_user.to_author(), vec![]).to_proto())
 }

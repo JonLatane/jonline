@@ -1,8 +1,8 @@
 import useIsVisibleHorizontal from 'app/hooks/use_is_visible';
-import { FederatedEvent, FederatedGroup, IdentifiedEvent, IdentifiedEventInstance, deleteEvent, federateId, federatedEntity, identifyEventInstance, updateEvent, useServerTheme } from "app/store";
+import { FederatedEvent, FederatedGroup, IdentifiedEvent, IdentifiedOccasion, deleteEvent, federateId, federatedEntity, identifyOccasion, updateEvent, useServerTheme } from "app/store";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 
-import { Event, EventInstance, Location, Post, Visibility } from "@rellm/api";
+import { Event, Occasion, Location, Post, Visibility } from "@rellm/api";
 import { Anchor, AnimatePresence, Button, Card, DateTimePicker, Dialog, Heading, Image, Input, Paragraph, ScrollView, Select, TextArea, Theme, Tooltip, XStack, YStack, ZStack, reverseStandardAnimation, standardAnimation, standardHorizontalAnimation, supportDateInput, toProtoISOString, useMedia, useWindowDimensions } from "@rellm/ui";
 import { CalendarPlus, Check, ChevronDown, ChevronRight, Delete, Edit3 as Edit, History, Link, Link2, Menu, Repeat, Save, X as XIcon } from '@tamagui/lucide-icons';
 import { ToggleRow, VisibilityPicker } from "app/components";
@@ -22,7 +22,7 @@ import { useSelector } from 'react-redux';
 import { federatedId } from '../../store/federation';
 import { ServerNameAndLogo } from '../navigation/server_name_and_logo';
 import { StarButton } from '../post/star_button';
-import { defaultEventInstance, } from "./create_event_sheet";
+import { defaultOccasion, } from "./create_event_sheet";
 import { EventCalendarExporter } from './event_calendar_exporter';
 import { EventRsvpManager, RsvpMode, selectRsvpData } from './event_rsvp_manager';
 import { InstanceTime } from "./instance_time";
@@ -30,7 +30,7 @@ import { LocationControl } from "./location_control";
 
 interface Props {
   event: FederatedEvent;
-  selectedInstance?: IdentifiedEventInstance;
+  selectedInstance?: IdentifiedOccasion;
   isModalPreview?: boolean;
   isPreview?: boolean;
   // groupContext?: FederatedGroup;
@@ -40,7 +40,7 @@ interface Props {
   onEditingChange?: (editing: boolean) => void;
   newRsvpMode?: RsvpMode;
   setNewRsvpMode?: (mode: RsvpMode) => void;
-  onInstancesUpdated?: (instances: IdentifiedEventInstance[]) => void;
+  onInstancesUpdated?: (instances: IdentifiedOccasion[]) => void;
   ignoreShrinkPreview?: boolean;
   forceShrinkPreview?: boolean;
   // disableSharingButton?: boolean;
@@ -126,7 +126,7 @@ export const EventCard: React.FC<Props> = ({
   const instances = editing ? editedInstances : event.instances;
 
   const hasPastInstances = instances.find(isPastInstance) != undefined;
-  const [editingInstance, setEditingInstance] = useState(undefined as IdentifiedEventInstance | undefined);
+  const [editingInstance, setEditingInstance] = useState(undefined as IdentifiedOccasion | undefined);
 
 
   const [repeatWeeks, setRepeatWeeks] = useState(1);
@@ -137,7 +137,7 @@ export const EventCard: React.FC<Props> = ({
       ? undefined
       : selectedInstance ?? (instances.length === 1 ? instances[0] : undefined);
 
-  function editingOrPrimary<T>(getter: (i: IdentifiedEventInstance | undefined) => T): T {
+  function editingOrPrimary<T>(getter: (i: IdentifiedOccasion | undefined) => T): T {
     if (editingInstance) {
       return getter(editingInstance);
     } else {
@@ -204,17 +204,17 @@ export const EventCard: React.FC<Props> = ({
   }, [savingEdits, event, editedAllowRsvps, editedAllowAnonymousRsvps, editedHideLocation, eventPost, editedTitle, editedLink, editedContent, editedMedia, editedVisibility, editedShareable, editedInstances]);
 
   const addInstance = useCallback(() => {
-    const newInstance = { ...defaultEventInstance(), id: `unsynchronized-event-instance-${newEventId++}` };
+    const newInstance = { ...defaultOccasion(), id: `unsynchronized-event-instance-${newEventId++}` };
     setEditedInstances([newInstance, ...editedInstances]);
     setEditingInstance(newInstance);
   }, [editedInstances]);
-  const removeInstance = useCallback((target: IdentifiedEventInstance) => {
+  const removeInstance = useCallback((target: IdentifiedOccasion) => {
     if (target.id === editingInstance?.id) {
       setEditingInstance(undefined);
     }
     setEditedInstances(editedInstances.filter(i => i.id != target.id));
   }, [editedInstances]);
-  const updateEditingInstance = useCallback((target: IdentifiedEventInstance) => {
+  const updateEditingInstance = useCallback((target: IdentifiedOccasion) => {
     setEditedInstances(editedInstances.map(i => i.id === target.id ? target : i));
     if (target.id === editingInstance?.id) {
       setEditingInstance(target);
@@ -352,7 +352,7 @@ export const EventCard: React.FC<Props> = ({
     }
   }, [selectedInstanceIsPast, showPastInstances])
 
-  const canEasilySeeInstances = useCallback((instances: EventInstance[]) => mediaQuery.gtXxs ? instances.length <= 3 : instances.length <= 2, [mediaQuery.gtXxs]);
+  const canEasilySeeInstances = useCallback((instances: Occasion[]) => mediaQuery.gtXxs ? instances.length <= 3 : instances.length <= 2, [mediaQuery.gtXxs]);
   const canEasilySeeAllPastInstances = useMemo(() => canEasilySeeInstances(instances), [canEasilySeeInstances, instances]);
   const filteredInstances = useMemo(() => showPastInstances
     ? instances
@@ -546,10 +546,10 @@ export const EventCard: React.FC<Props> = ({
   const forceUpdate = useForceUpdate();
 
   const repeatedInstances = useMemo(() => {
-    const instances: IdentifiedEventInstance[] = [];
+    const instances: IdentifiedOccasion[] = [];
     if (editingInstance) {
       [...Array(repeatWeeks).keys()].map(i => i + 1).forEach(weeksAfter => {
-        const repeatedInstance = identifyEventInstance(EventInstance.create({
+        const repeatedInstance = identifyOccasion(Occasion.create({
           startsAt: moment(editingInstance.startsAt).add(weeksAfter, 'weeks').toISOString(),
           endsAt: moment(editingInstance.endsAt).add(weeksAfter, 'weeks').toISOString(),
           location: currentInstanceLocation,
@@ -574,7 +574,7 @@ export const EventCard: React.FC<Props> = ({
     // setTimeout(forceUpdate, 1);
   }, [editedInstances, repeatedInstances]);
 
-  const renderInstance = useCallback((i: IdentifiedEventInstance) => {
+  const renderInstance = useCallback((i: IdentifiedOccasion) => {
     const isPrimary = i.id == primaryInstance?.id;
     const isEditingInstance = i.id == editingInstance?.id;
     const highlight = editing ? isEditingInstance : isPrimary;
@@ -1088,7 +1088,7 @@ export const EventCard: React.FC<Props> = ({
 
 export default EventCard;
 
-function useStartAndEndTime(instance: IdentifiedEventInstance | undefined, setInstance: (instance: IdentifiedEventInstance) => void) {
+function useStartAndEndTime(instance: IdentifiedOccasion | undefined, setInstance: (instance: IdentifiedOccasion) => void) {
   const [startTime, endTime] = [instance?.startsAt, instance?.endsAt]
   const setEndTime = useCallback((value: string) => {
     if (!instance) {

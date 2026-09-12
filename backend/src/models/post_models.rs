@@ -76,10 +76,10 @@ pub struct Post {
 
     pub post_media_layout: PostMediaLayout,
 
-    /// The `SyncSource` this Post was created/is kept in sync from (an ICS Event/EventInstance
+    /// The `SyncSource` this Post was created/is kept in sync from (an ICS Event/Occasion
     /// today; RSS/Atom items directly in the future), if any -- `None` for a plain, hand-created
     /// Post. See migration 2026-09-11-000000_move_sync_source_to_posts's doc comment for why this
-    /// lives here rather than on `events`/`event_instances`.
+    /// lives here rather than on `events`/`occasions`.
     pub sync_source_id: Option<i64>,
     /// The SyncSource's own stable identifier for this Post (an iCal `UID`, an RSS `guid`, an
     /// Atom `id`), scoped to `sync_source_id`.
@@ -206,7 +206,7 @@ pub struct NewUserPost {
 }
 
 /// A single Post's sync status against a single SyncDestination -- exact mirror of
-/// `event_models::EventInstanceSyncDestination`, just for `Post`s instead of `EventInstance`s.
+/// `event_models::OccasionSyncDestination`, just for `Post`s instead of `Occasion`s.
 /// Composite-keyed (no surrogate `id`), so it's `Identifiable` via both foreign keys rather than
 /// one.
 #[derive(Debug, Queryable, Identifiable, Associations, AsChangeset, Clone)]

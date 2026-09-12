@@ -27,7 +27,7 @@ export interface UsersState {
   failedUserIds: string[];
   idPosts: Dictionary<string[]>;
   idReplies: Dictionary<string[]>;
-  idEventInstances: Dictionary<string[]>;
+  idOccasions: Dictionary<string[]>;
   // Stores pages of listed users for listing types used in the UI.
   // i.e.: userPages[PostListingType.ALL_ACCESSIBLE_POSTS][1] -> ["userId1", "userId2"].
   // Users should be loaded from the adapter/slice's entities.
@@ -59,7 +59,7 @@ const initialState: UsersState = {
   failedUserIds: [],
   idPosts: {},
   idReplies: {},
-  idEventInstances: {},
+  idOccasions: {},
   userPages: createFederated({}),
   mutatingUserIds: [],
   ...usersAdapter.getInitialState(),
@@ -95,9 +95,9 @@ export const usersSlice = createSlice({
     resetUserEvents: (state, action: PayloadAction<{ serverHost: string | undefined }>) => {
       if (!action.payload.serverHost) return;
 
-      Object.keys(state.idEventInstances)
+      Object.keys(state.idOccasions)
         .filter(id => parseFederatedId(id).serverHost === action.payload.serverHost)
-        .forEach(id => delete state.idEventInstances[id]);
+        .forEach(id => delete state.idOccasions[id]);
     },
     resetUserPosts: (state, action: PayloadAction<{ serverHost: string | undefined }>) => {
       if (!action.payload.serverHost) return;
@@ -207,16 +207,16 @@ export const usersSlice = createSlice({
 
       const userId = federateId(serverUserId, action);
       // debugger;
-      // console.log('state.idEventInstances[userId]', state.idEventInstances[userId]);
+      // console.log('state.idOccasions[userId]', state.idOccasions[userId]);
 
-      const oldInstanceIds = state.idEventInstances[userId]?.map(id => id);
+      const oldInstanceIds = state.idOccasions[userId]?.map(id => id);
       if (!oldInstanceIds) return;
 
       const instanceIds = action.payload.instances.map(instance => federateId(instance.id, action));
       const newInstanceIds = [...instanceIds, ...oldInstanceIds];
       // console.log('UserState createEvent.fulfilled', userId, instanceIds, oldInstanceIds, newInstanceIds);
       // debugger;
-      state.idEventInstances[userId] = newInstanceIds;
+      state.idOccasions[userId] = newInstanceIds;
     });
     builder.addCase(loadUserReplies.fulfilled, (state, action) => {
       const replies = federatedEntities(action.payload.posts, action);
@@ -230,12 +230,12 @@ export const usersSlice = createSlice({
     builder.addCase(loadUserEvents.fulfilled, (state, action) => {
       const events = federatedEntities(action.payload.events, action);
       const userId = federateUserId(action);
-      const newEventInstanceIds = new Set(events.map(e => federateId(e.instances[0]!.id, action)));
-      const updatedUserEventInstanceIds = state.idEventInstances[userId]
-        ?.filter((p) => !newEventInstanceIds.has(p))
+      const newOccasionIds = new Set(events.map(e => federateId(e.instances[0]!.id, action)));
+      const updatedUserOccasionIds = state.idOccasions[userId]
+        ?.filter((p) => !newOccasionIds.has(p))
         || [];
-      updatedUserEventInstanceIds.push(...newEventInstanceIds);
-      state.idEventInstances[userId] = updatedUserEventInstanceIds;
+      updatedUserOccasionIds.push(...newOccasionIds);
+      state.idOccasions[userId] = updatedUserOccasionIds;
     });
     builder.addCase(followUnfollowUser.pending, (state, action) => {
       lockUser(state, federateUserId(action));

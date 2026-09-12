@@ -1,5 +1,5 @@
 //! Connects a `SyncDestination` to an X (Twitter) account via an OAuth 2.0 Authorization Code +
-//! PKCE flow at x.com, and posts `EventInstance`s/`Post`s to it via the X API v2 (`api.x.com`).
+//! PKCE flow at x.com, and posts `Occasion`s/`Post`s to it via the X API v2 (`api.x.com`).
 //!
 //! Architecturally closest to `threads_sync`: a `response_type=code` authorize-then-exchange flow
 //! (not Facebook's client-side implicit token), directly authorizing the user's own account with

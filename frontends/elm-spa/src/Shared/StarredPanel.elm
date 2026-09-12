@@ -43,7 +43,7 @@ import Html.Keyed
 import Json.Decode as Decode
 import Json.Encode as Encode
 import Ports
-import Proto.Rellm exposing (Event, EventInstance, GetEventsResponse, GetPostsResponse, Post, defaultPost)
+import Proto.Rellm exposing (Event, Occasion, GetEventsResponse, GetPostsResponse, Post, defaultPost)
 import Proto.Rellm.Rellm as Rellm
 import Proto.Rellm.PostContext exposing (PostContext(..))
 import Set exposing (Set)
@@ -69,8 +69,8 @@ type alias Model =
     , showStarredPanel : Bool
     , posts : Dict String PostFetchStatus
 
-    -- The owning `Event`/`EventInstance` for every starred post whose own
-    -- `Post` (in `posts`, above) turned out to be an `EventInstance`'s --
+    -- The owning `Event`/`Occasion` for every starred post whose own
+    -- `Post` (in `posts`, above) turned out to be an `Occasion`'s --
     -- see `EventFetchStatus`'s own doc and `kickOffEventFetches`.
     , events : Dict String EventFetchStatus
 
@@ -131,7 +131,7 @@ type Msg
     | ReadyToMeasureNewGroupPositions
     | GotStarredPost String (Result Grpc.Error ( Maybe AccountsPanel.Msg, GetPostsResponse ))
       -- `kickOffEventFetches`'s batched `GetEvents` reply for one server's
-      -- worth of `EVENT_INSTANCE`-context starred posts -- `host`/the
+      -- worth of `OCCASION`-context starred posts -- `host`/the
       -- requested post ids are carried on the `Msg` itself (rather than
       -- looked up from `Model`) since a request that comes back empty still
       -- needs to mark every one of them `EventFetchFailed` (see this
@@ -171,16 +171,16 @@ type PostFetchStatus
     | ServerUnavailable
 
 
-{-| The fetch state of one starred post's owning `Event`/`EventInstance` --
+{-| The fetch state of one starred post's owning `Event`/`Occasion` --
 only ever populated for a starred post whose `PostFetchStatus` is
-`PostFetchLoaded` with `context == EVENTINSTANCE` (see `kickOffEventFetches`),
+`PostFetchLoaded` with `context == OCCASION` (see `kickOffEventFetches`),
 keyed the same (`starKey`/`rawKey`) as `posts` itself. A plain `POST`/`REPLY`
 starred post never gets an entry here at all -- `starredPostView` only reads
 this dict once it already knows (from `posts`) that the entry needs it.
 -}
 type EventFetchStatus
     = FetchingEvent
-    | EventFetchLoaded Event EventInstance
+    | EventFetchLoaded Event Occasion
     | EventFetchFailed
 
 
@@ -605,9 +605,9 @@ sendUpdate accountsPanelModel msg model =
 
         GotStarredEvents host postIds (Ok ( maybeAccountsPanelMsg, response )) ->
             let
-                loadedByPostId : Dict String ( Event, EventInstance )
+                loadedByPostId : Dict String ( Event, Occasion )
                 loadedByPostId =
-                    Events.eventInstancePairs response
+                    Events.occasionPairs response
                         |> List.filterMap
                             (\( event, instance ) ->
                                 instance.post |> Maybe.map (\instancePost -> ( instancePost.id, ( event, instance ) ))
@@ -796,13 +796,13 @@ kickOffFetches accountsPanelModel model =
     ( eventModel, Cmd.batch (eventCmd :: cmds) )
 
 
-{-| Fetches the owning `Event`/`EventInstance` (see `EventFetchStatus`'s own
+{-| Fetches the owning `Event`/`Occasion` (see `EventFetchStatus`'s own
 doc) for every starred post already `PostFetchLoaded` with `context ==
-EVENTINSTANCE` that doesn't have one yet -- always run right after `posts`
+OCCASION` that doesn't have one yet -- always run right after `posts`
 changes (`kickOffFetches`, `GotStarredPost`), same "grouped by host, one
 request per server" batching `kickOffFetches` uses for the posts themselves
 (see `fetchEventGroup`), via `Components.Events.fetchEventsByInstancePostIds`'
-own `event_instance_post_ids` batch RPC. Doesn't need `fetchGroup`'s own
+own `occasion_post_ids` batch RPC. Doesn't need `fetchGroup`'s own
 `ServerDependentView.availableServer` check -- a post already loaded from
 `host` proves that server is currently reachable.
 -}
@@ -817,7 +817,7 @@ kickOffEventFetches accountsPanelModel model =
                     (\( key, status ) ->
                         case status of
                             PostFetchLoaded host post ->
-                                if post.context == EVENTINSTANCE && needsEventFetch model.events key then
+                                if post.context == OCCASION && needsEventFetch model.events key then
                                     Just ( post.id, host )
 
                                 else
@@ -1091,8 +1091,8 @@ starredPostView : SharedTime.Model -> String -> AccountsPanel.Model -> Maybe Str
 starredPostView time basePath accountsPanelModel currentPostKey currentInstanceId model key =
     case Dict.get key model.posts of
         Just (PostFetchLoaded host post) ->
-            if post.context == EVENTINSTANCE then
-                starredEventInstanceView time basePath accountsPanelModel currentInstanceId model key host post
+            if post.context == OCCASION then
+                starredOccasionView time basePath accountsPanelModel currentInstanceId model key host post
 
             else
                 let
@@ -1183,11 +1183,11 @@ starredPostView time basePath accountsPanelModel currentPostKey currentInstanceI
 
 
 {-| `starredPostView`'s branch for a starred post whose own `context` is
-`EVENTINSTANCE` -- renders `Components.Events.eventCard` (the same card
+`OCCASION` -- renders `Components.Events.eventCard` (the same card
 `Components.Pages.EventsPage` uses for its own listing) instead of
-`Posts.postCard`, sourcing the `Event`/`EventInstance` data it needs from
+`Posts.postCard`, sourcing the `Event`/`Occasion` data it needs from
 `model.events` (see `kickOffEventFetches`). `post` here is always the
-freshest known copy of the `EventInstance`'s own Post (`Dict.get key
+freshest known copy of the `Occasion`'s own Post (`Dict.get key
 model.posts`, same as `starredPostView`'s own `PostFetchLoaded` branch) --
 overlaid onto the fetched `instance.post` (via `displayInstance`, below)
 before rendering, so a just-toggled star's fresh count (see `GotStarResult`,
@@ -1195,8 +1195,8 @@ which updates `model.posts` directly) shows immediately without waiting on a
 whole fresh `GetEvents` round-trip, mirroring
 `Components.Pages.EventsPage.eventCardView`'s own `displayInstance` swap.
 -}
-starredEventInstanceView : SharedTime.Model -> String -> AccountsPanel.Model -> Maybe String -> Model -> String -> String -> Post -> Html Msg
-starredEventInstanceView time basePath accountsPanelModel currentInstanceId model key host post =
+starredOccasionView : SharedTime.Model -> String -> AccountsPanel.Model -> Maybe String -> Model -> String -> String -> Post -> Html Msg
+starredOccasionView time basePath accountsPanelModel currentInstanceId model key host post =
     case Dict.get key model.events of
         Just (EventFetchLoaded event instance) ->
             let
@@ -1220,7 +1220,7 @@ starredEventInstanceView time basePath accountsPanelModel currentInstanceId mode
                 maybeAccount =
                     RellmAccounts.enabledRellmAccountForServer accountsPanelModel.accounts host
 
-                displayInstance : EventInstance
+                displayInstance : Occasion
                 displayInstance =
                     { instance | post = Just post }
 
@@ -1386,7 +1386,7 @@ toggleStarMsg accountsPanelModel host post =
 
 
 {-| Whether the starred entry `key` is a starred Event (i.e. its fetched
-`Post`'s `context` is `EVENTINSTANCE` -- see `starredEventInstanceView`).
+`Post`'s `context` is `OCCASION` -- see `starredOccasionView`).
 An entry that's still loading, failed, or unavailable is treated as not an
 Event -- its actual context isn't known yet, and `groupStarredOrder` needs
 _some_ answer for every key in `starOrder`.
@@ -1395,7 +1395,7 @@ isEventKey : Model -> String -> Bool
 isEventKey model key =
     case Dict.get key model.posts of
         Just (PostFetchLoaded _ post) ->
-            post.context == EVENTINSTANCE
+            post.context == OCCASION
 
         _ ->
             False

@@ -12,7 +12,7 @@ use crate::models;
 use crate::protos::*;
 use crate::rpcs::delete_user;
 use crate::schema::{
-    event_instances, events, media, post_sync_destinations, sync_destinations, sync_sources, users,
+    occasions, events, media, post_sync_destinations, sync_destinations, sync_sources, users,
 };
 use crate::tests::factories::*;
 
@@ -126,8 +126,8 @@ fn delete_cascades_events_posts_media_and_sync_config() {
             },
         );
 
-        // An Event (with one EventInstance) -- DeleteEvent only removes the `events`/
-        // `event_instances` rows, not their container Posts (PostContext::Event/EventInstance),
+        // An Event (with one Occasion) -- DeleteEvent only removes the `events`/
+        // `occasions` rows, not their container Posts (PostContext::Event/Occasion),
         // so those survive as orphaned rows once the user's own row (and thus the `ON DELETE SET
         // NULL` FK) is gone.
         let (event, event_post) = create_event(
@@ -139,7 +139,7 @@ fn delete_cascades_events_posts_media_and_sync_config() {
             },
         );
         let (instance, instance_post) =
-            create_event_instance(conn, &event, Some(&user), EventInstanceOpts::default());
+            create_occasion(conn, &event, Some(&user), OccasionOpts::default());
 
         // Media -- DeleteMedia should hard-delete the row and the backing MinIO object.
         let media_path = unique_path("cascade");
@@ -193,14 +193,14 @@ fn delete_cascades_events_posts_media_and_sync_config() {
             .get_result(conn)
             .unwrap();
         assert_eq!(remaining_events, 0);
-        let remaining_instances: i64 = event_instances::table
-            .filter(event_instances::post_id.eq(instance.post_id))
+        let remaining_instances: i64 = occasions::table
+            .filter(occasions::post_id.eq(instance.post_id))
             .count()
             .get_result(conn)
             .unwrap();
         assert_eq!(remaining_instances, 0);
 
-        // DeleteEvent doesn't scrub the Event/EventInstance's own container Posts -- they survive
+        // DeleteEvent doesn't scrub the Event/Occasion's own container Posts -- they survive
         // as orphaned rows (ownership severed only by the `users` row's own FK cascade), unlike
         // Post/Reply above. Documented here since it's the one asymmetry in the cascade.
         let event_post_after = models::get_post(event_post.id, conn).unwrap();

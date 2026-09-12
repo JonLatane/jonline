@@ -17,7 +17,7 @@
 -    use super::sql_types::Tsvector;
 +    use diesel_full_text_search::TsVector;
  
-     event_instances (post_id) {
+     occasions (post_id) {
          event_id -> Int8,
 @@ -80,7 +77,7 @@
          created_at -> Timestamp,
@@ -80,5 +80,5 @@
 -        search_text -> Nullable<Tsvector>,
 +        search_text -> TsVector,
          friend_count -> Int4,
-         event_instance_count -> Int4,
+         occasion_count -> Int4,
      }

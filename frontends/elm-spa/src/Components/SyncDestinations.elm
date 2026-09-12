@@ -16,12 +16,12 @@ destination isn't exposed in the UI yet, only link/unlink.
 `syncDestinations` directly (self-or-Admin gated server-side, see `protos/users.proto`'s doc on
 `User.sync_destinations`). `getSyncDestinations` exists for pages that only need *just* that list
 without fetching a whole `User` -- e.g. `Pages.Event.PostId_`/`Components.Pages.PostPage`, which
-need the viewer's own destinations to offer a real Push button on a single Post/EventInstance's
+need the viewer's own destinations to offer a real Push button on a single Post/Occasion's
 detail view, but have no other reason to fetch their own full profile.
 
 Also home to `syncDestinationsView`, the generic already-synced/available-to-sync-to row-rendering
 logic shared by `Components.Events.eventSyncDestinationsView` (wrapping
-`EventInstance.syncDestinations`) and `Components.Posts.postSyncDestinationsView` (wrapping
+`Occasion.syncDestinations`) and `Components.Posts.postSyncDestinationsView` (wrapping
 `Post.syncDestinations`) -- see that function's own doc for the union/rendering rules.
 -}
 
@@ -114,7 +114,7 @@ Facebook post) -- read-only, no push controls -- used by every caller except
 again" button -- `isPushing`/`pushError` (keyed by destination id) drive its disabled/error state,
 `onPush` fires the push. Already-synced rows also get a Delete button (`onDelete`, given the
 destination id and its display name for the confirmation dialog -- see
-`Shared.ConfirmEventInstanceSyncDestinationDelete`/`Shared.ConfirmPostSyncDestinationDelete`),
+`Shared.ConfirmOccasionSyncDestinationDelete`/`Shared.ConfirmPostSyncDestinationDelete`),
 which removes just the local sync record, putting the row back into its unsynced "Push" state.
 This `Maybe` is the *only* gate on whether push/delete controls show at all -- deciding when to
 pass `Just` (only `UserProfilePage`'s own embedded feeds, for now) is entirely the caller's call;
@@ -127,7 +127,7 @@ wrappers over this. Rendered with the platform-agnostic `.card-sync-destinations
 than a separate `.post-*` set -- they're purely visual and carry no event- or post-specific
 selector, so they render identically for a Post card/detail view.
 
-`hasMedia` is whether the Post/EventInstance being synced has any attached media -- Instagram's
+`hasMedia` is whether the Post/Occasion being synced has any attached media -- Instagram's
 Graph API has no text-only post type, so a row whose destination is an `InstagramAccount` gets its
 Push button disabled (with an explanatory label) when this is `False`, rather than letting the
 click round-trip to a guaranteed `instagram_requires_media` server error. Irrelevant to every other

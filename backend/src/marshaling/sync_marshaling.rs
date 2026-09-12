@@ -10,7 +10,7 @@ pub type SyncSourceLookup = HashMap<i64, MarshalableSyncSource>;
 
 /// Loads every `SyncSource` in `sync_source_ids` (deduplicated by the caller's `HashMap`), for
 /// batch-attaching `Post.sync_source` across a whole page of results in one query instead of one
-/// per Post -- mirrors `load_post_sync_lookup`/`load_event_instance_sync_lookup` for
+/// per Post -- mirrors `load_post_sync_lookup`/`load_occasion_sync_lookup` for
 /// `SyncDestination`s.
 pub fn load_sync_source_lookup(
     sync_source_ids: Vec<i64>,
@@ -53,7 +53,7 @@ impl ToProtoMarshalableSyncSource for MarshalableSyncSource {
             updated_at: source.updated_at.map(|t| t.to_proto()),
             last_synced_at: source.last_synced_at.map(|t| t.to_proto()),
             event_count: source.event_count as u64,
-            event_instance_count: source.event_instance_count as u64,
+            occasion_count: source.occasion_count as u64,
             post_count: source.post_count as u64,
             configuration: source_configuration_to_proto(&source.configuration),
         }
@@ -62,7 +62,7 @@ impl ToProtoMarshalableSyncSource for MarshalableSyncSource {
 
 /// `configuration` JSONB shape today: one of `{"ics_subscription_url": "https://..."}`,
 /// `{"rss_subscription_url": "https://..."}`, or `{"atom_subscription_url": "https://..."}` --
-/// mirrors the proto `oneof`'s 3 variants (an ICS URL syncs Events/EventInstances;
+/// mirrors the proto `oneof`'s 3 variants (an ICS URL syncs Events/Occasions;
 /// RSS/Atom sync plain Posts -- see `logic::sync_sources::feed_sync`).
 pub fn source_configuration_to_proto(
     configuration: &serde_json::Value,
@@ -127,16 +127,16 @@ impl ToProtoMarshalableSyncDestination for MarshalableSyncDestination {
             updated_at: destination.updated_at.map(|t| t.to_proto()),
             // Left unset here -- see `attach_synced_counts`, which every RPC handler that returns
             // a `SyncDestination` calls as a second pass to fill these in (mirrors
-            // `get_events.rs`'s "build the response, then attach_event_instance_attendances"
+            // `get_events.rs`'s "build the response, then attach_occasion_attendances"
             // shape), rather than every caller of `to_proto` having to supply it up front.
-            synced_event_instance_count: None,
+            synced_occasion_count: None,
             synced_post_count: None,
             configuration: destination_configuration_to_proto(&destination.configuration),
         }
     }
 }
 
-/// Second-pass attach step for `synced_event_instance_count`/`synced_post_count` -- batches two
+/// Second-pass attach step for `synced_occasion_count`/`synced_post_count` -- batches two
 /// `GROUP BY` queries (`models::get_sync_destination_synced_counts`/
 /// `models::get_post_sync_destination_synced_counts`) across every destination in `destinations`
 /// and mutates each in place, rather than each RPC handler querying per-row. Works the same for a
@@ -147,12 +147,12 @@ pub fn attach_synced_counts(destinations: &mut [SyncDestination], conn: &mut PgP
         .iter()
         .filter_map(|d| d.id.to_db_id().ok())
         .collect();
-    let event_instance_counts = models::get_sync_destination_synced_counts(ids.clone(), conn);
+    let occasion_counts = models::get_sync_destination_synced_counts(ids.clone(), conn);
     let post_counts = models::get_post_sync_destination_synced_counts(ids, conn);
     for destination in destinations.iter_mut() {
         if let Ok(id) = destination.id.to_db_id() {
-            destination.synced_event_instance_count =
-                Some(event_instance_counts.get(&id).copied().unwrap_or(0) as u64);
+            destination.synced_occasion_count =
+                Some(occasion_counts.get(&id).copied().unwrap_or(0) as u64);
             destination.synced_post_count = Some(post_counts.get(&id).copied().unwrap_or(0) as u64);
         }
     }
@@ -272,9 +272,9 @@ pub fn destination_configuration_to_proto(
     None
 }
 
-/// Shared field-mapping for a single piece of content's (`EventInstance` or `Post`) sync status
-/// against one `SyncDestination` -- both `models::EventInstanceSyncDestination` and
-/// `models::PostSyncDestination` have identical shape (just `event_instance_id`/`post_id`
+/// Shared field-mapping for a single piece of content's (`Occasion` or `Post`) sync status
+/// against one `SyncDestination` -- both `models::OccasionSyncDestination` and
+/// `models::PostSyncDestination` have identical shape (just `occasion_id`/`post_id`
 /// differs, which isn't even part of the output message), so this is the one place that maps
 /// either into the shared `SyncDestinationStatus` proto.
 pub fn to_proto_sync_destination_status(
@@ -295,7 +295,7 @@ pub trait ToProtoSyncDestinationStatus {
     fn to_proto(&self) -> SyncDestinationStatus;
 }
 
-impl ToProtoSyncDestinationStatus for models::EventInstanceSyncDestination {
+impl ToProtoSyncDestinationStatus for models::OccasionSyncDestination {
     fn to_proto(&self) -> SyncDestinationStatus {
         to_proto_sync_destination_status(
             self.sync_destination_id,

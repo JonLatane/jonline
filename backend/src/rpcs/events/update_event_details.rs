@@ -9,7 +9,7 @@ use crate::protos::*;
 use super::event_permissions::event_post_id;
 
 /// Updates only the `Event`'s top-level details (`info`) and those of its own `Post` -- not any
-/// `EventInstance`s or their `Post`s. Ownership/permission checks are enforced by `update_post`
+/// `Occasion`s or their `Post`s. Ownership/permission checks are enforced by `update_post`
 /// (self-update, or `Admin`/`ModeratePosts`/`ModerateEvents`) on the event's own `Post`.
 pub(super) fn update_event_details_impl(
     event_id: i64,

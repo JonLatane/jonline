@@ -301,7 +301,7 @@ deletePost accountsPanelModel maybeAccountServer postId =
 
 {-| Pushes (cross-posts) `postId` to `syncDestinationId` (`SyncPost`,
 owner-or-Admin gated server-side, see `backend/src/rpcs/posts/sync_post.rs`) -- mirrors
-`Components.Events.syncEventInstance`'s shape exactly. The returned `Post` carries a freshly
+`Components.Events.syncOccasion`'s shape exactly. The returned `Post` carries a freshly
 updated `syncDestinations`, but callers here just reuse their own existing full refetch rather
 than patching it in by hand.
 -}
@@ -404,7 +404,7 @@ starButton postServerHost starred onStarClicked post =
 
 
 {-| A single `Post` timestamp, formatted the same way
-`Components.Events.instanceWhenText` formats an `EventInstance` moment (e.g.
+`Components.Events.instanceWhenText` formats an `Occasion` moment (e.g.
 "August 1, 6PM", or "Today, August 1, 6PM" -- see `SharedTime.formatMoment`/
 `dateLabel`) rather than a range, since a bare timestamp (created/updated/
 published) is always a single point in time. `timestampsText`'s own sibling
@@ -558,9 +558,9 @@ mediaEditButton maybeAccount onMediaEditClicked post =
 {-| `mediaEditButton`'s sibling, opening `Shared.MediaGeneratorPanel` instead of `Shared.MyMediaPanel`
 -- same `isAuthor`-or-`ADMIN` gate, but `onGenerateMediaClicked` is itself a `Maybe msg` (not a bare
 `msg`, unlike every other button here) since the caller also has to know whether the viewer has any
-image-capable `AvailableAIModel` at all (`Account.availableAiModels`) before this button makes sense
+image-capable `AIModel` at all (`Account.aiModels`) before this button makes sense
 to offer -- `Nothing` there covers both "not this post's author/an Admin" and "no model available",
-without `Components.Posts` itself needing to know anything about `AvailableAIModel`.
+without `Components.Posts` itself needing to know anything about `AIModel`.
 -}
 generateMediaButton : Maybe RellmAccount -> Maybe msg -> Post -> Html msg
 generateMediaButton maybeAccount onGenerateMediaClicked post =
@@ -973,7 +973,7 @@ idea, slotted right after it, for the (Admin-/`MODERATEPOSTS`-only)
 moderation-status segment.
 
 `onGenerateMediaClicked` drives `generateMediaButton`, shown alongside `mediaEditButton` in the same
-row -- `Nothing` if the caller has no reason to offer it (no image-capable `AvailableAIModel`, or
+row -- `Nothing` if the caller has no reason to offer it (no image-capable `AIModel`, or
 the viewer isn't `post`'s author/an Admin; see that button's own doc).
 
 `onMediaLayoutChanged` drives `mediaLayoutSelector`, shown below
@@ -1396,7 +1396,7 @@ visibilityText visibility =
 
 
 {-| A human-facing label for a Post's `context` when it's something other than
-a plain `POST` (a `Reply`, `Event`, `Event Instance`, etc.) -- `Nothing` for a
+a plain `POST` (a `Reply`, `Event`, `Occasion`, etc.) -- `Nothing` for a
 plain `POST`, since that's the common case and doesn't need calling out
 wherever a Post is shown alongside its context (see
 `Shared.StarredPanel`'s panel view).
@@ -1413,7 +1413,7 @@ postContextLabel context =
         EVENT ->
             Just "Event"
 
-        EVENTINSTANCE ->
+        OCCASION ->
             Nothing
 
         FEDERATEDREPLY ->
@@ -1604,7 +1604,7 @@ moderationFromText text =
 `context` -- mirrors `backend/src/rpcs/posts/update_post.rs`'s own permission
 check: setting `SERVERPUBLIC`/`GLOBALPUBLIC` needs `PUBLISHPOSTSLOCALLY`/
 `PUBLISHPOSTSGLOBALLY` for a plain `POST`/`REPLY`, or `PUBLISHEVENTSLOCALLY`/
-`PUBLISHEVENTSGLOBALLY` for an `EVENT`/`EVENTINSTANCE` -- `ADMIN` always
+`PUBLISHEVENTSGLOBALLY` for an `EVENT`/`OCCASION` -- `ADMIN` always
 passes either. `currentVisibility` is always included even if it wouldn't
 otherwise be pickable, so an account whose permission was revoked after the
 post was already elevated still sees its own current value in the list
@@ -1617,7 +1617,7 @@ allowedVisibilities permissions context currentVisibility =
     let
         isEventContext : Bool
         isEventContext =
-            context == EVENT || context == EVENTINSTANCE
+            context == EVENT || context == OCCASION
 
         has : Permission -> Bool
         has permission =

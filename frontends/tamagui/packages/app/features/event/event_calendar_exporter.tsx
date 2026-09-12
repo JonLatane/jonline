@@ -1,4 +1,4 @@
-import { FederatedEvent, FederatedUser, IdentifiedEventInstance, RellmServer, federateId, selectServer, selectServerById, serverID, useRootSelector, useServerTheme } from "app/store";
+import { FederatedEvent, FederatedUser, IdentifiedOccasion, RellmServer, federateId, selectServer, selectServerById, serverID, useRootSelector, useServerTheme } from "app/store";
 import React, { useEffect, useState } from "react";
 
 import { Author, Visibility } from "@rellm/api";
@@ -18,7 +18,7 @@ import { AuthorInfo } from "../post";
 
 type Props = {
   event?: FederatedEvent,
-  instance?: IdentifiedEventInstance,
+  instance?: IdentifiedOccasion,
   tiny?: boolean;
   showSubscriptions?: {
     user?: FederatedUser,

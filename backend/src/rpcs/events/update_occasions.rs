@@ -11,16 +11,16 @@ use crate::schema::posts;
 
 use super::event_permissions::{event_post_id, find_existing_instance, validate_event_edit_permission};
 
-/// Updates, in place, every `EventInstance` in `instances` that's already on the event (i.e.
+/// Updates, in place, every `Occasion` in `instances` that's already on the event (i.e.
 /// whose `post.id` matches an existing instance belonging to this event). Any other instances are
-/// ignored -- see `create_new_event_instances` for creating those instead.
+/// ignored -- see `create_new_occasions` for creating those instead.
 ///
-/// An `EventInstance`'s identity *is* its `post.id`, so (unlike the old surrogate-ID scheme) a
+/// An `Occasion`'s identity *is* its `post.id`, so (unlike the old surrogate-ID scheme) a
 /// matched instance's `post` is never missing here -- to explicitly reset an instance's Post to
 /// `PRIVATE`, send its `post` with `visibility: PRIVATE` rather than omitting `post` entirely.
-pub(super) fn update_event_instances_impl(
+pub(super) fn update_occasions_impl(
     event: &models::Event,
-    instances: &[EventInstance],
+    instances: &[Occasion],
     conn: &mut PgPooledConnection,
 ) -> Result<(), Status> {
     for request_instance in instances {
@@ -33,7 +33,7 @@ pub(super) fn update_event_instances_impl(
             .select(models::POST_COLUMNS)
             .filter(posts::id.eq(existing_instance.post_id))
             .first::<models::Post>(conn)
-            .map_err(|_| Status::new(Code::NotFound, "event_instance_post_not_found"))?;
+            .map_err(|_| Status::new(Code::NotFound, "occasion_post_not_found"))?;
 
         let mut updated_instance = existing_instance.clone();
         let starts_at = request_instance.starts_at.to_db()?;
@@ -68,11 +68,11 @@ pub(super) fn update_event_instances_impl(
 
         diesel::update(&updated_instance)
             .set(&updated_instance)
-            .returning(models::EVENT_INSTANCE_COLUMNS)
-            .get_result::<models::EventInstance>(conn)
+            .returning(models::OCCASION_COLUMNS)
+            .get_result::<models::Occasion>(conn)
             .map_err(|e| {
                 log::error!("Failed to update event instance: {:?}", e);
-                Status::new(Code::Internal, "failed_to_update_event_instance")
+                Status::new(Code::Internal, "failed_to_update_occasion")
             })?;
 
         let mut updated_instance_post = existing_instance_post.clone();
@@ -92,14 +92,14 @@ pub(super) fn update_event_instances_impl(
             .get_result::<models::Post>(conn)
             .map_err(|e| {
                 log::error!("Failed to update event instance post: {:?}", e);
-                Status::new(Code::Internal, "failed_to_update_event_instance")
+                Status::new(Code::Internal, "failed_to_update_occasion")
             })?;
     }
 
     Ok(())
 }
 
-pub fn update_event_instances(
+pub fn update_occasions(
     request: Event,
     current_user: &models::User,
     conn: &mut PgPooledConnection,
@@ -108,7 +108,7 @@ pub fn update_event_instances(
     let event = models::get_event(event_id, &Some(current_user), conn)?;
     validate_event_edit_permission(&event, current_user, conn)?;
 
-    update_event_instances_impl(&event, &request.instances, conn)?;
+    update_occasions_impl(&event, &request.instances, conn)?;
 
     Ok(super::get_events(
         GetEventsRequest {

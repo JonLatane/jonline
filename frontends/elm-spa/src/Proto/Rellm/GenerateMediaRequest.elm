@@ -30,12 +30,12 @@ import Proto.Rellm.Internals_
  Attach to (and use the content of) this Post. Caller must be its author, or an Admin.
 
 
-### EventInstanceId
+### OccasionId
 
- Attach to (and use the content of) this EventInstance's parent Event's own Post - named by
- EventInstance, not Event, since that's what a viewer is actually looking at (and what gives
+ Attach to (and use the content of) this Occasion's parent Event's own Post - named by
+ Occasion, not Event, since that's what a viewer is actually looking at (and what gives
  the generated prompt its date/time/location context, the same way
- [`SyncEventInstance`](#grpc-api-SyncEventInstance) does). Caller must be the Event's own
+ [`SyncOccasion`](#grpc-api-SyncOccasion) does). Caller must be the Event's own
  Post's author, or hold `MODERATE_POSTS`/`MODERATE_EVENTS`, or be an Admin.
 
 

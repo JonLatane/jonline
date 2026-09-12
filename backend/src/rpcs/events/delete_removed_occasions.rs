@@ -7,28 +7,28 @@ use crate::db_connection::PgPooledConnection;
 use crate::marshaling::*;
 use crate::models;
 use crate::protos::*;
-use crate::schema::event_instances;
+use crate::schema::occasions;
 
 use super::event_permissions::{event_post_id, validate_event_edit_permission};
 
-/// Deletes every `EventInstance` currently on the event whose `post.id` isn't present in
+/// Deletes every `Occasion` currently on the event whose `post.id` isn't present in
 /// `instances` -- their own `Post`s are left behind, not cascade-deleted. Refreshes
-/// `event_instance_count` for `current_user` and for any other user who owned a deleted instance's
+/// `occasion_count` for `current_user` and for any other user who owned a deleted instance's
 /// Post (e.g. an admin deleting instances on someone else's event).
 ///
-/// Callers orchestrating this alongside `create_new_event_instances` (like `update_event`) must
+/// Callers orchestrating this alongside `create_new_occasions` (like `update_event`) must
 /// pass `instances` with any newly-created entries' `post.id`s already resolved (that function's
 /// return value) -- an entry with no (or unparseable) `post.id` here can't be matched to anything,
 /// so it wouldn't protect a just-created instance from being swept up as "not present in
 /// `instances`".
-pub(super) fn delete_removed_event_instances_impl(
+pub(super) fn delete_removed_occasions_impl(
     event: &models::Event,
-    instances: &[EventInstance],
+    instances: &[Occasion],
     current_user: &models::User,
     conn: &mut PgPooledConnection,
 ) -> Result<(), Status> {
     let existing_instance_data =
-        models::get_event_instances(event.post_id, &Some(current_user), conn)?;
+        models::get_occasions(event.post_id, &Some(current_user), conn)?;
     let kept_ids: HashSet<i64> = instances
         .iter()
         .filter_map(|i| i.post.as_ref())
@@ -41,7 +41,7 @@ pub(super) fn delete_removed_event_instances_impl(
         .map(|(instance, _, _)| instance.post_id)
         .collect();
     // Instances owned by users other than `current_user` (e.g. an admin editing someone else's
-    // event) that are about to be deleted -- their `event_instance_count` needs refreshing too.
+    // event) that are about to be deleted -- their `occasion_count` needs refreshing too.
     let removed_instance_owner_ids: Vec<i64> = existing_instance_data
         .iter()
         .filter(|(instance, _, _)| removed_instance_ids.contains(&instance.post_id))
@@ -49,12 +49,12 @@ pub(super) fn delete_removed_event_instances_impl(
         .collect();
 
     diesel::delete(
-        event_instances::table.filter(event_instances::post_id.eq_any(removed_instance_ids)),
+        occasions::table.filter(occasions::post_id.eq_any(removed_instance_ids)),
     )
         .execute(conn)
         .map_err(|e| {
             log::error!("Failed to delete event instances: {:?}", e);
-            Status::new(Code::Internal, "failed_to_delete_event_instances")
+            Status::new(Code::Internal, "failed_to_delete_occasions")
         })?;
 
     let mut affected_user_ids = removed_instance_owner_ids;
@@ -69,7 +69,7 @@ pub(super) fn delete_removed_event_instances_impl(
     Ok(())
 }
 
-pub fn delete_removed_event_instances(
+pub fn delete_removed_occasions(
     request: Event,
     current_user: &models::User,
     conn: &mut PgPooledConnection,
@@ -78,7 +78,7 @@ pub fn delete_removed_event_instances(
     let event = models::get_event(event_id, &Some(current_user), conn)?;
     validate_event_edit_permission(&event, current_user, conn)?;
 
-    delete_removed_event_instances_impl(&event, &request.instances, current_user, conn)?;
+    delete_removed_occasions_impl(&event, &request.instances, current_user, conn)?;
 
     Ok(super::get_events(
         GetEventsRequest {

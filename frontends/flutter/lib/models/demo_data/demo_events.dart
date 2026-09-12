@@ -139,9 +139,9 @@ final List<DemoEvent> durhamDemoEvents = [
         ])),
 ];
 
-List<EventInstance> _generateWeeklyInstances(
+List<Occasion> _generateWeeklyInstances(
     String startsAtStr, String endsAtStr, int recurringWeeks) {
-  final List<EventInstance> instances = [];
+  final List<Occasion> instances = [];
   DateTime startsAt = DateTime.parse(startsAtStr);
   DateTime endsAt = DateTime.parse(endsAtStr);
   // LOL this doesn't even handle DST but copilot generated it and it's good enough for a demo for now...
@@ -153,10 +153,10 @@ List<EventInstance> _generateWeeklyInstances(
   return instances;
 }
 
-EventInstance _generateInstance(String startsAtStr, String endsAtStr) {
+Occasion _generateInstance(String startsAtStr, String endsAtStr) {
   DateTime startsAt = DateTime.parse(startsAtStr);
   DateTime endsAt = DateTime.parse(endsAtStr);
-  return EventInstance()
+  return Occasion()
     ..startsAt = (Timestamp()
       ..seconds =
           Int64.fromInts(0, (startsAt.millisecondsSinceEpoch / 1000).floor()))

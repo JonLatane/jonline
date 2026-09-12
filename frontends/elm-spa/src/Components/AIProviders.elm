@@ -1,41 +1,41 @@
-module Components.AIModelProviders exposing
-    ( createAIModelProvider
-    , deleteAIModelProvider
+module Components.AIProviders exposing
+    ( createAIProvider
+    , deleteAIProvider
     , generateMedia
-    , getAIModelProviders
-    , grantAIModelProvider
+    , getAIProviders
+    , grantAIProvider
     , hasAnyImageCapability
     , hasImageEditingCapability
     , hasImageGenerationCapability
-    , revokeAIModelProvider
-    , updateAIModelProvider
+    , revokeAIProvider
+    , updateAIProvider
     )
 
-{-| RPC wrappers for `AIModelProvider`/`AIModelProviderGrant` (`protos/ai_model_providers.proto`)
+{-| RPC wrappers for `AIProvider`/`AIProviderGrant` (`protos/ai_providers.proto`)
 -- mirrors `Components.SyncSources` in shape exactly: each takes the calling account/server as
 an `AccountsPanel.MaybeAccountServer` and returns a `Task` resolving to
 `( Maybe AccountsPanel.Msg, response )`, so a token refresh mid-request can still be forwarded on by
 the caller (see `Shared.AccountsPanel.performWithAccountServer`).
 
-`UserProfilePage` no longer fetches `AIModelProvider`s/`AvailableAIModel`s on its own initial load
-(it reads `User.available_ai_models`, already carried by the resolved `User` -- see
-`AIModelProvidersState`'s own doc), and every mutation now triggers a full `refetch` of that `User`.
-`getAIModelProviders` is still used, though -- by that section's manual "Refresh" button
-(`AIModelProvidersRefreshClicked`), which overlays just the fresh `providers`/`availableAiModels`
+`UserProfilePage` no longer fetches `AIProvider`s/`AIModel`s on its own initial load
+(it reads `User.ai_models`, already carried by the resolved `User` -- see
+`AIProvidersState`'s own doc), and every mutation now triggers a full `refetch` of that `User`.
+`getAIProviders` is still used, though -- by that section's manual "Refresh" button
+(`AIProvidersRefreshClicked`), which overlays just the fresh `providers`/`aiModels`
 onto the resolved `User` without a whole-profile refetch.
 -}
 
 import Grpc
 import Proto.Rellm
     exposing
-        ( AIModelProvider
-        , AIModelProviderGrant
-        , AvailableAIModel
+        ( AIProvider
+        , AIProviderGrant
+        , AIModel
         , GenerateMediaRequest
-        , GetAIModelProvidersResponse
-        , GrantAIModelProviderRequest
+        , GetAIProvidersResponse
+        , GrantAIProviderRequest
         , Media
-        , RevokeAIModelProviderRequest
+        , RevokeAIProviderRequest
         , defaultUser
         )
 import Proto.Rellm.AIModelCapability exposing (AIModelCapability(..))
@@ -46,20 +46,20 @@ import Task exposing (Task)
 
 
 {-| `targetUserId = ""` asks the backend for the caller's own providers (see
-`backend/src/rpcs/ai_model_providers/get_ai_model_providers.rs`); any other id asks for that user's
+`backend/src/rpcs/ai_providers/get_ai_providers.rs`); any other id asks for that user's
 providers instead, which only succeeds for an Admin caller.
 -}
-getAIModelProviders :
+getAIProviders :
     AccountsPanel.Model
     -> AccountsPanel.MaybeAccountServer
     -> String
-    -> Task Grpc.Error ( Maybe AccountsPanel.Msg, GetAIModelProvidersResponse )
-getAIModelProviders accountsPanelModel maybeAccountServer targetUserId =
+    -> Task Grpc.Error ( Maybe AccountsPanel.Msg, GetAIProvidersResponse )
+getAIProviders accountsPanelModel maybeAccountServer targetUserId =
     AccountsPanel.performWithAccountServer
         accountsPanelModel
         maybeAccountServer
         (\server token ->
-            Grpc.new Rellm.getAIModelProviders { defaultUser | id = targetUserId }
+            Grpc.new Rellm.getAIProviders { defaultUser | id = targetUserId }
                 |> Grpc.setHost (RellmServers.rellmServerUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
@@ -67,54 +67,54 @@ getAIModelProviders accountsPanelModel maybeAccountServer targetUserId =
 
 
 {-| Always creates a provider owned by the calling account -- the backend ignores/overrides any
-`owner` sent (see `create_ai_model_provider.rs`), so there's no `targetUserId` parameter here
-unlike `getAIModelProviders`.
+`owner` sent (see `create_ai_provider.rs`), so there's no `targetUserId` parameter here
+unlike `getAIProviders`.
 -}
-createAIModelProvider :
+createAIProvider :
     AccountsPanel.Model
     -> AccountsPanel.MaybeAccountServer
-    -> AIModelProvider
-    -> Task Grpc.Error ( Maybe AccountsPanel.Msg, AIModelProvider )
-createAIModelProvider accountsPanelModel maybeAccountServer provider =
+    -> AIProvider
+    -> Task Grpc.Error ( Maybe AccountsPanel.Msg, AIProvider )
+createAIProvider accountsPanelModel maybeAccountServer provider =
     AccountsPanel.performWithAccountServer
         accountsPanelModel
         maybeAccountServer
         (\server token ->
-            Grpc.new Rellm.createAIModelProvider provider
+            Grpc.new Rellm.createAIProvider provider
                 |> Grpc.setHost (RellmServers.rellmServerUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
         )
 
 
-updateAIModelProvider :
+updateAIProvider :
     AccountsPanel.Model
     -> AccountsPanel.MaybeAccountServer
-    -> AIModelProvider
-    -> Task Grpc.Error ( Maybe AccountsPanel.Msg, AIModelProvider )
-updateAIModelProvider accountsPanelModel maybeAccountServer provider =
+    -> AIProvider
+    -> Task Grpc.Error ( Maybe AccountsPanel.Msg, AIProvider )
+updateAIProvider accountsPanelModel maybeAccountServer provider =
     AccountsPanel.performWithAccountServer
         accountsPanelModel
         maybeAccountServer
         (\server token ->
-            Grpc.new Rellm.updateAIModelProvider provider
+            Grpc.new Rellm.updateAIProvider provider
                 |> Grpc.setHost (RellmServers.rellmServerUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
         )
 
 
-deleteAIModelProvider :
+deleteAIProvider :
     AccountsPanel.Model
     -> AccountsPanel.MaybeAccountServer
-    -> AIModelProvider
+    -> AIProvider
     -> Task Grpc.Error ( Maybe AccountsPanel.Msg, () )
-deleteAIModelProvider accountsPanelModel maybeAccountServer provider =
+deleteAIProvider accountsPanelModel maybeAccountServer provider =
     AccountsPanel.performWithAccountServer
         accountsPanelModel
         maybeAccountServer
         (\server token ->
-            Grpc.new Rellm.deleteAIModelProvider { provider = Just provider }
+            Grpc.new Rellm.deleteAIProvider { provider = Just provider }
                 |> Grpc.setHost (RellmServers.rellmServerUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
@@ -123,37 +123,37 @@ deleteAIModelProvider accountsPanelModel maybeAccountServer provider =
 
 
 {-| Grants (or resets) `granteeUserId`'s access to `providerId`, owned by the calling account.
-Owner-only server-side -- see `RevokeAIModelProvider`'s own doc comment in
-`ai_model_providers.proto` on why there's no Admin override.
+Owner-only server-side -- see `RevokeAIProvider`'s own doc comment in
+`ai_providers.proto` on why there's no Admin override.
 -}
-grantAIModelProvider :
+grantAIProvider :
     AccountsPanel.Model
     -> AccountsPanel.MaybeAccountServer
-    -> GrantAIModelProviderRequest
-    -> Task Grpc.Error ( Maybe AccountsPanel.Msg, AIModelProviderGrant )
-grantAIModelProvider accountsPanelModel maybeAccountServer request =
+    -> GrantAIProviderRequest
+    -> Task Grpc.Error ( Maybe AccountsPanel.Msg, AIProviderGrant )
+grantAIProvider accountsPanelModel maybeAccountServer request =
     AccountsPanel.performWithAccountServer
         accountsPanelModel
         maybeAccountServer
         (\server token ->
-            Grpc.new Rellm.grantAIModelProvider request
+            Grpc.new Rellm.grantAIProvider request
                 |> Grpc.setHost (RellmServers.rellmServerUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
         )
 
 
-revokeAIModelProvider :
+revokeAIProvider :
     AccountsPanel.Model
     -> AccountsPanel.MaybeAccountServer
-    -> RevokeAIModelProviderRequest
+    -> RevokeAIProviderRequest
     -> Task Grpc.Error ( Maybe AccountsPanel.Msg, () )
-revokeAIModelProvider accountsPanelModel maybeAccountServer request =
+revokeAIProvider accountsPanelModel maybeAccountServer request =
     AccountsPanel.performWithAccountServer
         accountsPanelModel
         maybeAccountServer
         (\server token ->
-            Grpc.new Rellm.revokeAIModelProvider request
+            Grpc.new Rellm.revokeAIProvider request
                 |> Grpc.setHost (RellmServers.rellmServerUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
@@ -162,7 +162,7 @@ revokeAIModelProvider accountsPanelModel maybeAccountServer request =
 
 
 {-| Generates (or edits, given reference `mediaIds`) an image via one of the calling account's
-`AvailableAIModel`s -- see `GenerateMediaRequest`'s own doc (`ai_model_providers.proto`). Used by
+`AIModel`s -- see `GenerateMediaRequest`'s own doc (`ai_providers.proto`). Used by
 `Shared.MediaGeneratorPanel`.
 -}
 generateMedia :
@@ -183,14 +183,14 @@ generateMedia accountsPanelModel maybeAccountServer request =
 
 
 {-| Whether `available` can edit an existing image (given one or more reference images plus a
-prompt) -- `AvailableAIModel.capabilities` is the server's own hardcoded catalog for the model (see
-`AIModelCapability`'s own doc, `ai_model_providers.proto`), not anything this frontend infers from
+prompt) -- `AIModel.capabilities` is the server's own hardcoded catalog for the model (see
+`AIModelCapability`'s own doc, `ai_providers.proto`), not anything this frontend infers from
 `modelName` itself. `Shared.MediaGeneratorPanel`'s own model chooser filters down to only these once
 the user has picked any reference media (`GenerateMedia`'s own `AI_MODEL_CAPABILITY_IMAGE_EDITING`
 requirement in that case) -- see `hasImageGenerationCapability`'s own doc for the no-reference-media
 case.
 -}
-hasImageEditingCapability : AvailableAIModel -> Bool
+hasImageEditingCapability : AIModel -> Bool
 hasImageEditingCapability available =
     List.member AIMODELCAPABILITYIMAGEEDITING available.capabilities
 
@@ -201,7 +201,7 @@ support this, not editing. `Shared.MediaGeneratorPanel`'s model chooser uses thi
 `hasImageEditingCapability` whenever its own `media` selection is empty, and reactively re-filters
 (re-picking `selectedModel` if it's no longer valid) the moment that changes either way.
 -}
-hasImageGenerationCapability : AvailableAIModel -> Bool
+hasImageGenerationCapability : AIModel -> Bool
 hasImageGenerationCapability available =
     List.member AIMODELCAPABILITYIMAGEGENERATION available.capabilities
 
@@ -212,6 +212,6 @@ reference media) or plain generation (given none). Used to gate whether a Post/E
 broader than either capability alone, since a generation-only model is still perfectly usable there
 as long as the user doesn't go on to pick any reference media in the panel it opens.
 -}
-hasAnyImageCapability : AvailableAIModel -> Bool
+hasAnyImageCapability : AIModel -> Bool
 hasAnyImageCapability available =
     hasImageEditingCapability available || hasImageGenerationCapability available

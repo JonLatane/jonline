@@ -96,11 +96,11 @@ export function useReplyAncestors(subjectPost?: FederatedPost) {
     }
   }, [ancestorPosts]);
 
-  const ancestorEventInstanceId = useAppSelector(state => state.events.postInstances[federateId(ancestorPosts[0]?.id ?? '', server)]);
-  const ancestorEventId = useAppSelector(state => ancestorEventInstanceId ? state.events.instanceEvents[ancestorEventInstanceId] : undefined);
+  const ancestorOccasionId = useAppSelector(state => state.events.postInstances[federateId(ancestorPosts[0]?.id ?? '', server)]);
+  const ancestorEventId = useAppSelector(state => ancestorOccasionId ? state.events.instanceEvents[ancestorOccasionId] : undefined);
   const ancestorEvent = useAppSelector(state => ancestorEventId ? selectEventById(state.events, ancestorEventId) : undefined);
   useEffect(() => {
-    if (ancestorPosts[0]?.context === PostContext.EVENT_INSTANCE && !ancestorEvent) {
+    if (ancestorPosts[0]?.context === PostContext.OCCASION && !ancestorEvent) {
       dispatch(loadEvent({ ...accountOrServer, postId: ancestorPosts[0]!.id }));
     }
   }, [ancestorPosts[0]?.context, ancestorEvent?.id]);
@@ -195,11 +195,11 @@ export function PostDetailsScreen() {
   //   }
   // }, [ancestorPosts]);
 
-  // const ancestorEventInstanceId = useAppSelector(state => state.events.postInstances[federateId(ancestorPosts[0]?.id ?? '', server)]);
-  // const ancestorEventId = useAppSelector(state => ancestorEventInstanceId ? state.events.instanceEvents[ancestorEventInstanceId] : undefined);
+  // const ancestorOccasionId = useAppSelector(state => state.events.postInstances[federateId(ancestorPosts[0]?.id ?? '', server)]);
+  // const ancestorEventId = useAppSelector(state => ancestorOccasionId ? state.events.instanceEvents[ancestorOccasionId] : undefined);
   // const ancestorEvent = useAppSelector(state => ancestorEventId ? selectEventById(state.events, ancestorEventId) : undefined);
   // useEffect(() => {
-  //   if (ancestorPosts[0]?.context === PostContext.EVENT_INSTANCE && !ancestorEvent) {
+  //   if (ancestorPosts[0]?.context === PostContext.OCCASION && !ancestorEvent) {
   //     dispatch(loadEvent({ ...accountOrServer, postId: ancestorPosts[0]!.id }));
   //   }
   // }, [ancestorPosts[0]?.context, ancestorEvent?.id]);

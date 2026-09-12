@@ -1,8 +1,8 @@
-//! Cross-checks that `get_events`' embedded `EventInstance.attendances`/`current_user_attendance`
-//! (see `attach_event_instance_attendances` in `rpcs::events::get_events`) see *exactly* the same
+//! Cross-checks that `get_events`' embedded `Occasion.attendances`/`current_user_attendance`
+//! (see `attach_occasion_attendances` in `rpcs::events::get_events`) see *exactly* the same
 //! data the dedicated `get_event_attendances` RPC does, for the same viewer: the same set of
 //! visible attendances, the same per-row `private_note` redaction, and the same
-//! resolved-or-hidden `location`. `attach_event_instance_attendances`'s doc comment explains why
+//! resolved-or-hidden `location`. `attach_occasion_attendances`'s doc comment explains why
 //! these rules are duplicated by hand instead of shared code - this suite is what keeps that
 //! duplication honest as either RPC changes.
 
@@ -22,7 +22,7 @@ struct Scenario {
     owner: crate::models::User,
     pending_user: crate::models::User,
     approved_user: crate::models::User,
-    instance: crate::models::EventInstance,
+    instance: crate::models::Occasion,
     approved_attendance: crate::models::EventAttendance,
     pending_attendance: crate::models::EventAttendance,
     anonymous_attendance: crate::models::EventAttendance,
@@ -55,11 +55,11 @@ fn build_scenario(conn: &mut crate::db_connection::PgPooledConnection, suffix: &
             ..Default::default()
         },
     );
-    let (instance, _instance_post) = create_event_instance(
+    let (instance, _instance_post) = create_occasion(
         conn,
         &event,
         Some(&owner),
-        EventInstanceOpts {
+        OccasionOpts {
             visibility: Visibility::GlobalPublic,
             location: Some(location_json("123 Main St")),
             ..Default::default()
@@ -119,7 +119,7 @@ fn via_get_events(
     user: &Option<&crate::models::User>,
     instance_id: i64,
     anonymous_attendee_auth_token: Option<String>,
-) -> EventInstance {
+) -> Occasion {
     let response = get_events(
         GetEventsRequest {
             post_id: Some(instance_id.to_proto_id()),
@@ -149,7 +149,7 @@ fn via_get_event_attendances(
 ) -> EventAttendances {
     get_event_attendances(
         GetEventAttendancesRequest {
-            event_instance_id: instance_id.to_proto_id(),
+            occasion_id: instance_id.to_proto_id(),
             anonymous_attendee_auth_token,
         },
         user,
@@ -169,14 +169,14 @@ fn notes_by_id(attendances: &EventAttendances) -> BTreeMap<String, String> {
 /// Fetches the same instance/viewer combination through both RPCs and asserts they agree on
 /// exactly which attendances are visible, each row's `private_note` redaction, and whether the
 /// location is revealed - both via `EventAttendances.hidden_location` (present on both RPCs'
-/// response shape) and via `EventInstance.location` itself (`get_events`-only, since a plain
+/// response shape) and via `Occasion.location` itself (`get_events`-only, since a plain
 /// `get_event_attendances` caller may never have fetched the instance at all).
 fn assert_parity(
     conn: &mut crate::db_connection::PgPooledConnection,
     user: &Option<&crate::models::User>,
     instance_id: i64,
     anonymous_attendee_auth_token: Option<String>,
-) -> (EventInstance, EventAttendances) {
+) -> (Occasion, EventAttendances) {
     let events_instance = via_get_events(
         conn,
         user,
@@ -204,7 +204,7 @@ fn assert_parity(
     assert_eq!(
         events_instance.location.is_some(),
         attendances.hidden_location.is_some(),
-        "EventInstance.location should be revealed exactly when EventAttendances.hidden_location is"
+        "Occasion.location should be revealed exactly when EventAttendances.hidden_location is"
     );
 
     (events_instance, attendances)

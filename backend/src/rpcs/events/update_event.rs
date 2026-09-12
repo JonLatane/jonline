@@ -5,14 +5,14 @@ use crate::marshaling::*;
 use crate::models;
 use crate::protos::*;
 
-use super::create_new_event_instances::create_new_event_instances_impl;
-use super::delete_removed_event_instances::delete_removed_event_instances_impl;
+use super::create_new_occasions::create_new_occasions_impl;
+use super::delete_removed_occasions::delete_removed_occasions_impl;
 use super::event_permissions::{event_post_id, validate_event_edit_permission};
 use super::update_event_details::update_event_details_impl;
-use super::update_event_instances::update_event_instances_impl;
+use super::update_occasions::update_occasions_impl;
 
-/// Updates an Event, driving the same logic `UpdateEventDetails`, `CreateNewEventInstances`,
-/// `UpdateEventInstances`, and `DeleteRemovedEventInstances` each expose standalone -- but calling
+/// Updates an Event, driving the same logic `UpdateEventDetails`, `CreateNewOccasions`,
+/// `UpdateOccasions`, and `DeleteRemovedOccasions` each expose standalone -- but calling
 /// their shared `_impl` functions directly (rather than those RPCs themselves) so this runs as one
 /// coherent operation instead of four independent ones:
 /// - Create must run before Delete, so a request that both drops an old instance and adds a new
@@ -33,9 +33,9 @@ pub fn update_event(
     let event = models::get_event(event_id, &Some(current_user), conn)?;
     validate_event_edit_permission(&event, current_user, conn)?;
     let resolved_instances =
-        create_new_event_instances_impl(&event, &request.instances, current_user, conn)?;
-    update_event_instances_impl(&event, &request.instances, conn)?;
-    delete_removed_event_instances_impl(&event, &resolved_instances, current_user, conn)?;
+        create_new_occasions_impl(&event, &request.instances, current_user, conn)?;
+    update_occasions_impl(&event, &request.instances, conn)?;
+    delete_removed_occasions_impl(&event, &resolved_instances, current_user, conn)?;
 
     Ok(super::get_events(
         GetEventsRequest {

@@ -29,15 +29,15 @@ enum SyncDestination_Configuration {
 
 /// A user-owned destination to sync (cross-post) content out to. Mirrors [`SyncSource`](#rellm-SyncSource),
 /// but for pushing content out rather than pulling content in. Originally Event-specific
-/// (as `EventSyncDestination`), now shared by both [`EventInstance`](#rellm-EventInstance)s (see `events.proto`'s
-/// [`SyncEventInstanceRequest`](#rellm-SyncEventInstanceRequest)) and [`Post`](#rellm-Post)s (see `posts.proto`'s [`SyncPostRequest`](#rellm-SyncPostRequest)).
+/// (as `EventSyncDestination`), now shared by both [`Occasion`](#rellm-Occasion)s (see `events.proto`'s
+/// [`SyncOccasionRequest`](#rellm-SyncOccasionRequest)) and [`Post`](#rellm-Post)s (see `posts.proto`'s [`SyncPostRequest`](#rellm-SyncPostRequest)).
 class SyncDestination extends $pb.GeneratedMessage {
   factory SyncDestination({
     $core.String? id,
     $15.Author? owner,
     $12.Timestamp? createdAt,
     $12.Timestamp? updatedAt,
-    $fixnum.Int64? syncedEventInstanceCount,
+    $fixnum.Int64? syncedOccasionCount,
     $fixnum.Int64? syncedPostCount,
     FacebookPage? facebookPage,
     InstagramAccount? instagramAccount,
@@ -59,8 +59,8 @@ class SyncDestination extends $pb.GeneratedMessage {
     if (updatedAt != null) {
       $result.updatedAt = updatedAt;
     }
-    if (syncedEventInstanceCount != null) {
-      $result.syncedEventInstanceCount = syncedEventInstanceCount;
+    if (syncedOccasionCount != null) {
+      $result.syncedOccasionCount = syncedOccasionCount;
     }
     if (syncedPostCount != null) {
       $result.syncedPostCount = syncedPostCount;
@@ -104,7 +104,7 @@ class SyncDestination extends $pb.GeneratedMessage {
     ..aOM<$15.Author>(2, _omitFieldNames ? '' : 'owner', subBuilder: $15.Author.create)
     ..aOM<$12.Timestamp>(4, _omitFieldNames ? '' : 'createdAt', subBuilder: $12.Timestamp.create)
     ..aOM<$12.Timestamp>(5, _omitFieldNames ? '' : 'updatedAt', subBuilder: $12.Timestamp.create)
-    ..a<$fixnum.Int64>(6, _omitFieldNames ? '' : 'syncedEventInstanceCount', $pb.PbFieldType.OU6, defaultOrMaker: $fixnum.Int64.ZERO)
+    ..a<$fixnum.Int64>(6, _omitFieldNames ? '' : 'syncedOccasionCount', $pb.PbFieldType.OU6, defaultOrMaker: $fixnum.Int64.ZERO)
     ..a<$fixnum.Int64>(7, _omitFieldNames ? '' : 'syncedPostCount', $pb.PbFieldType.OU6, defaultOrMaker: $fixnum.Int64.ZERO)
     ..aOM<FacebookPage>(9, _omitFieldNames ? '' : 'facebookPage', subBuilder: FacebookPage.create)
     ..aOM<InstagramAccount>(10, _omitFieldNames ? '' : 'instagramAccount', subBuilder: InstagramAccount.create)
@@ -185,21 +185,21 @@ class SyncDestination extends $pb.GeneratedMessage {
   @$pb.TagNumber(5)
   $12.Timestamp ensureUpdatedAt() => $_ensure(3);
 
-  /// The number of EventInstances synced to this destination so far. Computed with a `COUNT` at
-  /// request time (unlike [`SyncSource`](#rellm-SyncSource)'s `event_count`/`event_instance_count`, which are
+  /// The number of Occasions synced to this destination so far. Computed with a `COUNT` at
+  /// request time (unlike [`SyncSource`](#rellm-SyncSource)'s `event_count`/`occasion_count`, which are
   /// recomputed-and-stored on each sync) since destinations are pushed to on demand, not synced
   /// in bulk on an interval.
   @$pb.TagNumber(6)
-  $fixnum.Int64 get syncedEventInstanceCount => $_getI64(4);
+  $fixnum.Int64 get syncedOccasionCount => $_getI64(4);
   @$pb.TagNumber(6)
-  set syncedEventInstanceCount($fixnum.Int64 v) { $_setInt64(4, v); }
+  set syncedOccasionCount($fixnum.Int64 v) { $_setInt64(4, v); }
   @$pb.TagNumber(6)
-  $core.bool hasSyncedEventInstanceCount() => $_has(4);
+  $core.bool hasSyncedOccasionCount() => $_has(4);
   @$pb.TagNumber(6)
-  void clearSyncedEventInstanceCount() => clearField(6);
+  void clearSyncedOccasionCount() => clearField(6);
 
   /// The number of Posts synced to this destination so far. Computed the same way as
-  /// `synced_event_instance_count`, just against Posts instead of EventInstances.
+  /// `synced_occasion_count`, just against Posts instead of Occasions.
   @$pb.TagNumber(7)
   $fixnum.Int64 get syncedPostCount => $_getI64(5);
   @$pb.TagNumber(7)
@@ -209,7 +209,7 @@ class SyncDestination extends $pb.GeneratedMessage {
   @$pb.TagNumber(7)
   void clearSyncedPostCount() => clearField(7);
 
-  /// A connected Facebook Page to post EventInstances/Posts to.
+  /// A connected Facebook Page to post Occasions/Posts to.
   @$pb.TagNumber(9)
   FacebookPage get facebookPage => $_getN(6);
   @$pb.TagNumber(9)
@@ -221,7 +221,7 @@ class SyncDestination extends $pb.GeneratedMessage {
   @$pb.TagNumber(9)
   FacebookPage ensureFacebookPage() => $_ensure(6);
 
-  /// A connected Instagram Business/Creator account to post EventInstances/Posts to.
+  /// A connected Instagram Business/Creator account to post Occasions/Posts to.
   @$pb.TagNumber(10)
   InstagramAccount get instagramAccount => $_getN(7);
   @$pb.TagNumber(10)
@@ -233,7 +233,7 @@ class SyncDestination extends $pb.GeneratedMessage {
   @$pb.TagNumber(10)
   InstagramAccount ensureInstagramAccount() => $_ensure(7);
 
-  /// A connected Mastodon account to post EventInstances/Posts to.
+  /// A connected Mastodon account to post Occasions/Posts to.
   @$pb.TagNumber(11)
   MastodonAccount get mastodonAccount => $_getN(8);
   @$pb.TagNumber(11)
@@ -245,7 +245,7 @@ class SyncDestination extends $pb.GeneratedMessage {
   @$pb.TagNumber(11)
   MastodonAccount ensureMastodonAccount() => $_ensure(8);
 
-  /// A connected Bluesky account to post EventInstances/Posts to.
+  /// A connected Bluesky account to post Occasions/Posts to.
   @$pb.TagNumber(12)
   BlueskyAccount get blueskyAccount => $_getN(9);
   @$pb.TagNumber(12)
@@ -257,7 +257,7 @@ class SyncDestination extends $pb.GeneratedMessage {
   @$pb.TagNumber(12)
   BlueskyAccount ensureBlueskyAccount() => $_ensure(9);
 
-  /// A connected X (Twitter) account to post EventInstances/Posts to.
+  /// A connected X (Twitter) account to post Occasions/Posts to.
   @$pb.TagNumber(13)
   XTwitterAccount get xTwitterAccount => $_getN(10);
   @$pb.TagNumber(13)
@@ -269,7 +269,7 @@ class SyncDestination extends $pb.GeneratedMessage {
   @$pb.TagNumber(13)
   XTwitterAccount ensureXTwitterAccount() => $_ensure(10);
 
-  /// A connected Threads account to post EventInstances/Posts to.
+  /// A connected Threads account to post Occasions/Posts to.
   @$pb.TagNumber(14)
   ThreadsAccount get threadsAccount => $_getN(11);
   @$pb.TagNumber(14)
@@ -407,7 +407,7 @@ class DeleteSyncDestinationRequest extends $pb.GeneratedMessage {
 ///  `docs/facebook_and_x_twitter_federation.md`'s "It posts to the Page's feed, not a real Facebook
 ///  Event" for that separate, independent 2018-era lockdown.)
 ///
-///  Media limitation: a synced Post/EventInstance's attached video and images are mutually
+///  Media limitation: a synced Post/Occasion's attached video and images are mutually
 ///  exclusive on Facebook - if both are present, the video is posted and any images are silently
 ///  dropped (Facebook Pages can't attach both to a single feed post).
 class FacebookPage extends $pb.GeneratedMessage {
@@ -503,7 +503,7 @@ class FacebookPage extends $pb.GeneratedMessage {
 ///  as [`FacebookPage`](#rellm-FacebookPage) - the server exchanges the token for the Page's access token, then looks up
 ///  that Page's linked Instagram Business account.
 ///
-///  Media limitation: only the *first* attached image/video on a synced Post/EventInstance is
+///  Media limitation: only the *first* attached image/video on a synced Post/Occasion is
 ///  posted - no carousel/multi-image support yet. A post with no media at all is rejected
 ///  (`instagram_requires_media`) - Instagram's Graph API has no text-only post type.
 class InstagramAccount extends $pb.GeneratedMessage {
@@ -610,7 +610,7 @@ class InstagramAccount extends $pb.GeneratedMessage {
 ///  popup - Mastodon instances are user-chosen arbitrary domains, so there's no single app to
 ///  register ahead of time the way Facebook/Instagram have one.
 ///
-///  Media: up to 4 attached images/videos on a synced Post/EventInstance are downloaded and
+///  Media: up to 4 attached images/videos on a synced Post/Occasion are downloaded and
 ///  re-uploaded as real Mastodon media attachments (any mix of image/video types); a failed
 ///  individual upload is skipped rather than failing the whole post.
 class MastodonAccount extends $pb.GeneratedMessage {
@@ -699,7 +699,7 @@ class MastodonAccount extends $pb.GeneratedMessage {
 ///  (generated at Settings > App Passwords - not the account's main password), rather than an
 ///  OAuth popup.
 ///
-///  Media limitation: only attached *images* on a synced Post/EventInstance are posted (up to 4,
+///  Media limitation: only attached *images* on a synced Post/Occasion are posted (up to 4,
 ///  downloaded and re-uploaded as Bluesky blobs) - video is silently dropped entirely. Bluesky
 ///  video embeds need a separate, more complex upload-and-processing flow not yet built.
 class BlueskyAccount extends $pb.GeneratedMessage {
@@ -794,7 +794,7 @@ class BlueskyAccount extends $pb.GeneratedMessage {
 ///  Meta App), an admin registers this app once and every user on the server connects their own X
 ///  account through it - no per-user API keys needed.
 ///
-///  Media limitation: up to 4 attached *images* on a synced Post/EventInstance are downloaded and
+///  Media limitation: up to 4 attached *images* on a synced Post/Occasion are downloaded and
 ///  re-uploaded via X's media upload endpoint. Video is not yet supported - X's video upload
 ///  requires a chunked upload-and-processing flow (mirroring Bluesky's own documented video gap)
 ///  not yet built; a video attachment is silently skipped.
@@ -910,7 +910,7 @@ class XTwitterAccount extends $pb.GeneratedMessage {
 ///  `grant_type=th_refresh_token` - not yet implemented; a connected destination will need
 ///  reconnecting after ~60 days until a refresh job exists).
 ///
-///  Media limitation: only the *first* attached image/video on a synced Post/EventInstance is
+///  Media limitation: only the *first* attached image/video on a synced Post/Occasion is
 ///  posted - no carousel/multi-image support yet. Unlike [`InstagramAccount`](#rellm-InstagramAccount), a text-only post
 ///  (no media at all) is valid.
 class ThreadsAccount extends $pb.GeneratedMessage {
@@ -995,8 +995,8 @@ class ThreadsAccount extends $pb.GeneratedMessage {
   void clearAuthorizationCode() => clearField(3);
 }
 
-/// The status of a single piece of content's (an [`EventInstance`](#rellm-EventInstance) or [`Post`](#rellm-Post)) sync (cross-post) to
-/// one [`SyncDestination`](#rellm-SyncDestination). Shared/generic so both `EventInstance.sync_destinations` and
+/// The status of a single piece of content's (an [`Occasion`](#rellm-Occasion) or [`Post`](#rellm-Post)) sync (cross-post) to
+/// one [`SyncDestination`](#rellm-SyncDestination). Shared/generic so both `Occasion.sync_destinations` and
 /// `Post.sync_destinations` can reuse it.
 class SyncDestinationStatus extends $pb.GeneratedMessage {
   factory SyncDestinationStatus({
@@ -1113,7 +1113,7 @@ class SyncSource extends $pb.GeneratedMessage {
     $12.Timestamp? updatedAt,
     $12.Timestamp? lastSyncedAt,
     $fixnum.Int64? eventCount,
-    $fixnum.Int64? eventInstanceCount,
+    $fixnum.Int64? occasionCount,
     $core.String? icsSubscriptionUrl,
     $fixnum.Int64? postCount,
     $core.String? rssSubscriptionUrl,
@@ -1141,8 +1141,8 @@ class SyncSource extends $pb.GeneratedMessage {
     if (eventCount != null) {
       $result.eventCount = eventCount;
     }
-    if (eventInstanceCount != null) {
-      $result.eventInstanceCount = eventInstanceCount;
+    if (occasionCount != null) {
+      $result.occasionCount = occasionCount;
     }
     if (icsSubscriptionUrl != null) {
       $result.icsSubscriptionUrl = icsSubscriptionUrl;
@@ -1177,7 +1177,7 @@ class SyncSource extends $pb.GeneratedMessage {
     ..aOM<$12.Timestamp>(5, _omitFieldNames ? '' : 'updatedAt', subBuilder: $12.Timestamp.create)
     ..aOM<$12.Timestamp>(6, _omitFieldNames ? '' : 'lastSyncedAt', subBuilder: $12.Timestamp.create)
     ..a<$fixnum.Int64>(7, _omitFieldNames ? '' : 'eventCount', $pb.PbFieldType.OU6, defaultOrMaker: $fixnum.Int64.ZERO)
-    ..a<$fixnum.Int64>(8, _omitFieldNames ? '' : 'eventInstanceCount', $pb.PbFieldType.OU6, defaultOrMaker: $fixnum.Int64.ZERO)
+    ..a<$fixnum.Int64>(8, _omitFieldNames ? '' : 'occasionCount', $pb.PbFieldType.OU6, defaultOrMaker: $fixnum.Int64.ZERO)
     ..aOS(9, _omitFieldNames ? '' : 'icsSubscriptionUrl')
     ..a<$fixnum.Int64>(10, _omitFieldNames ? '' : 'postCount', $pb.PbFieldType.OU6, defaultOrMaker: $fixnum.Int64.ZERO)
     ..aOS(11, _omitFieldNames ? '' : 'rssSubscriptionUrl')
@@ -1291,15 +1291,15 @@ class SyncSource extends $pb.GeneratedMessage {
   /// The number of event instances total associated with this SyncSource. Recomputed
   /// on each sync.
   @$pb.TagNumber(8)
-  $fixnum.Int64 get eventInstanceCount => $_getI64(7);
+  $fixnum.Int64 get occasionCount => $_getI64(7);
   @$pb.TagNumber(8)
-  set eventInstanceCount($fixnum.Int64 v) { $_setInt64(7, v); }
+  set occasionCount($fixnum.Int64 v) { $_setInt64(7, v); }
   @$pb.TagNumber(8)
-  $core.bool hasEventInstanceCount() => $_has(7);
+  $core.bool hasOccasionCount() => $_has(7);
   @$pb.TagNumber(8)
-  void clearEventInstanceCount() => clearField(8);
+  void clearOccasionCount() => clearField(8);
 
-  /// The iCal subscription URL for the calendar sync. Creates/updates Events/EventInstances.
+  /// The iCal subscription URL for the calendar sync. Creates/updates Events/Occasions.
   @$pb.TagNumber(9)
   $core.String get icsSubscriptionUrl => $_getSZ(8);
   @$pb.TagNumber(9)
@@ -1310,8 +1310,8 @@ class SyncSource extends $pb.GeneratedMessage {
   void clearIcsSubscriptionUrl() => clearField(9);
 
   /// The number of posts total associated with this SyncSource. Populated for an RSS/Atom
-  /// source (recomputed on each sync, like `event_count`/`event_instance_count` are for an
-  /// ICS source); always 0 for an ICS source, which syncs Events/EventInstances instead.
+  /// source (recomputed on each sync, like `event_count`/`occasion_count` are for an
+  /// ICS source); always 0 for an ICS source, which syncs Events/Occasions instead.
   @$pb.TagNumber(10)
   $fixnum.Int64 get postCount => $_getI64(9);
   @$pb.TagNumber(10)

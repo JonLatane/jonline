@@ -12,7 +12,7 @@ module Shared.MediaGeneratorPanel exposing
 `Pages.Event.PostId_`), the same "one shared instance, `Nothing`/`""` means closed" convention
 `Shared.MarkdownPanel`/`Shared.MyMediaPanel` already use. Shaped like `MarkdownPanel` (a prompt to
 edit, Save/Cancel below), but with three inputs instead of one: which of the caller's
-`AvailableAIModel`s to call (`modelChooserView`), the editable prompt (`promptView`), and a set of
+`AIModel`s to call (`modelChooserView`), the editable prompt (`promptView`), and a set of
 reference media (`mediaSectionView`) -- reusing `Shared.MyMediaPanel`'s own `MultiSelect` chooser
 for the last, the same picker Post/Event editing already uses for their own `media`, rather than
 building a second one.
@@ -38,7 +38,7 @@ refetch and pick up the newly attached `Media` -- see those modules' own `Genera
 
 -}
 
-import Components.AIModelProviders as AIModelProviders
+import Components.AIProviders as AIProviders
 import Components.Events as Events
 import Components.MediaRenderer as MediaRenderer
 import Components.Posts as Posts
@@ -46,7 +46,7 @@ import Grpc
 import Html exposing (Html, button, div, option, select, span, text, textarea)
 import Html.Attributes exposing (class, disabled, placeholder, selected, type_, value)
 import Html.Events exposing (onClick, onInput)
-import Proto.Rellm exposing (AvailableAIModel, Event, EventInstance, Media, MediaReference, Post, defaultGenerateMediaRequest)
+import Proto.Rellm exposing (AIModel, Event, Occasion, Media, MediaReference, Post, defaultGenerateMediaRequest)
 import Proto.Rellm.GenerateMediaRequest.Target as GenerateMediaRequestTarget
 import Shared.AccountsPanel as AccountsPanel
 import Shared.AccountsPanel.RellmAccounts as RellmAccounts exposing (RellmAccount)
@@ -69,7 +69,7 @@ type alias Model =
     -- same reasoning `Shared.Breadcrumbs.basePath` is threaded for its own preview panel.
     , basePath : String
     , target : Maybe Target
-    , selectedModel : Maybe AvailableAIModel
+    , selectedModel : Maybe AIModel
     , prompt : String
     , media : List MediaReference
 
@@ -86,15 +86,15 @@ type alias Model =
 
 {-| What this panel is generating media *for* -- `Nothing` (see `Model.target`) just generates and
 stores the image in the current user's own Media (as `MyMediaPanel` then shows it), without
-attaching it to anything. `TargetEvent` carries both the `Event` and the specific `EventInstance`
+attaching it to anything. `TargetEvent` carries both the `Event` and the specific `Occasion`
 being viewed (`Pages.Event.PostId_`'s own `instance`) purely so `targetCardView` can render the
 same `Components.Events.eventCard` that page already shows elsewhere -- generation itself only ever
-targets the Event's own Post (see `ai_model_providers.proto`'s own doc on `GenerateMediaRequest.target`),
+targets the Event's own Post (see `ai_providers.proto`'s own doc on `GenerateMediaRequest.target`),
 never a particular instance.
 -}
 type Target
     = TargetPost Post
-    | TargetEvent Event EventInstance
+    | TargetEvent Event Occasion
 
 
 type SubmitStatus
@@ -147,7 +147,7 @@ isOpen model =
 
 {-| Needs `AccountsPanel.Model` for the same reasons `Shared.MarkdownPanel.update` does --
 resolving `targetHost` to the signed-in `Account` to submit as (`resolve`), and (here) also to look
-up `Account.availableAiModels` for `ModelSelected`/`Open`'s own default pick. The extra
+up `Account.aiModels` for `ModelSelected`/`Open`'s own default pick. The extra
 `Maybe MyMediaPanel.Msg` mirrors `Shared.CreateNewPanel.update`'s own `EditMediaClicked` request --
 this panel can't dispatch `MyMediaPanel.Open` directly without importing `Shared`, which would
 cycle, so `Shared.update` does it on this panel's behalf (see module doc).
@@ -178,11 +178,11 @@ update accountsPanelModel msg model =
 
         ModelSelected key ->
             let
-                availableModels : List AvailableAIModel
+                availableModels : List AIModel
                 availableModels =
                     availableModelsFor accountsPanelModel model.targetHost model.media
             in
-            ( { model | selectedModel = List.filter (\m -> availableAIModelKey m == key) availableModels |> List.head }
+            ( { model | selectedModel = List.filter (\m -> aiModelKey m == key) availableModels |> List.head }
             , Cmd.none
             , ( Nothing, Nothing )
             )
@@ -243,8 +243,8 @@ update accountsPanelModel msg model =
 
 {-| The target's own current media, prepopulating `model.media` (still freely editable via
 `EditMediaClicked` afterward) -- for an Event, the union of its own Post's media and the specific
-`EventInstance`'s own Post's media, Event-first, mirroring
-`backend/src/rpcs/events/sync_event_instance.rs`'s `combine_media` (an instance-level Post rarely
+`Occasion`'s own Post's media, Event-first, mirroring
+`backend/src/rpcs/events/sync_occasion.rs`'s `combine_media` (an instance-level Post rarely
 carries its own media override, so without the Event's own this would often come up empty).
 -}
 defaultMedia : Maybe Target -> List MediaReference
@@ -289,8 +289,8 @@ defaultPrompt target =
             ""
 
 
-{-| The `AvailableAIModel`s actually selectable right now -- editing-capable
-(`AIModelProviders.hasImageEditingCapability`) once `media` is non-empty (`GenerateMedia` requires
+{-| The `AIModel`s actually selectable right now -- editing-capable
+(`AIProviders.hasImageEditingCapability`) once `media` is non-empty (`GenerateMedia` requires
 `AI_MODEL_CAPABILITY_IMAGE_EDITING` whenever there are reference images to edit with), otherwise
 generation-capable (`hasImageGenerationCapability`) -- which also includes every editing-capable
 model, since this session's catalog (`ai_model_catalog.rs`) always pairs the two, but is checked
@@ -298,36 +298,36 @@ explicitly rather than assumed. Reused by `Open`/`ModelSelected`/`MediaSaved`/`v
 chooser, `selectedModel`, and what `GenerateClicked` can actually submit all stay in lockstep as
 `media` changes -- see `reselectIfInvalid`, the other half of that.
 -}
-availableModelsFor : AccountsPanel.Model -> String -> List MediaReference -> List AvailableAIModel
+availableModelsFor : AccountsPanel.Model -> String -> List MediaReference -> List AIModel
 availableModelsFor accountsPanelModel host media =
     let
         account : Maybe RellmAccount
         account =
             RellmAccounts.enabledRellmAccountForServer accountsPanelModel.accounts host
 
-        capable : AvailableAIModel -> Bool
+        capable : AIModel -> Bool
         capable =
             if List.isEmpty media then
-                AIModelProviders.hasImageGenerationCapability
+                AIProviders.hasImageGenerationCapability
 
             else
-                AIModelProviders.hasImageEditingCapability
+                AIProviders.hasImageEditingCapability
     in
-    account |> Maybe.map .availableAiModels |> Maybe.withDefault [] |> List.filter capable
+    account |> Maybe.map .aiModels |> Maybe.withDefault [] |> List.filter capable
 
 
-{-| Keeps `current` if it's still in `validModels` (compared by `availableAIModelKey`, not `==`,
+{-| Keeps `current` if it's still in `validModels` (compared by `aiModelKey`, not `==`,
 same reasoning `modelChooserView`'s own `selected` check has), otherwise falls back to
 `List.head validModels` (`Nothing` if that's empty too -- see `view`'s own "no valid model" message
 for that case). Used by `MediaSaved` -- picking/clearing reference media can flip which capability
 `availableModelsFor` requires, and a `selectedModel` that was valid before that flip might not be
 anymore.
 -}
-reselectIfInvalid : List AvailableAIModel -> Maybe AvailableAIModel -> Maybe AvailableAIModel
+reselectIfInvalid : List AIModel -> Maybe AIModel -> Maybe AIModel
 reselectIfInvalid validModels current =
     case current of
         Just selected ->
-            if List.any (\m -> availableAIModelKey m == availableAIModelKey selected) validModels then
+            if List.any (\m -> aiModelKey m == aiModelKey selected) validModels then
                 current
 
             else
@@ -337,23 +337,23 @@ reselectIfInvalid validModels current =
             List.head validModels
 
 
-{-| A composite key identifying one `AvailableAIModel` in the model chooser `<select>` -- neither
+{-| A composite key identifying one `AIModel` in the model chooser `<select>` -- neither
 `modelName` nor `provider.id` alone is unique (the same model name can appear once per grant on
-different providers), but the pair always is. Mirrors `Components.Pages.UserProfilePage.aiModelProviderGrantKey`'s
+different providers), but the pair always is. Mirrors `Components.Pages.UserProfilePage.aiProviderGrantKey`'s
 own reasoning for the same underlying data.
 -}
-availableAIModelKey : AvailableAIModel -> String
-availableAIModelKey model =
+aiModelKey : AIModel -> String
+aiModelKey model =
     (model.provider |> Maybe.map .id |> Maybe.withDefault "") ++ "|" ++ model.modelName
 
 
 {-| "modelName (N tokens left) — via username", trimmed to whichever parts actually apply -- the
 tokens suffix only for a granted (not owned) model, the "via" suffix only when the provider's owner
-isn't the viewer themselves. See `AvailableAIModel`'s own doc (`ai_model_providers.proto`) for why a
-`grant`/no-`grant` `AvailableAIModel` means "granted"/"owned outright".
+isn't the viewer themselves. See `AIModel`'s own doc (`ai_providers.proto`) for why a
+`grant`/no-`grant` `AIModel` means "granted"/"owned outright".
 -}
-availableAIModelLabel : Maybe String -> AvailableAIModel -> String
-availableAIModelLabel viewerUsername available =
+aiModelLabel : Maybe String -> AIModel -> String
+aiModelLabel viewerUsername available =
     let
         ownerUsername : Maybe String
         ownerUsername =
@@ -404,7 +404,7 @@ view time accountsPanelModel model =
         maybeAccount =
             RellmAccounts.enabledRellmAccountForServer accountsPanelModel.accounts model.targetHost
 
-        availableModels : List AvailableAIModel
+        availableModels : List AIModel
         availableModels =
             availableModelsFor accountsPanelModel model.targetHost model.media
 
@@ -510,7 +510,7 @@ targetCardView time accountsPanelModel basePath host target =
             Events.eventCard time basePath accountsPanelModel.mainFrontendHost host maybeServer maybeAccount (\_ -> NoOp) MediaRenderer.ExtraSmall False Nothing False False False Nothing (\_ -> False) (\_ -> Nothing) (\_ -> NoOp) (\_ _ -> NoOp) event instance
 
 
-modelChooserView : Maybe String -> List AvailableAIModel -> Model -> Html Msg
+modelChooserView : Maybe String -> List AIModel -> Model -> Html Msg
 modelChooserView viewerUsername availableModels model =
     div [ class "media-generator-panel-field" ]
         [ span [ class "media-generator-panel-label" ] [ text "Model" ]
@@ -531,10 +531,10 @@ modelChooserView viewerUsername availableModels model =
                     |> List.map
                         (\available ->
                             option
-                                [ value (availableAIModelKey available)
-                                , selected (Just (availableAIModelKey available) == Maybe.map availableAIModelKey model.selectedModel)
+                                [ value (aiModelKey available)
+                                , selected (Just (aiModelKey available) == Maybe.map aiModelKey model.selectedModel)
                                 ]
-                                [ text (availableAIModelLabel viewerUsername available) ]
+                                [ text (aiModelLabel viewerUsername available) ]
                         )
                 )
         ]
@@ -610,7 +610,7 @@ generateTask :
     AccountsPanel.Model
     -> Resolved
     -> String
-    -> AvailableAIModel
+    -> AIModel
     -> String
     -> List MediaReference
     -> Maybe Target
@@ -624,12 +624,12 @@ generateTask accountsPanelModel resolved host selectedModel prompt media target 
                     Just (GenerateMediaRequestTarget.PostId post.id)
 
                 Just (TargetEvent _ instance) ->
-                    Just (GenerateMediaRequestTarget.EventInstanceId (instance.post |> Maybe.map .id |> Maybe.withDefault ""))
+                    Just (GenerateMediaRequestTarget.OccasionId (instance.post |> Maybe.map .id |> Maybe.withDefault ""))
 
                 Nothing ->
                     Nothing
     in
-    AIModelProviders.generateMedia
+    AIProviders.generateMedia
         accountsPanelModel
         ( Just resolved.account.userId, host )
         { defaultGenerateMediaRequest

@@ -58,7 +58,7 @@ pub async fn delete_user(
         )?;
     }
 
-    // Posts/Replies -- via DeletePost. Event/EventInstance-context posts are handled above by
+    // Posts/Replies -- via DeletePost. Event/Occasion-context posts are handled above by
     // DeleteEvent instead.
     let post_ids = posts::table
         .filter(posts::user_id.eq(Some(target_user_id)))
@@ -107,8 +107,8 @@ pub async fn delete_user(
 
     // SyncSources/SyncDestinations -- any events/instances/posts they'd synced were already
     // covered above, so these are just detached rather than cascading further deletes.
-    // `delete_sync_destination` cleans up join rows in both `event_instance_sync_destinations` and
-    // `post_sync_destinations` for the destination, so a synced Post/EventInstance of *this*
+    // `delete_sync_destination` cleans up join rows in both `occasion_sync_destinations` and
+    // `post_sync_destinations` for the destination, so a synced Post/Occasion of *this*
     // user's, still pointing at *another* user's destination, is also cleaned up correctly here
     // without any extra Post-specific logic.
     let sync_sources = models::get_sync_sources_for_user(target_user_id, conn)?;

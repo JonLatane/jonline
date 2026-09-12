@@ -33,7 +33,7 @@ fieldNumbersPostContext n_ =
         EVENT ->
             2
 
-        EVENTINSTANCE ->
+        OCCASION ->
             3
 
         FEDERATEDREPLY ->
@@ -67,7 +67,7 @@ encodePostContext value =
             EVENT ->
                 2
 
-            EVENTINSTANCE ->
+            OCCASION ->
                 3
 
             FEDERATEDREPLY ->
@@ -96,7 +96,7 @@ decodePostContext =
                         EVENT
 
                     3 ->
-                        EVENTINSTANCE
+                        OCCASION
 
                     10 ->
                         FEDERATEDREPLY
@@ -113,6 +113,6 @@ type PostContext
     = POST
     | REPLY
     | EVENT
-    | EVENTINSTANCE
+    | OCCASION
     | FEDERATEDREPLY
     | PostContextUnrecognized_ Int

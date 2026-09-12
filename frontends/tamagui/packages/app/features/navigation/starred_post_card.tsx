@@ -5,7 +5,7 @@ import { createSelector } from "@reduxjs/toolkit";
 import { ChevronDown, ChevronUp, MessagesSquare } from "@tamagui/lucide-icons";
 import { Selector, useAppDispatch, useAppSelector, useCurrentServer, useFederatedAccountOrServer, useFederatedDispatch } from "app/hooks";
 import useIsVisibleHorizontal from "app/hooks/use_is_visible";
-import { FederatedEvent, FederatedPost, IdentifiedEventInstance, PinnedServer, RootState, accountID, federatedId, getCachedServerClient, getServerClient, loadEvent, loadPost, moveStarredPostDown, moveStarredPostUp, parseFederatedId, selectPostById, serverID, useServerTheme } from "app/store";
+import { FederatedEvent, FederatedPost, IdentifiedOccasion, PinnedServer, RootState, accountID, federatedId, getCachedServerClient, getServerClient, loadEvent, loadPost, moveStarredPostDown, moveStarredPostUp, parseFederatedId, selectPostById, serverID, useServerTheme } from "app/store";
 import React, { createRef, useEffect, useState } from "react";
 import EventCard from "../event/event_card";
 import { PostCard, scrollToCommentsBottom, scrollToCommentsTop } from "../post";
@@ -26,20 +26,20 @@ export type StarredPostCardProps = {
 
 const selectStarredPostEventData = (
   basePost: FederatedPost | undefined
-): Selector<{ eventInstanceId?: string; event?: FederatedEvent; }> =>
+): Selector<{ occasionId?: string; event?: FederatedEvent; }> =>
   createSelector(
     [(state: RootState) => {
       if (!basePost) return {};
 
       const postId = federatedId(basePost);
-      const eventInstanceId = basePost?.context === PostContext.EVENT_INSTANCE
+      const occasionId = basePost?.context === PostContext.OCCASION
         ? state.events.postInstances[postId]
         : undefined;
-      const event = eventInstanceId
-        ? state.events.entities[state.events.instanceEvents[eventInstanceId]!]
+      const event = occasionId
+        ? state.events.entities[state.events.instanceEvents[occasionId]!]
         : undefined
 
-      return { eventInstanceId, event };
+      return { occasionId, event };
     }],
     (data) => data
   );
@@ -84,26 +84,26 @@ export function useStarredPostDetails(postId: string, isVisible?: boolean) {
   }, [basePost?.id, accountID(accountOrServer?.account), serverHost, isServerReady, loadingServer, loadingPost,
     hasFailedToLoadPost, postId, isVisible]);
 
-  // const eventInstanceId = useAppSelector(state =>
-  //   basePost?.context === PostContext.EVENT_INSTANCE
+  // const occasionId = useAppSelector(state =>
+  //   basePost?.context === PostContext.OCCASION
   //     ? state.events.postInstances[postId]
   //     : undefined
   // );
   // const event = useAppSelector(state =>
-  //   eventInstanceId
-  //     ? state.events.entities[state.events.instanceEvents[eventInstanceId]!]
+  //   occasionId
+  //     ? state.events.entities[state.events.instanceEvents[occasionId]!]
   //     : undefined
   // );
 
-  const { eventInstanceId, event } = useAppSelector(selectStarredPostEventData(basePost));
+  const { occasionId, event } = useAppSelector(selectStarredPostEventData(basePost));
 
   const [loadingEvent, setLoadingEvent] = useState(false);
 
-  const serverEventInstanceId = eventInstanceId
-    ? parseFederatedId(eventInstanceId!).id
+  const serverOccasionId = occasionId
+    ? parseFederatedId(occasionId!).id
     : undefined;
-  // const { id: serverEventInstanceId } = parseFederatedId(eventInstanceId!);
-  const targetInstance: IdentifiedEventInstance | undefined = event?.instances?.find(i => i.id === serverEventInstanceId);
+  // const { id: serverOccasionId } = parseFederatedId(occasionId!);
+  const targetInstance: IdentifiedOccasion | undefined = event?.instances?.find(i => i.id === serverOccasionId);
   const eventWithSingleInstance: FederatedEvent | undefined = event && targetInstance
     ? {
       ...event,
@@ -112,15 +112,15 @@ export function useStarredPostDetails(postId: string, isVisible?: boolean) {
   const hasFailedToLoadEvent = useAppSelector(state => state.events.failedPostIds.includes(postId));
 
   const shouldLoadEvent =
-    isServerReady && basePost?.context === PostContext.EVENT_INSTANCE && !eventWithSingleInstance && !loadingEvent && !hasFailedToLoadEvent;
+    isServerReady && basePost?.context === PostContext.OCCASION && !eventWithSingleInstance && !loadingEvent && !hasFailedToLoadEvent;
   // if (postId) debugger;
   useEffect(() => {
-    // console.log('StarredPosts: loader', { shouldLoadEvent, postId, serverPostId, serverHost, isEvent: basePost?.context === PostContext.EVENT_INSTANCE, eventInstanceContext: PostContext.EVENT_INSTANCE, eventWithSingleInstance, loadingEvent, hasFailedToLoadEvent });
+    // console.log('StarredPosts: loader', { shouldLoadEvent, postId, serverPostId, serverHost, isEvent: basePost?.context === PostContext.OCCASION, occasionContext: PostContext.OCCASION, eventWithSingleInstance, loadingEvent, hasFailedToLoadEvent });
     // if (postId) debugger;
 
     if (shouldLoadEvent) {
       // console.log('StarredPosts: Fetching event by postId', postId);
-      // console.log('StarredPosts: Fetching event by postId', { shouldLoadEvent, postId, serverPostId, serverHost, isEvent: basePost?.context === PostContext.EVENT_INSTANCE, eventWithSingleInstance, loadingEvent, hasFailedToLoadEvent });
+      // console.log('StarredPosts: Fetching event by postId', { shouldLoadEvent, postId, serverPostId, serverHost, isEvent: basePost?.context === PostContext.OCCASION, eventWithSingleInstance, loadingEvent, hasFailedToLoadEvent });
       setLoadingEvent(true);
       dispatch(loadEvent({ ...accountOrServer, postId: serverPostId! })).then(() => {
         setTimeout(() =>
@@ -132,11 +132,11 @@ export function useStarredPostDetails(postId: string, isVisible?: boolean) {
   }, [basePost?.id, shouldLoadEvent]);
   return {
     basePost,
-    eventInstanceId,
+    occasionId,
     event,
     serverPostId,
     serverHost,
-    serverEventInstanceId,
+    serverOccasionId,
     eventWithSingleInstance,
     isServerReady,
     loadingServer,
@@ -167,7 +167,7 @@ export function StarredPostCard({ postId, onOpen, fullSize, unsortable, unreadCo
 
   const {
     basePost,
-    eventInstanceId,
+    occasionId,
     serverPostId,
     serverHost,
     eventWithSingleInstance,
@@ -204,13 +204,13 @@ export function StarredPostCard({ postId, onOpen, fullSize, unsortable, unreadCo
     />;
   } else if (basePost) {
     renderedCardView = <YStack w='100%'>
-      {basePost.context === PostContext.EVENT_INSTANCE
+      {basePost.context === PostContext.OCCASION
         ? loadingEvent
           ? <XStack>
             <Spinner color={navAnchorColor} />
             <Paragraph ml='$2' size='$1' o={0.5} mb={-10}>Loading event data...</Paragraph>
           </XStack>
-          : <Paragraph size='$1' o={0.5} mb={-10}>Post is for an Event Instance.</Paragraph>
+          : <Paragraph size='$1' o={0.5} mb={-10}>Post is for an Occasion.</Paragraph>
         : undefined}
       <PostCard
         post={basePost}

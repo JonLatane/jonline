@@ -1,4 +1,4 @@
-import { Event, EventAttendances, EventInstance, EventListingType, GetEventAttendancesRequest, GetEventsRequest, GetEventsResponse, TimeFilter } from "@rellm/api";
+import { Event, EventAttendances, Occasion, EventListingType, GetEventAttendancesRequest, GetEventsRequest, GetEventsResponse, TimeFilter } from "@rellm/api";
 import {
   AsyncThunk,
   createAsyncThunk
@@ -6,22 +6,22 @@ import {
 import { AccountOrServer, getCredentialClient } from "..";
 import { HasIdFromServer } from "../federation";
 
-// `Event`/`EventInstance` no longer carry their own surrogate `id` -- each one's identity *is* its
+// `Event`/`Occasion` no longer carry their own surrogate `id` -- each one's identity *is* its
 // own `post.id`. The Redux store's federation machinery (`FederatedEntity<T>`/`federatedId`/etc.,
 // see `../federation.ts`) is generic over `T extends HasIdFromServer` (`{ id: string }`) and reads
-// `.id` directly at runtime, so every `Event`/`EventInstance` gets a synthetic top-level `id`
+// `.id` directly at runtime, so every `Event`/`Occasion` gets a synthetic top-level `id`
 // stamped on here, at the API boundary, copied from its own `post.id` -- once stamped, the rest of
-// the store (and any code reading a `FederatedEvent`/`FederatedEventInstance` out of it) can keep
+// the store (and any code reading a `FederatedEvent`/`FederatedOccasion` out of it) can keep
 // treating `.id` as a normal field, same as any other entity (User, Post, Group, etc.).
-export type IdentifiedEventInstance = EventInstance & HasIdFromServer;
-export type IdentifiedEvent = Omit<Event, "instances"> & HasIdFromServer & { instances: IdentifiedEventInstance[] };
+export type IdentifiedOccasion = Occasion & HasIdFromServer;
+export type IdentifiedEvent = Omit<Event, "instances"> & HasIdFromServer & { instances: IdentifiedOccasion[] };
 export type IdentifiedGetEventsResponse = Omit<GetEventsResponse, "events"> & { events: IdentifiedEvent[] };
 
-export function identifyEventInstance(instance: EventInstance): IdentifiedEventInstance {
+export function identifyOccasion(instance: Occasion): IdentifiedOccasion {
   return { ...instance, id: instance.post!.id };
 }
 export function identifyEvent(event: Event): IdentifiedEvent {
-  return { ...event, id: event.post!.id, instances: event.instances.map(identifyEventInstance) };
+  return { ...event, id: event.post!.id, instances: event.instances.map(identifyOccasion) };
 }
 export function identifyGetEventsResponse(response: GetEventsResponse): IdentifiedGetEventsResponse {
   return { ...response, events: response.events.map(identifyEvent) };
@@ -86,8 +86,8 @@ export const loadEvent: AsyncThunk<IdentifiedEvent, LoadEvent, any> = createAsyn
   "events/loadOne",
   async (request) => {
     const client = await getCredentialClient(request);
-    // `event_id`/`event_instance_id` were removed from `GetEventsRequest` -- `post_id` is a
-    // strict superset (looks up by the Event's own Post ID *or* any of its EventInstances' Post
+    // `event_id`/`occasion_id` were removed from `GetEventsRequest` -- `post_id` is a
+    // strict superset (looks up by the Event's own Post ID *or* any of its Occasions' Post
     // ID), so any of `id`/`postId`/`instanceId` (all historically post ids under the hood) works.
     const response = await client.getEvents(GetEventsRequest.create({
       postId: request.id ?? request.postId ?? request.instanceId
@@ -105,7 +105,7 @@ export const loadRsvpData: AsyncThunk<EventAttendances, LoadRsvpData, any> = cre
     const client = await getCredentialClient(request);
 
     const eventAttendancesResponse = await client.getEventAttendances({
-      eventInstanceId: request.eventInstanceId,
+      occasionId: request.occasionId,
       anonymousAttendeeAuthToken: request.anonymousAttendeeAuthToken
     }, client.credential);
 

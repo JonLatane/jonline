@@ -4,8 +4,8 @@
 use chrono::TimeZone;
 
 use crate::logic::{
-    build_event_instance_message, build_post_message, truncate_for_bluesky,
-    EventInstanceMessageInput, MediaAttachment, PostMessageInput,
+    build_occasion_message, build_post_message, truncate_for_bluesky,
+    OccasionMessageInput, MediaAttachment, PostMessageInput,
 };
 
 #[test]
@@ -60,7 +60,7 @@ fn build_post_message_includes_title_content_and_link() {
 }
 
 #[test]
-fn build_event_instance_message_includes_time_range_and_location() {
+fn build_occasion_message_includes_time_range_and_location() {
     let title = Some("Test Event".to_string());
     let content = Some("Come join us!".to_string());
     let link = None;
@@ -69,7 +69,7 @@ fn build_event_instance_message_includes_time_range_and_location() {
     let starts_at = chrono::Utc.with_ymd_and_hms(2099, 1, 1, 9, 0, 0).unwrap();
     let ends_at = chrono::Utc.with_ymd_and_hms(2099, 1, 1, 11, 0, 0).unwrap();
 
-    let message = build_event_instance_message(EventInstanceMessageInput {
+    let message = build_occasion_message(OccasionMessageInput {
         title: &title,
         content: &content,
         link: &link,

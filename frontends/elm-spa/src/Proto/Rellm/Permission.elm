@@ -126,7 +126,7 @@ fieldNumbersPermission n_ =
         READALLSYSTEMMESSAGES ->
             51
 
-        CREATEAIMODELPROVIDERS ->
+        CREATEAIPROVIDERS ->
             60
 
         SYNCEVENTSFROMICS ->
@@ -310,7 +310,7 @@ encodePermission value =
             READALLSYSTEMMESSAGES ->
                 51
 
-            CREATEAIMODELPROVIDERS ->
+            CREATEAIPROVIDERS ->
                 60
 
             SYNCEVENTSFROMICS ->
@@ -489,7 +489,7 @@ decodePermission =
                         READALLSYSTEMMESSAGES
 
                     60 ->
-                        CREATEAIMODELPROVIDERS
+                        CREATEAIPROVIDERS
 
                     700 ->
                         SYNCEVENTSFROMICS
@@ -594,7 +594,7 @@ type Permission
     | MODERATEMEDIA
     | READPERSONALMESSAGES
     | READALLSYSTEMMESSAGES
-    | CREATEAIMODELPROVIDERS
+    | CREATEAIPROVIDERS
     | SYNCEVENTSFROMICS
     | SYNCPOSTSFROMRSS
     | SYNCPOSTSFROMATOM

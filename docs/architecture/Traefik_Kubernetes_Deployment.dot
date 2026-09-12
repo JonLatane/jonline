@@ -460,7 +460,7 @@ digraph G {
   vapid_push_service -> browser [constraint = false; style = tapered; penwidth = 6;];
 
   // SyncSource (an iCal subscription) is pulled *in*; SyncDestination (e.g. a Facebook
-  // Page -- used to push out both Posts and EventInstances) is pushed *out* -- see
+  // Page -- used to push out both Posts and Occasions) is pushed *out* -- see
   // backend/src/protos/rellm.rs's SyncSource/SyncDestination doc comments. Arrow direction
   // follows the data, same as VAPID push above.
   ical_feeds -> pull_events [constraint = false; style = dotted;];

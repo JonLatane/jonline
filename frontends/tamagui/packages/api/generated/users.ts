@@ -6,7 +6,7 @@
 
 /* eslint-disable */
 import { BinaryReader, BinaryWriter } from "@bufbuild/protobuf/wire";
-import { AvailableAIModel } from "./ai_model_providers";
+import { AIModel } from "./ai_providers";
 import { FederatedAccount } from "./federation";
 import { Timestamp } from "./google/protobuf/timestamp";
 import { MediaReference } from "./media";
@@ -201,7 +201,7 @@ export interface User {
     | number
     | undefined;
   /** The number of event instances this user has created (across all of their events). */
-  eventInstanceCount?:
+  occasionCount?:
     | number
     | undefined;
   /**
@@ -253,13 +253,13 @@ export interface User {
    */
   syncSources: SyncSource[];
   /**
-   * Every [`AIModelProvider`](#rellm-AIModelProvider) model the target user may currently call - their own
+   * Every [`AIProvider`](#rellm-AIProvider) model the target user may currently call - their own
    * providers' models, plus any models granted to them on other users' providers (see
-   * [`AvailableAIModel`](#rellm-AvailableAIModel)). Gated and populated the same way as `sync_sources`
+   * [`AIModel`](#rellm-AIModel)). Gated and populated the same way as `sync_sources`
    * (target user themselves, or an Admin, across any [`GetUsers`](#grpc-api-GetUsers) listing type, plus
    * [`Login`](#grpc-api-Login)/[`CreateAccount`](#grpc-api-CreateAccount)/[`GetCurrentUser`](#grpc-api-GetCurrentUser)).
    */
-  availableAiModels: AvailableAIModel[];
+  aiModels: AIModel[];
   /** The time the user was created. */
   createdAt:
     | string
@@ -426,7 +426,7 @@ function createBaseUser(): User {
     postCount: undefined,
     responseCount: undefined,
     eventCount: undefined,
-    eventInstanceCount: undefined,
+    occasionCount: undefined,
     currentUserFollow: undefined,
     targetCurrentUserFollow: undefined,
     currentGroupMembership: undefined,
@@ -434,7 +434,7 @@ function createBaseUser(): User {
     federatedProfiles: [],
     syncDestinations: [],
     syncSources: [],
-    availableAiModels: [],
+    aiModels: [],
     createdAt: undefined,
     updatedAt: undefined,
   };
@@ -498,8 +498,8 @@ export const User: MessageFns<User> = {
     if (message.eventCount !== undefined) {
       writer.uint32(296).int32(message.eventCount);
     }
-    if (message.eventInstanceCount !== undefined) {
-      writer.uint32(304).int32(message.eventInstanceCount);
+    if (message.occasionCount !== undefined) {
+      writer.uint32(304).int32(message.occasionCount);
     }
     if (message.currentUserFollow !== undefined) {
       Follow.encode(message.currentUserFollow, writer.uint32(402).fork()).join();
@@ -522,8 +522,8 @@ export const User: MessageFns<User> = {
     for (const v of message.syncSources) {
       SyncSource.encode(v!, writer.uint32(666).fork()).join();
     }
-    for (const v of message.availableAiModels) {
-      AvailableAIModel.encode(v!, writer.uint32(674).fork()).join();
+    for (const v of message.aiModels) {
+      AIModel.encode(v!, writer.uint32(674).fork()).join();
     }
     if (message.createdAt !== undefined) {
       Timestamp.encode(toTimestamp(message.createdAt), writer.uint32(802).fork()).join();
@@ -700,7 +700,7 @@ export const User: MessageFns<User> = {
             break;
           }
 
-          message.eventInstanceCount = reader.int32();
+          message.occasionCount = reader.int32();
           continue;
         }
         case 50: {
@@ -764,7 +764,7 @@ export const User: MessageFns<User> = {
             break;
           }
 
-          message.availableAiModels.push(AvailableAIModel.decode(reader, reader.uint32()));
+          message.aiModels.push(AIModel.decode(reader, reader.uint32()));
           continue;
         }
         case 100: {
@@ -816,7 +816,7 @@ export const User: MessageFns<User> = {
       postCount: isSet(object.postCount) ? globalThis.Number(object.postCount) : undefined,
       responseCount: isSet(object.responseCount) ? globalThis.Number(object.responseCount) : undefined,
       eventCount: isSet(object.eventCount) ? globalThis.Number(object.eventCount) : undefined,
-      eventInstanceCount: isSet(object.eventInstanceCount) ? globalThis.Number(object.eventInstanceCount) : undefined,
+      occasionCount: isSet(object.occasionCount) ? globalThis.Number(object.occasionCount) : undefined,
       currentUserFollow: isSet(object.currentUserFollow) ? Follow.fromJSON(object.currentUserFollow) : undefined,
       targetCurrentUserFollow: isSet(object.targetCurrentUserFollow)
         ? Follow.fromJSON(object.targetCurrentUserFollow)
@@ -834,9 +834,7 @@ export const User: MessageFns<User> = {
       syncSources: globalThis.Array.isArray(object?.syncSources)
         ? object.syncSources.map((e: any) => SyncSource.fromJSON(e))
         : [],
-      availableAiModels: globalThis.Array.isArray(object?.availableAiModels)
-        ? object.availableAiModels.map((e: any) => AvailableAIModel.fromJSON(e))
-        : [],
+      aiModels: globalThis.Array.isArray(object?.aiModels) ? object.aiModels.map((e: any) => AIModel.fromJSON(e)) : [],
       createdAt: isSet(object.createdAt) ? globalThis.String(object.createdAt) : undefined,
       updatedAt: isSet(object.updatedAt) ? globalThis.String(object.updatedAt) : undefined,
     };
@@ -898,8 +896,8 @@ export const User: MessageFns<User> = {
     if (message.eventCount !== undefined) {
       obj.eventCount = Math.round(message.eventCount);
     }
-    if (message.eventInstanceCount !== undefined) {
-      obj.eventInstanceCount = Math.round(message.eventInstanceCount);
+    if (message.occasionCount !== undefined) {
+      obj.occasionCount = Math.round(message.occasionCount);
     }
     if (message.currentUserFollow !== undefined) {
       obj.currentUserFollow = Follow.toJSON(message.currentUserFollow);
@@ -922,8 +920,8 @@ export const User: MessageFns<User> = {
     if (message.syncSources?.length) {
       obj.syncSources = message.syncSources.map((e) => SyncSource.toJSON(e));
     }
-    if (message.availableAiModels?.length) {
-      obj.availableAiModels = message.availableAiModels.map((e) => AvailableAIModel.toJSON(e));
+    if (message.aiModels?.length) {
+      obj.aiModels = message.aiModels.map((e) => AIModel.toJSON(e));
     }
     if (message.createdAt !== undefined) {
       obj.createdAt = message.createdAt;
@@ -963,7 +961,7 @@ export const User: MessageFns<User> = {
     message.postCount = object.postCount ?? undefined;
     message.responseCount = object.responseCount ?? undefined;
     message.eventCount = object.eventCount ?? undefined;
-    message.eventInstanceCount = object.eventInstanceCount ?? undefined;
+    message.occasionCount = object.occasionCount ?? undefined;
     message.currentUserFollow = (object.currentUserFollow !== undefined && object.currentUserFollow !== null)
       ? Follow.fromPartial(object.currentUserFollow)
       : undefined;
@@ -979,7 +977,7 @@ export const User: MessageFns<User> = {
     message.federatedProfiles = object.federatedProfiles?.map((e) => FederatedAccount.fromPartial(e)) || [];
     message.syncDestinations = object.syncDestinations?.map((e) => SyncDestination.fromPartial(e)) || [];
     message.syncSources = object.syncSources?.map((e) => SyncSource.fromPartial(e)) || [];
-    message.availableAiModels = object.availableAiModels?.map((e) => AvailableAIModel.fromPartial(e)) || [];
+    message.aiModels = object.aiModels?.map((e) => AIModel.fromPartial(e)) || [];
     message.createdAt = object.createdAt ?? undefined;
     message.updatedAt = object.updatedAt ?? undefined;
     return message;

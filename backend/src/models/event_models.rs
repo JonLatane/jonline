@@ -4,7 +4,7 @@ use diesel::*;
 
 use super::SyncDestination;
 use crate::schema::{
-    event_attendances, event_instance_sync_destinations, event_instances, events, sync_sources,
+    event_attendances, occasion_sync_destinations, occasions, events, sync_sources,
 };
 
 #[derive(Debug, Queryable, Identifiable, AsChangeset, Clone)]
@@ -26,7 +26,7 @@ pub struct NewEvent {
 #[derive(Debug, Queryable, Identifiable, Associations, AsChangeset, Clone)]
 #[diesel(belongs_to(Event))]
 #[diesel(primary_key(post_id))]
-pub struct EventInstance {
+pub struct Occasion {
     pub event_id: i64,
     pub post_id: i64,
     pub info: serde_json::Value,
@@ -44,45 +44,45 @@ pub struct EventInstance {
     /// An explicit IANA timezone (e.g. "America/New_York"), set by hand (`CreateNewPanel`/
     /// `EventPage`'s timezone selector) or from an ICS Sync Source's own `DTSTART`'s `TZID` --
     /// preferred over `logic::resolve_timezone`'s Nominatim-geocoded guess wherever both could
-    /// apply (see `sync_event_instance`).
+    /// apply (see `sync_occasion`).
     pub timezone: Option<String>,
 }
 
-/// Explicit column list for `event_instances`, excluding:
+/// Explicit column list for `occasions`, excluding:
 /// - `search_text`, a denormalized tsvector used only for full-text search filtering/indexing --
-///   see `backend/migrations/2026-07-30-170000_add_search_text_to_event_instances` -- mirroring
+///   see `backend/migrations/2026-07-30-170000_add_search_text_to_occasions` -- mirroring
 ///   why `POST_COLUMNS` (`post_models.rs`) excludes `posts.search_text`.
 /// - `user_id`, denormalized from the instance's own Post's author purely so a composite GIN
 ///   index can cover author-scoped search in one scan (see that same migration) -- never read
-///   back into application code, and `EventInstance` derives `AsChangeset`, so a field here would
+///   back into application code, and `Occasion` derives `AsChangeset`, so a field here would
 ///   let a stray `.set(&existing_instance)` stomp the trigger-maintained value with stale data.
-pub const EVENT_INSTANCE_COLUMNS: (
-    event_instances::event_id,
-    event_instances::post_id,
-    event_instances::info,
-    event_instances::starts_at,
-    event_instances::ends_at,
-    event_instances::location,
-    event_instances::created_at,
-    event_instances::updated_at,
-    event_instances::sync_missing_since,
-    event_instances::timezone,
+pub const OCCASION_COLUMNS: (
+    occasions::event_id,
+    occasions::post_id,
+    occasions::info,
+    occasions::starts_at,
+    occasions::ends_at,
+    occasions::location,
+    occasions::created_at,
+    occasions::updated_at,
+    occasions::sync_missing_since,
+    occasions::timezone,
 ) = (
-    event_instances::event_id,
-    event_instances::post_id,
-    event_instances::info,
-    event_instances::starts_at,
-    event_instances::ends_at,
-    event_instances::location,
-    event_instances::created_at,
-    event_instances::updated_at,
-    event_instances::sync_missing_since,
-    event_instances::timezone,
+    occasions::event_id,
+    occasions::post_id,
+    occasions::info,
+    occasions::starts_at,
+    occasions::ends_at,
+    occasions::location,
+    occasions::created_at,
+    occasions::updated_at,
+    occasions::sync_missing_since,
+    occasions::timezone,
 );
 
 #[derive(Debug, Insertable)]
-#[diesel(table_name = event_instances)]
-pub struct NewEventInstance {
+#[diesel(table_name = occasions)]
+pub struct NewOccasion {
     pub event_id: i64,
     pub post_id: i64,
     pub info: serde_json::Value,
@@ -102,7 +102,7 @@ pub struct SyncSource {
     pub created_at: SystemTime,
     pub updated_at: Option<SystemTime>,
     pub event_count: i64,
-    pub event_instance_count: i64,
+    pub occasion_count: i64,
     pub post_count: i64,
 }
 
@@ -114,16 +114,16 @@ pub struct NewSyncSource {
     pub configuration: serde_json::Value,
 }
 
-/// A single EventInstance's sync status against a single SyncDestination (see
+/// A single Occasion's sync status against a single SyncDestination (see
 /// `models::SyncDestination` in `sync_models.rs`). Composite-keyed (no surrogate `id`), so it's
 /// `Identifiable` via both foreign keys rather than one.
 #[derive(Debug, Queryable, Identifiable, Associations, AsChangeset, Clone)]
-#[diesel(table_name = event_instance_sync_destinations)]
-#[diesel(primary_key(event_instance_id, sync_destination_id))]
-#[diesel(belongs_to(EventInstance))]
+#[diesel(table_name = occasion_sync_destinations)]
+#[diesel(primary_key(occasion_id, sync_destination_id))]
+#[diesel(belongs_to(Occasion))]
 #[diesel(belongs_to(SyncDestination))]
-pub struct EventInstanceSyncDestination {
-    pub event_instance_id: i64,
+pub struct OccasionSyncDestination {
+    pub occasion_id: i64,
     pub sync_destination_id: i64,
     pub destination_instance_id: Option<String>,
     pub destination_url: Option<String>,
@@ -132,9 +132,9 @@ pub struct EventInstanceSyncDestination {
 }
 
 #[derive(Debug, Insertable, AsChangeset)]
-#[diesel(table_name = event_instance_sync_destinations)]
-pub struct NewEventInstanceSyncDestination {
-    pub event_instance_id: i64,
+#[diesel(table_name = occasion_sync_destinations)]
+pub struct NewOccasionSyncDestination {
+    pub occasion_id: i64,
     pub sync_destination_id: i64,
     pub destination_instance_id: Option<String>,
     pub destination_url: Option<String>,
@@ -142,10 +142,10 @@ pub struct NewEventInstanceSyncDestination {
 }
 
 #[derive(Debug, Queryable, Identifiable, Associations, AsChangeset, Clone)]
-#[diesel(belongs_to(EventInstance))]
+#[diesel(belongs_to(Occasion))]
 pub struct EventAttendance {
     pub id: i64,
-    pub event_instance_id: i64,
+    pub occasion_id: i64,
     pub user_id: Option<i64>,
     pub anonymous_attendee: Option<serde_json::Value>,
     pub number_of_guests: i32,
@@ -161,7 +161,7 @@ pub struct EventAttendance {
 #[derive(Debug, Insertable)]
 #[diesel(table_name = event_attendances)]
 pub struct NewEventAttendance {
-    pub event_instance_id: i64,
+    pub occasion_id: i64,
     pub user_id: Option<i64>,
     pub anonymous_attendee: Option<serde_json::Value>,
     pub number_of_guests: i32,

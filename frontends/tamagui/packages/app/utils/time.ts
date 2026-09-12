@@ -1,14 +1,14 @@
-import { EventInstance } from "@rellm/api";
+import { Occasion } from "@rellm/api";
 import moment from "moment";
 
-export function isNotPastInstance(i: EventInstance) {
+export function isNotPastInstance(i: Occasion) {
   return moment(i.endsAt!).isAfter(moment())
 }
-export function isPastInstance(i: EventInstance) {
+export function isPastInstance(i: Occasion) {
   return !isNotPastInstance(i);
 }
 
-export function instanceTimeSort(a: EventInstance, b: EventInstance) {
+export function instanceTimeSort(a: Occasion, b: Occasion) {
   const startSort = timeSort(a.startsAt!, b.startsAt!);
   if (startSort !== 0) return startSort;
   return timeSort(a.endsAt!, b.endsAt!);

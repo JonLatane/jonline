@@ -14,8 +14,8 @@ export const protobufPackage = "rellm";
 /**
  * A user-owned destination to sync (cross-post) content out to. Mirrors [`SyncSource`](#rellm-SyncSource),
  * but for pushing content out rather than pulling content in. Originally Event-specific
- * (as `EventSyncDestination`), now shared by both [`EventInstance`](#rellm-EventInstance)s (see `events.proto`'s
- * [`SyncEventInstanceRequest`](#rellm-SyncEventInstanceRequest)) and [`Post`](#rellm-Post)s (see `posts.proto`'s [`SyncPostRequest`](#rellm-SyncPostRequest)).
+ * (as `EventSyncDestination`), now shared by both [`Occasion`](#rellm-Occasion)s (see `events.proto`'s
+ * [`SyncOccasionRequest`](#rellm-SyncOccasionRequest)) and [`Post`](#rellm-Post)s (see `posts.proto`'s [`SyncPostRequest`](#rellm-SyncPostRequest)).
  */
 export interface SyncDestination {
   /** Unique ID for the destination. */
@@ -33,42 +33,42 @@ export interface SyncDestination {
     | string
     | undefined;
   /**
-   * The number of EventInstances synced to this destination so far. Computed with a `COUNT` at
-   * request time (unlike [`SyncSource`](#rellm-SyncSource)'s `event_count`/`event_instance_count`, which are
+   * The number of Occasions synced to this destination so far. Computed with a `COUNT` at
+   * request time (unlike [`SyncSource`](#rellm-SyncSource)'s `event_count`/`occasion_count`, which are
    * recomputed-and-stored on each sync) since destinations are pushed to on demand, not synced
    * in bulk on an interval.
    */
-  syncedEventInstanceCount?:
+  syncedOccasionCount?:
     | number
     | undefined;
   /**
    * The number of Posts synced to this destination so far. Computed the same way as
-   * `synced_event_instance_count`, just against Posts instead of EventInstances.
+   * `synced_occasion_count`, just against Posts instead of Occasions.
    */
   syncedPostCount?:
     | number
     | undefined;
-  /** A connected Facebook Page to post EventInstances/Posts to. */
+  /** A connected Facebook Page to post Occasions/Posts to. */
   facebookPage?:
     | FacebookPage
     | undefined;
-  /** A connected Instagram Business/Creator account to post EventInstances/Posts to. */
+  /** A connected Instagram Business/Creator account to post Occasions/Posts to. */
   instagramAccount?:
     | InstagramAccount
     | undefined;
-  /** A connected Mastodon account to post EventInstances/Posts to. */
+  /** A connected Mastodon account to post Occasions/Posts to. */
   mastodonAccount?:
     | MastodonAccount
     | undefined;
-  /** A connected Bluesky account to post EventInstances/Posts to. */
+  /** A connected Bluesky account to post Occasions/Posts to. */
   blueskyAccount?:
     | BlueskyAccount
     | undefined;
-  /** A connected X (Twitter) account to post EventInstances/Posts to. */
+  /** A connected X (Twitter) account to post Occasions/Posts to. */
   xTwitterAccount?:
     | XTwitterAccount
     | undefined;
-  /** A connected Threads account to post EventInstances/Posts to. */
+  /** A connected Threads account to post Occasions/Posts to. */
   threadsAccount?: ThreadsAccount | undefined;
 }
 
@@ -99,7 +99,7 @@ export interface DeleteSyncDestinationRequest {
  * `docs/facebook_and_x_twitter_federation.md`'s "It posts to the Page's feed, not a real Facebook
  * Event" for that separate, independent 2018-era lockdown.)
  *
- * Media limitation: a synced Post/EventInstance's attached video and images are mutually
+ * Media limitation: a synced Post/Occasion's attached video and images are mutually
  * exclusive on Facebook - if both are present, the video is posted and any images are silently
  * dropped (Facebook Pages can't attach both to a single feed post).
  */
@@ -127,7 +127,7 @@ export interface FacebookPage {
  * as [`FacebookPage`](#rellm-FacebookPage) - the server exchanges the token for the Page's access token, then looks up
  * that Page's linked Instagram Business account.
  *
- * Media limitation: only the *first* attached image/video on a synced Post/EventInstance is
+ * Media limitation: only the *first* attached image/video on a synced Post/Occasion is
  * posted - no carousel/multi-image support yet. A post with no media at all is rejected
  * (`instagram_requires_media`) - Instagram's Graph API has no text-only post type.
  */
@@ -153,7 +153,7 @@ export interface InstagramAccount {
  * popup - Mastodon instances are user-chosen arbitrary domains, so there's no single app to
  * register ahead of time the way Facebook/Instagram have one.
  *
- * Media: up to 4 attached images/videos on a synced Post/EventInstance are downloaded and
+ * Media: up to 4 attached images/videos on a synced Post/Occasion are downloaded and
  * re-uploaded as real Mastodon media attachments (any mix of image/video types); a failed
  * individual upload is skipped rather than failing the whole post.
  */
@@ -174,7 +174,7 @@ export interface MastodonAccount {
  * (generated at Settings > App Passwords - not the account's main password), rather than an
  * OAuth popup.
  *
- * Media limitation: only attached *images* on a synced Post/EventInstance are posted (up to 4,
+ * Media limitation: only attached *images* on a synced Post/Occasion are posted (up to 4,
  * downloaded and re-uploaded as Bluesky blobs) - video is silently dropped entirely. Bluesky
  * video embeds need a separate, more complex upload-and-processing flow not yet built.
  */
@@ -203,7 +203,7 @@ export interface BlueskyAccount {
  * Meta App), an admin registers this app once and every user on the server connects their own X
  * account through it - no per-user API keys needed.
  *
- * Media limitation: up to 4 attached *images* on a synced Post/EventInstance are downloaded and
+ * Media limitation: up to 4 attached *images* on a synced Post/Occasion are downloaded and
  * re-uploaded via X's media upload endpoint. Video is not yet supported - X's video upload
  * requires a chunked upload-and-processing flow (mirroring Bluesky's own documented video gap)
  * not yet built; a video attachment is silently skipped.
@@ -242,7 +242,7 @@ export interface XTwitterAccount {
  * `grant_type=th_refresh_token` - not yet implemented; a connected destination will need
  * reconnecting after ~60 days until a refresh job exists).
  *
- * Media limitation: only the *first* attached image/video on a synced Post/EventInstance is
+ * Media limitation: only the *first* attached image/video on a synced Post/Occasion is
  * posted - no carousel/multi-image support yet. Unlike [`InstagramAccount`](#rellm-InstagramAccount), a text-only post
  * (no media at all) is valid.
  */
@@ -259,8 +259,8 @@ export interface ThreadsAccount {
 }
 
 /**
- * The status of a single piece of content's (an [`EventInstance`](#rellm-EventInstance) or [`Post`](#rellm-Post)) sync (cross-post) to
- * one [`SyncDestination`](#rellm-SyncDestination). Shared/generic so both `EventInstance.sync_destinations` and
+ * The status of a single piece of content's (an [`Occasion`](#rellm-Occasion) or [`Post`](#rellm-Post)) sync (cross-post) to
+ * one [`SyncDestination`](#rellm-SyncDestination). Shared/generic so both `Occasion.sync_destinations` and
  * `Post.sync_destinations` can reuse it.
  */
 export interface SyncDestinationStatus {
@@ -309,14 +309,14 @@ export interface SyncSource {
    * The number of event instances total associated with this SyncSource. Recomputed
    * on each sync.
    */
-  eventInstanceCount: number;
+  occasionCount: number;
   /**
    * The number of posts total associated with this SyncSource. Populated for an RSS/Atom
-   * source (recomputed on each sync, like `event_count`/`event_instance_count` are for an
-   * ICS source); always 0 for an ICS source, which syncs Events/EventInstances instead.
+   * source (recomputed on each sync, like `event_count`/`occasion_count` are for an
+   * ICS source); always 0 for an ICS source, which syncs Events/Occasions instead.
    */
   postCount: number;
-  /** The iCal subscription URL for the calendar sync. Creates/updates Events/EventInstances. */
+  /** The iCal subscription URL for the calendar sync. Creates/updates Events/Occasions. */
   icsSubscriptionUrl?:
     | string
     | undefined;
@@ -348,7 +348,7 @@ function createBaseSyncDestination(): SyncDestination {
     owner: undefined,
     createdAt: undefined,
     updatedAt: undefined,
-    syncedEventInstanceCount: undefined,
+    syncedOccasionCount: undefined,
     syncedPostCount: undefined,
     facebookPage: undefined,
     instagramAccount: undefined,
@@ -373,8 +373,8 @@ export const SyncDestination: MessageFns<SyncDestination> = {
     if (message.updatedAt !== undefined) {
       Timestamp.encode(toTimestamp(message.updatedAt), writer.uint32(42).fork()).join();
     }
-    if (message.syncedEventInstanceCount !== undefined) {
-      writer.uint32(48).uint64(message.syncedEventInstanceCount);
+    if (message.syncedOccasionCount !== undefined) {
+      writer.uint32(48).uint64(message.syncedOccasionCount);
     }
     if (message.syncedPostCount !== undefined) {
       writer.uint32(56).uint64(message.syncedPostCount);
@@ -444,7 +444,7 @@ export const SyncDestination: MessageFns<SyncDestination> = {
             break;
           }
 
-          message.syncedEventInstanceCount = longToNumber(reader.uint64());
+          message.syncedOccasionCount = longToNumber(reader.uint64());
           continue;
         }
         case 7: {
@@ -518,8 +518,8 @@ export const SyncDestination: MessageFns<SyncDestination> = {
       owner: isSet(object.owner) ? Author.fromJSON(object.owner) : undefined,
       createdAt: isSet(object.createdAt) ? globalThis.String(object.createdAt) : undefined,
       updatedAt: isSet(object.updatedAt) ? globalThis.String(object.updatedAt) : undefined,
-      syncedEventInstanceCount: isSet(object.syncedEventInstanceCount)
-        ? globalThis.Number(object.syncedEventInstanceCount)
+      syncedOccasionCount: isSet(object.syncedOccasionCount)
+        ? globalThis.Number(object.syncedOccasionCount)
         : undefined,
       syncedPostCount: isSet(object.syncedPostCount) ? globalThis.Number(object.syncedPostCount) : undefined,
       facebookPage: isSet(object.facebookPage) ? FacebookPage.fromJSON(object.facebookPage) : undefined,
@@ -545,8 +545,8 @@ export const SyncDestination: MessageFns<SyncDestination> = {
     if (message.updatedAt !== undefined) {
       obj.updatedAt = message.updatedAt;
     }
-    if (message.syncedEventInstanceCount !== undefined) {
-      obj.syncedEventInstanceCount = Math.round(message.syncedEventInstanceCount);
+    if (message.syncedOccasionCount !== undefined) {
+      obj.syncedOccasionCount = Math.round(message.syncedOccasionCount);
     }
     if (message.syncedPostCount !== undefined) {
       obj.syncedPostCount = Math.round(message.syncedPostCount);
@@ -583,7 +583,7 @@ export const SyncDestination: MessageFns<SyncDestination> = {
       : undefined;
     message.createdAt = object.createdAt ?? undefined;
     message.updatedAt = object.updatedAt ?? undefined;
-    message.syncedEventInstanceCount = object.syncedEventInstanceCount ?? undefined;
+    message.syncedOccasionCount = object.syncedOccasionCount ?? undefined;
     message.syncedPostCount = object.syncedPostCount ?? undefined;
     message.facebookPage = (object.facebookPage !== undefined && object.facebookPage !== null)
       ? FacebookPage.fromPartial(object.facebookPage)
@@ -1456,7 +1456,7 @@ function createBaseSyncSource(): SyncSource {
     updatedAt: undefined,
     lastSyncedAt: undefined,
     eventCount: 0,
-    eventInstanceCount: 0,
+    occasionCount: 0,
     postCount: 0,
     icsSubscriptionUrl: undefined,
     rssSubscriptionUrl: undefined,
@@ -1487,8 +1487,8 @@ export const SyncSource: MessageFns<SyncSource> = {
     if (message.eventCount !== 0) {
       writer.uint32(56).uint64(message.eventCount);
     }
-    if (message.eventInstanceCount !== 0) {
-      writer.uint32(64).uint64(message.eventInstanceCount);
+    if (message.occasionCount !== 0) {
+      writer.uint32(64).uint64(message.occasionCount);
     }
     if (message.postCount !== 0) {
       writer.uint32(80).uint64(message.postCount);
@@ -1573,7 +1573,7 @@ export const SyncSource: MessageFns<SyncSource> = {
             break;
           }
 
-          message.eventInstanceCount = longToNumber(reader.uint64());
+          message.occasionCount = longToNumber(reader.uint64());
           continue;
         }
         case 10: {
@@ -1626,7 +1626,7 @@ export const SyncSource: MessageFns<SyncSource> = {
       updatedAt: isSet(object.updatedAt) ? globalThis.String(object.updatedAt) : undefined,
       lastSyncedAt: isSet(object.lastSyncedAt) ? globalThis.String(object.lastSyncedAt) : undefined,
       eventCount: isSet(object.eventCount) ? globalThis.Number(object.eventCount) : 0,
-      eventInstanceCount: isSet(object.eventInstanceCount) ? globalThis.Number(object.eventInstanceCount) : 0,
+      occasionCount: isSet(object.occasionCount) ? globalThis.Number(object.occasionCount) : 0,
       postCount: isSet(object.postCount) ? globalThis.Number(object.postCount) : 0,
       icsSubscriptionUrl: isSet(object.icsSubscriptionUrl) ? globalThis.String(object.icsSubscriptionUrl) : undefined,
       rssSubscriptionUrl: isSet(object.rssSubscriptionUrl) ? globalThis.String(object.rssSubscriptionUrl) : undefined,
@@ -1659,8 +1659,8 @@ export const SyncSource: MessageFns<SyncSource> = {
     if (message.eventCount !== 0) {
       obj.eventCount = Math.round(message.eventCount);
     }
-    if (message.eventInstanceCount !== 0) {
-      obj.eventInstanceCount = Math.round(message.eventInstanceCount);
+    if (message.occasionCount !== 0) {
+      obj.occasionCount = Math.round(message.occasionCount);
     }
     if (message.postCount !== 0) {
       obj.postCount = Math.round(message.postCount);
@@ -1691,7 +1691,7 @@ export const SyncSource: MessageFns<SyncSource> = {
     message.updatedAt = object.updatedAt ?? undefined;
     message.lastSyncedAt = object.lastSyncedAt ?? undefined;
     message.eventCount = object.eventCount ?? 0;
-    message.eventInstanceCount = object.eventInstanceCount ?? 0;
+    message.occasionCount = object.occasionCount ?? 0;
     message.postCount = object.postCount ?? 0;
     message.icsSubscriptionUrl = object.icsSubscriptionUrl ?? undefined;
     message.rssSubscriptionUrl = object.rssSubscriptionUrl ?? undefined;

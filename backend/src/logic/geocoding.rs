@@ -23,7 +23,7 @@ lazy_static! {
     static ref TZ_FINDER: DefaultFinder = DefaultFinder::new();
 }
 
-/// Resolves `address` (e.g. `EventInstance.location`'s `uniformly_formatted_address`) to an IANA
+/// Resolves `address` (e.g. `Occasion.location`'s `uniformly_formatted_address`) to an IANA
 /// timezone, or `None` if geocoding fails, returns no results, or the coordinates don't map to a
 /// known timezone.
 pub fn resolve_timezone(address: &str) -> Option<chrono_tz::Tz> {

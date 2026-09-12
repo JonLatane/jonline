@@ -1,5 +1,5 @@
 //! Connects a `SyncDestination` to a Bluesky (AT Protocol) account via an "App Password" (not the
-//! account's main password) and posts `EventInstance`s/`Post`s to it as a `app.bsky.feed.post`
+//! account's main password) and posts `Occasion`s/`Post`s to it as a `app.bsky.feed.post`
 //! record.
 //!
 //! Sessions are created fresh per post rather than stored/refreshed -- App Passwords don't expire,

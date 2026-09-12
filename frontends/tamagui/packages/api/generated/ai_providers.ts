@@ -2,7 +2,7 @@
 // versions:
 //   protoc-gen-ts_proto  v2.7.5
 //   protoc               v5.29.3
-// source: ai_model_providers.proto
+// source: ai_providers.proto
 
 /* eslint-disable */
 import { BinaryReader, BinaryWriter } from "@bufbuild/protobuf/wire";
@@ -12,7 +12,7 @@ import { Timestamp } from "./google/protobuf/timestamp";
 export const protobufPackage = "rellm";
 
 /**
- * What an [`AvailableAIModel`](#rellm-AvailableAIModel) can actually do - drives feature gating
+ * What an [`AIModel`](#rellm-AIModel) can actually do - drives feature gating
  * (e.g. [`GenerateMedia`](#grpc-api-GenerateMedia)'s "Generate Media…" buttons/panel only offer
  * models carrying `AI_MODEL_CAPABILITY_IMAGE_EDITING`/`AI_MODEL_CAPABILITY_IMAGE_GENERATION`)
  * without the gated feature needing its own hardcoded list of model names to check against. A
@@ -79,16 +79,16 @@ export function aIModelCapabilityToJSON(object: AIModelCapability): string {
 }
 
 /**
- * One specific model a user may call right now, and how - via an [`AIModelProvider`](#rellm-AIModelProvider)
- * they own outright (`grant` unset), or via an [`AIModelProviderGrant`](#rellm-AIModelProviderGrant) someone else
+ * One specific model a user may call right now, and how - via an [`AIProvider`](#rellm-AIProvider)
+ * they own outright (`grant` unset), or via an [`AIProviderGrant`](#rellm-AIProviderGrant) someone else
  * granted them (`grant` set). Only ever defined relative to a user - see
- * [`User.available_ai_models`](#rellm-User)/[`GetAIModelProvidersResponse.available_ai_models`](#rellm-GetAIModelProvidersResponse).
- * One `AvailableAIModel` exists per (provider, model) pair: an owner gets one row per model their
+ * [`User.ai_models`](#rellm-User)/[`GetAIProvidersResponse.ai_models`](#rellm-GetAIProvidersResponse).
+ * One `AIModel` exists per (provider, model) pair: an owner gets one row per model their
  * provider supports (see the server's own model catalog per provider type); a grantee gets one row
- * per model their grant actually covers - expanded from `AIModelProviderGrant.model_names`, or
+ * per model their grant actually covers - expanded from `AIProviderGrant.model_names`, or
  * every model the provider supports if that list is empty.
  */
-export interface AvailableAIModel {
+export interface AIModel {
   /** The exact model name to use when calling the provider (e.g. `"gemini-3.1-flash-image"`). */
   modelName: string;
   /**
@@ -106,32 +106,32 @@ export interface AvailableAIModel {
    * Unset when the current user owns `provider` outright (full, ungated access - no grant needed).
    */
   grant?:
-    | AIModelProviderGrant
+    | AIProviderGrant
     | undefined;
   /**
    * The provider this model belongs to. Its own `grants` list is only populated when the current
-   * user is `provider.owner` (or an Admin) - see [`GetAIModelProviders`](#grpc-api-GetAIModelProviders)'s own doc; a
+   * user is `provider.owner` (or an Admin) - see [`GetAIProviders`](#grpc-api-GetAIProviders)'s own doc; a
    * mere grantee never sees who else has been granted access to a provider they don't own.
    */
-  provider: AIModelProvider | undefined;
+  provider: AIProvider | undefined;
 }
 
 /**
  * Request to generate (or edit) an image via one of the current user's
- * [`AvailableAIModel`](#rellm-AvailableAIModel)s - see [`GenerateMedia`](#grpc-api-GenerateMedia). The resulting
+ * [`AIModel`](#rellm-AIModel)s - see [`GenerateMedia`](#grpc-api-GenerateMedia). The resulting
  * image is stored as a new [`Media`](#rellm-Media) (`generated = true`) owned by the current user, and - if
  * `target` is set - prepended as the *first* item in that Post's (or Event's own Post's) `media` list.
  */
 export interface GenerateMediaRequest {
   /**
-   * Which of the current user's `AvailableAIModel`s to generate with - `model.model_name` selects the actual
-   * model, `model.provider.id` identifies whose `AIModelProvider` (the current user's own, or one they've been
+   * Which of the current user's `AIModel`s to generate with - `model.model_name` selects the actual
+   * model, `model.provider.id` identifies whose `AIProvider` (the current user's own, or one they've been
    * granted access to) to call it through. Only `model_name`/`provider.id` are read server-side - any other field
    * sent here (e.g. a spoofed `grant`) is ignored in favor of the caller's real access, re-derived from
    * `provider.id` and the current user.
    */
   model:
-    | AvailableAIModel
+    | AIModel
     | undefined;
   /**
    * The user-editable prompt describing what to generate, e.g. "Please generate a square headline poster for the
@@ -154,29 +154,29 @@ export interface GenerateMediaRequest {
     | string
     | undefined;
   /**
-   * Attach to (and use the content of) this EventInstance's parent Event's own Post - named by
-   * EventInstance, not Event, since that's what a viewer is actually looking at (and what gives
+   * Attach to (and use the content of) this Occasion's parent Event's own Post - named by
+   * Occasion, not Event, since that's what a viewer is actually looking at (and what gives
    * the generated prompt its date/time/location context, the same way
-   * [`SyncEventInstance`](#grpc-api-SyncEventInstance) does). Caller must be the Event's own
+   * [`SyncOccasion`](#grpc-api-SyncOccasion) does). Caller must be the Event's own
    * Post's author, or hold `MODERATE_POSTS`/`MODERATE_EVENTS`, or be an Admin.
    */
-  eventInstanceId?: string | undefined;
+  occasionId?: string | undefined;
 }
 
 /**
- * An AIModelProvider is a user-owned connection to an external AI model API (e.g. a Gemini API
+ * An AIProvider is a user-owned connection to an external AI model API (e.g. a Gemini API
  * key), which its owner can grant other users of this server metered, budgeted access to. Mirrors
  * [`SyncDestination`](#rellm-SyncDestination)/[`SyncSource`](#rellm-SyncSource) (also user-owned integrations
  * with an [`Author`](#rellm-Author) `owner` and a `oneof` naming which external system is configured), but where
- * those push/pull content, an AIModelProvider is metered *access* to a third-party LLM API - shared out to
- * other users via [`AIModelProviderGrant`](#rellm-AIModelProviderGrant)s rather than posted-to/subscribed-from.
+ * those push/pull content, an AIProvider is metered *access* to a third-party LLM API - shared out to
+ * other users via [`AIProviderGrant`](#rellm-AIProviderGrant)s rather than posted-to/subscribed-from.
  *
- * Providers are managed via [`GetAIModelProviders`](#grpc-api-GetAIModelProviders),
- * [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider) (requires `CREATE_AI_MODEL_PROVIDERS`, or Admin),
- * [`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider) (owner, or Admin for any user's), and
- * [`DeleteAIModelProvider`](#grpc-api-DeleteAIModelProvider) (owner, or Admin) - the same self-or-Admin shape as
+ * Providers are managed via [`GetAIProviders`](#grpc-api-GetAIProviders),
+ * [`CreateAIProvider`](#grpc-api-CreateAIProvider) (requires `CREATE_AI_PROVIDERS`, or Admin),
+ * [`UpdateAIProvider`](#grpc-api-UpdateAIProvider) (owner, or Admin for any user's), and
+ * [`DeleteAIProvider`](#grpc-api-DeleteAIProvider) (owner, or Admin) - the same self-or-Admin shape as
  * [`SyncDestination`](#rellm-SyncDestination)'s RPCs. Access to a provider is granted/revoked to other users via
- * [`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider)/[`RevokeAIModelProvider`](#grpc-api-RevokeAIModelProvider) which,
+ * [`GrantAIProvider`](#grpc-api-GrantAIProvider)/[`RevokeAIProvider`](#grpc-api-RevokeAIProvider) which,
  * unlike every other RPC pair here, are **owner-only with no Admin override**: an Admin can manage the provider
  * record itself (rename it, rotate its key, delete it), but handing out access to *someone else's* API budget is a
  * call only its owner should be able to make.
@@ -186,13 +186,13 @@ export interface GenerateMediaRequest {
  * Interactions API, OpenAI's Images API, DigitalOcean's Serverless Inference API - the last of which is also
  * OpenAI-Images-API-shaped, just a different base URL/key and generation-only, no editing endpoint);
  * [`AnthropicCredentials`](#rellm-AnthropicCredentials) is defined for forward compatibility but is not yet
- * accepted by [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider) (Anthropic doesn't offer image generation).
+ * accepted by [`CreateAIProvider`](#grpc-api-CreateAIProvider) (Anthropic doesn't offer image generation).
  */
-export interface AIModelProvider {
-  /** Unique ID for the AIModelProvider. */
+export interface AIProvider {
+  /** Unique ID for the AIProvider. */
   id: string;
   /**
-   * The user information for the owner of this AIModelProvider - the only user (besides Admins) who may
+   * The user information for the owner of this AIProvider - the only user (besides Admins) who may
    * rename it or change its credentials/provider, and the *only* user (not even Admins) who may grant/revoke other
    * users' access to it.
    */
@@ -235,10 +235,10 @@ export interface AIModelProvider {
     | undefined;
   /**
    * Other users this provider's owner has granted metered access to, via
-   * [`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider). Only ever populated for the owner (or an Admin) --
-   * see [`GetAIModelProviders`](#grpc-api-GetAIModelProviders).
+   * [`GrantAIProvider`](#grpc-api-GrantAIProvider). Only ever populated for the owner (or an Admin) --
+   * see [`GetAIProviders`](#grpc-api-GetAIProviders).
    */
-  grants: AIModelProviderGrant[];
+  grants: AIProviderGrant[];
   /** The time the provider was created. */
   createdAt:
     | string
@@ -248,16 +248,16 @@ export interface AIModelProvider {
 }
 
 /**
- * A grant of metered access to someone else's [`AIModelProvider`](#rellm-AIModelProvider), created/reset via
- * [`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider) and removed via
- * [`RevokeAIModelProvider`](#grpc-api-RevokeAIModelProvider). Upserted on the unique
- * `(ai_model_provider_id, ai_model_grantee)` pair - calling [`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider)
+ * A grant of metered access to someone else's [`AIProvider`](#rellm-AIProvider), created/reset via
+ * [`GrantAIProvider`](#grpc-api-GrantAIProvider) and removed via
+ * [`RevokeAIProvider`](#grpc-api-RevokeAIProvider). Upserted on the unique
+ * `(ai_provider_id, ai_model_grantee)` pair - calling [`GrantAIProvider`](#grpc-api-GrantAIProvider)
  * again for a user who already has a grant *resets* `tokens_remaining` to the newly-requested amount, it does not
  * add to it.
  */
-export interface AIModelProviderGrant {
-  /** The ID of the [`AIModelProvider`](#rellm-AIModelProvider) this grant is for. */
-  aiModelProviderId: string;
+export interface AIProviderGrant {
+  /** The ID of the [`AIProvider`](#rellm-AIProvider) this grant is for. */
+  aiProviderId: string;
   /** The user this access was granted to. */
   aiModelGrantee:
     | Author
@@ -270,9 +270,9 @@ export interface AIModelProviderGrant {
   modelNames: string[];
   /**
    * The number of tokens the grantee may still spend against this provider. Set (and reset) by the owner via
-   * [`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider). Once this reaches 0, [`GenerateMedia`](#grpc-api-GenerateMedia)
+   * [`GrantAIProvider`](#grpc-api-GrantAIProvider). Once this reaches 0, [`GenerateMedia`](#grpc-api-GenerateMedia)
    * stops working for the grantee entirely, until the owner grants more via
-   * [`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider) again.
+   * [`GrantAIProvider`](#grpc-api-GrantAIProvider) again.
    */
   tokensRemaining: number;
   /**
@@ -280,7 +280,7 @@ export interface AIModelProviderGrant {
    * the moment it hit 0 - effectively a "negative `tokens_remaining`" (which, being `uint64`, can't represent a
    * negative value directly), recorded here instead as a positive debt for the owner's own visibility. E.g. a
    * grantee with 30 tokens left whose next call actually costs 45 ends up with `tokens_remaining = 0` and
-   * `overage = 15`. Always 0 immediately after a fresh [`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider) call
+   * `overage = 15`. Always 0 immediately after a fresh [`GrantAIProvider`](#grpc-api-GrantAIProvider) call
    * (any prior debt is cleared, not carried forward) - see that RPC's own doc.
    */
   overage: number;
@@ -290,50 +290,50 @@ export interface AIModelProviderGrant {
     | undefined;
   /**
    * The time the grant was last updated (i.e. last reset by another
-   * [`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider) call).
+   * [`GrantAIProvider`](#grpc-api-GrantAIProvider) call).
    */
   updatedAt?: string | undefined;
 }
 
-/** Response to a request for a user's [`AIModelProvider`](#rellm-AIModelProvider)s. */
-export interface GetAIModelProvidersResponse {
+/** Response to a request for a user's [`AIProvider`](#rellm-AIProvider)s. */
+export interface GetAIProvidersResponse {
   /**
-   * The requested user's own AIModelProviders (those they own) - exactly the distinct `provider`s
-   * in `available_ai_models` whose `owner` is the requested user, each with its own `grants`
+   * The requested user's own AIProviders (those they own) - exactly the distinct `provider`s
+   * in `ai_models` whose `owner` is the requested user, each with its own `grants`
    * populated (who else can use it). A convenience duplicate of data already in
-   * `available_ai_models`, so callers managing a user's own providers (rename/rekey/delete/grant/
+   * `ai_models`, so callers managing a user's own providers (rename/rekey/delete/grant/
    * revoke) don't have to de-duplicate that list themselves.
    */
-  providers: AIModelProvider[];
+  providers: AIProvider[];
   /**
    * Every model the requested user may currently call - their own providers' models, plus any
-   * models granted to them on other users' providers. See [`AvailableAIModel`](#rellm-AvailableAIModel)'s own doc.
+   * models granted to them on other users' providers. See [`AIModel`](#rellm-AIModel)'s own doc.
    */
-  availableAiModels: AvailableAIModel[];
+  aiModels: AIModel[];
 }
 
-/** Request to delete an AIModelProvider. Also deletes any of its [`AIModelProviderGrant`](#rellm-AIModelProviderGrant)s. */
-export interface DeleteAIModelProviderRequest {
+/** Request to delete an AIProvider. Also deletes any of its [`AIProviderGrant`](#rellm-AIProviderGrant)s. */
+export interface DeleteAIProviderRequest {
   /** The provider to be deleted. */
-  provider: AIModelProvider | undefined;
+  provider: AIProvider | undefined;
 }
 
 /**
  * Request to grant (or reset) another user's metered access to one of the current user's
- * [`AIModelProvider`](#rellm-AIModelProvider)s. *Authenticated, owner-only - no Admin override.*
+ * [`AIProvider`](#rellm-AIProvider)s. *Authenticated, owner-only - no Admin override.*
  */
-export interface GrantAIModelProviderRequest {
+export interface GrantAIProviderRequest {
   /** The user to grant access to. */
   userId: string;
-  /** The AIModelProvider to grant access to. Must be owned by the caller. */
-  aiModelProviderId: string;
+  /** The AIProvider to grant access to. Must be owned by the caller. */
+  aiProviderId: string;
   /**
    * The number of tokens the grantee may spend. Calling this RPC again for the same
-   * (`ai_model_provider_id`, `user_id`) pair *replaces*, rather than adds to, this value.
+   * (`ai_provider_id`, `user_id`) pair *replaces*, rather than adds to, this value.
    */
   tokens: number;
   /**
-   * The models the grantee is allowed to use, mirroring [`AIModelProviderGrant.model_names`](#rellm-AIModelProviderGrant)
+   * The models the grantee is allowed to use, mirroring [`AIProviderGrant.model_names`](#rellm-AIProviderGrant)
    * - if empty, allows access to any model the provider supports. Also replaced (not merged)
    * on a repeat call, same as `tokens`.
    */
@@ -342,27 +342,27 @@ export interface GrantAIModelProviderRequest {
 
 /**
  * Request to revoke another user's access to one of the current user's
- * [`AIModelProvider`](#rellm-AIModelProvider)s, the reverse of
- * [`GrantAIModelProvider`](#grpc-api-GrantAIModelProvider). *Authenticated, owner-only - no Admin override.*
+ * [`AIProvider`](#rellm-AIProvider)s, the reverse of
+ * [`GrantAIProvider`](#grpc-api-GrantAIProvider). *Authenticated, owner-only - no Admin override.*
  */
-export interface RevokeAIModelProviderRequest {
+export interface RevokeAIProviderRequest {
   /** The user whose access should be revoked. */
   userId: string;
-  /** The AIModelProvider to revoke access to. Must be owned by the caller. */
-  aiModelProviderId: string;
+  /** The AIProvider to revoke access to. Must be owned by the caller. */
+  aiProviderId: string;
 }
 
 /**
  * Credentials for a [Google Gemini API](https://ai.google.dev/gemini-api) connection - the only
- * [`AIModelProvider.provider`](#rellm-AIModelProvider) variant currently accepted by
- * [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider)/[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider).
+ * [`AIProvider.provider`](#rellm-AIProvider) variant currently accepted by
+ * [`CreateAIProvider`](#grpc-api-CreateAIProvider)/[`UpdateAIProvider`](#grpc-api-UpdateAIProvider).
  * Used for image generation/editing via Gemini's [Interactions API](https://ai.google.dev/gemini-api/docs/image-generation),
  * e.g. to generate/edit Event posters from an Event's own content - see [`GenerateMedia`](#grpc-api-GenerateMedia).
  */
 export interface GeminiCredentials {
   /**
    * The Gemini API key. Required (and only used) on
-   * [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider)/[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider) --
+   * [`CreateAIProvider`](#grpc-api-CreateAIProvider)/[`UpdateAIProvider`](#grpc-api-UpdateAIProvider) --
    * **never populated in responses**, the same write-only convention as e.g.
    * [`MastodonAccount.access_token`](#rellm-MastodonAccount) in `sync.proto`.
    */
@@ -371,7 +371,7 @@ export interface GeminiCredentials {
 
 /**
  * Credentials for an [OpenAI API](https://platform.openai.com/docs/api-reference) connection, accepted by
- * [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider)/[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider).
+ * [`CreateAIProvider`](#grpc-api-CreateAIProvider)/[`UpdateAIProvider`](#grpc-api-UpdateAIProvider).
  * Used for image generation/editing via OpenAI's [Images API](https://platform.openai.com/docs/guides/image-generation)
  * (the GPT Image model family) - same use case as [`GeminiCredentials`](#rellm-GeminiCredentials), see
  * [`GenerateMedia`](#grpc-api-GenerateMedia).
@@ -379,7 +379,7 @@ export interface GeminiCredentials {
 export interface OpenAICredentials {
   /**
    * The OpenAI API key. Required (and only used) on
-   * [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider)/[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider) --
+   * [`CreateAIProvider`](#grpc-api-CreateAIProvider)/[`UpdateAIProvider`](#grpc-api-UpdateAIProvider) --
    * never populated in responses (see [`GeminiCredentials.gemini_api_key`](#rellm-GeminiCredentials)).
    */
   openaiApiKey?: string | undefined;
@@ -388,8 +388,8 @@ export interface OpenAICredentials {
 /**
  * Credentials for a [DigitalOcean Gradient AI Platform](https://docs.digitalocean.com/products/gradient-ai-platform/) /
  * Serverless Inference connection, accepted by
- * [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider)/[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider).
- * Used for image *generation only* (no editing - see `AIModelProvider.provider`'s own doc on this variant) via its
+ * [`CreateAIProvider`](#grpc-api-CreateAIProvider)/[`UpdateAIProvider`](#grpc-api-UpdateAIProvider).
+ * Used for image *generation only* (no editing - see `AIProvider.provider`'s own doc on this variant) via its
  * [Serverless Inference API](https://docs.digitalocean.com/products/gradient-ai-platform/reference/api/serverless-inference/)
  * `/v1/images/generations` endpoint, OpenAI-Images-API-shaped and re-hosting GPT Image and Stable Diffusion models --
  * see [`GenerateMedia`](#grpc-api-GenerateMedia).
@@ -397,7 +397,7 @@ export interface OpenAICredentials {
 export interface DigitalOceanCredentials {
   /**
    * The DigitalOcean Serverless Inference API token. Required (and only used) on
-   * [`CreateAIModelProvider`](#grpc-api-CreateAIModelProvider)/[`UpdateAIModelProvider`](#grpc-api-UpdateAIModelProvider) --
+   * [`CreateAIProvider`](#grpc-api-CreateAIProvider)/[`UpdateAIProvider`](#grpc-api-UpdateAIProvider) --
    * never populated in responses (see [`GeminiCredentials.gemini_api_key`](#rellm-GeminiCredentials)).
    */
   digitaloceanApiKey?: string | undefined;
@@ -415,12 +415,12 @@ export interface AnthropicCredentials {
   anthropicApiKey?: string | undefined;
 }
 
-function createBaseAvailableAIModel(): AvailableAIModel {
+function createBaseAIModel(): AIModel {
   return { modelName: "", capabilities: [], grant: undefined, provider: undefined };
 }
 
-export const AvailableAIModel: MessageFns<AvailableAIModel> = {
-  encode(message: AvailableAIModel, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const AIModel: MessageFns<AIModel> = {
+  encode(message: AIModel, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.modelName !== "") {
       writer.uint32(10).string(message.modelName);
     }
@@ -430,18 +430,18 @@ export const AvailableAIModel: MessageFns<AvailableAIModel> = {
     }
     writer.join();
     if (message.grant !== undefined) {
-      AIModelProviderGrant.encode(message.grant, writer.uint32(26).fork()).join();
+      AIProviderGrant.encode(message.grant, writer.uint32(26).fork()).join();
     }
     if (message.provider !== undefined) {
-      AIModelProvider.encode(message.provider, writer.uint32(34).fork()).join();
+      AIProvider.encode(message.provider, writer.uint32(34).fork()).join();
     }
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): AvailableAIModel {
+  decode(input: BinaryReader | Uint8Array, length?: number): AIModel {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseAvailableAIModel();
+    const message = createBaseAIModel();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -476,7 +476,7 @@ export const AvailableAIModel: MessageFns<AvailableAIModel> = {
             break;
           }
 
-          message.grant = AIModelProviderGrant.decode(reader, reader.uint32());
+          message.grant = AIProviderGrant.decode(reader, reader.uint32());
           continue;
         }
         case 4: {
@@ -484,7 +484,7 @@ export const AvailableAIModel: MessageFns<AvailableAIModel> = {
             break;
           }
 
-          message.provider = AIModelProvider.decode(reader, reader.uint32());
+          message.provider = AIProvider.decode(reader, reader.uint32());
           continue;
         }
       }
@@ -496,18 +496,18 @@ export const AvailableAIModel: MessageFns<AvailableAIModel> = {
     return message;
   },
 
-  fromJSON(object: any): AvailableAIModel {
+  fromJSON(object: any): AIModel {
     return {
       modelName: isSet(object.modelName) ? globalThis.String(object.modelName) : "",
       capabilities: globalThis.Array.isArray(object?.capabilities)
         ? object.capabilities.map((e: any) => aIModelCapabilityFromJSON(e))
         : [],
-      grant: isSet(object.grant) ? AIModelProviderGrant.fromJSON(object.grant) : undefined,
-      provider: isSet(object.provider) ? AIModelProvider.fromJSON(object.provider) : undefined,
+      grant: isSet(object.grant) ? AIProviderGrant.fromJSON(object.grant) : undefined,
+      provider: isSet(object.provider) ? AIProvider.fromJSON(object.provider) : undefined,
     };
   },
 
-  toJSON(message: AvailableAIModel): unknown {
+  toJSON(message: AIModel): unknown {
     const obj: any = {};
     if (message.modelName !== "") {
       obj.modelName = message.modelName;
@@ -516,39 +516,39 @@ export const AvailableAIModel: MessageFns<AvailableAIModel> = {
       obj.capabilities = message.capabilities.map((e) => aIModelCapabilityToJSON(e));
     }
     if (message.grant !== undefined) {
-      obj.grant = AIModelProviderGrant.toJSON(message.grant);
+      obj.grant = AIProviderGrant.toJSON(message.grant);
     }
     if (message.provider !== undefined) {
-      obj.provider = AIModelProvider.toJSON(message.provider);
+      obj.provider = AIProvider.toJSON(message.provider);
     }
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<AvailableAIModel>, I>>(base?: I): AvailableAIModel {
-    return AvailableAIModel.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<AIModel>, I>>(base?: I): AIModel {
+    return AIModel.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<AvailableAIModel>, I>>(object: I): AvailableAIModel {
-    const message = createBaseAvailableAIModel();
+  fromPartial<I extends Exact<DeepPartial<AIModel>, I>>(object: I): AIModel {
+    const message = createBaseAIModel();
     message.modelName = object.modelName ?? "";
     message.capabilities = object.capabilities?.map((e) => e) || [];
     message.grant = (object.grant !== undefined && object.grant !== null)
-      ? AIModelProviderGrant.fromPartial(object.grant)
+      ? AIProviderGrant.fromPartial(object.grant)
       : undefined;
     message.provider = (object.provider !== undefined && object.provider !== null)
-      ? AIModelProvider.fromPartial(object.provider)
+      ? AIProvider.fromPartial(object.provider)
       : undefined;
     return message;
   },
 };
 
 function createBaseGenerateMediaRequest(): GenerateMediaRequest {
-  return { model: undefined, userPrompt: "", mediaIds: [], postId: undefined, eventInstanceId: undefined };
+  return { model: undefined, userPrompt: "", mediaIds: [], postId: undefined, occasionId: undefined };
 }
 
 export const GenerateMediaRequest: MessageFns<GenerateMediaRequest> = {
   encode(message: GenerateMediaRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.model !== undefined) {
-      AvailableAIModel.encode(message.model, writer.uint32(10).fork()).join();
+      AIModel.encode(message.model, writer.uint32(10).fork()).join();
     }
     if (message.userPrompt !== "") {
       writer.uint32(18).string(message.userPrompt);
@@ -559,8 +559,8 @@ export const GenerateMediaRequest: MessageFns<GenerateMediaRequest> = {
     if (message.postId !== undefined) {
       writer.uint32(42).string(message.postId);
     }
-    if (message.eventInstanceId !== undefined) {
-      writer.uint32(50).string(message.eventInstanceId);
+    if (message.occasionId !== undefined) {
+      writer.uint32(50).string(message.occasionId);
     }
     return writer;
   },
@@ -577,7 +577,7 @@ export const GenerateMediaRequest: MessageFns<GenerateMediaRequest> = {
             break;
           }
 
-          message.model = AvailableAIModel.decode(reader, reader.uint32());
+          message.model = AIModel.decode(reader, reader.uint32());
           continue;
         }
         case 2: {
@@ -609,7 +609,7 @@ export const GenerateMediaRequest: MessageFns<GenerateMediaRequest> = {
             break;
           }
 
-          message.eventInstanceId = reader.string();
+          message.occasionId = reader.string();
           continue;
         }
       }
@@ -623,18 +623,18 @@ export const GenerateMediaRequest: MessageFns<GenerateMediaRequest> = {
 
   fromJSON(object: any): GenerateMediaRequest {
     return {
-      model: isSet(object.model) ? AvailableAIModel.fromJSON(object.model) : undefined,
+      model: isSet(object.model) ? AIModel.fromJSON(object.model) : undefined,
       userPrompt: isSet(object.userPrompt) ? globalThis.String(object.userPrompt) : "",
       mediaIds: globalThis.Array.isArray(object?.mediaIds) ? object.mediaIds.map((e: any) => globalThis.String(e)) : [],
       postId: isSet(object.postId) ? globalThis.String(object.postId) : undefined,
-      eventInstanceId: isSet(object.eventInstanceId) ? globalThis.String(object.eventInstanceId) : undefined,
+      occasionId: isSet(object.occasionId) ? globalThis.String(object.occasionId) : undefined,
     };
   },
 
   toJSON(message: GenerateMediaRequest): unknown {
     const obj: any = {};
     if (message.model !== undefined) {
-      obj.model = AvailableAIModel.toJSON(message.model);
+      obj.model = AIModel.toJSON(message.model);
     }
     if (message.userPrompt !== "") {
       obj.userPrompt = message.userPrompt;
@@ -645,8 +645,8 @@ export const GenerateMediaRequest: MessageFns<GenerateMediaRequest> = {
     if (message.postId !== undefined) {
       obj.postId = message.postId;
     }
-    if (message.eventInstanceId !== undefined) {
-      obj.eventInstanceId = message.eventInstanceId;
+    if (message.occasionId !== undefined) {
+      obj.occasionId = message.occasionId;
     }
     return obj;
   },
@@ -657,17 +657,17 @@ export const GenerateMediaRequest: MessageFns<GenerateMediaRequest> = {
   fromPartial<I extends Exact<DeepPartial<GenerateMediaRequest>, I>>(object: I): GenerateMediaRequest {
     const message = createBaseGenerateMediaRequest();
     message.model = (object.model !== undefined && object.model !== null)
-      ? AvailableAIModel.fromPartial(object.model)
+      ? AIModel.fromPartial(object.model)
       : undefined;
     message.userPrompt = object.userPrompt ?? "";
     message.mediaIds = object.mediaIds?.map((e) => e) || [];
     message.postId = object.postId ?? undefined;
-    message.eventInstanceId = object.eventInstanceId ?? undefined;
+    message.occasionId = object.occasionId ?? undefined;
     return message;
   },
 };
 
-function createBaseAIModelProvider(): AIModelProvider {
+function createBaseAIProvider(): AIProvider {
   return {
     id: "",
     owner: undefined,
@@ -682,8 +682,8 @@ function createBaseAIModelProvider(): AIModelProvider {
   };
 }
 
-export const AIModelProvider: MessageFns<AIModelProvider> = {
-  encode(message: AIModelProvider, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const AIProvider: MessageFns<AIProvider> = {
+  encode(message: AIProvider, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.id !== "") {
       writer.uint32(10).string(message.id);
     }
@@ -706,7 +706,7 @@ export const AIModelProvider: MessageFns<AIModelProvider> = {
       DigitalOceanCredentials.encode(message.digitaloceanCredentials, writer.uint32(58).fork()).join();
     }
     for (const v of message.grants) {
-      AIModelProviderGrant.encode(v!, writer.uint32(114).fork()).join();
+      AIProviderGrant.encode(v!, writer.uint32(114).fork()).join();
     }
     if (message.createdAt !== undefined) {
       Timestamp.encode(toTimestamp(message.createdAt), writer.uint32(122).fork()).join();
@@ -717,10 +717,10 @@ export const AIModelProvider: MessageFns<AIModelProvider> = {
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): AIModelProvider {
+  decode(input: BinaryReader | Uint8Array, length?: number): AIProvider {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseAIModelProvider();
+    const message = createBaseAIProvider();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -785,7 +785,7 @@ export const AIModelProvider: MessageFns<AIModelProvider> = {
             break;
           }
 
-          message.grants.push(AIModelProviderGrant.decode(reader, reader.uint32()));
+          message.grants.push(AIProviderGrant.decode(reader, reader.uint32()));
           continue;
         }
         case 15: {
@@ -813,7 +813,7 @@ export const AIModelProvider: MessageFns<AIModelProvider> = {
     return message;
   },
 
-  fromJSON(object: any): AIModelProvider {
+  fromJSON(object: any): AIProvider {
     return {
       id: isSet(object.id) ? globalThis.String(object.id) : "",
       owner: isSet(object.owner) ? Author.fromJSON(object.owner) : undefined,
@@ -831,14 +831,14 @@ export const AIModelProvider: MessageFns<AIModelProvider> = {
         ? DigitalOceanCredentials.fromJSON(object.digitaloceanCredentials)
         : undefined,
       grants: globalThis.Array.isArray(object?.grants)
-        ? object.grants.map((e: any) => AIModelProviderGrant.fromJSON(e))
+        ? object.grants.map((e: any) => AIProviderGrant.fromJSON(e))
         : [],
       createdAt: isSet(object.createdAt) ? globalThis.String(object.createdAt) : undefined,
       updatedAt: isSet(object.updatedAt) ? globalThis.String(object.updatedAt) : undefined,
     };
   },
 
-  toJSON(message: AIModelProvider): unknown {
+  toJSON(message: AIProvider): unknown {
     const obj: any = {};
     if (message.id !== "") {
       obj.id = message.id;
@@ -862,7 +862,7 @@ export const AIModelProvider: MessageFns<AIModelProvider> = {
       obj.digitaloceanCredentials = DigitalOceanCredentials.toJSON(message.digitaloceanCredentials);
     }
     if (message.grants?.length) {
-      obj.grants = message.grants.map((e) => AIModelProviderGrant.toJSON(e));
+      obj.grants = message.grants.map((e) => AIProviderGrant.toJSON(e));
     }
     if (message.createdAt !== undefined) {
       obj.createdAt = message.createdAt;
@@ -873,11 +873,11 @@ export const AIModelProvider: MessageFns<AIModelProvider> = {
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<AIModelProvider>, I>>(base?: I): AIModelProvider {
-    return AIModelProvider.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<AIProvider>, I>>(base?: I): AIProvider {
+    return AIProvider.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<AIModelProvider>, I>>(object: I): AIModelProvider {
-    const message = createBaseAIModelProvider();
+  fromPartial<I extends Exact<DeepPartial<AIProvider>, I>>(object: I): AIProvider {
+    const message = createBaseAIProvider();
     message.id = object.id ?? "";
     message.owner = (object.owner !== undefined && object.owner !== null)
       ? Author.fromPartial(object.owner)
@@ -896,16 +896,16 @@ export const AIModelProvider: MessageFns<AIModelProvider> = {
       (object.digitaloceanCredentials !== undefined && object.digitaloceanCredentials !== null)
         ? DigitalOceanCredentials.fromPartial(object.digitaloceanCredentials)
         : undefined;
-    message.grants = object.grants?.map((e) => AIModelProviderGrant.fromPartial(e)) || [];
+    message.grants = object.grants?.map((e) => AIProviderGrant.fromPartial(e)) || [];
     message.createdAt = object.createdAt ?? undefined;
     message.updatedAt = object.updatedAt ?? undefined;
     return message;
   },
 };
 
-function createBaseAIModelProviderGrant(): AIModelProviderGrant {
+function createBaseAIProviderGrant(): AIProviderGrant {
   return {
-    aiModelProviderId: "",
+    aiProviderId: "",
     aiModelGrantee: undefined,
     modelNames: [],
     tokensRemaining: 0,
@@ -915,10 +915,10 @@ function createBaseAIModelProviderGrant(): AIModelProviderGrant {
   };
 }
 
-export const AIModelProviderGrant: MessageFns<AIModelProviderGrant> = {
-  encode(message: AIModelProviderGrant, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.aiModelProviderId !== "") {
-      writer.uint32(10).string(message.aiModelProviderId);
+export const AIProviderGrant: MessageFns<AIProviderGrant> = {
+  encode(message: AIProviderGrant, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.aiProviderId !== "") {
+      writer.uint32(10).string(message.aiProviderId);
     }
     if (message.aiModelGrantee !== undefined) {
       Author.encode(message.aiModelGrantee, writer.uint32(18).fork()).join();
@@ -941,10 +941,10 @@ export const AIModelProviderGrant: MessageFns<AIModelProviderGrant> = {
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): AIModelProviderGrant {
+  decode(input: BinaryReader | Uint8Array, length?: number): AIProviderGrant {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseAIModelProviderGrant();
+    const message = createBaseAIProviderGrant();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -953,7 +953,7 @@ export const AIModelProviderGrant: MessageFns<AIModelProviderGrant> = {
             break;
           }
 
-          message.aiModelProviderId = reader.string();
+          message.aiProviderId = reader.string();
           continue;
         }
         case 2: {
@@ -1013,9 +1013,9 @@ export const AIModelProviderGrant: MessageFns<AIModelProviderGrant> = {
     return message;
   },
 
-  fromJSON(object: any): AIModelProviderGrant {
+  fromJSON(object: any): AIProviderGrant {
     return {
-      aiModelProviderId: isSet(object.aiModelProviderId) ? globalThis.String(object.aiModelProviderId) : "",
+      aiProviderId: isSet(object.aiProviderId) ? globalThis.String(object.aiProviderId) : "",
       aiModelGrantee: isSet(object.aiModelGrantee) ? Author.fromJSON(object.aiModelGrantee) : undefined,
       modelNames: globalThis.Array.isArray(object?.modelNames)
         ? object.modelNames.map((e: any) => globalThis.String(e))
@@ -1027,10 +1027,10 @@ export const AIModelProviderGrant: MessageFns<AIModelProviderGrant> = {
     };
   },
 
-  toJSON(message: AIModelProviderGrant): unknown {
+  toJSON(message: AIProviderGrant): unknown {
     const obj: any = {};
-    if (message.aiModelProviderId !== "") {
-      obj.aiModelProviderId = message.aiModelProviderId;
+    if (message.aiProviderId !== "") {
+      obj.aiProviderId = message.aiProviderId;
     }
     if (message.aiModelGrantee !== undefined) {
       obj.aiModelGrantee = Author.toJSON(message.aiModelGrantee);
@@ -1053,12 +1053,12 @@ export const AIModelProviderGrant: MessageFns<AIModelProviderGrant> = {
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<AIModelProviderGrant>, I>>(base?: I): AIModelProviderGrant {
-    return AIModelProviderGrant.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<AIProviderGrant>, I>>(base?: I): AIProviderGrant {
+    return AIProviderGrant.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<AIModelProviderGrant>, I>>(object: I): AIModelProviderGrant {
-    const message = createBaseAIModelProviderGrant();
-    message.aiModelProviderId = object.aiModelProviderId ?? "";
+  fromPartial<I extends Exact<DeepPartial<AIProviderGrant>, I>>(object: I): AIProviderGrant {
+    const message = createBaseAIProviderGrant();
+    message.aiProviderId = object.aiProviderId ?? "";
     message.aiModelGrantee = (object.aiModelGrantee !== undefined && object.aiModelGrantee !== null)
       ? Author.fromPartial(object.aiModelGrantee)
       : undefined;
@@ -1071,25 +1071,25 @@ export const AIModelProviderGrant: MessageFns<AIModelProviderGrant> = {
   },
 };
 
-function createBaseGetAIModelProvidersResponse(): GetAIModelProvidersResponse {
-  return { providers: [], availableAiModels: [] };
+function createBaseGetAIProvidersResponse(): GetAIProvidersResponse {
+  return { providers: [], aiModels: [] };
 }
 
-export const GetAIModelProvidersResponse: MessageFns<GetAIModelProvidersResponse> = {
-  encode(message: GetAIModelProvidersResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const GetAIProvidersResponse: MessageFns<GetAIProvidersResponse> = {
+  encode(message: GetAIProvidersResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     for (const v of message.providers) {
-      AIModelProvider.encode(v!, writer.uint32(10).fork()).join();
+      AIProvider.encode(v!, writer.uint32(10).fork()).join();
     }
-    for (const v of message.availableAiModels) {
-      AvailableAIModel.encode(v!, writer.uint32(18).fork()).join();
+    for (const v of message.aiModels) {
+      AIModel.encode(v!, writer.uint32(18).fork()).join();
     }
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): GetAIModelProvidersResponse {
+  decode(input: BinaryReader | Uint8Array, length?: number): GetAIProvidersResponse {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseGetAIModelProvidersResponse();
+    const message = createBaseGetAIProvidersResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -1098,7 +1098,7 @@ export const GetAIModelProvidersResponse: MessageFns<GetAIModelProvidersResponse
             break;
           }
 
-          message.providers.push(AIModelProvider.decode(reader, reader.uint32()));
+          message.providers.push(AIProvider.decode(reader, reader.uint32()));
           continue;
         }
         case 2: {
@@ -1106,7 +1106,7 @@ export const GetAIModelProvidersResponse: MessageFns<GetAIModelProvidersResponse
             break;
           }
 
-          message.availableAiModels.push(AvailableAIModel.decode(reader, reader.uint32()));
+          message.aiModels.push(AIModel.decode(reader, reader.uint32()));
           continue;
         }
       }
@@ -1118,55 +1118,53 @@ export const GetAIModelProvidersResponse: MessageFns<GetAIModelProvidersResponse
     return message;
   },
 
-  fromJSON(object: any): GetAIModelProvidersResponse {
+  fromJSON(object: any): GetAIProvidersResponse {
     return {
       providers: globalThis.Array.isArray(object?.providers)
-        ? object.providers.map((e: any) => AIModelProvider.fromJSON(e))
+        ? object.providers.map((e: any) => AIProvider.fromJSON(e))
         : [],
-      availableAiModels: globalThis.Array.isArray(object?.availableAiModels)
-        ? object.availableAiModels.map((e: any) => AvailableAIModel.fromJSON(e))
-        : [],
+      aiModels: globalThis.Array.isArray(object?.aiModels) ? object.aiModels.map((e: any) => AIModel.fromJSON(e)) : [],
     };
   },
 
-  toJSON(message: GetAIModelProvidersResponse): unknown {
+  toJSON(message: GetAIProvidersResponse): unknown {
     const obj: any = {};
     if (message.providers?.length) {
-      obj.providers = message.providers.map((e) => AIModelProvider.toJSON(e));
+      obj.providers = message.providers.map((e) => AIProvider.toJSON(e));
     }
-    if (message.availableAiModels?.length) {
-      obj.availableAiModels = message.availableAiModels.map((e) => AvailableAIModel.toJSON(e));
+    if (message.aiModels?.length) {
+      obj.aiModels = message.aiModels.map((e) => AIModel.toJSON(e));
     }
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<GetAIModelProvidersResponse>, I>>(base?: I): GetAIModelProvidersResponse {
-    return GetAIModelProvidersResponse.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<GetAIProvidersResponse>, I>>(base?: I): GetAIProvidersResponse {
+    return GetAIProvidersResponse.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<GetAIModelProvidersResponse>, I>>(object: I): GetAIModelProvidersResponse {
-    const message = createBaseGetAIModelProvidersResponse();
-    message.providers = object.providers?.map((e) => AIModelProvider.fromPartial(e)) || [];
-    message.availableAiModels = object.availableAiModels?.map((e) => AvailableAIModel.fromPartial(e)) || [];
+  fromPartial<I extends Exact<DeepPartial<GetAIProvidersResponse>, I>>(object: I): GetAIProvidersResponse {
+    const message = createBaseGetAIProvidersResponse();
+    message.providers = object.providers?.map((e) => AIProvider.fromPartial(e)) || [];
+    message.aiModels = object.aiModels?.map((e) => AIModel.fromPartial(e)) || [];
     return message;
   },
 };
 
-function createBaseDeleteAIModelProviderRequest(): DeleteAIModelProviderRequest {
+function createBaseDeleteAIProviderRequest(): DeleteAIProviderRequest {
   return { provider: undefined };
 }
 
-export const DeleteAIModelProviderRequest: MessageFns<DeleteAIModelProviderRequest> = {
-  encode(message: DeleteAIModelProviderRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const DeleteAIProviderRequest: MessageFns<DeleteAIProviderRequest> = {
+  encode(message: DeleteAIProviderRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.provider !== undefined) {
-      AIModelProvider.encode(message.provider, writer.uint32(10).fork()).join();
+      AIProvider.encode(message.provider, writer.uint32(10).fork()).join();
     }
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): DeleteAIModelProviderRequest {
+  decode(input: BinaryReader | Uint8Array, length?: number): DeleteAIProviderRequest {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseDeleteAIModelProviderRequest();
+    const message = createBaseDeleteAIProviderRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -1175,7 +1173,7 @@ export const DeleteAIModelProviderRequest: MessageFns<DeleteAIModelProviderReque
             break;
           }
 
-          message.provider = AIModelProvider.decode(reader, reader.uint32());
+          message.provider = AIProvider.decode(reader, reader.uint32());
           continue;
         }
       }
@@ -1187,41 +1185,41 @@ export const DeleteAIModelProviderRequest: MessageFns<DeleteAIModelProviderReque
     return message;
   },
 
-  fromJSON(object: any): DeleteAIModelProviderRequest {
-    return { provider: isSet(object.provider) ? AIModelProvider.fromJSON(object.provider) : undefined };
+  fromJSON(object: any): DeleteAIProviderRequest {
+    return { provider: isSet(object.provider) ? AIProvider.fromJSON(object.provider) : undefined };
   },
 
-  toJSON(message: DeleteAIModelProviderRequest): unknown {
+  toJSON(message: DeleteAIProviderRequest): unknown {
     const obj: any = {};
     if (message.provider !== undefined) {
-      obj.provider = AIModelProvider.toJSON(message.provider);
+      obj.provider = AIProvider.toJSON(message.provider);
     }
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<DeleteAIModelProviderRequest>, I>>(base?: I): DeleteAIModelProviderRequest {
-    return DeleteAIModelProviderRequest.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<DeleteAIProviderRequest>, I>>(base?: I): DeleteAIProviderRequest {
+    return DeleteAIProviderRequest.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<DeleteAIModelProviderRequest>, I>>(object: I): DeleteAIModelProviderRequest {
-    const message = createBaseDeleteAIModelProviderRequest();
+  fromPartial<I extends Exact<DeepPartial<DeleteAIProviderRequest>, I>>(object: I): DeleteAIProviderRequest {
+    const message = createBaseDeleteAIProviderRequest();
     message.provider = (object.provider !== undefined && object.provider !== null)
-      ? AIModelProvider.fromPartial(object.provider)
+      ? AIProvider.fromPartial(object.provider)
       : undefined;
     return message;
   },
 };
 
-function createBaseGrantAIModelProviderRequest(): GrantAIModelProviderRequest {
-  return { userId: "", aiModelProviderId: "", tokens: 0, modelNames: [] };
+function createBaseGrantAIProviderRequest(): GrantAIProviderRequest {
+  return { userId: "", aiProviderId: "", tokens: 0, modelNames: [] };
 }
 
-export const GrantAIModelProviderRequest: MessageFns<GrantAIModelProviderRequest> = {
-  encode(message: GrantAIModelProviderRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const GrantAIProviderRequest: MessageFns<GrantAIProviderRequest> = {
+  encode(message: GrantAIProviderRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.userId !== "") {
       writer.uint32(10).string(message.userId);
     }
-    if (message.aiModelProviderId !== "") {
-      writer.uint32(18).string(message.aiModelProviderId);
+    if (message.aiProviderId !== "") {
+      writer.uint32(18).string(message.aiProviderId);
     }
     if (message.tokens !== 0) {
       writer.uint32(24).uint64(message.tokens);
@@ -1232,10 +1230,10 @@ export const GrantAIModelProviderRequest: MessageFns<GrantAIModelProviderRequest
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): GrantAIModelProviderRequest {
+  decode(input: BinaryReader | Uint8Array, length?: number): GrantAIProviderRequest {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseGrantAIModelProviderRequest();
+    const message = createBaseGrantAIProviderRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -1252,7 +1250,7 @@ export const GrantAIModelProviderRequest: MessageFns<GrantAIModelProviderRequest
             break;
           }
 
-          message.aiModelProviderId = reader.string();
+          message.aiProviderId = reader.string();
           continue;
         }
         case 3: {
@@ -1280,10 +1278,10 @@ export const GrantAIModelProviderRequest: MessageFns<GrantAIModelProviderRequest
     return message;
   },
 
-  fromJSON(object: any): GrantAIModelProviderRequest {
+  fromJSON(object: any): GrantAIProviderRequest {
     return {
       userId: isSet(object.userId) ? globalThis.String(object.userId) : "",
-      aiModelProviderId: isSet(object.aiModelProviderId) ? globalThis.String(object.aiModelProviderId) : "",
+      aiProviderId: isSet(object.aiProviderId) ? globalThis.String(object.aiProviderId) : "",
       tokens: isSet(object.tokens) ? globalThis.Number(object.tokens) : 0,
       modelNames: globalThis.Array.isArray(object?.modelNames)
         ? object.modelNames.map((e: any) => globalThis.String(e))
@@ -1291,13 +1289,13 @@ export const GrantAIModelProviderRequest: MessageFns<GrantAIModelProviderRequest
     };
   },
 
-  toJSON(message: GrantAIModelProviderRequest): unknown {
+  toJSON(message: GrantAIProviderRequest): unknown {
     const obj: any = {};
     if (message.userId !== "") {
       obj.userId = message.userId;
     }
-    if (message.aiModelProviderId !== "") {
-      obj.aiModelProviderId = message.aiModelProviderId;
+    if (message.aiProviderId !== "") {
+      obj.aiProviderId = message.aiProviderId;
     }
     if (message.tokens !== 0) {
       obj.tokens = Math.round(message.tokens);
@@ -1308,38 +1306,38 @@ export const GrantAIModelProviderRequest: MessageFns<GrantAIModelProviderRequest
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<GrantAIModelProviderRequest>, I>>(base?: I): GrantAIModelProviderRequest {
-    return GrantAIModelProviderRequest.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<GrantAIProviderRequest>, I>>(base?: I): GrantAIProviderRequest {
+    return GrantAIProviderRequest.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<GrantAIModelProviderRequest>, I>>(object: I): GrantAIModelProviderRequest {
-    const message = createBaseGrantAIModelProviderRequest();
+  fromPartial<I extends Exact<DeepPartial<GrantAIProviderRequest>, I>>(object: I): GrantAIProviderRequest {
+    const message = createBaseGrantAIProviderRequest();
     message.userId = object.userId ?? "";
-    message.aiModelProviderId = object.aiModelProviderId ?? "";
+    message.aiProviderId = object.aiProviderId ?? "";
     message.tokens = object.tokens ?? 0;
     message.modelNames = object.modelNames?.map((e) => e) || [];
     return message;
   },
 };
 
-function createBaseRevokeAIModelProviderRequest(): RevokeAIModelProviderRequest {
-  return { userId: "", aiModelProviderId: "" };
+function createBaseRevokeAIProviderRequest(): RevokeAIProviderRequest {
+  return { userId: "", aiProviderId: "" };
 }
 
-export const RevokeAIModelProviderRequest: MessageFns<RevokeAIModelProviderRequest> = {
-  encode(message: RevokeAIModelProviderRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+export const RevokeAIProviderRequest: MessageFns<RevokeAIProviderRequest> = {
+  encode(message: RevokeAIProviderRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.userId !== "") {
       writer.uint32(10).string(message.userId);
     }
-    if (message.aiModelProviderId !== "") {
-      writer.uint32(18).string(message.aiModelProviderId);
+    if (message.aiProviderId !== "") {
+      writer.uint32(18).string(message.aiProviderId);
     }
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): RevokeAIModelProviderRequest {
+  decode(input: BinaryReader | Uint8Array, length?: number): RevokeAIProviderRequest {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseRevokeAIModelProviderRequest();
+    const message = createBaseRevokeAIProviderRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -1356,7 +1354,7 @@ export const RevokeAIModelProviderRequest: MessageFns<RevokeAIModelProviderReque
             break;
           }
 
-          message.aiModelProviderId = reader.string();
+          message.aiProviderId = reader.string();
           continue;
         }
       }
@@ -1368,31 +1366,31 @@ export const RevokeAIModelProviderRequest: MessageFns<RevokeAIModelProviderReque
     return message;
   },
 
-  fromJSON(object: any): RevokeAIModelProviderRequest {
+  fromJSON(object: any): RevokeAIProviderRequest {
     return {
       userId: isSet(object.userId) ? globalThis.String(object.userId) : "",
-      aiModelProviderId: isSet(object.aiModelProviderId) ? globalThis.String(object.aiModelProviderId) : "",
+      aiProviderId: isSet(object.aiProviderId) ? globalThis.String(object.aiProviderId) : "",
     };
   },
 
-  toJSON(message: RevokeAIModelProviderRequest): unknown {
+  toJSON(message: RevokeAIProviderRequest): unknown {
     const obj: any = {};
     if (message.userId !== "") {
       obj.userId = message.userId;
     }
-    if (message.aiModelProviderId !== "") {
-      obj.aiModelProviderId = message.aiModelProviderId;
+    if (message.aiProviderId !== "") {
+      obj.aiProviderId = message.aiProviderId;
     }
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<RevokeAIModelProviderRequest>, I>>(base?: I): RevokeAIModelProviderRequest {
-    return RevokeAIModelProviderRequest.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<RevokeAIProviderRequest>, I>>(base?: I): RevokeAIProviderRequest {
+    return RevokeAIProviderRequest.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<RevokeAIModelProviderRequest>, I>>(object: I): RevokeAIModelProviderRequest {
-    const message = createBaseRevokeAIModelProviderRequest();
+  fromPartial<I extends Exact<DeepPartial<RevokeAIProviderRequest>, I>>(object: I): RevokeAIProviderRequest {
+    const message = createBaseRevokeAIProviderRequest();
     message.userId = object.userId ?? "";
-    message.aiModelProviderId = object.aiModelProviderId ?? "";
+    message.aiProviderId = object.aiProviderId ?? "";
     return message;
   },
 };

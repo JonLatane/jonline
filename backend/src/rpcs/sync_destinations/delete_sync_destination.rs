@@ -6,7 +6,7 @@ use crate::marshaling::*;
 use crate::models;
 use crate::protos::*;
 use crate::rpcs::validate_permission;
-use crate::schema::{event_instance_sync_destinations, post_sync_destinations, sync_destinations};
+use crate::schema::{occasion_sync_destinations, post_sync_destinations, sync_destinations};
 
 pub fn delete_sync_destination(
     request: DeleteSyncDestinationRequest,
@@ -30,13 +30,13 @@ pub fn delete_sync_destination(
     let _ = request.delete_synced_posts;
 
     diesel::delete(
-        event_instance_sync_destinations::table
-            .filter(event_instance_sync_destinations::sync_destination_id.eq(existing.id)),
+        occasion_sync_destinations::table
+            .filter(occasion_sync_destinations::sync_destination_id.eq(existing.id)),
     )
     .execute(conn)
     .map_err(|e| {
         log::error!(
-            "Failed to delete EventInstance sync statuses for destination {}: {:?}",
+            "Failed to delete Occasion sync statuses for destination {}: {:?}",
             existing.id,
             e
         );

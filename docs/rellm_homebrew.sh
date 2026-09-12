@@ -127,7 +127,7 @@ Commands:
     sync_sources             Sync any SyncSource (ICS subscription) that's due, per its
                              sync_interval_seconds/last_synced_at
     update_user_counts       Recompute follower/following/friend/group/post/response/event/
-                             event_instance counts for every User, correcting any drift
+                             occasion counts for every User, correcting any drift
     convert_media_sizes      Generate small/medium/large resized copies of unprocessed PNG/JPEG
                              Media via ImageMagick (`magick`, or `convert`+`identify`) and
                              MP4/QuickTime/WebM Media via `ffmpeg`+`ffprobe`; each must be on

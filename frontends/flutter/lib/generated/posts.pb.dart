@@ -283,7 +283,7 @@ class GetPostsResponse extends $pb.GeneratedMessage {
 ///
 ///  `Post`s are also a fundamental unit of the system. They provide a building block
 ///  of Visibility and Moderation management that is used throughout Posts, Replies, Events,
-///  and Event Instances.
+///  and Occasions.
 class Post extends $pb.GeneratedMessage {
   factory Post({
     $core.String? id,
@@ -577,7 +577,7 @@ class Post extends $pb.GeneratedMessage {
   @$pb.TagNumber(13)
   void clearShareable() => clearField(13);
 
-  /// Context of the Post (`POST`, `REPLY`, `EVENT`, or `EVENT_INSTANCE`.)
+  /// Context of the Post (`POST`, `REPLY`, `EVENT`, or `OCCASION`.)
   @$pb.TagNumber(14)
   PostContext get context => $_getN(13);
   @$pb.TagNumber(14)
@@ -700,7 +700,7 @@ class Post extends $pb.GeneratedMessage {
   $core.List<$10.SyncDestinationStatus> get syncDestinations => $_getList(24);
 
   /// If the Post was created/is kept in sync from a [`SyncSource`](#rellm-SyncSource) (an ICS
-  /// Event/EventInstance, or an RSS/Atom feed item), this is the source it was synced from.
+  /// Event/Occasion, or an RSS/Atom feed item), this is the source it was synced from.
   /// Only its media should be considered editable for such a Post.
   @$pb.TagNumber(26)
   $10.SyncSource get syncSource => $_getN(25);
