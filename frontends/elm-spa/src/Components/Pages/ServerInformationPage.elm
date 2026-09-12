@@ -242,9 +242,12 @@ init shared pageIsSecure targetHost navKey path query =
 
                         ( clusterTabModel, clusterTabEffect ) =
                             activateClusterTab shared newModel
+
+                        ( integrationsTabModel, integrationsTabEffect ) =
+                            activateIntegrationsTab shared newModel
                     in
-                    ( { newModel | clusterTab = clusterTabModel }
-                    , Effect.batch [ fetchAdmins server, fetchVersion server, clusterTabEffect ]
+                    ( { newModel | clusterTab = clusterTabModel, integrationsTab = integrationsTabModel }
+                    , Effect.batch [ fetchAdmins server, fetchVersion server, clusterTabEffect, integrationsTabEffect ]
                     )
 
                 Nothing ->
@@ -309,8 +312,13 @@ updateInner shared msg model =
 
                 ( clusterTabModel, clusterTabEffect ) =
                     activateClusterTab shared newModel
+
+                ( integrationsTabModel, integrationsTabEffect ) =
+                    activateIntegrationsTab shared newModel
             in
-            ( { newModel | clusterTab = clusterTabModel }, Effect.batch [ pushTabUrl newModel, clusterTabEffect ] )
+            ( { newModel | clusterTab = clusterTabModel, integrationsTab = integrationsTabModel }
+            , Effect.batch [ pushTabUrl newModel, clusterTabEffect, integrationsTabEffect ]
+            )
 
         GotOwnServerResult (Ok server) ->
             let
@@ -320,9 +328,12 @@ updateInner shared msg model =
 
                 ( clusterTabModel, clusterTabEffect ) =
                     activateClusterTab shared newModel
+
+                ( integrationsTabModel, integrationsTabEffect ) =
+                    activateIntegrationsTab shared newModel
             in
-            ( { newModel | clusterTab = clusterTabModel }
-            , Effect.batch [ fetchAdmins server, fetchVersion server, clusterTabEffect ]
+            ( { newModel | clusterTab = clusterTabModel, integrationsTab = integrationsTabModel }
+            , Effect.batch [ fetchAdmins server, fetchVersion server, clusterTabEffect, integrationsTabEffect ]
             )
 
         GotOwnServerResult (Err err) ->
@@ -371,7 +382,7 @@ updateInner shared msg model =
                 |> Tuple.mapSecond (Effect.map CdnTabMsg)
 
         IntegrationsTabMsg subMsg ->
-            IntegrationsTab.update shared model.targetHost (effectiveServer shared model) subMsg model.integrationsTab
+            IntegrationsTab.update shared model.targetHost subMsg model.integrationsTab
                 |> Tuple.mapFirst (\subModel -> { model | integrationsTab = subModel })
                 |> Tuple.mapSecond (Effect.map IntegrationsTabMsg)
 
@@ -391,8 +402,13 @@ updateInner shared msg model =
 
                 ( clusterTabModel, clusterTabEffect ) =
                     activateClusterTab shared newModel
+
+                ( integrationsTabModel, integrationsTabEffect ) =
+                    activateIntegrationsTab shared newModel
             in
-            ( { newModel | clusterTab = clusterTabModel }, Effect.batch [ Effect.fromShared subMsg, clusterTabEffect ] )
+            ( { newModel | clusterTab = clusterTabModel, integrationsTab = integrationsTabModel }
+            , Effect.batch [ Effect.fromShared subMsg, clusterTabEffect, integrationsTabEffect ]
+            )
 
 
 {-| `Shared.AccountsPanel`'s cached entry for `targetHost`, if it's both known _and_ actually
@@ -442,6 +458,21 @@ activateClusterTab shared model =
 
     else
         ( model.clusterTab, Effect.none )
+
+
+{-| Same as `activateClusterTab`, for `IntegrationsTab.activated` -- `twilio_config`/`bird_config`/
+`preferred_verification_apis` are admin-only-serialized the same way `cluster_resources` is (see
+`IntegrationsTab`'s own doc), so this tab needs the identical "fire from everywhere connectivity
+could have settled" treatment, called from the exact same sites.
+-}
+activateIntegrationsTab : Shared.Model -> Model -> ( IntegrationsTab.Model, Effect Msg )
+activateIntegrationsTab shared model =
+    if model.activeTab == TabIntegrations then
+        IntegrationsTab.update shared model.targetHost IntegrationsTab.activated model.integrationsTab
+            |> Tuple.mapSecond (Effect.map IntegrationsTabMsg)
+
+    else
+        ( model.integrationsTab, Effect.none )
 
 
 isKnownServer : Shared.Model -> Model -> Bool
@@ -636,7 +667,7 @@ tabContent shared model server =
             Html.map CdnTabMsg (CdnTab.view server maybeAdminAccount model.cdnTab)
 
         TabIntegrations ->
-            Html.map IntegrationsTabMsg (IntegrationsTab.view server maybeAdminAccount model.integrationsTab)
+            Html.map IntegrationsTabMsg (IntegrationsTab.view maybeAdminAccount model.integrationsTab)
 
         TabCluster ->
             Html.map ClusterTabMsg (ClusterTab.view shared server maybeAdminAccount model.clusterTab)
