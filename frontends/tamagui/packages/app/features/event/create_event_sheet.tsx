@@ -55,7 +55,7 @@ export function CreateEventSheet({ selectedGroup, button }: CreateEventSheetProp
   const previewEvent = useCallback((post: Post) => {
     const event = Event.create({
       post: post,
-      instances: [
+      occasions: [
         Occasion.create({
           location,
           startsAt: toProtoISOString(startsAt),
@@ -123,7 +123,7 @@ export function CreateEventSheet({ selectedGroup, button }: CreateEventSheetProp
   // const { eventPagesOnHome } = useLocalConfiguration();
   const allEvents = useMemo(() => bigCalendar
     ? eventResults
-    : eventResults.filter(e => moment(e.instances[0]?.endsAt).isAfter(pageLoadTime)),
+    : eventResults.filter(e => moment(e.occasions[0]?.endsAt).isAfter(pageLoadTime)),
     [bigCalendar, eventResults, pageLoadTime])
 
   const preview = useCallback((post: Post, group: Group | undefined) => {
@@ -145,7 +145,7 @@ export function CreateEventSheet({ selectedGroup, button }: CreateEventSheetProp
       />
       {bigCalendar
         ? <EventsFullCalendar events={[event, ...allEvents]}
-          scrollToTime={event.instances[0]?.startsAt} weeklyOnly width='100%' />
+          scrollToTime={event.occasions[0]?.startsAt} weeklyOnly width='100%' />
         : <EventCard event={event} isPreview hideEditControls />}
       {/* <EventCard event={previewEvent(post)} isPreview hideEditControls /> */}
     </YStack>

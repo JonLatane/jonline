@@ -609,8 +609,8 @@ sendUpdate accountsPanelModel msg model =
                 loadedByPostId =
                     Events.occasionPairs response
                         |> List.filterMap
-                            (\( event, instance ) ->
-                                instance.post |> Maybe.map (\instancePost -> ( instancePost.id, ( event, instance ) ))
+                            (\( event, occasion ) ->
+                                occasion.post |> Maybe.map (\occasionPost -> ( occasionPost.id, ( event, occasion ) ))
                             )
                         |> Dict.fromList
 
@@ -619,8 +619,8 @@ sendUpdate accountsPanelModel msg model =
                     List.foldl
                         (\postId events ->
                             case Dict.get postId loadedByPostId of
-                                Just ( event, instance ) ->
-                                    Dict.insert (rawKey postId host) (EventFetchLoaded event instance) events
+                                Just ( event, occasion ) ->
+                                    Dict.insert (rawKey postId host) (EventFetchLoaded event occasion) events
 
                                 Nothing ->
                                     Dict.insert (rawKey postId host) EventFetchFailed events
@@ -801,7 +801,7 @@ doc) for every starred post already `PostFetchLoaded` with `context ==
 OCCASION` that doesn't have one yet -- always run right after `posts`
 changes (`kickOffFetches`, `GotStarredPost`), same "grouped by host, one
 request per server" batching `kickOffFetches` uses for the posts themselves
-(see `fetchEventGroup`), via `Components.Events.fetchEventsByInstancePostIds`'
+(see `fetchEventGroup`), via `Components.Events.fetchEventsByOccasionPostIds`'
 own `occasion_post_ids` batch RPC. Doesn't need `fetchGroup`'s own
 `ServerDependentView.availableServer` check -- a post already loaded from
 `host` proves that server is currently reachable.
@@ -945,7 +945,7 @@ fetchGroup accountsPanelModel ( host, postIds ) ( posts, cmds ) =
 
 
 {-| `fetchGroup`'s counterpart for `kickOffEventFetches` -- one batched
-`GetEvents` request per server (`Components.Events.fetchEventsByInstancePostIds`)
+`GetEvents` request per server (`Components.Events.fetchEventsByOccasionPostIds`)
 covering every `postIds` entry needing one, rather than `fetchGroup`'s own
 one-`GetPosts`-per-post. No `ServerDependentView.availableServer` check here
 (unlike `fetchGroup`) -- see `kickOffEventFetches`'s own doc for why a
@@ -965,7 +965,7 @@ fetchEventGroup accountsPanelModel ( host, postIds ) ( events, cmds ) =
 
         fetchCmd : Cmd Msg
         fetchCmd =
-            Events.fetchEventsByInstancePostIds accountsPanelModel maybeAccountServer postIds
+            Events.fetchEventsByOccasionPostIds accountsPanelModel maybeAccountServer postIds
                 |> Task.attempt (GotStarredEvents host postIds)
     in
     ( List.foldl (\postId -> Dict.insert (rawKey postId host) FetchingEvent) events postIds
@@ -986,7 +986,7 @@ itself and so can reach `Shared.Msg` freely, this one can't (`Shared` imports
 `Shared.StarredPanel`, so the reverse import would be a cycle).
 -}
 view : SharedTime.Model -> String -> AccountsPanel.Model -> Maybe String -> Maybe String -> Model -> Html Msg
-view time basePath accountsPanelModel currentPostKey currentInstanceId model =
+view time basePath accountsPanelModel currentPostKey currentOccasionId model =
     let
         stateClass : String
         stateClass =
@@ -1022,7 +1022,7 @@ view time basePath accountsPanelModel currentPostKey currentInstanceId model =
                     [ Html.Keyed.node "div"
                         [ classes [ "starred-panel-list", "flip-animated-column" ] ]
                         (List.indexedMap
-                            (\index key -> ( key, starredPostRowFlip time basePath accountsPanelModel currentPostKey currentInstanceId model count index key ))
+                            (\index key -> ( key, starredPostRowFlip time basePath accountsPanelModel currentPostKey currentOccasionId model count index key ))
                             model.starOrder
                         )
                     ]
@@ -1036,7 +1036,7 @@ view time basePath accountsPanelModel currentPostKey currentInstanceId model =
 (fade/collapse here vs. `starredPostRow`'s own, independent reorder-slide).
 -}
 starredPostRowFlip : SharedTime.Model -> String -> AccountsPanel.Model -> Maybe String -> Maybe String -> Model -> Int -> Int -> String -> Html Msg
-starredPostRowFlip time basePath accountsPanelModel currentPostKey currentInstanceId model count index key =
+starredPostRowFlip time basePath accountsPanelModel currentPostKey currentOccasionId model count index key =
     let
         flipState : UI.Flip.State Msg
         flipState =
@@ -1055,7 +1055,7 @@ starredPostRowFlip time basePath accountsPanelModel currentPostKey currentInstan
                 []
     in
     div (UI.Flip.itemAttributes UI.Flip.Vertical flipState isMoving)
-        [ div pointerEventsAttr [ starredPostRow time basePath accountsPanelModel currentPostKey currentInstanceId model count index key ] ]
+        [ div pointerEventsAttr [ starredPostRow time basePath accountsPanelModel currentPostKey currentOccasionId model count index key ] ]
 
 
 {-| Wraps `starredPostView`'s content with `UI.Flip`'s slide-on-reorder
@@ -1063,7 +1063,7 @@ transform and the up/down reorder buttons -- mirrors `UI.accountRow`'s
 equivalent for Accounts.
 -}
 starredPostRow : SharedTime.Model -> String -> AccountsPanel.Model -> Maybe String -> Maybe String -> Model -> Int -> Int -> String -> Html Msg
-starredPostRow time basePath accountsPanelModel currentPostKey currentInstanceId model count index key =
+starredPostRow time basePath accountsPanelModel currentPostKey currentOccasionId model count index key =
     let
         moveAttrs : List (Html.Attribute Msg)
         moveAttrs =
@@ -1083,16 +1083,16 @@ starredPostRow time basePath accountsPanelModel currentPostKey currentInstanceId
             , canMoveUp = index > 0
             , canMoveDown = index < count - 1
             }
-        , starredPostView time basePath accountsPanelModel currentPostKey currentInstanceId model key
+        , starredPostView time basePath accountsPanelModel currentPostKey currentOccasionId model key
         ]
 
 
 starredPostView : SharedTime.Model -> String -> AccountsPanel.Model -> Maybe String -> Maybe String -> Model -> String -> Html Msg
-starredPostView time basePath accountsPanelModel currentPostKey currentInstanceId model key =
+starredPostView time basePath accountsPanelModel currentPostKey currentOccasionId model key =
     case Dict.get key model.posts of
         Just (PostFetchLoaded host post) ->
             if post.context == OCCASION then
-                starredOccasionView time basePath accountsPanelModel currentInstanceId model key host post
+                starredOccasionView time basePath accountsPanelModel currentOccasionId model key host post
 
             else
                 let
@@ -1189,16 +1189,16 @@ starredPostView time basePath accountsPanelModel currentPostKey currentInstanceI
 `model.events` (see `kickOffEventFetches`). `post` here is always the
 freshest known copy of the `Occasion`'s own Post (`Dict.get key
 model.posts`, same as `starredPostView`'s own `PostFetchLoaded` branch) --
-overlaid onto the fetched `instance.post` (via `displayInstance`, below)
+overlaid onto the fetched `occasion.post` (via `displayOccasion`, below)
 before rendering, so a just-toggled star's fresh count (see `GotStarResult`,
 which updates `model.posts` directly) shows immediately without waiting on a
 whole fresh `GetEvents` round-trip, mirroring
-`Components.Pages.EventsPage.eventCardView`'s own `displayInstance` swap.
+`Components.Pages.EventsPage.eventCardView`'s own `displayOccasion` swap.
 -}
 starredOccasionView : SharedTime.Model -> String -> AccountsPanel.Model -> Maybe String -> Model -> String -> String -> Post -> Html Msg
-starredOccasionView time basePath accountsPanelModel currentInstanceId model key host post =
+starredOccasionView time basePath accountsPanelModel currentOccasionId model key host post =
     case Dict.get key model.events of
-        Just (EventFetchLoaded event instance) ->
+        Just (EventFetchLoaded event occasion) ->
             let
                 starred : Bool
                 starred =
@@ -1206,7 +1206,7 @@ starredOccasionView time basePath accountsPanelModel currentInstanceId model key
 
                 current : Bool
                 current =
-                    currentInstanceId == (instance.post |> Maybe.map .id)
+                    currentOccasionId == (occasion.post |> Maybe.map .id)
 
                 onStarClicked : Maybe Msg
                 onStarClicked =
@@ -1220,9 +1220,9 @@ starredOccasionView time basePath accountsPanelModel currentInstanceId model key
                 maybeAccount =
                     RellmAccounts.enabledRellmAccountForServer accountsPanelModel.accounts host
 
-                displayInstance : Occasion
-                displayInstance =
-                    { instance | post = Just post }
+                displayOccasion : Occasion
+                displayOccasion =
+                    { occasion | post = Just post }
 
                 onMediaClicked : String -> Msg
                 onMediaClicked mediaId =
@@ -1240,7 +1240,7 @@ starredOccasionView time basePath accountsPanelModel currentInstanceId model key
 
                     Nothing ->
                         text ""
-                , Events.eventCard time basePath accountsPanelModel.mainFrontendHost host maybeServer maybeAccount onMediaClicked MediaRenderer.ExtraSmall starred onStarClicked current False False Nothing (\_ -> False) (\_ -> Nothing) (\_ -> NoOp) (\_ _ -> NoOp) event displayInstance
+                , Events.eventCard time basePath accountsPanelModel.mainFrontendHost host maybeServer maybeAccount onMediaClicked MediaRenderer.ExtraSmall starred onStarClicked current False False Nothing (\_ -> False) (\_ -> Nothing) (\_ -> NoOp) (\_ _ -> NoOp) event displayOccasion
                 ]
 
         Just FetchingEvent ->

@@ -199,16 +199,16 @@ export const GroupPostChrome: React.FC<GroupPostChromeProps> = ({ group, groupPo
 
   const detailsOccasionId = useAppSelector(state =>
     detailsEventId
-      ? state.events.entities[detailsEventId]?.instances.filter(
+      ? state.events.entities[detailsEventId]?.occasions.filter(
         i => moment(i.endsAt).isAfter(moment())
       )[0]?.id
       : undefined);
   // useAppSelector(state => {
-  //   const instanceId = state.events.postInstances[federatedId(post)];
-  //   post.context === PostContext.OCCASION && instanceId
+  //   const occasionId = state.events.postOccasions[federatedId(post)];
+  //   post.context === PostContext.OCCASION && occasionId
   //     ? !isPrimaryServer
-  //       ? instanceId
-  //       : parseFederatedId(instanceId)?.id
+  //       ? occasionId
+  //       : parseFederatedId(occasionId)?.id
   //     : undefined
   // });
 

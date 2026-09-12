@@ -9,7 +9,7 @@ module Shared.MediaGeneratorPanel exposing
 
 {-| A single, app-wide AI image generation panel -- opened contextually (a Post/Event's own
 "Generate Media…" button, next to its existing "Edit Media…" -- see `Components.Posts.postDetail`/
-`Pages.Event.PostId_`), the same "one shared instance, `Nothing`/`""` means closed" convention
+`Pages.Event.PostId_`), the same "one shared occasion, `Nothing`/`""` means closed" convention
 `Shared.MarkdownPanel`/`Shared.MyMediaPanel` already use. Shaped like `MarkdownPanel` (a prompt to
 edit, Save/Cancel below), but with three inputs instead of one: which of the caller's
 `AIModel`s to call (`modelChooserView`), the editable prompt (`promptView`), and a set of
@@ -87,10 +87,10 @@ type alias Model =
 {-| What this panel is generating media *for* -- `Nothing` (see `Model.target`) just generates and
 stores the image in the current user's own Media (as `MyMediaPanel` then shows it), without
 attaching it to anything. `TargetEvent` carries both the `Event` and the specific `Occasion`
-being viewed (`Pages.Event.PostId_`'s own `instance`) purely so `targetCardView` can render the
+being viewed (`Pages.Event.PostId_`'s own `occasion`) purely so `targetCardView` can render the
 same `Components.Events.eventCard` that page already shows elsewhere -- generation itself only ever
 targets the Event's own Post (see `ai_providers.proto`'s own doc on `GenerateMediaRequest.target`),
-never a particular instance.
+never a particular occasion.
 -}
 type Target
     = TargetPost Post
@@ -244,7 +244,7 @@ update accountsPanelModel msg model =
 {-| The target's own current media, prepopulating `model.media` (still freely editable via
 `EditMediaClicked` afterward) -- for an Event, the union of its own Post's media and the specific
 `Occasion`'s own Post's media, Event-first, mirroring
-`backend/src/rpcs/events/sync_occasion.rs`'s `combine_media` (an instance-level Post rarely
+`backend/src/rpcs/events/sync_occasion.rs`'s `combine_media` (an occasion-level Post rarely
 carries its own media override, so without the Event's own this would often come up empty).
 -}
 defaultMedia : Maybe Target -> List MediaReference
@@ -253,7 +253,7 @@ defaultMedia target =
         Just (TargetPost post) ->
             post.media
 
-        Just (TargetEvent event instance) ->
+        Just (TargetEvent event occasion) ->
             let
                 eventMedia : List MediaReference
                 eventMedia =
@@ -263,14 +263,14 @@ defaultMedia target =
                 eventMediaIds =
                     List.map .id eventMedia
 
-                instanceMedia : List MediaReference
-                instanceMedia =
-                    instance.post
+                occasionMedia : List MediaReference
+                occasionMedia =
+                    occasion.post
                         |> Maybe.map .media
                         |> Maybe.withDefault []
                         |> List.filter (\m -> not (List.member m.id eventMediaIds))
             in
-            eventMedia ++ instanceMedia
+            eventMedia ++ occasionMedia
 
         Nothing ->
             []
@@ -506,8 +506,8 @@ targetCardView time accountsPanelModel basePath host target =
         TargetPost post ->
             Posts.postCard time basePath accountsPanelModel.mainFrontendHost host maybeServer maybeAccount (\_ -> NoOp) True False False Nothing False Nothing (\_ -> False) (\_ -> Nothing) (\_ -> NoOp) (\_ _ -> NoOp) post
 
-        TargetEvent event instance ->
-            Events.eventCard time basePath accountsPanelModel.mainFrontendHost host maybeServer maybeAccount (\_ -> NoOp) MediaRenderer.ExtraSmall False Nothing False False False Nothing (\_ -> False) (\_ -> Nothing) (\_ -> NoOp) (\_ _ -> NoOp) event instance
+        TargetEvent event occasion ->
+            Events.eventCard time basePath accountsPanelModel.mainFrontendHost host maybeServer maybeAccount (\_ -> NoOp) MediaRenderer.ExtraSmall False Nothing False False False Nothing (\_ -> False) (\_ -> Nothing) (\_ -> NoOp) (\_ _ -> NoOp) event occasion
 
 
 modelChooserView : Maybe String -> List AIModel -> Model -> Html Msg
@@ -623,8 +623,8 @@ generateTask accountsPanelModel resolved host selectedModel prompt media target 
                 Just (TargetPost post) ->
                     Just (GenerateMediaRequestTarget.PostId post.id)
 
-                Just (TargetEvent _ instance) ->
-                    Just (GenerateMediaRequestTarget.OccasionId (instance.post |> Maybe.map .id |> Maybe.withDefault ""))
+                Just (TargetEvent _ occasion) ->
+                    Just (GenerateMediaRequestTarget.OccasionId (occasion.post |> Maybe.map .id |> Maybe.withDefault ""))
 
                 Nothing ->
                     Nothing

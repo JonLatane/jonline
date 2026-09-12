@@ -398,12 +398,12 @@ fn delete_removes_synced_occasion_and_post_join_rows() {
             conn,
             &owner,
             EventOpts {
-                default_instance: None,
+                default_occasion: None,
                 ..Default::default()
             },
         );
-        let (instance, _) = create_occasion(conn, &event, Some(&owner), Default::default());
-        create_occasion_sync_destination_row(conn, &instance, &destination);
+        let (occasion, _) = create_occasion(conn, &event, Some(&owner), Default::default());
+        create_occasion_sync_destination_row(conn, &occasion, &destination);
 
         let post = create_post(conn, Some(&owner), PostOpts::default());
         create_post_sync_destination_row(conn, &post, &destination);
@@ -422,12 +422,12 @@ fn delete_removes_synced_occasion_and_post_join_rows() {
         .expect("owner delete should succeed");
 
         use crate::schema::{occasion_sync_destinations, post_sync_destinations};
-        let remaining_instance_joins: i64 = occasion_sync_destinations::table
+        let remaining_occasion_joins: i64 = occasion_sync_destinations::table
             .filter(occasion_sync_destinations::sync_destination_id.eq(destination.id))
             .count()
             .get_result(conn)
             .unwrap();
-        assert_eq!(remaining_instance_joins, 0);
+        assert_eq!(remaining_occasion_joins, 0);
 
         let remaining_post_joins: i64 = post_sync_destinations::table
             .filter(post_sync_destinations::sync_destination_id.eq(destination.id))
@@ -450,15 +450,15 @@ fn sync_occasion_requires_sync_events_to_facebook_permission() {
             conn,
             &owner,
             EventOpts {
-                default_instance: None,
+                default_occasion: None,
                 ..Default::default()
             },
         );
-        let (instance, _) = create_occasion(conn, &event, Some(&owner), Default::default());
+        let (occasion, _) = create_occasion(conn, &event, Some(&owner), Default::default());
 
         let err = sync_occasion(
             SyncOccasionRequest {
-                occasion_id: instance.post_id.to_proto_id(),
+                occasion_id: occasion.post_id.to_proto_id(),
                 sync_destination_id: destination.id.to_proto_id(),
             },
             &owner,
@@ -482,18 +482,18 @@ fn sync_occasion_rejects_non_owner_non_admin_of_the_destination() {
             conn,
             &owner,
             EventOpts {
-                default_instance: None,
+                default_occasion: None,
                 ..Default::default()
             },
         );
-        let (instance, _) = create_occasion(conn, &event, Some(&owner), Default::default());
+        let (occasion, _) = create_occasion(conn, &event, Some(&owner), Default::default());
 
         let other = create_user(conn, "sdt_sync_other");
         let other = grant_permissions(conn, &other, vec![Permission::SyncEventsToFacebook]);
 
         let err = sync_occasion(
             SyncOccasionRequest {
-                occasion_id: instance.post_id.to_proto_id(),
+                occasion_id: occasion.post_id.to_proto_id(),
                 sync_destination_id: destination.id.to_proto_id(),
             },
             &other,
@@ -508,10 +508,10 @@ fn sync_occasion_rejects_non_owner_non_admin_of_the_destination() {
 }
 
 #[test]
-fn sync_occasion_fails_for_unknown_instance() {
+fn sync_occasion_fails_for_unknown_occasion() {
     let mut conn = test_conn();
     conn.test_transaction::<_, tonic::Status, _>(|conn| {
-        let owner = create_user(conn, "sdt_sync_noinstance");
+        let owner = create_user(conn, "sdt_sync_nooccasion");
         let owner = grant_permissions(conn, &owner, vec![Permission::SyncEventsToFacebook]);
         let destination = create_sync_destination_row(conn, &owner, "123");
 

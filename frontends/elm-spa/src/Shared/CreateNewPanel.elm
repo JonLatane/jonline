@@ -592,7 +592,7 @@ nonEmptyTrimmed value =
 {-| `PostMode` calls `Rellm.createPost` exactly as before; `EventMode`
 calls `Rellm.createEvent` with a single `Occasion` (`startsAt`/
 `endsAt`, this panel's own two date fields) and no `Post` of its own -- see
-module doc for why that instance needs no visibility of its own. Both
+module doc for why that occasion needs no visibility of its own. Both
 branches tag their own RPC's response (the server-populated Post/Event
 itself, `id`/`createdAt`/etc. included) as a `CreatedItem` with
 `resolved.server.frontendHost` -- what `GotSaveResult` appends to
@@ -629,7 +629,7 @@ saveTask browserTimeZone accountsPanelModel resolved model =
                         { defaultEvent
                             | post = Just { post | context = EVENT }
                             , info = Just defaultEventInfo
-                            , instances =
+                            , occasions =
                                 [ { defaultOccasion
                                     | startsAt = Maybe.map posixToTimestamp model.startsAt
                                     , endsAt = Maybe.map posixToTimestamp model.endsAt
@@ -844,7 +844,7 @@ timezoneField browserTimeZone model =
 {-| Every IANA zone name `justinmimbs/timezone-data` bundles (the same
 dataset `Shared.getBrowserZone` itself resolves against), sorted for a
 sensible `<select>` order -- what `timezoneField` (here) and
-`Components.Pages.EventPage.instanceTimezoneField` both offer.
+`Components.Pages.EventPage.occasionTimezoneField` both offer.
 -}
 allTimezoneNames : List String
 allTimezoneNames =

@@ -13,7 +13,7 @@ import { AuthorInfo } from "../post/author_info";
 
 interface Props {
   event: FederatedEvent;
-  instance: Occasion;
+  occasion: Occasion;
   attendance: EventAttendance;
   onPressEdit?: () => void;
   onModerated?: (attendance: EventAttendance) => void;
@@ -21,7 +21,7 @@ interface Props {
 
 export const RsvpCard: React.FC<Props> = ({
   event,
-  instance,
+  occasion,
   attendance,
   onPressEdit,
   onModerated,

@@ -277,16 +277,16 @@ type DeleteConfirmation
     | ConfirmSyncSourceDelete SyncSource Bool String
     | ConfirmPostDelete Post String
     | ConfirmEventDelete Event String
-      -- Deletes just `instance` from `event` (every other `Occasion` is
+      -- Deletes just `occasion` from `event` (every other `Occasion` is
       -- kept) rather than the whole `Event` -- `ConfirmDelete` fires
-      -- `DeleteRemovedOccasions` with `event.instances` minus `instance`
+      -- `DeleteRemovedOccasions` with `event.occasions` minus `occasion`
       -- as the "keep" list, same "no Shared-owned home needed" shape as
       -- `ConfirmPostDelete`/`ConfirmEventDelete` above. Shown by
-      -- `Pages.Event.PostId_`'s "Delete Instance" button, next to "Delete
+      -- `Pages.Event.PostId_`'s "Delete Occasion" button, next to "Delete
       -- Event", only once an `Event` has more than one `Occasion` (with
       -- exactly one, deleting it *is* deleting the Event -- see
       -- `backend/src/rpcs/events/get_events.rs`'s own `INNER JOIN`, which
-      -- makes a zero-instance Event unretrievable anyway).
+      -- makes a zero-occasion Event unretrievable anyway).
     | ConfirmOccasionDelete Occasion Event String
     | ConfirmUserDelete User String
       -- Un-syncs `instance` from the `SyncDestination` (`String`) whose
@@ -1532,15 +1532,15 @@ sharedUpdate req msg model =
                         |> Task.attempt GotEventDeleteResult
                     )
 
-                Just (ConfirmOccasionDelete instance event host) ->
+                Just (ConfirmOccasionDelete occasion event host) ->
                     ( { model | panels = { panels | confirmingDeleteFor = Nothing } }
                     , Events.deleteRemovedOccasions
                         model.accounts
                         ( RellmAccounts.enabledRellmAccountForServer model.accounts.accounts host |> Maybe.map .userId, host )
                         { event
-                            | instances =
-                                event.instances
-                                    |> List.filter (\other -> (other.post |> Maybe.map .id) /= (instance.post |> Maybe.map .id))
+                            | occasions =
+                                event.occasions
+                                    |> List.filter (\other -> (other.post |> Maybe.map .id) /= (occasion.post |> Maybe.map .id))
                         }
                         |> Task.attempt GotOccasionDeleteResult
                     )
@@ -1554,12 +1554,12 @@ sharedUpdate req msg model =
                         |> Task.attempt (GotUserDeleteResult user host)
                     )
 
-                Just (ConfirmOccasionSyncDestinationDelete instance eventSyncDestinationId _ host) ->
+                Just (ConfirmOccasionSyncDestinationDelete occasion eventSyncDestinationId _ host) ->
                     ( { model | panels = { panels | confirmingDeleteFor = Nothing } }
                     , Events.deleteOccasionSyncDestination
                         model.accounts
                         ( RellmAccounts.enabledRellmAccountForServer model.accounts.accounts host |> Maybe.map .userId, host )
-                        (instance.post |> Maybe.map .id |> Maybe.withDefault "")
+                        (occasion.post |> Maybe.map .id |> Maybe.withDefault "")
                         eventSyncDestinationId
                         |> Task.attempt (GotOccasionSyncDestinationDeleteResult host)
                     )
@@ -1952,8 +1952,8 @@ away, on the other side of a DST transition -- gets rendered with today's
 offset instead of its own). This instead reads the browser's actual IANA
 zone name (e.g. "America/New\_York", via `elm/time`'s `Time.getZoneName`)
 and looks up its real transition history/future in
-`justinmimbs/timezone-data`, so `Components.Events.instanceWhenText`/
-`siblingInstanceWhenText` show a recurring weekly event's fixed local time
+`justinmimbs/timezone-data`, so `Components.Events.occasionWhenText`/
+`siblingOccasionWhenText` show a recurring weekly event's fixed local time
 (e.g. "6-7PM") as the same "6-7PM" on both sides of a DST change, rather
 than drifting an hour. Falls back to plain `Time.here` if the zone name
 can't be read or isn't in `timezone-data` (e.g. an unusual environment

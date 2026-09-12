@@ -33,10 +33,10 @@ const selectStarredPostEventData = (
 
       const postId = federatedId(basePost);
       const occasionId = basePost?.context === PostContext.OCCASION
-        ? state.events.postInstances[postId]
+        ? state.events.postOccasions[postId]
         : undefined;
       const event = occasionId
-        ? state.events.entities[state.events.instanceEvents[occasionId]!]
+        ? state.events.entities[state.events.occasionEvents[occasionId]!]
         : undefined
 
       return { occasionId, event };
@@ -86,12 +86,12 @@ export function useStarredPostDetails(postId: string, isVisible?: boolean) {
 
   // const occasionId = useAppSelector(state =>
   //   basePost?.context === PostContext.OCCASION
-  //     ? state.events.postInstances[postId]
+  //     ? state.events.postOccasions[postId]
   //     : undefined
   // );
   // const event = useAppSelector(state =>
   //   occasionId
-  //     ? state.events.entities[state.events.instanceEvents[occasionId]!]
+  //     ? state.events.entities[state.events.occasionEvents[occasionId]!]
   //     : undefined
   // );
 
@@ -103,24 +103,24 @@ export function useStarredPostDetails(postId: string, isVisible?: boolean) {
     ? parseFederatedId(occasionId!).id
     : undefined;
   // const { id: serverOccasionId } = parseFederatedId(occasionId!);
-  const targetInstance: IdentifiedOccasion | undefined = event?.instances?.find(i => i.id === serverOccasionId);
-  const eventWithSingleInstance: FederatedEvent | undefined = event && targetInstance
+  const targetOccasion: IdentifiedOccasion | undefined = event?.occasions?.find(i => i.id === serverOccasionId);
+  const eventWithSingleOccasion: FederatedEvent | undefined = event && targetOccasion
     ? {
       ...event,
-      instances: [targetInstance]
+      occasions: [targetOccasion]
     } : undefined;
   const hasFailedToLoadEvent = useAppSelector(state => state.events.failedPostIds.includes(postId));
 
   const shouldLoadEvent =
-    isServerReady && basePost?.context === PostContext.OCCASION && !eventWithSingleInstance && !loadingEvent && !hasFailedToLoadEvent;
+    isServerReady && basePost?.context === PostContext.OCCASION && !eventWithSingleOccasion && !loadingEvent && !hasFailedToLoadEvent;
   // if (postId) debugger;
   useEffect(() => {
-    // console.log('StarredPosts: loader', { shouldLoadEvent, postId, serverPostId, serverHost, isEvent: basePost?.context === PostContext.OCCASION, occasionContext: PostContext.OCCASION, eventWithSingleInstance, loadingEvent, hasFailedToLoadEvent });
+    // console.log('StarredPosts: loader', { shouldLoadEvent, postId, serverPostId, serverHost, isEvent: basePost?.context === PostContext.OCCASION, occasionContext: PostContext.OCCASION, eventWithSingleOccasion, loadingEvent, hasFailedToLoadEvent });
     // if (postId) debugger;
 
     if (shouldLoadEvent) {
       // console.log('StarredPosts: Fetching event by postId', postId);
-      // console.log('StarredPosts: Fetching event by postId', { shouldLoadEvent, postId, serverPostId, serverHost, isEvent: basePost?.context === PostContext.OCCASION, eventWithSingleInstance, loadingEvent, hasFailedToLoadEvent });
+      // console.log('StarredPosts: Fetching event by postId', { shouldLoadEvent, postId, serverPostId, serverHost, isEvent: basePost?.context === PostContext.OCCASION, eventWithSingleOccasion, loadingEvent, hasFailedToLoadEvent });
       setLoadingEvent(true);
       dispatch(loadEvent({ ...accountOrServer, postId: serverPostId! })).then(() => {
         setTimeout(() =>
@@ -137,7 +137,7 @@ export function useStarredPostDetails(postId: string, isVisible?: boolean) {
     serverPostId,
     serverHost,
     serverOccasionId,
-    eventWithSingleInstance,
+    eventWithSingleOccasion,
     isServerReady,
     loadingServer,
     loadingPost: loadingPost || shouldReloadPost,
@@ -170,7 +170,7 @@ export function StarredPostCard({ postId, onOpen, fullSize, unsortable, unreadCo
     occasionId,
     serverPostId,
     serverHost,
-    eventWithSingleInstance,
+    eventWithSingleOccasion,
     isServerReady,
     loadingServer,
     loadingPost,
@@ -195,9 +195,9 @@ export function StarredPostCard({ postId, onOpen, fullSize, unsortable, unreadCo
   }
 
   let renderedCardView: React.JSX.Element;
-  if (eventWithSingleInstance) {
+  if (eventWithSingleOccasion) {
     renderedCardView = <EventCard
-      event={eventWithSingleInstance}
+      event={eventWithSingleOccasion}
       isPreview={!fullSize} forceShrinkPreview
       onPress={() => onOpen?.(postId)}
       showPermalink={showPermalink}

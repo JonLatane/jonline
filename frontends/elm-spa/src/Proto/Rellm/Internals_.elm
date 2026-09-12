@@ -4706,9 +4706,9 @@ type alias Proto__Rellm__SyncOccasionRequest =
 {-| The field numbers for the fields of `Proto__Rellm__Event`. This is mostly useful for internals, like documentation generation.
 
 -}
-fieldNumbersProto__Rellm__Event : { post : Int, info : Int, instances : Int }
+fieldNumbersProto__Rellm__Event : { post : Int, info : Int, occasions : Int }
 fieldNumbersProto__Rellm__Event =
-    { post = 2, info = 3, instances = 4 }
+    { post = 2, info = 3, occasions = 4 }
 
 
 {-| Default for Proto__Rellm__Event. Should only be used for 'required' decoders as an initial value.
@@ -4716,7 +4716,7 @@ fieldNumbersProto__Rellm__Event =
 -}
 defaultProto__Rellm__Event : Proto__Rellm__Event
 defaultProto__Rellm__Event =
-    { post = Nothing, info = Nothing, instances = [] }
+    { post = Nothing, info = Nothing, occasions = [] }
 
 
 {-| Declares how to decode a `Proto__Rellm__Event` from Bytes. To actually perform the conversion from Bytes, you need to use Protobuf.Decode.decode from eriktim/elm-protocol-buffers.
@@ -4728,7 +4728,7 @@ decodeProto__Rellm__Event =
         defaultProto__Rellm__Event
         [ Protobuf.Decode.optional 2 (Protobuf.Decode.map Just decodeProto__Rellm__Post) (\a r -> { r | post = a })
         , Protobuf.Decode.optional 3 (Protobuf.Decode.map Just decodeProto__Rellm__EventInfo) (\a r -> { r | info = a })
-        , Protobuf.Decode.repeated 4 decodeProto__Rellm__Occasion .instances (\a r -> { r | instances = a })
+        , Protobuf.Decode.repeated 4 decodeProto__Rellm__Occasion .occasions (\a r -> { r | occasions = a })
         ]
 
 
@@ -4740,7 +4740,7 @@ encodeProto__Rellm__Event value =
     Protobuf.Encode.message
         [ ( 2, (Maybe.map encodeProto__Rellm__Post >> Maybe.withDefault Protobuf.Encode.none) value.post )
         , ( 3, (Maybe.map encodeProto__Rellm__EventInfo >> Maybe.withDefault Protobuf.Encode.none) value.info )
-        , ( 4, (Protobuf.Encode.list encodeProto__Rellm__Occasion) value.instances )
+        , ( 4, (Protobuf.Encode.list encodeProto__Rellm__Occasion) value.occasions )
         ]
 
 
@@ -4748,7 +4748,7 @@ encodeProto__Rellm__Event value =
 
 -}
 type alias Proto__Rellm__Event =
-    { post : Maybe Proto__Rellm__Post, info : Maybe Proto__Rellm__EventInfo, instances : List Proto__Rellm__Occasion }
+    { post : Maybe Proto__Rellm__Post, info : Maybe Proto__Rellm__EventInfo, occasions : List Proto__Rellm__Occasion }
 
 
 {-| The field numbers for the fields of `Proto__Rellm__GetEventsResponse`. This is mostly useful for internals, like documentation generation.

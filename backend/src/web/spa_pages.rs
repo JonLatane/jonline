@@ -241,13 +241,13 @@ webui!(
 webui!(
     event,
     "/event/<_>",
-    "event/[instanceId].html",
+    "event/[occasionId].html",
     |mut connection: PgPooledConnection,
      server_name: String,
      server_logo: Option<String>,
      path: &str| {
         let event = match federated_path_component(path, 2) {
-            Some(FederatedId::Local(instance_id)) => get_event(instance_id, &mut connection),
+            Some(FederatedId::Local(occasion_id)) => get_event(occasion_id, &mut connection),
             Some(FederatedId::Federated(_, _)) => None,
             None => return None,
         };
@@ -555,7 +555,7 @@ webui!(
 webui!(
     group_event,
     "/g/<_>/e/<_>",
-    "g/[shortname]/e/[instanceId].html",
+    "g/[shortname]/e/[occasionId].html",
     |mut connection: PgPooledConnection,
      server_name: String,
      server_logo: Option<String>,
@@ -563,7 +563,7 @@ webui!(
         let group_name = group_name(path, &mut connection);
 
         let event = match federated_path_component(path, 4) {
-            Some(FederatedId::Local(instance_id)) => get_event(instance_id, &mut connection),
+            Some(FederatedId::Local(occasion_id)) => get_event(occasion_id, &mut connection),
             Some(FederatedId::Federated(_, _)) => None,
             None => return None,
         };

@@ -203,7 +203,7 @@ export const groupsSlice = createSlice({
 
     builder.addCase(loadGroupEventsPage.fulfilled, (state, action) => {
       const { events } = action.payload;
-      const occasionIds = events.map(e => federateId(e.instances[0]!.id, action));
+      const occasionIds = events.map(e => federateId(e.occasions[0]!.id, action));
 
       // NOTE: EventsState adds the post data from this same response
       // on loadGroupPostsPage.fulfilled.

@@ -25,14 +25,14 @@ function getEventsPages(events: EventsState, listingType: EventListingType, time
 }
 
 function getEventsPage(events: EventsState, listingType: EventListingType, timeFilter: string, page: number, servers: AccountOrServer[]): FederatedEvent[] {
-  const pageInstanceIds: string[] = servers.flatMap(server => {
+  const pageOccasionIds: string[] = servers.flatMap(server => {
     const serverOccasionPages = getFederated(events.occasionPages, server.server);
     return ((serverOccasionPages[listingType] ?? {})[timeFilter] ?? {})[page] ?? [];
   });
 
-  const pageEvents = instancesToEvents(events, pageInstanceIds);
-  pageEvents.sort((a, b) => (a.instances[0]?.startsAt ?? '').localeCompare(b.instances[0]?.startsAt ?? ''));
-  // pageEvents.sort((a, b) => moment(a.instances[0]?.startsAt).diff(b.instances[0]?.startsAt));
+  const pageEvents = occasionsToEvents(events, pageOccasionIds);
+  pageEvents.sort((a, b) => (a.occasions[0]?.startsAt ?? '').localeCompare(b.occasions[0]?.startsAt ?? ''));
+  // pageEvents.sort((a, b) => moment(a.occasions[0]?.startsAt).diff(b.occasions[0]?.startsAt));
   return pageEvents;
 }
 
@@ -88,10 +88,10 @@ export function getGroupEventPages(state: RootState, group: FederatedGroup, time
 function getGroupEventsPage(state: RootState, group: FederatedGroup, timeFilter: string, page: number): FederatedEvent[] {
   const groupId = federatedId(group);
   const { events, groups } = state;
-  const pageInstanceIds: string[] = ((groups.groupEventPages[groupId] ?? {})[timeFilter] ?? {})[page] ?? [];
+  const pageOccasionIds: string[] = ((groups.groupEventPages[groupId] ?? {})[timeFilter] ?? {})[page] ?? [];
   // debugger;
-  const pageEvents = instancesToEvents(events, pageInstanceIds);
-  // console.log('pageInstanceIds.length', pageInstanceIds.length, pageInstanceIds, 'pageEvents.length', pageEvents.length);
+  const pageEvents = occasionsToEvents(events, pageOccasionIds);
+  // console.log('pageOccasionIds.length', pageOccasionIds.length, pageOccasionIds, 'pageEvents.length', pageEvents.length);
   return pageEvents;
 }
 export function getHasGroupEventsPage(state: RootState, group: FederatedGroup, timeFilter: string, page: number): boolean {
@@ -99,7 +99,7 @@ export function getHasGroupEventsPage(state: RootState, group: FederatedGroup, t
   const groupId = federatedId(group);
   const data = ((groups.groupEventPages[groupId] ?? {})[timeFilter] ?? {})[page];
   // debugger;
-  return data != undefined// && instancesToEvents(events, data).length > 0;
+  return data != undefined// && occasionsToEvents(events, data).length > 0;
 }
 
 export function getHasMoreGroupEventPages(groups: GroupsState, group: FederatedGroup, timeFilter: string, currentPage: number): boolean {
@@ -107,18 +107,18 @@ export function getHasMoreGroupEventPages(groups: GroupsState, group: FederatedG
   return (((groups.groupEventPages[groupId] ?? {})[timeFilter] ?? {})[currentPage]?.length ?? 0) > 0;
 }
 
-function instancesToEvents(events: EventsState, instanceIds: string[]) {
-  return instanceIds.map(instanceId => {
-    const eventId = events.instanceEvents[instanceId];
+function occasionsToEvents(events: EventsState, occasionIds: string[]) {
+  return occasionIds.map(occasionId => {
+    const eventId = events.occasionEvents[occasionId];
     // debugger;
-    // console.log('eventId', eventId, events.instanceEvents)
+    // console.log('eventId', eventId, events.occasionEvents)
     if (!eventId) return undefined;
 
     const event = selectEventById(events, eventId)
     if (!event) return undefined;
 
-    const singletonInstanceEvent = { ...event, instances: event.instances.filter(i => i.id == defederateId(instanceId)) };
+    const singletonOccasionEvent = { ...event, occasions: event.occasions.filter(i => i.id == defederateId(occasionId)) };
     // debugger;
-    return singletonInstanceEvent;
+    return singletonOccasionEvent;
   }).filter(p => p).map(p => p as FederatedEvent);
 }

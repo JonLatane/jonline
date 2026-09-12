@@ -201,9 +201,9 @@ class GetEventsRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(11)
   void clearSearchText() => clearField(11);
 
-  /// Loads multiple events by their event instances' Post IDs - returns one
+  /// Loads multiple events by their occasions' Post IDs - returns one
   /// Event per matching Occasion (see GetEventsResponse's own doc), not
-  /// the requested Occasion's whole parent Event's full instance list.
+  /// the requested Occasion's whole parent Event's full occasion list.
   @$pb.TagNumber(12)
   $core.List<$core.String> get occasionPostIds => $_getList(8);
 
@@ -332,13 +332,13 @@ class TimeFilter extends $pb.GeneratedMessage {
 ///  A list of [`Event`](#rellm-Event)s with a maybe-incomplete (see [`GetEventsRequest`](#rellm-GetEventsRequest)) set of their [`Occasion`](#rellm-Occasion)s.
 ///
 ///  Note that `GetEventsResponse` may often include duplicate Events with the same ID.
-///  I.E. something like: `{events: [{id: a, instances: [{id: x}]}, {id: a, instances: [{id: y}]}, ]}` is a valid response.
-///  This semantically means: "Event A has both instances X and Y in the time frame the client asked for."
+///  I.E. something like: `{events: [{id: a, occasions: [{id: x}]}, {id: a, occasions: [{id: y}]}, ]}` is a valid response.
+///  This semantically means: "Event A has both occasions X and Y in the time frame the client asked for."
 ///  The client should be able to handle this.
 ///
 ///  In the React/Tamagui client, this is handled by the Redux store, which
 ///  effectively "compacts" all response into its own internal Events store, in a form something like:
-///  `{events: {a: {id: a, instances: [{id: x}, {id: y}]}, ...}, instanceEventIds: {x:a, y:a}}`.
+///  `{events: {a: {id: a, occasions: [{id: x}, {id: y}]}, ...}, occasionEventIds: {x:a, y:a}}`.
 ///  (In reality it uses `EntityAdapter` which is a bit more complicated, but the idea is the same.)
 class GetEventsResponse extends $pb.GeneratedMessage {
   factory GetEventsResponse({
@@ -392,7 +392,7 @@ class Event extends $pb.GeneratedMessage {
   factory Event({
     $8.Post? post,
     EventInfo? info,
-    $core.Iterable<Occasion>? instances,
+    $core.Iterable<Occasion>? occasions,
   }) {
     final $result = create();
     if (post != null) {
@@ -401,8 +401,8 @@ class Event extends $pb.GeneratedMessage {
     if (info != null) {
       $result.info = info;
     }
-    if (instances != null) {
-      $result.instances.addAll(instances);
+    if (occasions != null) {
+      $result.occasions.addAll(occasions);
     }
     return $result;
   }
@@ -413,7 +413,7 @@ class Event extends $pb.GeneratedMessage {
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'Event', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
     ..aOM<$8.Post>(2, _omitFieldNames ? '' : 'post', subBuilder: $8.Post.create)
     ..aOM<EventInfo>(3, _omitFieldNames ? '' : 'info', subBuilder: EventInfo.create)
-    ..pc<Occasion>(4, _omitFieldNames ? '' : 'instances', $pb.PbFieldType.PM, subBuilder: Occasion.create)
+    ..pc<Occasion>(4, _omitFieldNames ? '' : 'occasions', $pb.PbFieldType.PM, subBuilder: Occasion.create)
     ..hasRequiredFields = false
   ;
 
@@ -463,9 +463,9 @@ class Event extends $pb.GeneratedMessage {
   @$pb.TagNumber(3)
   EventInfo ensureInfo() => $_ensure(1);
 
-  /// A list of instances for the Event. *Events will only include all instances if the request is for a single event.*
+  /// A list of occasions for the Event. *Events will only include all occasions if the request is for a single event.*
   @$pb.TagNumber(4)
-  $core.List<Occasion> get instances => $_getList(2);
+  $core.List<Occasion> get occasions => $_getList(2);
 }
 
 /// Syncs (cross-posts) a single Occasion to one SyncDestination.
@@ -823,7 +823,7 @@ class Occasion extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   void clearEventId() => clearField(2);
 
-  /// Optional [`Post`](#rellm-Post) containing alternate title/link/description for this particular instance. Its [`PostContext`](#rellm-PostContext) should be `OCCASION`.
+  /// Optional [`Post`](#rellm-Post) containing alternate title/link/description for this particular Occasion. Its [`PostContext`](#rellm-PostContext) should be `OCCASION`.
   /// An `Occasion`'s ID *is* its `post.id` - there is no separate surrogate ID.
   @$pb.TagNumber(3)
   $8.Post get post => $_getN(1);
@@ -836,7 +836,7 @@ class Occasion extends $pb.GeneratedMessage {
   @$pb.TagNumber(3)
   $8.Post ensurePost() => $_ensure(1);
 
-  /// Additional configuration for this instance of this [`Occasion`](#rellm-Occasion) beyond the [`EventInfo`](#rellm-EventInfo) in its parent [`Event`](#rellm-Event).
+  /// Additional configuration for this [`Occasion`](#rellm-Occasion) beyond the [`EventInfo`](#rellm-EventInfo) in its parent [`Event`](#rellm-Event).
   @$pb.TagNumber(4)
   OccasionInfo get info => $_getN(2);
   @$pb.TagNumber(4)
@@ -897,7 +897,7 @@ class Occasion extends $pb.GeneratedMessage {
   @$pb.TagNumber(9)
   $12.Timestamp ensureSyncMissingSince() => $_ensure(6);
 
-  /// RSVP + invite data for this instance.
+  /// RSVP + invite data for this Occasion.
   @$pb.TagNumber(10)
   EventAttendances get attendances => $_getN(7);
   @$pb.TagNumber(10)
@@ -909,7 +909,7 @@ class Occasion extends $pb.GeneratedMessage {
   @$pb.TagNumber(10)
   EventAttendances ensureAttendances() => $_ensure(7);
 
-  /// If the request was made by a logged-in user, this is the current user's attendance for this instance.
+  /// If the request was made by a logged-in user, this is the current user's attendance for this Occasion.
   @$pb.TagNumber(11)
   EventAttendance get currentUserAttendance => $_getN(8);
   @$pb.TagNumber(11)
@@ -921,11 +921,11 @@ class Occasion extends $pb.GeneratedMessage {
   @$pb.TagNumber(11)
   EventAttendance ensureCurrentUserAttendance() => $_ensure(8);
 
-  /// SyncDestinations this instance has been synced (cross-posted) to, and their status.
+  /// SyncDestinations this Occasion has been synced (cross-posted) to, and their status.
   @$pb.TagNumber(12)
   $core.List<$10.SyncDestinationStatus> get syncDestinations => $_getList(9);
 
-  /// A time zone for the event instance. Used when serializing it for,
+  /// A time zone for the Occasion. Used when serializing it for,
   /// e.g., Facebook or Instagram posts, or generating media.
   @$pb.TagNumber(13)
   $core.String get timezone => $_getSZ(10);
@@ -979,7 +979,7 @@ class OccasionInfo extends $pb.GeneratedMessage {
   static OccasionInfo getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<OccasionInfo>(create);
   static OccasionInfo? _defaultInstance;
 
-  /// RSVP configuration and metadata for the event instance.
+  /// RSVP configuration and metadata for the Occasion.
   @$pb.TagNumber(1)
   OccasionRsvpInfo get rsvpInfo => $_getN(0);
   @$pb.TagNumber(1)
@@ -1074,7 +1074,7 @@ class OccasionRsvpInfo extends $pb.GeneratedMessage {
   static OccasionRsvpInfo getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<OccasionRsvpInfo>(create);
   static OccasionRsvpInfo? _defaultInstance;
 
-  /// Overrides `EventInfo.allows_rsvps`, if set, for this instance.
+  /// Overrides `EventInfo.allows_rsvps`, if set, for this Occasion.
   @$pb.TagNumber(1)
   $core.bool get allowsRsvps => $_getBF(0);
   @$pb.TagNumber(1)
@@ -1084,7 +1084,7 @@ class OccasionRsvpInfo extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   void clearAllowsRsvps() => clearField(1);
 
-  /// Overrides `EventInfo.allows_anonymous_rsvps`, if set, for this instance.
+  /// Overrides `EventInfo.allows_anonymous_rsvps`, if set, for this Occasion.
   @$pb.TagNumber(2)
   $core.bool get allowsAnonymousRsvps => $_getBF(1);
   @$pb.TagNumber(2)
@@ -1094,7 +1094,7 @@ class OccasionRsvpInfo extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   void clearAllowsAnonymousRsvps() => clearField(2);
 
-  /// Overrides `EventInfo.max_attendees`, if set, for this instance. Not yet supported.
+  /// Overrides `EventInfo.max_attendees`, if set, for this Occasion. Not yet supported.
   @$pb.TagNumber(3)
   $core.int get maxAttendees => $_getIZ(2);
   @$pb.TagNumber(3)

@@ -48,8 +48,8 @@ Facebook) from the content's own [`Post`](https://jonline.io/docs/protocol#rellm
 also its `starts_at`/`ends_at`/`location`:
 
 1. Title - for an Occasion, `rpcs::events::sync_occasion` combines the parent Event's
-   own title with the instance's own (only if the instance actually overrides it) as
-   `"{event_title}: {instance_title}"`, e.g. "Run Club" or "Run Club: Special Holiday Edition" (see
+   own title with the Occasion's own (only if the Occasion actually overrides it) as
+   `"{event_title}: {occasion_title}"`, e.g. "Run Club" or "Run Club: Special Holiday Edition" (see
    `combine_title`/`combine_content` in that file)
 2. *(Occasion only)* Date/time range (single timestamp if `ends_at` isn't after `starts_at`,
    otherwise a friendly `start-end` range mirroring the Elm UI's own `Shared.Time.formatRange`;
@@ -57,7 +57,7 @@ also its `starts_at`/`ends_at`/`location`:
 3. *(Occasion only)* Location (`Occasion.location.uniformly_formatted_address`), if set,
    prefixed with 📍
 4. Content/description - for an Occasion, the same combine-with-a-`---`-separator treatment
-   as the title (`"{event_content}\n\n---\n\n{instance_content}"`)
+   as the title (`"{event_content}\n\n---\n\n{occasion_content}"`)
 5. The Rellm link (`event_url`/`post_url`), bare (Occasion) or prefixed `View post:` (Post),
    if one could be built (see below)
 
@@ -102,7 +102,7 @@ address picker (today Elm's location field is plain free text with no geocoding 
 
 ## The Rellm link needs CDN/frontend config
 
-The `event_url`/`post_url` (`https://{frontend_host}/event/{instance_id}` or
+The `event_url`/`post_url` (`https://{frontend_host}/event/{occasion_id}` or
 `https://{frontend_host}/post/{post_id}`) is only built when this server has
 `ServerConfiguration.external_cdn_config.frontend_host` configured. Unlike Rocket web routes
 (`configured_frontend_domain` in `backend/src/web/external_cdn.rs`), the [`SyncOccasion`](https://jonline.io/docs/protocol#grpc-api-SyncOccasion)/

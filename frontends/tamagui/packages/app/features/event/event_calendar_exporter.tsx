@@ -18,7 +18,7 @@ import { AuthorInfo } from "../post";
 
 type Props = {
   event?: FederatedEvent,
-  instance?: IdentifiedOccasion,
+  occasion?: IdentifiedOccasion,
   tiny?: boolean;
   showSubscriptions?: {
     user?: FederatedUser,
@@ -27,7 +27,7 @@ type Props = {
 };
 export const EventCalendarExporter: React.FC<Props> = ({
   event,
-  instance,
+  occasion,
   tiny: inputTiny,
   showSubscriptions
 }) => {
@@ -64,8 +64,8 @@ export const EventCalendarExporter: React.FC<Props> = ({
   const serverSubscriptionUrls = subscriptionServers.map(server => `https://${server.host}/calendar.ics`);
 
   const eventLinkId = showServerInfo
-    ? federateId(instance?.id ?? '', accountOrServer.server)
-    : instance?.id ?? '';
+    ? federateId(occasion?.id ?? '', accountOrServer.server)
+    : occasion?.id ?? '';
   const groupLinkId = selectedGroup ?
     (showServerInfo
       ? federateId(selectedGroup.shortname, accountOrServer.server)
@@ -75,16 +75,16 @@ export const EventCalendarExporter: React.FC<Props> = ({
     ? `/g/${groupLinkId}/e/${eventLinkId}`
     : `/event/${eventLinkId}`;
 
-  const { anonymousAuthToken } = useAnonymousAuthToken(instance?.id ?? '');
+  const { anonymousAuthToken } = useAnonymousAuthToken(occasion?.id ?? '');
 
   const eventPath = eventLinkPath;
-  const hasRsvpAssociated = anonymousAuthToken && (event?.info?.allowsAnonymousRsvps || instance?.info?.rsvpInfo?.allowsAnonymousRsvps);
+  const hasRsvpAssociated = anonymousAuthToken && (event?.info?.allowsAnonymousRsvps || occasion?.info?.rsvpInfo?.allowsAnonymousRsvps);
   const eventLink = hasRsvpAssociated
     ? `http://${window.location.host}${eventPath}?anonymousAuthToken=${encodeURIComponent(anonymousAuthToken)}`
     : `http://${window.location.host}${eventPath}`;
 
-  const rsvpData = useSelector(selectRsvpData(federateId(instance?.id ?? '', accountOrServer.server)));
-  const location = rsvpData?.hiddenLocation ?? instance?.location;
+  const rsvpData = useSelector(selectRsvpData(federateId(occasion?.id ?? '', accountOrServer.server)));
+  const location = rsvpData?.hiddenLocation ?? occasion?.location;
   const eventDescription = event?.post?.content ?? '';
   const calendarEvent: CalendarEvent = {
     title: event?.post?.title ?? 'Title Data Missing',
@@ -95,8 +95,8 @@ export const EventCalendarExporter: React.FC<Props> = ({
         : eventDescription,
     url: event?.post?.link ?? eventLink,
     location: location?.uniformlyFormattedAddress,
-    start: moment(instance?.startsAt).toISOString(),
-    end: moment(instance?.endsAt).toISOString(),
+    start: moment(occasion?.startsAt).toISOString(),
+    end: moment(occasion?.endsAt).toISOString(),
     // duration: [3, "hour"],
   };
 

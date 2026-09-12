@@ -404,7 +404,7 @@ starButton postServerHost starred onStarClicked post =
 
 
 {-| A single `Post` timestamp, formatted the same way
-`Components.Events.instanceWhenText` formats an `Occasion` moment (e.g.
+`Components.Events.occasionWhenText` formats an `Occasion` moment (e.g.
 "August 1, 6PM", or "Today, August 1, 6PM" -- see `SharedTime.formatMoment`/
 `dateLabel`) rather than a range, since a bare timestamp (created/updated/
 published) is always a single point in time. `timestampsText`'s own sibling

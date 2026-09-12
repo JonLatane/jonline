@@ -3247,13 +3247,13 @@ encodeOccasion =
 
 ### post
 
- Optional [`Post`](#rellm-Post) containing alternate title/link/description for this particular instance. Its [`PostContext`](#rellm-PostContext) should be `OCCASION`.
+ Optional [`Post`](#rellm-Post) containing alternate title/link/description for this particular Occasion. Its [`PostContext`](#rellm-PostContext) should be `OCCASION`.
  An `Occasion`'s ID *is* its `post.id` - there is no separate surrogate ID.
 
 
 ### info
 
- Additional configuration for this instance of this [`Occasion`](#rellm-Occasion) beyond the [`EventInfo`](#rellm-EventInfo) in its parent [`Event`](#rellm-Event).
+ Additional configuration for this [`Occasion`](#rellm-Occasion) beyond the [`EventInfo`](#rellm-EventInfo) in its parent [`Event`](#rellm-Event).
 
 
 ### startsAt
@@ -3268,7 +3268,7 @@ encodeOccasion =
 
 ### syncDestinations
 
- SyncDestinations this instance has been synced (cross-posted) to, and their status.
+ SyncDestinations this Occasion has been synced (cross-posted) to, and their status.
 
 
 -}
@@ -3431,7 +3431,7 @@ type alias SyncOccasionRequest =
 {-| The field numbers for the fields of `Event`. This is mostly useful for internals, like documentation generation.
 
 -}
-fieldNumbersEvent : { post : Int, info : Int, instances : Int }
+fieldNumbersEvent : { post : Int, info : Int, occasions : Int }
 fieldNumbersEvent =
     Proto.Rellm.Internals_.fieldNumbersProto__Rellm__Event
 
@@ -3479,9 +3479,9 @@ encodeEvent =
  Event configuration like whether to allow (anonymous) RSVPs, etc.
 
 
-### instances
+### occasions
 
- A list of instances for the Event. *Events will only include all instances if the request is for a single event.*
+ A list of occasions for the Event. *Events will only include all occasions if the request is for a single event.*
 
 
 -}
@@ -3524,13 +3524,13 @@ encodeGetEventsResponse =
 {-|  A list of [`Event`](#rellm-Event)s with a maybe-incomplete (see [`GetEventsRequest`](#rellm-GetEventsRequest)) set of their [`Occasion`](#rellm-Occasion)s.
 
  Note that `GetEventsResponse` may often include duplicate Events with the same ID.
- I.E. something like: `{events: [{id: a, instances: [{id: x}]}, {id: a, instances: [{id: y}]}, ]}` is a valid response.
- This semantically means: "Event A has both instances X and Y in the time frame the client asked for."
+ I.E. something like: `{events: [{id: a, occasions: [{id: x}]}, {id: a, occasions: [{id: y}]}, ]}` is a valid response.
+ This semantically means: "Event A has both occasions X and Y in the time frame the client asked for."
  The client should be able to handle this.
 
  In the React/Tamagui client, this is handled by the Redux store, which
  effectively "compacts" all response into its own internal Events store, in a form something like:
- `{events: {a: {id: a, instances: [{id: x}, {id: y}]}, ...}, instanceEventIds: {x:a, y:a}}`.
+ `{events: {a: {id: a, occasions: [{id: x}, {id: y}]}, ...}, occasionEventIds: {x:a, y:a}}`.
  (In reality it uses `EntityAdapter` which is a bit more complicated, but the idea is the same.)
 
 
@@ -3653,9 +3653,9 @@ encodeGetEventsRequest =
 
 ### occasionPostIds
 
- Loads multiple events by their event instances' Post IDs - returns one
+ Loads multiple events by their occasions' Post IDs - returns one
  Event per matching Occasion (see GetEventsResponse's own doc), not
- the requested Occasion's whole parent Event's full instance list.
+ the requested Occasion's whole parent Event's full occasion list.
 
 
 -}
@@ -5635,7 +5635,7 @@ encodeSyncSource =
 
 ### occasionCount
 
- The number of event instances total associated with this SyncSource. Recomputed
+ The number of occasions total associated with this SyncSource. Recomputed
  on each sync.
 
 

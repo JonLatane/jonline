@@ -3,7 +3,7 @@ import { ListEnd } from '@tamagui/lucide-icons';
 import { AccountOrServerContextProvider } from 'app/contexts';
 import { useAppSelector, useCurrentServer, useFederatedDispatch, useLocalConfiguration } from 'app/hooks';
 import { IdentifiedOccasion, accountID, federateId, loadEvent, parseFederatedId, selectEventById, selectPostById, serverID, useDebouncedAccountOrServer, useServerTheme } from 'app/store';
-import { isPastInstance, setDocumentTitle, themedButtonBackground } from 'app/utils';
+import { isPastOccasion, setDocumentTitle, themedButtonBackground } from 'app/utils';
 import React, { useEffect, useState } from 'react';
 import { createParam } from 'solito';
 import EventCard from '../event/event_card';
@@ -14,23 +14,23 @@ import { ConversationContextProvider, ConversationManager, scrollToCommentsBotto
 import { ReplyArea } from '../post/reply_area';
 import { RsvpMode } from './event_rsvp_manager';
 
-const { useParam, useUpdateParams } = createParam<{ instanceId: string, shortname: string | undefined }>()
+const { useParam, useUpdateParams } = createParam<{ occasionId: string, shortname: string | undefined }>()
 
 // In terms of the web app's URL structure, "/event" corresponds to
 // Occasions, not Events.
 export function EventDetailsScreen() {
   const mediaQuery = useMedia();
-  const [pathInstanceId] = useParam('instanceId');
+  const [pathOccasionId] = useParam('occasionId');
   const [interactionType, setInteractionType] = usePostInteractionType();
   const updateParams = useUpdateParams();
 
   const currentServer = useCurrentServer();
 
-  const { serverHost, id: serverInstanceId } = parseFederatedId(pathInstanceId ?? '', currentServer?.host);
+  const { serverHost, id: serverOccasionId } = parseFederatedId(pathOccasionId ?? '', currentServer?.host);
   const { dispatch, accountOrServer } = useFederatedDispatch(serverHost);
   const { account, server } = accountOrServer;
 
-  const instanceId = federateId(serverInstanceId, serverHost);
+  const occasionId = federateId(serverOccasionId, serverHost);
 
   const { textColor, backgroundColor, primaryColor, primaryTextColor, primaryAnchorColor, navColor, navTextColor, navAnchorColor } = useServerTheme(accountOrServer.server);
   // console.log('EventDetailsScreen', textColor);
@@ -40,8 +40,8 @@ export function EventDetailsScreen() {
   const eventsState = useAppSelector((state) => state.events);
   const postsState = useAppSelector((state) => state.posts);
 
-  const eventId = useAppSelector((state) => instanceId
-    ? state.events.instanceEvents[instanceId]
+  const eventId = useAppSelector((state) => occasionId
+    ? state.events.occasionEvents[occasionId]
     : undefined);
   const subjectEvent = useAppSelector(state => eventId
     ? selectEventById(state.events, eventId)
@@ -52,22 +52,22 @@ export function EventDetailsScreen() {
 
   // debugger
 
-  const subjectInstances = subjectEvent?.instances;
-  const [subjectInstance, setSubjectInstance] = useState<IdentifiedOccasion | undefined>(undefined);
+  const subjectOccasions = subjectEvent?.occasions;
+  const [subjectOccasion, setSubjectOccasion] = useState<IdentifiedOccasion | undefined>(undefined);
 
-  const instancePost = useAppSelector(state => subjectInstance
-    ? selectPostById(state.posts, federateId(subjectInstance.post!.id, serverHost))
+  const occasionPost = useAppSelector(state => subjectOccasion
+    ? selectPostById(state.posts, federateId(subjectOccasion.post!.id, serverHost))
     : undefined);
-  const instancePostId = instancePost?.id;
-  const federatedInstancePostId = federateId(instancePostId ?? '', serverHost);
+  const occasionPostId = occasionPost?.id;
+  const federatedOccasionPostId = federateId(occasionPostId ?? '', serverHost);
 
-  // = subjectInstances?.find(i => i.id == instanceId);
+  // = subjectOccasions?.find(i => i.id == occasionId);
   useEffect(() => {
-    if (subjectInstances && subjectInstance?.id != instanceId) {
-      setSubjectInstance(subjectInstances?.find(i => i.id == serverInstanceId));
+    if (subjectOccasions && subjectOccasion?.id != occasionId) {
+      setSubjectOccasion(subjectOccasions?.find(i => i.id == serverOccasionId));
     }
-  }, [subjectInstances, instanceId]);
-  // console.log("EventDetailsScreen.subjectInstance=", subjectInstance?.id, 'instanceId=', instanceId);
+  }, [subjectOccasions, occasionId]);
+  // console.log("EventDetailsScreen.subjectOccasion=", subjectOccasion?.id, 'occasionId=', occasionId);
   // const postId = subjectPost?.id;
   const [newRsvpMode, setNewRsvpMode] = useState(undefined as RsvpMode);
   const [loadedEvent, setLoadedEvent] = useState(false);
@@ -80,17 +80,17 @@ export function EventDetailsScreen() {
   const showReplyArea = subjectEvent != undefined && editingPosts.length == 0
     && (newRsvpMode === undefined);
 
-  // const failedToLoadEvent = instanceId != undefined &&
-  //   eventsState.failedInstanceIds.includes(instanceId!);
-  const failedToLoadEvent = instanceId && eventsState.failedInstanceIds.includes(instanceId);
+  // const failedToLoadEvent = occasionId != undefined &&
+  //   eventsState.failedOccasionIds.includes(occasionId!);
+  const failedToLoadEvent = occasionId && eventsState.failedOccasionIds.includes(occasionId);
 
   // console.log("subjectEvent=", subjectEvent, 'failedToLoadEvent=', failedToLoadEvent);
 
-  function onOccasionsUpdated(instances: IdentifiedOccasion[]) {
-    if (!instances.some(i => i.id === serverInstanceId)) {
+  function onOccasionsUpdated(occasions: IdentifiedOccasion[]) {
+    if (!occasions.some(i => i.id === serverOccasionId)) {
       updateParams({
-        instanceId: `${instances.find(i => !isPastInstance(i))?.id
-          ?? instances[0]!.id}${currentServer?.host === serverHost ? '' : `@${serverHost}`}`
+        occasionId: `${occasions.find(i => !isPastOccasion(i))?.id
+          ?? occasions[0]!.id}${currentServer?.host === serverHost ? '' : `@${serverHost}`}`
       }, { web: { replace: true } });
     }
   }
@@ -101,14 +101,14 @@ export function EventDetailsScreen() {
   //   debouncedAccountOrServer,
   //   // eventId,
   //   subjectEvent: subjectEvent?.id,
-  //   instanceId, subjectPost, postsState, loadingEvent, loadedEvent, replyPostIdPath, showScrollPreserver, failedToLoadEvent
+  //   occasionId, subjectPost, postsState, loadingEvent, loadedEvent, replyPostIdPath, showScrollPreserver, failedToLoadEvent
   // })
   useEffect(() => {
-    if (instanceId && serverInstanceId && server) {
+    if (occasionId && serverOccasionId && server) {
       if ((!subjectEvent || !loadedEvent) && !loadingEvent && !failedToLoadEvent) {
-        console.log("EventDetailsScreen.loadEvent", { accountOrServer, serverInstanceId });
+        console.log("EventDetailsScreen.loadEvent", { accountOrServer, serverOccasionId });
         setLoadingEvent(true);
-        dispatch(loadEvent({ ...accountOrServer, instanceId: serverInstanceId }))
+        dispatch(loadEvent({ ...accountOrServer, occasionId: serverOccasionId }))
           .then((action) => {
             setTimeout(() => setLoadingEvent(false), 100);
             // setLoadedEvent(true);
@@ -122,7 +122,7 @@ export function EventDetailsScreen() {
         dismissScrollPreserver(setShowScrollPreserver);
       }
     }
-  }, [debouncedAccountOrServer, instanceId, subjectPost, postsState, loadingEvent, loadedEvent, replyPostIdPath, showScrollPreserver]);
+  }, [debouncedAccountOrServer, occasionId, subjectPost, postsState, loadingEvent, loadedEvent, replyPostIdPath, showScrollPreserver]);
   // debugger;
   const documentTitle = (() => {
     const serverName = server?.serverConfiguration?.serverInfo?.name || '...';
@@ -131,7 +131,7 @@ export function EventDetailsScreen() {
       if (subjectPost.title && subjectPost.title.length > 0) {
         title = subjectPost.title;
       } else {
-        title = `Occasion Details (#${instanceId})`;
+        title = `Occasion Details (#${occasionId})`;
       }
     } else if (failedToLoadEvent) {
       title = 'Event Not Found';
@@ -160,8 +160,8 @@ export function EventDetailsScreen() {
     <TabsNavigation appSection={AppSection.EVENTS}
       selectedGroup={group}
       primaryEntity={subjectPost ?? { serverHost: serverHost ?? currentServer?.host }}
-      groupPageForwarder={(groupIdentifier) => `/g/${groupIdentifier}/e/${pathInstanceId}`}
-      groupPageReverse={`/event/${pathInstanceId}`}
+      groupPageForwarder={(groupIdentifier) => `/g/${groupIdentifier}/e/${pathOccasionId}`}
+      groupPageReverse={`/event/${pathOccasionId}`}
       topChrome={
         <XStack w='100%' maw={800} mx='auto' mt='$1' ai='center'>
           <Tooltip placement="bottom">
@@ -222,10 +222,10 @@ export function EventDetailsScreen() {
                 onPress={() => {
                   // debugger;
                   if (chatUI) {
-                    scrollToCommentsBottom(federatedInstancePostId);
+                    scrollToCommentsBottom(federatedOccasionPostId);
                   } else {
                     setInteractionType('chat');
-                    setTimeout(() => scrollToCommentsBottom(federatedInstancePostId), 1000);
+                    setTimeout(() => scrollToCommentsBottom(federatedOccasionPostId), 1000);
                   }
                 }} />
             </Tooltip.Trigger>
@@ -240,7 +240,7 @@ export function EventDetailsScreen() {
           ? <AccountOrServerContextProvider value={accountOrServer}>
             <ReplyArea
               replyingToPath={replyPostIdPath}
-              onStopReplying={() => instancePostId && setReplyPostIdPath([instancePostId])}
+              onStopReplying={() => occasionPostId && setReplyPostIdPath([occasionPostId])}
               hidden={!showReplyArea} />
           </AccountOrServerContextProvider>
           : undefined
@@ -266,14 +266,14 @@ export function EventDetailsScreen() {
                       <EventCard key={`event-card-loaded`}
                         event={subjectEvent}
                         onEditingChange={editHandler(subjectPost!.id)}
-                        selectedInstance={subjectInstance}
-                        onInstancesUpdated={onOccasionsUpdated}
+                        selectedOccasion={subjectOccasion}
+                        onOccasionsUpdated={onOccasionsUpdated}
                         {...{ newRsvpMode, setNewRsvpMode }}
                       />
                     </XStack>
                     : undefined}
                 </AnimatePresence>
-                <ConversationManager post={instancePost} />
+                <ConversationManager post={occasionPost} />
               </ScrollView>
 
 

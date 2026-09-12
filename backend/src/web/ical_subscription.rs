@@ -97,34 +97,34 @@ async fn ical_subscription(
     // Get the frontend domain for event links
     let frontend_domain = configured_frontend_domain(state, host);
 
-    // Process each event and its instances
+    // Process each event and its occasions
     for event in events_response.events {
         let event_post = match &event.post {
             Some(post) => post,
             None => continue, // Skip events without posts
         };
 
-        for instance in &event.instances {
-            let Some(instance_post) = &instance.post else {
-                continue; // Skip instances without posts
+        for occasion in &event.occasions {
+            let Some(occasion_post) = &occasion.post else {
+                continue; // Skip occasions without posts
             };
-            let instance_id = &instance_post.id;
+            let occasion_id = &occasion_post.id;
 
             // Convert timestamps to DateTime<Utc>
-            let starts_at = instance
+            let starts_at = occasion
                 .starts_at
                 .as_ref()
                 .map(|t| DateTime::<Utc>::from(t.to_db()))
                 .unwrap_or(Utc::now());
 
-            let ends_at = instance
+            let ends_at = occasion
                 .ends_at
                 .as_ref()
                 .map(|t| DateTime::<Utc>::from(t.to_db()))
                 .unwrap_or(Utc::now());
 
             // Create event link
-            let event_link = format!("https://{frontend_domain}/event/{instance_id}");
+            let event_link = format!("https://{frontend_domain}/event/{occasion_id}");
 
             let description = event_post.content.as_deref().unwrap_or("");
 
@@ -138,7 +138,7 @@ async fn ical_subscription(
                 .ends(ends_at);
 
             // Add location if available
-            if let Some(location) = &instance.location {
+            if let Some(location) = &occasion.location {
                 ical_event.location(&location.uniformly_formatted_address);
             }
 

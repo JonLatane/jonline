@@ -83,17 +83,17 @@ pub fn convert_events(data: &Vec<MarshalableEvent>, conn: &mut PgPooledConnectio
             marshalable_event
                 .2
                 .iter()
-                .map(|MarshalableOccasion(instance, _)| instance.post_id)
+                .map(|MarshalableOccasion(occasion, _)| occasion.post_id)
         })
         .collect();
-    let instance_sync_lookup = load_occasion_sync_lookup(occasion_ids, conn);
+    let occasion_sync_lookup = load_occasion_sync_lookup(occasion_ids, conn);
 
     data.iter()
         .map(|marshalable_event| {
             marshalable_event.to_proto(
                 lookup.as_ref(),
                 sync_source_lookup.as_ref(),
-                Some(&instance_sync_lookup),
+                Some(&occasion_sync_lookup),
             )
         })
         .collect()
@@ -103,7 +103,7 @@ pub trait ToProtoMarshalableEvent {
         &self,
         media_lookup: Option<&MediaLookup>,
         sync_source_lookup: Option<&SyncSourceLookup>,
-        instance_sync_lookup: Option<&OccasionSyncLookup>,
+        occasion_sync_lookup: Option<&OccasionSyncLookup>,
     ) -> Event;
 }
 
@@ -112,11 +112,11 @@ impl ToProtoMarshalableEvent for MarshalableEvent {
         &self,
         media_lookup: Option<&MediaLookup>,
         sync_source_lookup: Option<&SyncSourceLookup>,
-        instance_sync_lookup: Option<&OccasionSyncLookup>,
+        occasion_sync_lookup: Option<&OccasionSyncLookup>,
     ) -> Event {
         let event = self.0.to_owned();
         let post = self.1.to_owned();
-        let instances = self.2.to_owned();
+        let occasions = self.2.to_owned();
         let hide_location = event.info["hide_location_until_rsvp_approved"]
             .as_bool()
             .unwrap_or(false);
@@ -128,13 +128,13 @@ impl ToProtoMarshalableEvent for MarshalableEvent {
         // self.to_proto(username, None)
         Event {
             post: Some(post.to_proto(media_lookup, None, sync_source_lookup)),
-            instances: instances
+            occasions: occasions
                 .iter()
                 .map(|i| {
                     i.to_proto(
                         media_lookup,
                         hide_location,
-                        instance_sync_lookup,
+                        occasion_sync_lookup,
                         sync_source_lookup,
                     )
                 })
@@ -150,7 +150,7 @@ pub trait ToProtoMarshalableOccasion {
         &self,
         media_lookup: Option<&MediaLookup>,
         hide_location: bool,
-        instance_sync_lookup: Option<&OccasionSyncLookup>,
+        occasion_sync_lookup: Option<&OccasionSyncLookup>,
         sync_source_lookup: Option<&SyncSourceLookup>,
     ) -> Occasion;
 }
@@ -160,7 +160,7 @@ impl ToProtoMarshalableOccasion for MarshalableOccasion {
         &self,
         media_lookup: Option<&MediaLookup>,
         hide_location: bool,
-        instance_sync_lookup: Option<&OccasionSyncLookup>,
+        occasion_sync_lookup: Option<&OccasionSyncLookup>,
         sync_source_lookup: Option<&SyncSourceLookup>,
     ) -> Occasion {
         let occasion = self.0.to_owned();
@@ -170,7 +170,7 @@ impl ToProtoMarshalableOccasion for MarshalableOccasion {
         } else {
             occasion.location.map(|c| c.to_proto_location())
         };
-        let sync_destinations = instance_sync_lookup
+        let sync_destinations = occasion_sync_lookup
             .and_then(|lookup| lookup.get(&occasion.post_id))
             .map(|rows| rows.iter().map(|row| row.to_proto()).collect())
             .unwrap_or_default();

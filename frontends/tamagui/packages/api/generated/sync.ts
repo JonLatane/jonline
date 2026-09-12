@@ -306,7 +306,7 @@ export interface SyncSource {
    */
   eventCount: number;
   /**
-   * The number of event instances total associated with this SyncSource. Recomputed
+   * The number of occasions total associated with this SyncSource. Recomputed
    * on each sync.
    */
   occasionCount: number;

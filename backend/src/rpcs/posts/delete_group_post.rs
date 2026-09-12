@@ -39,19 +39,19 @@ pub fn delete_group_post(
     if post.context.to_proto_post_context().unwrap() == PostContext::Event
         && post.visibility.to_proto_visibility().unwrap() == Visibility::Limited
     {
-        let instance_post_ids = events::table
+        let occasion_post_ids = events::table
             .inner_join(occasions::table.on(events::post_id.eq(occasions::event_id)))
             .filter(events::post_id.eq(post_id))
             .filter(occasions::post_id.is_not_null())
             .select(occasions::post_id.assume_not_null())
             .load::<i64>(conn)
-            .map_err(|_| Status::new(Code::Internal, "error_cleaning_up_instance_group_posts"))?;
+            .map_err(|_| Status::new(Code::Internal, "error_cleaning_up_occasion_group_posts"))?;
 
         diesel::delete(group_posts::table)
             .filter(group_posts::group_id.eq(group_id))
-            .filter(group_posts::post_id.eq_any(instance_post_ids))
+            .filter(group_posts::post_id.eq_any(occasion_post_ids))
             .execute(conn)
-            .map_err(|_| Status::new(Code::Internal, "error_cleaning_up_instance_group_posts"))?;
+            .map_err(|_| Status::new(Code::Internal, "error_cleaning_up_occasion_group_posts"))?;
     }
 
     match diesel::delete(group_posts::table)

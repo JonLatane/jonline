@@ -280,7 +280,7 @@ run in a fixed order: [`UpdateEventDetails`](#grpc-api-UpdateEventDetails) (whic
 atomically, literally calling the [`UpdatePost`](#grpc-api-UpdatePost) RPC), then [`CreateNewOccasions`](#grpc-api-CreateNewOccasions),
 [`UpdateOccasions`](#grpc-api-UpdateOccasions), and finally [`DeleteRemovedOccasions`](#grpc-api-DeleteRemovedOccasions).
 Create must run before Delete so that a request which both drops an old [`Occasion`](#rellm-Occasion) and adds a new one never transiently
-leaves the [`Event`](#rellm-Event) with zero instances.
+leaves the [`Event`](#rellm-Event) with zero Occasions.
 
 Because moderation/visibility lives at the [`Post`](#rellm-Post) level, and [`UpdateEventDetails`](#grpc-api-UpdateEventDetails) runs first, this means that a developer error in the
 later [`Occasion`](#rellm-Occasion)-processing steps cannot prevent visibility and moderation changes from being made in Events, even if there are errors elsewhere.
@@ -611,19 +611,19 @@ repeated `Post.sync_destinations` (each a [`SyncDestinationStatus`](#rellm-SyncD
 An [`Event`](#rellm-Event) is a wrapper for *at least two* [`Post`](#rellm-Post)s. It always has its own top-level [`Post`](#rellm-Post)
 (`PostContext.EVENT`, holding the event&#39;s overall title/description) *and* it must have at least one
 [`Occasion`](#rellm-Occasion) (see below), each of which in turn must have its own [`Post`](#rellm-Post)
-(`PostContext.OCCASION`, carrying that instance&#39;s start/end time, [`Location`](#rellm-Location), and optional per-instance
+(`PostContext.OCCASION`, carrying that Occasion&#39;s start/end time, [`Location`](#rellm-Location), and optional per-Occasion
 title/link/content override). So the smallest possible Event already backs 2 Posts, and events with recurring/multiple
-instances back one Post per instance beyond that.
+Occasions back one Post per Occasion beyond that.
 
 ##### Occasions
 An [`Occasion`](#rellm-Occasion) is the actual time-boxed occurrence of an [`Event`](#rellm-Event) -
 it carries the `starts_at`/`ends_at` timestamps and optional [`Location`](#rellm-Location) that the parent [`Event`](#rellm-Event) itself does not have.
-An [`Event`](#rellm-Event) with zero instances is meaningless (no time or place to attach to), so every [`Event`](#rellm-Event) must have at least one.
+An [`Event`](#rellm-Event) with zero Occasions is meaningless (no time or place to attach to), so every [`Event`](#rellm-Event) must have at least one.
 
     - **EventAttendances**: An [`EventAttendance`](#rellm-EventAttendance) (an &#34;RSVP&#34;) tracks one attendee&#39;s status
     (`INTERESTED`, `REQUESTED`, `GOING`, `NOT_GOING`) for a specific [`Occasion`](#rellm-Occasion). Attendees may be logged-in [`User`](#rellm-User)s
     or anonymous (tracked via [`AnonymousAttendee`](#rellm-AnonymousAttendee) plus an `auth_token`), and are subject to their own [`Moderation`](#rellm-Moderation),
-    independent of the Event&#39;s/Instance&#39;s own Post moderation.
+    independent of the Event&#39;s/Occasion&#39;s own Post moderation.
 
     - **SyncSource**: It&#39;s actually the parent [`Event`](#rellm-Event) (not the [`Occasion`](#rellm-Occasion)) that can be synced *in* from a
     user-owned [`SyncSource`](#rellm-SyncSource) (e.g. an iCal subscription). The relationship is
@@ -633,7 +633,7 @@ An [`Event`](#rellm-Event) with zero instances is meaningless (no time or place 
     - **SyncDestinations**: Conversely, it&#39;s each [`Occasion`](#rellm-Occasion) (not the parent [`Event`](#rellm-Event)) that syncs *out* to
     [`SyncDestination`](#rellm-SyncDestination)s (e.g. connected Facebook Pages) - the same mechanism [`Post`](#rellm-Post)s use
     (see above). Unlike [`SyncSource`](#rellm-SyncSource), this is the outlier&#39;s counterpart - a many-to-many relationship: each
-    instance may push to several destinations at once, tracked per-destination via the repeated
+    Occasion may push to several destinations at once, tracked per-destination via the repeated
     `Occasion.sync_destinations` (each a [`SyncDestinationStatus`](#rellm-SyncDestinationStatus)), carrying
     the destination&#39;s resulting post ID/URL and last-synced time.
 
@@ -830,8 +830,8 @@ fixed set of top-level, server-wide pages - `/`, `/posts`, `/events`, `/people`,
 `/flutter`, `/tamagui`, `/elm` - plus any `CustomNavigationTabSet.tabs` paths configured on the server (excluding
 the reserved `posts`/`events`/`people`/`about` paths, which are always included above), each qualified with the
 request&#39;s `Host`. It also enumerates individual pages: every [`Post`](#rellm-Post) from an unauthenticated [`GetPosts`](#grpc-api-GetPosts) (the same
-&#34;first page&#34; an anonymous visitor sees) as `/post/{id}`, and every [`Event`](#rellm-Event) instance from an unauthenticated
-[`GetEvents`](#grpc-api-GetEvents) starting `EventSettings.calendar_lookback_days` (or 14, if unset) ago as `/event/{instance_id}`.
+&#34;first page&#34; an anonymous visitor sees) as `/post/{id}`, and every [`Occasion`](#rellm-Occasion) from an unauthenticated
+[`GetEvents`](#grpc-api-GetEvents) starting `EventSettings.calendar_lookback_days` (or 14, if unset) ago as `/event/{occasion_id}`.
 It does not (yet) enumerate individual [`User`](#rellm-User) pages.
 
 ##### `GET /favicon.ico`: ICO Favicon
@@ -1081,8 +1081,8 @@ discarded and a fresh keypair generated, so it&#39;s single-use per completed/fa
 | UpdateEvent | [Event](#rellm-Event) | [Event](#rellm-Event) | Updates an Event. Automatically creates/updates/deletes child Occasions of the Event. *Authenticated.* Since Events are more complex structures, [`UpdateEventDetails`](#grpc-api-UpdateEventDetails), [`CreateNewOccasions`](#grpc-api-CreateNewOccasions), [`UpdateOccasions`](#grpc-api-UpdateOccasions), and [`DeleteRemovedOccasions`](#grpc-api-DeleteRemovedOccasions) are provided as separate RPCs to break down what happens during this request. |
 | DeleteEvent | [Event](#rellm-Event) | [Event](#rellm-Event) | (Soft) deletes a Event. Returns the deleted version of the Event. *Authenticated.* |
 | UpdateEventDetails | [Event](#rellm-Event) | [Event](#rellm-Event) | Updates only the [`Event`](#rellm-Event)&#39;s top-level details and those of its [`Post`](#rellm-Post) (not any [`Occasion`](#rellm-Occasion)s or their [`Post`](#rellm-Post)s). *Authenticated.* |
-| CreateNewOccasions | [Event](#rellm-Event) | [Event](#rellm-Event) | Creates Occasions in an existing Event for every Occasion in the request that isn&#39;t already on the event. *Authenticated.* Any other instances in the request are ignored. |
-| UpdateOccasions | [Event](#rellm-Event) | [Event](#rellm-Event) | Updates Occasions in an existing Event for every Occasion in the request that&#39;s already on the event. Any other instances in the request are ignored. *Authenticated.* |
+| CreateNewOccasions | [Event](#rellm-Event) | [Event](#rellm-Event) | Creates Occasions in an existing Event for every Occasion in the request that isn&#39;t already on the event. *Authenticated.* Any other Occasions in the request are ignored. |
+| UpdateOccasions | [Event](#rellm-Event) | [Event](#rellm-Event) | Updates Occasions in an existing Event for every Occasion in the request that&#39;s already on the event. Any other Occasions in the request are ignored. *Authenticated.* |
 | DeleteRemovedOccasions | [Event](#rellm-Event) | [Event](#rellm-Event) | Deletes Occasions in an existing Event that aren&#39;t present in the input Event. *Authenticated.* |
 | GetSyncSources | [User](#rellm-User) | [GetSyncSourcesResponse](#rellm-GetSyncSourcesResponse) | Gets a user&#39;s SyncSources. *Authenticated* (self, or Admin for any user). |
 | CreateSyncSource | [SyncSource](#rellm-SyncSource) | [SyncSource](#rellm-SyncSource) | Creates a SyncSource for the current user. *Authenticated*, requires `SYNC_EVENTS_FROM_ICS`/ `SYNC_POSTS_FROM_RSS`/`SYNC_POSTS_FROM_ATOM` (whichever matches `configuration`, or Admin). |
@@ -1645,7 +1645,7 @@ Model for a Rellm user. This user may have [`Media`](#rellm-Media), [`Group`](#r
 | post_count | [int32](#int32) | optional | The number of posts this user has made. |
 | response_count | [int32](#int32) | optional | The number of responses to [`Post`](#rellm-Post)s and [`Event`](#rellm-Event)s this user has made. |
 | event_count | [int32](#int32) | optional | The number of events this user has created. |
-| occasion_count | [int32](#int32) | optional | The number of event instances this user has created (across all of their events). |
+| occasion_count | [int32](#int32) | optional | The number of occasions this user has created (across all of their events). |
 | current_user_follow | [Follow](#rellm-Follow) | optional | Presence indicates the current user is following or has a pending follow request for this user. |
 | target_current_user_follow | [Follow](#rellm-Follow) | optional | Presence indicates this user is following or has a pending follow request for the current user. |
 | current_group_membership | [Membership](#rellm-Membership) | optional | Returned by [`GetMembers`](#grpc-api-GetMembers) calls, for use when managing [`Group`](#rellm-Group) [`Membership`](#rellm-Membership)s. The [`Membership`](#rellm-Membership) should match the [`Group`](#rellm-Group) from the originating [`GetMembersRequest`](#rellm-GetMembersRequest), providing whether the user is a member of that [`Group`](#rellm-Group), has been invited, requested to join, etc.. |
@@ -2597,7 +2597,7 @@ about the `Event`. Actual time data lies in its `Occasions`.
 | ----- | ---- | ----- | ----------- |
 | post | [Post](#rellm-Post) |  | The Post containing the underlying data for the event (title, content, moderation, visibility, etc.). Its [`PostContext`](#rellm-PostContext) should be `EVENT`. An `Event`&#39;s ID *is* its `post.id` - there is no separate surrogate ID. |
 | info | [EventInfo](#rellm-EventInfo) |  | Event configuration like whether to allow (anonymous) RSVPs, etc. |
-| instances | [Occasion](#rellm-Occasion) | repeated | A list of instances for the Event. *Events will only include all instances if the request is for a single event.* |
+| occasions | [Occasion](#rellm-Occasion) | repeated | A list of occasions for the Event. *Events will only include all occasions if the request is for a single event.* |
 
 
 
@@ -2713,7 +2713,7 @@ Valid GetEventsRequest formats:
 | post_id | [string](#string) | optional | Finds Events for the Post with the given ID. The Post should have a [`PostContext`](#rellm-PostContext) of `EVENT` or `OCCASION`. |
 | listing_type | [EventListingType](#rellm-EventListingType) |  | The listing type, e.g. `ALL_ACCESSIBLE_EVENTS`, `FOLLOWING_EVENTS`, `MY_GROUPS_EVENTS`, `DIRECT_EVENTS`, `GROUP_EVENTS`, `GROUP_EVENTS_PENDING_MODERATION`. |
 | search_text | [string](#string) | optional | Search text for full-text search. |
-| occasion_post_ids | [string](#string) | repeated | Loads multiple events by their event instances&#39; Post IDs - returns one Event per matching Occasion (see GetEventsResponse&#39;s own doc), not the requested Occasion&#39;s whole parent Event&#39;s full instance list. |
+| occasion_post_ids | [string](#string) | repeated | Loads multiple events by their occasions&#39; Post IDs - returns one Event per matching Occasion (see GetEventsResponse&#39;s own doc), not the requested Occasion&#39;s whole parent Event&#39;s full occasion list. |
 | anonymous_attendee_auth_token | [string](#string) | optional | Auth token proving ownership of an anonymous RSVP, mirroring `GetEventAttendancesRequest.anonymous_attendee_auth_token`. Lets an anonymous attendee&#39;s own (possibly still-`PENDING`) [`EventAttendance`](#rellm-EventAttendance) and its `Occasion.location` (when `EventInfo.hide_location_until_rsvp_approved` is set) surface via each returned `Occasion.attendances`/`current_user_attendance`, same as a logged-in user&#39;s own RSVP does automatically. |
 
 
@@ -2727,13 +2727,13 @@ Valid GetEventsRequest formats:
 A list of [`Event`](#rellm-Event)s with a maybe-incomplete (see [`GetEventsRequest`](#rellm-GetEventsRequest)) set of their [`Occasion`](#rellm-Occasion)s.
 
 Note that `GetEventsResponse` may often include duplicate Events with the same ID.
-I.E. something like: `{events: [{id: a, instances: [{id: x}]}, {id: a, instances: [{id: y}]}, ]}` is a valid response.
-This semantically means: &#34;Event A has both instances X and Y in the time frame the client asked for.&#34;
+I.E. something like: `{events: [{id: a, occasions: [{id: x}]}, {id: a, occasions: [{id: y}]}, ]}` is a valid response.
+This semantically means: &#34;Event A has both occasions X and Y in the time frame the client asked for.&#34;
 The client should be able to handle this.
 
 In the React/Tamagui client, this is handled by the Redux store, which
 effectively &#34;compacts&#34; all response into its own internal Events store, in a form something like:
-`{events: {a: {id: a, instances: [{id: x}, {id: y}]}, ...}, instanceEventIds: {x:a, y:a}}`.
+`{events: {a: {id: a, occasions: [{id: x}, {id: y}]}, ...}, occasionEventIds: {x:a, y:a}}`.
 (In reality it uses `EntityAdapter` which is a bit more complicated, but the idea is the same.)
 
 
@@ -2757,16 +2757,16 @@ a [`Location`](#rellm-Location), and an optional [`Post`](#rellm-Post) (and disc
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | event_id | [string](#string) |  | ID of the parent [`Event`](#rellm-Event) (i.e. the parent `Event.post.id`). |
-| post | [Post](#rellm-Post) |  | Optional [`Post`](#rellm-Post) containing alternate title/link/description for this particular instance. Its [`PostContext`](#rellm-PostContext) should be `OCCASION`. An `Occasion`&#39;s ID *is* its `post.id` - there is no separate surrogate ID. |
-| info | [OccasionInfo](#rellm-OccasionInfo) |  | Additional configuration for this instance of this [`Occasion`](#rellm-Occasion) beyond the [`EventInfo`](#rellm-EventInfo) in its parent [`Event`](#rellm-Event). |
+| post | [Post](#rellm-Post) |  | Optional [`Post`](#rellm-Post) containing alternate title/link/description for this particular Occasion. Its [`PostContext`](#rellm-PostContext) should be `OCCASION`. An `Occasion`&#39;s ID *is* its `post.id` - there is no separate surrogate ID. |
+| info | [OccasionInfo](#rellm-OccasionInfo) |  | Additional configuration for this [`Occasion`](#rellm-Occasion) beyond the [`EventInfo`](#rellm-EventInfo) in its parent [`Event`](#rellm-Event). |
 | starts_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the event starts (UTC/Timestamp format). |
 | ends_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the event ends (UTC/Timestamp format). |
 | location | [Location](#rellm-Location) | optional | The location of the event. |
 | sync_missing_since | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time since this event &#34;disappeared&#34; from the sync source. It is up to the owner whether this means it should be deleted. |
-| attendances | [EventAttendances](#rellm-EventAttendances) | optional | RSVP &#43; invite data for this instance. |
-| current_user_attendance | [EventAttendance](#rellm-EventAttendance) | optional | If the request was made by a logged-in user, this is the current user&#39;s attendance for this instance. |
-| sync_destinations | [SyncDestinationStatus](#rellm-SyncDestinationStatus) | repeated | SyncDestinations this instance has been synced (cross-posted) to, and their status. |
-| timezone | [string](#string) | optional | A time zone for the event instance. Used when serializing it for, e.g., Facebook or Instagram posts, or generating media. |
+| attendances | [EventAttendances](#rellm-EventAttendances) | optional | RSVP &#43; invite data for this Occasion. |
+| current_user_attendance | [EventAttendance](#rellm-EventAttendance) | optional | If the request was made by a logged-in user, this is the current user&#39;s attendance for this Occasion. |
+| sync_destinations | [SyncDestinationStatus](#rellm-SyncDestinationStatus) | repeated | SyncDestinations this Occasion has been synced (cross-posted) to, and their status. |
+| timezone | [string](#string) | optional | A time zone for the Occasion. Used when serializing it for, e.g., Facebook or Instagram posts, or generating media. |
 
 
 
@@ -2782,7 +2782,7 @@ Stored as JSON in the database.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| rsvp_info | [OccasionRsvpInfo](#rellm-OccasionRsvpInfo) | optional | RSVP configuration and metadata for the event instance. |
+| rsvp_info | [OccasionRsvpInfo](#rellm-OccasionRsvpInfo) | optional | RSVP configuration and metadata for the Occasion. |
 
 
 
@@ -2798,9 +2798,9 @@ Curently, the `optional` counts below are *never* returned by the API.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| allows_rsvps | [bool](#bool) | optional | Overrides `EventInfo.allows_rsvps`, if set, for this instance. |
-| allows_anonymous_rsvps | [bool](#bool) | optional | Overrides `EventInfo.allows_anonymous_rsvps`, if set, for this instance. |
-| max_attendees | [uint32](#uint32) | optional | Overrides `EventInfo.max_attendees`, if set, for this instance. Not yet supported. |
+| allows_rsvps | [bool](#bool) | optional | Overrides `EventInfo.allows_rsvps`, if set, for this Occasion. |
+| allows_anonymous_rsvps | [bool](#bool) | optional | Overrides `EventInfo.allows_anonymous_rsvps`, if set, for this Occasion. |
+| max_attendees | [uint32](#uint32) | optional | Overrides `EventInfo.max_attendees`, if set, for this Occasion. Not yet supported. |
 | going_rsvps | [uint32](#uint32) | optional | The number of users who have RSVP&#39;d to the event. |
 | going_attendees | [uint32](#uint32) | optional | The number of attendees who have RSVP&#39;d to the event. (RSVPs may have multiple attendees, i.e. guests.) |
 | interested_rsvps | [uint32](#uint32) | optional | The number of users who have signaled interest in the event. |
@@ -3858,7 +3858,7 @@ A user-owned source to sync events from.
 | updated_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time the SyncSource was last updated. |
 | last_synced_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time the SyncSource was last synced. |
 | event_count | [uint64](#uint64) |  | The number of events total associated with this SyncSource. Recomputed on each sync. |
-| occasion_count | [uint64](#uint64) |  | The number of event instances total associated with this SyncSource. Recomputed on each sync. |
+| occasion_count | [uint64](#uint64) |  | The number of occasions total associated with this SyncSource. Recomputed on each sync. |
 | post_count | [uint64](#uint64) |  | The number of posts total associated with this SyncSource. Populated for an RSS/Atom source (recomputed on each sync, like `event_count`/`occasion_count` are for an ICS source); always 0 for an ICS source, which syncs Events/Occasions instead. |
 | ics_subscription_url | [string](#string) |  | The iCal subscription URL for the calendar sync. Creates/updates Events/Occasions. |
 | rss_subscription_url | [string](#string) |  | The RSS subscription URL for the feed sync. Creates/updates plain Posts. |

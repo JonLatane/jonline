@@ -3116,16 +3116,16 @@ deleteConfirmationModal shared =
 
                         Shared.ConfirmEventDelete event _ ->
                             let
-                                instanceCount : Int
-                                instanceCount =
-                                    List.length event.instances
+                                occasionCount : Int
+                                occasionCount =
+                                    List.length event.occasions
                             in
                             ( "Delete Event?"
                             , "Delete \""
                                 ++ (event.post |> Maybe.map Posts.postTitleText |> Maybe.withDefault "this event")
                                 ++ "\""
-                                ++ (if instanceCount > 1 then
-                                        " and all " ++ String.fromInt instanceCount ++ " of its dates"
+                                ++ (if occasionCount > 1 then
+                                        " and all " ++ String.fromInt occasionCount ++ " of its dates"
 
                                     else
                                         ""
@@ -3134,10 +3134,10 @@ deleteConfirmationModal shared =
                             , "Delete"
                             )
 
-                        Shared.ConfirmOccasionDelete instance event _ ->
+                        Shared.ConfirmOccasionDelete occasion event _ ->
                             ( "Delete This Date?"
                             , "Delete "
-                                ++ Events.instanceWhenText shared.time instance
+                                ++ Events.occasionWhenText shared.time occasion
                                 ++ " from \""
                                 ++ (event.post |> Maybe.map Posts.postTitleText |> Maybe.withDefault "this event")
                                 ++ "\"? This can't be undone."
@@ -3337,10 +3337,10 @@ currentStarredOccasionKey shared currentRoute =
     case currentRoute of
         Route.Event__PostId_ params ->
             let
-                ( instancePostId, _ ) =
+                ( occasionPostId, _ ) =
                     Events.parseEventRouteId shared.accounts.mainFrontendHost params.postId
             in
-            Just instancePostId
+            Just occasionPostId
 
         _ ->
             Nothing

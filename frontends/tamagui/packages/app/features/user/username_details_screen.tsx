@@ -163,12 +163,12 @@ export function UsernameDetailsScreen() {
   const [loadingEvents, setLoadingEvents] = useState(false);
   const userEventIds = useAppSelector(state => userId ? state.users.idOccasions[userId] : undefined);
   const userEventData: FederatedEvent[] | undefined = useAppSelector(state => {
-    return userEventIds?.map(instanceId => {
-      const eventId = state.events.instanceEvents[instanceId];
+    return userEventIds?.map(occasionId => {
+      const eventId = state.events.occasionEvents[occasionId];
       if (!eventId) return undefined;
       const event = state.events.entities[eventId];
       if (!event) return undefined;
-      return { ...event, instances: event.instances.filter(i => i.id === instanceId.split('@')[0]) };
+      return { ...event, occasions: event.occasions.filter(i => i.id === occasionId.split('@')[0]) };
     })
       ?.filter(e => e !== undefined) as FederatedEvent[] | undefined
   });
@@ -189,11 +189,11 @@ export function UsernameDetailsScreen() {
   const eventResults = userEventData ?? [];
   const allEvents = bigCalendar
     ? eventResults
-    : eventResults.filter(e => moment(e.instances[0]!.endsAt).isAfter(pageLoadTime));
+    : eventResults.filter(e => moment(e.occasions[0]!.endsAt).isAfter(pageLoadTime));
 
   // const calendarSubcriptionLink = useLink({ href: `https://${server?.host}/calendar.ics?user_id=${user?.id}` });
   // const bigCalendarScrollToTime = useMemo(() =>
-  //   allEvents.length == 0 ? undefined : moment(allEvents[0]!.instances[0]!.startsAt).toDate()
+  //   allEvents.length == 0 ? undefined : moment(allEvents[0]!.occasions[0]!.startsAt).toDate()
   //   , [allEvents])
   const eventPagination = usePaginatedRendering(allEvents, 7, {
     pageParamHook: useEventPageParam,
@@ -464,7 +464,7 @@ export function UsernameDetailsScreen() {
                   ? bigCalendar && allEvents.length > 0
                     ? [
                       // <div key='full-calendar'>
-                      <EventsFullCalendar key='full-calendar' events={allEvents} weeklyOnly />//scrollToTime={allEvents[0]?.instances[0]?.startsAt} />
+                      <EventsFullCalendar key='full-calendar' events={allEvents} weeklyOnly />//scrollToTime={allEvents[0]?.occasions[0]?.startsAt} />
                       // </div>
                     ]
                     : [
@@ -494,7 +494,7 @@ export function UsernameDetailsScreen() {
                                 : undefined}
 
                               {paginatedEvents.map((event) =>
-                                <span key={`event-preview-${federatedId(event)}-${event.instances[0]!.id}`}>
+                                <span key={`event-preview-${federatedId(event)}-${event.occasions[0]!.id}`}>
                                   <XStack mx='$1' px='$1' pb='$5'>
                                     <EventCard event={event} isPreview horizontal xs ignoreShrinkPreview />
                                   </XStack>

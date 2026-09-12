@@ -57,7 +57,7 @@ message User {
   optional int32 response_count = 36;
   // The number of events this user has created.
   optional int32 event_count = 37;
-  // The number of event instances this user has created (across all of their events).
+  // The number of occasions this user has created (across all of their events).
   optional int32 occasion_count = 38;
 
   // Presence indicates the current user is following

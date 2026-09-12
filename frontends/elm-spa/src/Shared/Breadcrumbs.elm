@@ -12,12 +12,12 @@ its own page. The open chip is tinted with `model.host`'s own
 segment `replyPanel` is currently showing.
 
 Wired into `Shared.Model`/`UI.elm` the same way `Shared.MarkdownPanel` is: one
-shared instance, populated contextually by whichever page has a chain to show
+shared occasion, populated contextually by whichever page has a chain to show
 (currently just `Pages.Post.PostId_`, via `SetRoot`) rather than each page
 owning its own breadcrumb state.
 
 `FromPost` and `FromServerHost` are rendered -- `FromEvent` (an Event
-Instance's discussion, reached the same way) is a real variant already so
+Occasion's discussion, reached the same way) is a real variant already so
 callers/`Model` don't need to change shape again once it's wired up, but its
 `rootSegment`/its own ancestor-fetching aren't implemented yet.
 

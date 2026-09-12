@@ -151,7 +151,7 @@ pub fn get_occasions(
         .load::<(Occasion, Post, Option<Author>)>(conn)
         .map_err(|e| {
             log::error!(
-                "Failed to load event instances for event_id={}: {:?}",
+                "Failed to load occasions for event_id={}: {:?}",
                 event_id,
                 e
             );

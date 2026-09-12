@@ -9,7 +9,7 @@ import { RootState, federatedId, setDiscussionChatUI, setOpenedStarredPost, useS
 import { highlightedButtonBackground } from "app/utils";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLink } from "solito/link";
-import { InstanceTime } from "../event/instance_time";
+import { OccasionTime } from "../event/occasion_time";
 import { AutoAnimatedList, ConversationContextProvider, ReplyArea, scrollToCommentsBottom, scrollToCommentsTop, useConversationCommentList, useReplyAncestors, useStatefulConversationContext } from "../post";
 import { ThemedStar } from "../post/star_button";
 import { AppSection, menuIcon } from "./features_navigation";
@@ -93,7 +93,7 @@ export function StarredPosts({ }: StarredPostsProps) {
       scrollToTop();
     }
   }, [openedPostId])
-  const { serverHost, basePost, event, occasionId, eventWithSingleInstance } = useStarredPostDetails(openedPostId ?? '');
+  const { serverHost, basePost, event, occasionId, eventWithSingleOccasion } = useStarredPostDetails(openedPostId ?? '');
   const { ancestorPost, ancestorEvent } = useReplyAncestors(basePost);
   const basePostTitle = event?.post?.title || basePost?.title ||
     (ancestorEvent?.post?.title
@@ -106,8 +106,8 @@ export function StarredPosts({ }: StarredPostsProps) {
   }, [openedPostId, basePost]);
   const basePostLink = useLink({
     href:
-      eventWithSingleInstance
-        ? `/event/${eventWithSingleInstance.instances[0]!.id}@${serverHost}`
+      eventWithSingleOccasion
+        ? `/event/${eventWithSingleOccasion.occasions[0]!.id}@${serverHost}`
         : `/post/${basePost?.id}@${serverHost}`
   });
   const basePostLinkWithClose = {
@@ -248,7 +248,7 @@ export function StarredPosts({ }: StarredPostsProps) {
                         <YStack>
                           <Paragraph size='$1'
                             color={primaryTextColor}
-                            maw={Math.min(400, window.innerWidth - 150 - (eventWithSingleInstance ? 80 : 0))}
+                            maw={Math.min(400, window.innerWidth - 150 - (eventWithSingleOccasion ? 80 : 0))}
                             overflow='hidden' textOverflow='ellipsis' whiteSpace='nowrap'
                             fontWeight='bold' my='auto' animation='standard' o={0.7} f={1}>
                             {basePostTitle}
@@ -302,9 +302,9 @@ export function StarredPosts({ }: StarredPostsProps) {
                     ]}
                   {/* <div key='flex-2' style={{ flex: 1 }} /> */}
 
-                  {eventWithSingleInstance
-                    ? <div key='instance-time'>
-                      <InstanceTime instance={eventWithSingleInstance.instances[0]!} event={eventWithSingleInstance} />
+                  {eventWithSingleOccasion
+                    ? <div key='occasion-time'>
+                      <OccasionTime occasion={eventWithSingleOccasion.occasions[0]!} event={eventWithSingleOccasion} />
                     </div>
                     : basePost
                       ? undefined//<div key='flex-3' style={{ flex: 1 }} />

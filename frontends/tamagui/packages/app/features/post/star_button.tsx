@@ -56,17 +56,17 @@ export const StarButton: React.FC<StarButtonProps> = ({
     }
     setFirstStarred(pendingStarChange);
   }, [pendingStarChange]);
-  const occasionId = useAppSelector(state => state.events.postInstances[federatedPostId]);
+  const occasionId = useAppSelector(state => state.events.postOccasions[federatedPostId]);
   const serverOccasionId = parseFederatedId(federatedPostId).id;
   const event = useAppSelector(state =>
     post.context === PostContext.OCCASION
       ? state.events.entities[
-      state.events.instanceEvents[
+      state.events.occasionEvents[
       occasionId ?? ''
       ] ?? ''
       ]
       : undefined);
-  const occasion = event?.instances.find(i => i.id === serverOccasionId);
+  const occasion = event?.occasions.find(i => i.id === serverOccasionId);
   const postTitle = event
     ? `${event?.post?.title}${occasion ? ` (${moment(occasion.startsAt).format('MMM D, h:mm a')})` : ''}`
     : post.title;

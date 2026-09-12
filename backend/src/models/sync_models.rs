@@ -62,7 +62,7 @@ pub fn get_sync_destinations_for_user(
 /// `GROUP BY` query (mirrors `get_events.rs`'s `attach_occasion_attendances`: fetch the
 /// primary rows first, then attach a derived count/list in a second, batched query rather than
 /// one query per row) -- see `marshaling::attach_synced_counts`, which mutates already-built
-/// `SyncDestination` protos with this. A destination with zero synced instances is simply absent
+/// `SyncDestination` protos with this. A destination with zero synced occasions is simply absent
 /// from the result map (no row to group), so callers should treat a missing key as `0`.
 pub fn get_sync_destination_synced_counts(
     destination_ids: Vec<i64>,

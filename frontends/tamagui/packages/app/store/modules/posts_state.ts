@@ -223,7 +223,7 @@ export const postsSlice = createSlice({
     });
 
     const saveEventPosts = (state: PostsState, action: PayloadAction<Event, any, any>) => {
-      const posts: Post[] = [action.payload.post!, ...action.payload.instances.map(i => i.post!)];
+      const posts: Post[] = [action.payload.post!, ...action.payload.occasions.map(i => i.post!)];
       // postsAdapter.upsertOne(state, federatedEntity(action.payload.post!, action));
       postsAdapter.upsertMany(state, federatedEntities(posts, action));
     };
@@ -231,7 +231,7 @@ export const postsSlice = createSlice({
     builder.addCase(updateEvent.fulfilled, saveEventPosts);
     builder.addCase(createEvent.fulfilled, saveEventPosts);
     builder.addCase(loadEventsPage.fulfilled, (state, action) => {
-      const posts: Post[] = action.payload.events.flatMap(event => [event.post!, ...event.instances.map(i => i.post!)]);
+      const posts: Post[] = action.payload.events.flatMap(event => [event.post!, ...event.occasions.map(i => i.post!)]);
       upsertPosts(state, federatedEntities(posts, action));
     });
   },

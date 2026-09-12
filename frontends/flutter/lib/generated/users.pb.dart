@@ -392,7 +392,7 @@ class User extends $pb.GeneratedMessage {
   @$pb.TagNumber(37)
   void clearEventCount() => clearField(37);
 
-  /// The number of event instances this user has created (across all of their events).
+  /// The number of occasions this user has created (across all of their events).
   @$pb.TagNumber(38)
   $core.int get occasionCount => $_getIZ(18);
   @$pb.TagNumber(38)

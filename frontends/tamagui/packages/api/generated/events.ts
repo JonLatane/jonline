@@ -223,9 +223,9 @@ export interface GetEventsRequest {
     | string
     | undefined;
   /**
-   * Loads multiple events by their event instances' Post IDs - returns one
+   * Loads multiple events by their occasions' Post IDs - returns one
    * Event per matching Occasion (see GetEventsResponse's own doc), not
-   * the requested Occasion's whole parent Event's full instance list.
+   * the requested Occasion's whole parent Event's full occasion list.
    */
   occasionPostIds: string[];
   /**
@@ -264,13 +264,13 @@ export interface TimeFilter {
  * A list of [`Event`](#rellm-Event)s with a maybe-incomplete (see [`GetEventsRequest`](#rellm-GetEventsRequest)) set of their [`Occasion`](#rellm-Occasion)s.
  *
  * Note that `GetEventsResponse` may often include duplicate Events with the same ID.
- * I.E. something like: `{events: [{id: a, instances: [{id: x}]}, {id: a, instances: [{id: y}]}, ]}` is a valid response.
- * This semantically means: "Event A has both instances X and Y in the time frame the client asked for."
+ * I.E. something like: `{events: [{id: a, occasions: [{id: x}]}, {id: a, occasions: [{id: y}]}, ]}` is a valid response.
+ * This semantically means: "Event A has both occasions X and Y in the time frame the client asked for."
  * The client should be able to handle this.
  *
  * In the React/Tamagui client, this is handled by the Redux store, which
  * effectively "compacts" all response into its own internal Events store, in a form something like:
- * `{events: {a: {id: a, instances: [{id: x}, {id: y}]}, ...}, instanceEventIds: {x:a, y:a}}`.
+ * `{events: {a: {id: a, occasions: [{id: x}, {id: y}]}, ...}, occasionEventIds: {x:a, y:a}}`.
  * (In reality it uses `EntityAdapter` which is a bit more complicated, but the idea is the same.)
  */
 export interface GetEventsResponse {
@@ -295,8 +295,8 @@ export interface Event {
   info:
     | EventInfo
     | undefined;
-  /** A list of instances for the Event. *Events will only include all instances if the request is for a single event.* */
-  instances: Occasion[];
+  /** A list of occasions for the Event. *Events will only include all occasions if the request is for a single event.* */
+  occasions: Occasion[];
 }
 
 /** Syncs (cross-posts) a single Occasion to one SyncDestination. */
@@ -360,13 +360,13 @@ export interface Occasion {
   /** ID of the parent [`Event`](#rellm-Event) (i.e. the parent `Event.post.id`). */
   eventId: string;
   /**
-   * Optional [`Post`](#rellm-Post) containing alternate title/link/description for this particular instance. Its [`PostContext`](#rellm-PostContext) should be `OCCASION`.
+   * Optional [`Post`](#rellm-Post) containing alternate title/link/description for this particular Occasion. Its [`PostContext`](#rellm-PostContext) should be `OCCASION`.
    * An `Occasion`'s ID *is* its `post.id` - there is no separate surrogate ID.
    */
   post:
     | Post
     | undefined;
-  /** Additional configuration for this instance of this [`Occasion`](#rellm-Occasion) beyond the [`EventInfo`](#rellm-EventInfo) in its parent [`Event`](#rellm-Event). */
+  /** Additional configuration for this [`Occasion`](#rellm-Occasion) beyond the [`EventInfo`](#rellm-EventInfo) in its parent [`Event`](#rellm-Event). */
   info:
     | OccasionInfo
     | undefined;
@@ -389,18 +389,18 @@ export interface Occasion {
   syncMissingSince?:
     | string
     | undefined;
-  /** RSVP + invite data for this instance. */
+  /** RSVP + invite data for this Occasion. */
   attendances?:
     | EventAttendances
     | undefined;
-  /** If the request was made by a logged-in user, this is the current user's attendance for this instance. */
+  /** If the request was made by a logged-in user, this is the current user's attendance for this Occasion. */
   currentUserAttendance?:
     | EventAttendance
     | undefined;
-  /** SyncDestinations this instance has been synced (cross-posted) to, and their status. */
+  /** SyncDestinations this Occasion has been synced (cross-posted) to, and their status. */
   syncDestinations: SyncDestinationStatus[];
   /**
-   * A time zone for the event instance. Used when serializing it for,
+   * A time zone for the Occasion. Used when serializing it for,
    * e.g., Facebook or Instagram posts, or generating media.
    */
   timezone?: string | undefined;
@@ -411,7 +411,7 @@ export interface Occasion {
  * Stored as JSON in the database.
  */
 export interface OccasionInfo {
-  /** RSVP configuration and metadata for the event instance. */
+  /** RSVP configuration and metadata for the Occasion. */
   rsvpInfo?: OccasionRsvpInfo | undefined;
 }
 
@@ -420,15 +420,15 @@ export interface OccasionInfo {
  * Curently, the `optional` counts below are *never* returned by the API.
  */
 export interface OccasionRsvpInfo {
-  /** Overrides `EventInfo.allows_rsvps`, if set, for this instance. */
+  /** Overrides `EventInfo.allows_rsvps`, if set, for this Occasion. */
   allowsRsvps?:
     | boolean
     | undefined;
-  /** Overrides `EventInfo.allows_anonymous_rsvps`, if set, for this instance. */
+  /** Overrides `EventInfo.allows_anonymous_rsvps`, if set, for this Occasion. */
   allowsAnonymousRsvps?:
     | boolean
     | undefined;
-  /** Overrides `EventInfo.max_attendees`, if set, for this instance. Not yet supported. */
+  /** Overrides `EventInfo.max_attendees`, if set, for this Occasion. Not yet supported. */
   maxAttendees?:
     | number
     | undefined;
@@ -953,7 +953,7 @@ export const GetEventsResponse: MessageFns<GetEventsResponse> = {
 };
 
 function createBaseEvent(): Event {
-  return { post: undefined, info: undefined, instances: [] };
+  return { post: undefined, info: undefined, occasions: [] };
 }
 
 export const Event: MessageFns<Event> = {
@@ -964,7 +964,7 @@ export const Event: MessageFns<Event> = {
     if (message.info !== undefined) {
       EventInfo.encode(message.info, writer.uint32(26).fork()).join();
     }
-    for (const v of message.instances) {
+    for (const v of message.occasions) {
       Occasion.encode(v!, writer.uint32(34).fork()).join();
     }
     return writer;
@@ -998,7 +998,7 @@ export const Event: MessageFns<Event> = {
             break;
           }
 
-          message.instances.push(Occasion.decode(reader, reader.uint32()));
+          message.occasions.push(Occasion.decode(reader, reader.uint32()));
           continue;
         }
       }
@@ -1014,8 +1014,8 @@ export const Event: MessageFns<Event> = {
     return {
       post: isSet(object.post) ? Post.fromJSON(object.post) : undefined,
       info: isSet(object.info) ? EventInfo.fromJSON(object.info) : undefined,
-      instances: globalThis.Array.isArray(object?.instances)
-        ? object.instances.map((e: any) => Occasion.fromJSON(e))
+      occasions: globalThis.Array.isArray(object?.occasions)
+        ? object.occasions.map((e: any) => Occasion.fromJSON(e))
         : [],
     };
   },
@@ -1028,8 +1028,8 @@ export const Event: MessageFns<Event> = {
     if (message.info !== undefined) {
       obj.info = EventInfo.toJSON(message.info);
     }
-    if (message.instances?.length) {
-      obj.instances = message.instances.map((e) => Occasion.toJSON(e));
+    if (message.occasions?.length) {
+      obj.occasions = message.occasions.map((e) => Occasion.toJSON(e));
     }
     return obj;
   },
@@ -1041,7 +1041,7 @@ export const Event: MessageFns<Event> = {
     const message = createBaseEvent();
     message.post = (object.post !== undefined && object.post !== null) ? Post.fromPartial(object.post) : undefined;
     message.info = (object.info !== undefined && object.info !== null) ? EventInfo.fromPartial(object.info) : undefined;
-    message.instances = object.instances?.map((e) => Occasion.fromPartial(e)) || [];
+    message.occasions = object.occasions?.map((e) => Occasion.fromPartial(e)) || [];
     return message;
   },
 };

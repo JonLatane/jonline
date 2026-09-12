@@ -16,7 +16,7 @@ use crate::schema::{occasions, events};
 use crate::tests::factories::*;
 
 #[test]
-fn self_delete_removes_the_event_and_instances_but_not_the_posts() {
+fn self_delete_removes_the_event_and_occasions_but_not_the_posts() {
     let mut conn = test_conn();
     conn.test_transaction::<_, tonic::Status, _>(|conn| {
         let author = create_user(conn, "det_self");
@@ -24,11 +24,11 @@ fn self_delete_removes_the_event_and_instances_but_not_the_posts() {
             conn,
             &author,
             EventOpts {
-                default_instance: None,
+                default_occasion: None,
                 ..Default::default()
             },
         );
-        let (instance, instance_post) =
+        let (occasion, occasion_post) =
             create_occasion(conn, &event, Some(&author), OccasionOpts::default());
 
         delete_event(
@@ -50,19 +50,19 @@ fn self_delete_removes_the_event_and_instances_but_not_the_posts() {
             .get_result(conn)
             .unwrap();
         assert_eq!(remaining_events, 0);
-        let remaining_instances: i64 = occasions::table
-            .filter(occasions::post_id.eq(instance.post_id))
+        let remaining_occasions: i64 = occasions::table
+            .filter(occasions::post_id.eq(occasion.post_id))
             .count()
             .get_result(conn)
             .unwrap();
-        assert_eq!(remaining_instances, 0, "instances cascade with their event");
+        assert_eq!(remaining_occasions, 0, "occasions cascade with their event");
 
         // The container Posts are untouched -- delete_event doesn't scrub them.
         let event_post_after = models::get_post(event_post.id, conn).unwrap();
         assert_eq!(event_post_after.user_id, Some(author.id));
         assert!(event_post_after.title.is_some());
-        let instance_post_after = models::get_post(instance_post.id, conn).unwrap();
-        assert_eq!(instance_post_after.user_id, Some(author.id));
+        let occasion_post_after = models::get_post(occasion_post.id, conn).unwrap();
+        assert_eq!(occasion_post_after.user_id, Some(author.id));
 
         Ok(())
     });

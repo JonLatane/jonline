@@ -9,36 +9,36 @@ use crate::models;
 use crate::protos::*;
 use crate::schema::posts;
 
-use super::event_permissions::{event_post_id, find_existing_instance, validate_event_edit_permission};
+use super::event_permissions::{event_post_id, find_existing_occasion, validate_event_edit_permission};
 
-/// Updates, in place, every `Occasion` in `instances` that's already on the event (i.e.
-/// whose `post.id` matches an existing instance belonging to this event). Any other instances are
+/// Updates, in place, every `Occasion` in `occasions` that's already on the event (i.e.
+/// whose `post.id` matches an existing occasion belonging to this event). Any other occasions are
 /// ignored -- see `create_new_occasions` for creating those instead.
 ///
 /// An `Occasion`'s identity *is* its `post.id`, so (unlike the old surrogate-ID scheme) a
-/// matched instance's `post` is never missing here -- to explicitly reset an instance's Post to
+/// matched occasion's `post` is never missing here -- to explicitly reset an occasion's Post to
 /// `PRIVATE`, send its `post` with `visibility: PRIVATE` rather than omitting `post` entirely.
 pub(super) fn update_occasions_impl(
     event: &models::Event,
-    instances: &[Occasion],
+    occasions: &[Occasion],
     conn: &mut PgPooledConnection,
 ) -> Result<(), Status> {
-    for request_instance in instances {
-        let Some(existing_instance) =
-            find_existing_instance(request_instance, event.post_id, conn)
+    for request_occasion in occasions {
+        let Some(existing_occasion) =
+            find_existing_occasion(request_occasion, event.post_id, conn)
         else {
             continue;
         };
-        let existing_instance_post = posts::table
+        let existing_occasion_post = posts::table
             .select(models::POST_COLUMNS)
-            .filter(posts::id.eq(existing_instance.post_id))
+            .filter(posts::id.eq(existing_occasion.post_id))
             .first::<models::Post>(conn)
             .map_err(|_| Status::new(Code::NotFound, "occasion_post_not_found"))?;
 
-        let mut updated_instance = existing_instance.clone();
-        let starts_at = request_instance.starts_at.to_db()?;
-        let ends_at = request_instance.ends_at.to_db()?;
-        let location = request_instance
+        let mut updated_occasion = existing_occasion.clone();
+        let starts_at = request_occasion.starts_at.to_db()?;
+        let ends_at = request_occasion.ends_at.to_db()?;
+        let location = request_occasion
             .location
             .as_ref()
             .map(|c| serde_json::to_value(c).unwrap());
@@ -46,52 +46,52 @@ pub(super) fn update_occasions_impl(
             return Err(Status::new(
                 Code::InvalidArgument,
                 format!(
-                    "instance[{}] starts_at must be before ends_at",
-                    existing_instance.post_id
+                    "occasion[{}] starts_at must be before ends_at",
+                    existing_occasion.post_id
                 ),
             ));
         }
 
-        let timezone = request_instance.timezone.clone();
+        let timezone = request_occasion.timezone.clone();
 
-        if starts_at != updated_instance.starts_at
-            || ends_at != updated_instance.ends_at
-            || location != updated_instance.location
-            || timezone != updated_instance.timezone
+        if starts_at != updated_occasion.starts_at
+            || ends_at != updated_occasion.ends_at
+            || location != updated_occasion.location
+            || timezone != updated_occasion.timezone
         {
-            updated_instance.starts_at = starts_at;
-            updated_instance.ends_at = ends_at;
-            updated_instance.location = location;
-            updated_instance.timezone = timezone;
-            updated_instance.updated_at = SystemTime::now().into();
+            updated_occasion.starts_at = starts_at;
+            updated_occasion.ends_at = ends_at;
+            updated_occasion.location = location;
+            updated_occasion.timezone = timezone;
+            updated_occasion.updated_at = SystemTime::now().into();
         }
 
-        diesel::update(&updated_instance)
-            .set(&updated_instance)
+        diesel::update(&updated_occasion)
+            .set(&updated_occasion)
             .returning(models::OCCASION_COLUMNS)
             .get_result::<models::Occasion>(conn)
             .map_err(|e| {
-                log::error!("Failed to update event instance: {:?}", e);
+                log::error!("Failed to update event occasion: {:?}", e);
                 Status::new(Code::Internal, "failed_to_update_occasion")
             })?;
 
-        let mut updated_instance_post = existing_instance_post.clone();
-        // `request_instance.post` is always `Some` here -- `find_existing_instance` can only
+        let mut updated_occasion_post = existing_occasion_post.clone();
+        // `request_occasion.post` is always `Some` here -- `find_existing_occasion` can only
         // match via `post.id` -- so this `unwrap_or` is just a defensive fallback, not a live path.
-        let visibility = request_instance
+        let visibility = request_occasion
             .post
             .as_ref()
             .map(|p| p.visibility())
             .unwrap_or(Visibility::Private);
-        if visibility.to_string_visibility() != updated_instance_post.visibility {
-            updated_instance_post.visibility = visibility.to_string_visibility();
+        if visibility.to_string_visibility() != updated_occasion_post.visibility {
+            updated_occasion_post.visibility = visibility.to_string_visibility();
         }
-        diesel::update(&updated_instance_post)
-            .set(&updated_instance_post)
+        diesel::update(&updated_occasion_post)
+            .set(&updated_occasion_post)
             .returning(models::POST_COLUMNS)
             .get_result::<models::Post>(conn)
             .map_err(|e| {
-                log::error!("Failed to update event instance post: {:?}", e);
+                log::error!("Failed to update event occasion post: {:?}", e);
                 Status::new(Code::Internal, "failed_to_update_occasion")
             })?;
     }
@@ -108,7 +108,7 @@ pub fn update_occasions(
     let event = models::get_event(event_id, &Some(current_user), conn)?;
     validate_event_edit_permission(&event, current_user, conn)?;
 
-    update_occasions_impl(&event, &request.instances, conn)?;
+    update_occasions_impl(&event, &request.occasions, conn)?;
 
     Ok(super::get_events(
         GetEventsRequest {

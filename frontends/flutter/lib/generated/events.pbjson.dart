@@ -146,7 +146,7 @@ const Event$json = {
   '2': [
     {'1': 'post', '3': 2, '4': 1, '5': 11, '6': '.rellm.Post', '10': 'post'},
     {'1': 'info', '3': 3, '4': 1, '5': 11, '6': '.rellm.EventInfo', '10': 'info'},
-    {'1': 'instances', '3': 4, '4': 3, '5': 11, '6': '.rellm.Occasion', '10': 'instances'},
+    {'1': 'occasions', '3': 4, '4': 3, '5': 11, '6': '.rellm.Occasion', '10': 'occasions'},
   ],
   '9': [
     {'1': 5, '2': 6},
@@ -157,8 +157,8 @@ const Event$json = {
 /// Descriptor for `Event`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List eventDescriptor = $convert.base64Decode(
     'CgVFdmVudBIfCgRwb3N0GAIgASgLMgsucmVsbG0uUG9zdFIEcG9zdBIkCgRpbmZvGAMgASgLMh'
-    'AucmVsbG0uRXZlbnRJbmZvUgRpbmZvEi0KCWluc3RhbmNlcxgEIAMoCzIPLnJlbGxtLk9jY2Fz'
-    'aW9uUglpbnN0YW5jZXNKBAgFEAZSC3N5bmNfc291cmNl');
+    'AucmVsbG0uRXZlbnRJbmZvUgRpbmZvEi0KCW9jY2FzaW9ucxgEIAMoCzIPLnJlbGxtLk9jY2Fz'
+    'aW9uUglvY2Nhc2lvbnNKBAgFEAZSC3N5bmNfc291cmNl');
 
 @$core.Deprecated('Use syncOccasionRequestDescriptor instead')
 const SyncOccasionRequest$json = {

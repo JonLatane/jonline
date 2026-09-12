@@ -21,20 +21,20 @@ pub fn sync_occasion(
     current_user: &models::User,
     conn: &mut PgPooledConnection,
 ) -> Result<Occasion, Status> {
-    let instance_id = request
+    let occasion_id = request
         .occasion_id
         .to_db_id_or_err("occasion_id")?;
     let destination_id = request
         .sync_destination_id
         .to_db_id_or_err("sync_destination_id")?;
 
-    let instance = models::get_occasion(instance_id, &Some(current_user), conn)?;
-    let instance_post: models::Post = posts::table
+    let occasion = models::get_occasion(occasion_id, &Some(current_user), conn)?;
+    let occasion_post: models::Post = posts::table
         .select(POST_COLUMNS)
-        .filter(posts::id.eq(instance.post_id))
+        .filter(posts::id.eq(occasion.post_id))
         .first(conn)
         .map_err(|_| Status::new(Code::NotFound, "occasion_post_not_found"))?;
-    let event = models::get_event(instance.event_id, &Some(current_user), conn)?;
+    let event = models::get_event(occasion.event_id, &Some(current_user), conn)?;
     let event_post: models::Post = posts::table
         .select(POST_COLUMNS)
         .filter(posts::id.eq(event.post_id))
@@ -76,20 +76,20 @@ pub fn sync_occasion(
         }
     };
 
-    let starts_at: DateTime<Utc> = instance.starts_at.into();
-    let ends_at: DateTime<Utc> = instance.ends_at.into();
-    let location = instance
+    let starts_at: DateTime<Utc> = occasion.starts_at.into();
+    let ends_at: DateTime<Utc> = occasion.ends_at.into();
+    let location = occasion
         .location
         .as_ref()
         .and_then(|l| l.get("uniformly_formatted_address"))
         .and_then(|v| v.as_str())
         .filter(|a| !a.trim().is_empty())
         .map(str::to_string);
-    // Prefer the instance's own DB-set `timezone` (set by hand via `CreateNewPanel`/`EventPage`'s
+    // Prefer the occasion's own DB-set `timezone` (set by hand via `CreateNewPanel`/`EventPage`'s
     // timezone selector, or from an ICS Sync Source's own `DTSTART` `TZID`) over geocoding the
-    // location through Nominatim -- that's a best-effort fallback for instances with no explicit
+    // location through Nominatim -- that's a best-effort fallback for occasions with no explicit
     // timezone at all (see `logic::resolve_timezone`'s own doc).
-    let timezone = instance
+    let timezone = occasion
         .timezone
         .as_deref()
         .and_then(|tz| tz.parse::<chrono_tz::Tz>().ok())
@@ -104,8 +104,8 @@ pub fn sync_occasion(
         .as_ref()
         .map(|c| c.frontend_host.clone())
         .filter(|h| !h.trim().is_empty())
-        .map(|host| format!("https://{host}/event/{}", instance.post_id.to_proto_id()));
-    let media_ids: Vec<i64> = combine_media(&event_post.media, &instance_post.media);
+        .map(|host| format!("https://{host}/event/{}", occasion.post_id.to_proto_id()));
+    let media_ids: Vec<i64> = combine_media(&event_post.media, &occasion_post.media);
     let media_lookup = load_media_lookup(media_ids.clone(), conn);
     let media: Vec<MediaAttachment> = external_cdn_config
         .as_ref()
@@ -126,18 +126,18 @@ pub fn sync_occasion(
         })
         .unwrap_or_default();
 
-    // The instance's own Post carries only a per-instance *override* of the parent Event's own
-    // title/content (often unset, e.g. a plain weekly recurrence with nothing instance-specific to
+    // The occasion's own Post carries only a per-occasion *override* of the parent Event's own
+    // title/content (often unset, e.g. a plain weekly recurrence with nothing occasion-specific to
     // say) -- so the synced message always leads with the Event's own title/content, appending the
-    // instance's as a distinguishing suffix only when it actually set one. See
+    // occasion's as a distinguishing suffix only when it actually set one. See
     // `combine_title`/`combine_content`'s own docs for the exact formats.
-    let title = combine_title(&event_post.title, &instance_post.title);
-    let content = combine_content(&event_post.content, &instance_post.content);
+    let title = combine_title(&event_post.title, &occasion_post.title);
+    let content = combine_content(&event_post.content, &occasion_post.content);
 
     let message = build_occasion_message(OccasionMessageInput {
         title: &title,
         content: &content,
-        link: &instance_post.link,
+        link: &occasion_post.link,
         starts_at,
         ends_at,
         location: &location,
@@ -174,7 +174,7 @@ pub fn sync_occasion(
     };
 
     let new_row = models::NewOccasionSyncDestination {
-        occasion_id: instance.post_id,
+        occasion_id: occasion.post_id,
         sync_destination_id: destination.id,
         destination_instance_id: Some(destination_instance_id),
         destination_url: Some(destination_url),
@@ -190,14 +190,14 @@ pub fn sync_occasion(
         .set(&new_row)
         .execute(conn)
         .map_err(|e| {
-            log::error!("Failed to record event instance sync status: {:?}", e);
+            log::error!("Failed to record event occasion sync status: {:?}", e);
             Status::new(Code::Internal, "failed_to_record_occasion_sync")
         })?;
 
-    let instance_post_id = instance.post_id.to_proto_id();
+    let occasion_post_id = occasion.post_id.to_proto_id();
     let events = crate::rpcs::get_events(
         GetEventsRequest {
-            post_id: Some(instance_post_id.clone()),
+            post_id: Some(occasion_post_id.clone()),
             ..Default::default()
         },
         &Some(current_user),
@@ -207,37 +207,37 @@ pub fn sync_occasion(
     events
         .into_iter()
         .find_map(|event| {
-            event.instances.into_iter().find(|i| {
-                i.post.as_ref().map(|p| p.id.as_str()) == Some(instance_post_id.as_str())
+            event.occasions.into_iter().find(|i| {
+                i.post.as_ref().map(|p| p.id.as_str()) == Some(occasion_post_id.as_str())
             })
         })
         .ok_or_else(|| Status::new(Code::Internal, "failed_to_reload_synced_occasion"))
 }
 
-/// `"{event_title}: {instance_title}"` when `instance_title` is set (non-empty), else just
+/// `"{event_title}: {occasion_title}"` when `occasion_title` is set (non-empty), else just
 /// `event_title` alone -- e.g. "Run Club" or "Run Club: Special Holiday Edition". Falls back to
-/// `instance_title` alone in the (unusual) case `event_title` itself is unset.
-fn combine_title(event_title: &Option<String>, instance_title: &Option<String>) -> Option<String> {
-    combine(event_title, instance_title, ": ")
+/// `occasion_title` alone in the (unusual) case `event_title` itself is unset.
+fn combine_title(event_title: &Option<String>, occasion_title: &Option<String>) -> Option<String> {
+    combine(event_title, occasion_title, ": ")
 }
 
-/// `"{event_content}\n\n---\n\n{instance_content}"` when `instance_content` is set (non-empty),
-/// else just `event_content` alone. Falls back to `instance_content` alone in the (unusual) case
+/// `"{event_content}\n\n---\n\n{occasion_content}"` when `occasion_content` is set (non-empty),
+/// else just `event_content` alone. Falls back to `occasion_content` alone in the (unusual) case
 /// `event_content` itself is unset.
-fn combine_content(event_content: &Option<String>, instance_content: &Option<String>) -> Option<String> {
-    combine(event_content, instance_content, "\n\n---\n\n")
+fn combine_content(event_content: &Option<String>, occasion_content: &Option<String>) -> Option<String> {
+    combine(event_content, occasion_content, "\n\n---\n\n")
 }
 
 /// Unions the Event's own Post's media with the Occasion's own Post's media, Event-first --
-/// an instance-level Post rarely carries its own media override (e.g. a plain weekly recurrence
-/// with nothing instance-specific to show), so without this an Event's actual photos/video
-/// (attached to the *Event's* Post, not any particular instance) would never get synced at all.
-/// Mirrors `combine_title`/`combine_content`'s Event+instance merge, just as a set union instead
+/// an occasion-level Post rarely carries its own media override (e.g. a plain weekly recurrence
+/// with nothing occasion-specific to show), so without this an Event's actual photos/video
+/// (attached to the *Event's* Post, not any particular occasion) would never get synced at all.
+/// Mirrors `combine_title`/`combine_content`'s Event+occasion merge, just as a set union instead
 /// of a text join since there's no natural primary/secondary ordering for media the way there is
 /// for title/content.
-fn combine_media(event_media: &[Option<i64>], instance_media: &[Option<i64>]) -> Vec<i64> {
+fn combine_media(event_media: &[Option<i64>], occasion_media: &[Option<i64>]) -> Vec<i64> {
     let mut ids: Vec<i64> = event_media.iter().filter_map(|m| *m).collect();
-    for id in instance_media.iter().filter_map(|m| *m) {
+    for id in occasion_media.iter().filter_map(|m| *m) {
         if !ids.contains(&id) {
             ids.push(id);
         }

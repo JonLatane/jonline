@@ -39,7 +39,7 @@ pub fn get_events(
     conn: &mut PgPooledConnection,
 ) -> Result<GetEventsResponse, Status> {
     let result: Vec<MarshalableEvent> = if !request.occasion_post_ids.is_empty() {
-        get_events_by_instance_post_ids(&user, &request.occasion_post_ids, conn)?
+        get_events_by_occasion_post_ids(&user, &request.occasion_post_ids, conn)?
     } else {
         match (
             request.listing_type(),
@@ -72,10 +72,10 @@ pub fn get_events(
     Ok(GetEventsResponse { events })
 }
 
-// Per-instance context `attach_occasion_attendances` needs but that isn't already sitting
-// on `models::EventAttendance` -- both come from the *parent Event*, not the instance itself
-// (`event_post.0.user_id`/`event.info` are shared across every instance of that Event), so this
-// is computed once per Event up front rather than re-derived per instance.
+// Per-occasion context `attach_occasion_attendances` needs but that isn't already sitting
+// on `models::EventAttendance` -- both come from the *parent Event*, not the occasion itself
+// (`event_post.0.user_id`/`event.info` are shared across every occasion of that Event), so this
+// is computed once per Event up front rather than re-derived per occasion.
 struct OccasionAttendanceContext {
     owner_user_id: Option<i64>,
     hide_location_until_rsvp_approved: bool,
@@ -97,14 +97,14 @@ fn attendance_matches_anonymous_token(
 // Loads attendance info for every `Occasion` about to be returned, in one query keyed by
 // `occasion_id IN (...)`, and attaches it as `Occasion.attendances`/
 // `current_user_attendance` -- sparing callers (e.g. the Elm SPA's Posts page) a separate
-// `GetEventAttendances` round trip per instance just to show RSVP info. Also resolves
+// `GetEventAttendances` round trip per occasion just to show RSVP info. Also resolves
 // `Occasion.location` (and mirrors it into `EventAttendances.hidden_location`) the same way,
 // since whether it's visible depends on the very attendance data being loaded here.
 //
 // Deliberately mirrors `get_event_attendances`'s own visibility rules field-for-field (see that
 // RPC's doc comments for the reasoning behind each): moderation-passing attendances are visible to
 // everyone, an Event's owner sees every attendance (regardless of moderation) for their own
-// instances, a viewer always sees their own attendance regardless of moderation, and
+// occasions, a viewer always sees their own attendance regardless of moderation, and
 // `request.anonymous_attendee_auth_token` (mirroring
 // `GetEventAttendancesRequest.anonymous_attendee_auth_token`) unlocks an anonymous attendee's own
 // record the same way. `private_note` and the real `location` (once
@@ -121,14 +121,14 @@ fn attach_occasion_attendances(
     let current_user_id = user.map(|u| u.id);
     let anonymous_auth_token = request.anonymous_attendee_auth_token.as_deref();
 
-    let mut context_by_instance: HashMap<i64, OccasionAttendanceContext> = HashMap::new();
-    for MarshalableEvent(event, event_post, instances) in result {
+    let mut context_by_occasion: HashMap<i64, OccasionAttendanceContext> = HashMap::new();
+    for MarshalableEvent(event, event_post, occasions) in result {
         let hide_location_until_rsvp_approved = event.info["hide_location_until_rsvp_approved"]
             .as_bool()
             .unwrap_or(false);
-        for MarshalableOccasion(instance, _) in instances {
-            context_by_instance.insert(
-                instance.post_id,
+        for MarshalableOccasion(occasion, _) in occasions {
+            context_by_occasion.insert(
+                occasion.post_id,
                 OccasionAttendanceContext {
                     owner_user_id: event_post.0.user_id,
                     hide_location_until_rsvp_approved,
@@ -137,27 +137,27 @@ fn attach_occasion_attendances(
         }
     }
 
-    let instance_ids: Vec<i64> = context_by_instance.keys().cloned().collect();
-    if instance_ids.is_empty() {
+    let occasion_ids: Vec<i64> = context_by_occasion.keys().cloned().collect();
+    if occasion_ids.is_empty() {
         return;
     }
 
-    let owned_instance_ids: Vec<i64> = context_by_instance
+    let owned_occasion_ids: Vec<i64> = context_by_occasion
         .iter()
         .filter(|(_, context)| {
             current_user_id.is_some() && context.owner_user_id == current_user_id
         })
-        .map(|(instance_id, _)| *instance_id)
+        .map(|(occasion_id, _)| *occasion_id)
         .collect();
 
     let attendances: Vec<(models::EventAttendance, Option<models::Author>)> =
         event_attendances::table
             .left_join(users::table.on(event_attendances::user_id.eq(users::id.nullable())))
             .select((event_attendances::all_columns, AUTHOR_COLUMNS.nullable()))
-            .filter(event_attendances::occasion_id.eq_any(&instance_ids))
+            .filter(event_attendances::occasion_id.eq_any(&occasion_ids))
             .filter(
                 event_attendances::occasion_id
-                    .eq_any(&owned_instance_ids)
+                    .eq_any(&owned_occasion_ids)
                     .or(event_attendances::moderation.eq_any(PASSING_MODERATIONS))
                     .or(event_attendances::user_id.eq(current_user_id.unwrap_or(0)))
                     .or(event_attendances::anonymous_attendee
@@ -172,25 +172,25 @@ fn attach_occasion_attendances(
         .collect();
     let media_lookup = load_media_lookup(media_ids, conn);
 
-    let mut attendances_by_instance: HashMap<
+    let mut attendances_by_occasion: HashMap<
         i64,
         Vec<(models::EventAttendance, Option<models::Author>)>,
     > = HashMap::new();
     for entry in attendances {
-        attendances_by_instance
+        attendances_by_occasion
             .entry(entry.0.occasion_id)
             .or_default()
             .push(entry);
     }
 
     for (marshalable_event, event) in result.iter().zip(events.iter_mut()) {
-        for (MarshalableOccasion(instance, _), instance_proto) in
-            marshalable_event.2.iter().zip(event.instances.iter_mut())
+        for (MarshalableOccasion(occasion, _), occasion_proto) in
+            marshalable_event.2.iter().zip(event.occasions.iter_mut())
         {
-            let context = &context_by_instance[&instance.post_id];
+            let context = &context_by_occasion[&occasion.post_id];
             let is_owner = current_user_id.is_some() && context.owner_user_id == current_user_id;
-            let instance_attendances = attendances_by_instance
-                .get(&instance.post_id)
+            let occasion_attendances = attendances_by_occasion
+                .get(&occasion.post_id)
                 .cloned()
                 .unwrap_or_default();
 
@@ -200,25 +200,25 @@ fn attach_occasion_attendances(
             };
 
             let is_approved_attendee = is_owner
-                || instance_attendances.iter().any(|(a, _)| {
+                || occasion_attendances.iter().any(|(a, _)| {
                     a.moderation == Moderation::Approved.to_string_moderation() && is_viewers_own(a)
                 });
 
             let visible_location =
                 if is_approved_attendee || !context.hide_location_until_rsvp_approved {
-                    instance.location.clone().map(|l| l.to_proto_location())
+                    occasion.location.clone().map(|l| l.to_proto_location())
                 } else {
                     None
                 };
-            instance_proto.location = visible_location.clone();
+            occasion_proto.location = visible_location.clone();
 
-            instance_proto.current_user_attendance = instance_attendances
+            occasion_proto.current_user_attendance = occasion_attendances
                 .iter()
                 .find(|(a, _)| is_viewers_own(a))
                 .map(|entry| entry.to_proto(true, true, media_lookup.as_ref()));
 
-            instance_proto.attendances = Some(EventAttendances {
-                attendances: instance_attendances
+            occasion_proto.attendances = Some(EventAttendances {
+                attendances: occasion_attendances
                     .iter()
                     .map(|entry| {
                         let include_private_note = is_owner || is_viewers_own(&entry.0);
@@ -240,8 +240,8 @@ macro_rules! query_visible_events {
         query_visible_events!($user, $timefilter, LISTING_OCCASION_LIMIT)
     };
     ($user:expr, $timefilter:expr, $occasion_limit:expr) => {{
-        let instance_posts = alias!(posts as instance_posts);
-        let instance_users = alias!(users as instance_users);
+        let occasion_posts = alias!(posts as occasion_posts);
+        let occasion_users = alias!(users as occasion_users);
 
         let ends_after = $timefilter
             .map(|f| f.ends_after.map(|t| t.to_db()))
@@ -273,20 +273,20 @@ macro_rules! query_visible_events {
                     .and(memberships::group_id.eq(group_posts::group_id))),
             )
             .inner_join(
-                instance_posts.on(occasions::post_id.eq(instance_posts.field(posts::id))),
+                occasion_posts.on(occasions::post_id.eq(occasion_posts.field(posts::id))),
             )
             .left_join(
-                instance_users.on(instance_posts
+                occasion_users.on(occasion_posts
                     .field(posts::user_id)
-                    .eq(instance_users.field(users::id).nullable())),
+                    .eq(occasion_users.field(users::id).nullable())),
             )
             .select((
                 models::OCCASION_COLUMNS,
                 events::all_columns,
                 models::POST_COLUMNS,
                 AUTHOR_COLUMNS.nullable(),
-                instance_posts.fields(models::POST_COLUMNS),
-                instance_users.fields(AUTHOR_COLUMNS).nullable(),
+                occasion_posts.fields(models::POST_COLUMNS),
+                occasion_users.fields(AUTHOR_COLUMNS).nullable(),
             ))
             //TODO UNCOMMENT THISSSS
             .filter(
@@ -303,20 +303,20 @@ macro_rules! query_visible_events {
                     .or(posts::user_id.eq($user.as_ref().map(|u| u.id).unwrap_or(0))),
             )
             .filter(
-                instance_posts
+                occasion_posts
                     .field(posts::visibility)
                     .eq_any(public_string_visibilities($user))
-                    .or(instance_posts
+                    .or(occasion_posts
                         .field(posts::visibility)
                         .eq(Visibility::Limited.to_string_visibility())
                         .and(follows::user_id.eq($user.as_ref().map(|u| u.id).unwrap_or(0))))
-                    .or(instance_posts
+                    .or(occasion_posts
                         .field(posts::visibility)
                         .eq(Visibility::Limited.to_string_visibility())
                         .and(memberships::user_moderation.eq_any(PASSING_MODERATIONS))
                         .and(memberships::group_moderation.eq_any(PASSING_MODERATIONS))
                         .and(memberships::user_id.eq($user.as_ref().map(|u| u.id).unwrap_or(0))))
-                    .or(instance_posts
+                    .or(occasion_posts
                         .field(posts::user_id)
                         .eq($user.as_ref().map(|u| u.id).unwrap_or(0))),
             )
@@ -338,8 +338,8 @@ macro_rules! marshalable_event_data {
         $event_data
             .iter()
             .map(
-                |(instance, event, event_post, event_author, instance_post, instance_author)| {
-                    info!("instance: {:?}", instance);
+                |(occasion, event, event_post, event_author, occasion_post, occasion_author)| {
+                    info!("occasion: {:?}", occasion);
                     MarshalableEvent(
                         event.clone(),
                         MarshalablePost(
@@ -350,10 +350,10 @@ macro_rules! marshalable_event_data {
                             vec![],
                         ),
                         vec![MarshalableOccasion(
-                            instance.clone(),
+                            occasion.clone(),
                             MarshalablePost(
-                                instance_post.clone(),
-                                instance_author.clone(),
+                                occasion_post.clone(),
+                                occasion_author.clone(),
                                 None,
                                 None,
                                 vec![],
@@ -428,12 +428,12 @@ fn get_search_events(
     let rank_query =
         to_tsquery_with_search_config(TsConfigurationByName("simple"), prefix_query_text);
 
-    // `query_visible_events!`'s joins can produce more than one row per matching instance, so it
+    // `query_visible_events!`'s joins can produce more than one row per matching occasion, so it
     // applies `SELECT DISTINCT` -- which Postgres requires every ORDER BY expression to appear in
     // the select list for. That's fine for the other GetEvents branches (they order by a plain
     // column), but `ts_rank_cd(...)` takes a bind parameter that can't structurally match between
     // a `.select(...)` and an `.order(...)` (see get_search_posts's own doc comment for the full
-    // explanation). So this resolves matching instance ids DISTINCT-ly first (a plain
+    // explanation). So this resolves matching occasion ids DISTINCT-ly first (a plain
     // `occasions::id` has no such problem), then ranks and orders the (already-unique)
     // matches in a second, DISTINCT-free query.
     // `query_visible_events!` bakes in `.order(occasions::starts_at)` (for its own normal
@@ -442,38 +442,38 @@ fn get_search_events(
     // narrows that list down to just `id`, the order has to be overridden to match (a plain `id`
     // order is fine here regardless -- this query only collects ids, `binding` below is what's
     // actually ordered by rank).
-    let mut matching_instance_ids = query_visible_events!(user, request.time_filter)
+    let mut matching_occasion_ids = query_visible_events!(user, request.time_filter)
         .select(occasions::post_id)
         .order(occasions::post_id)
         .filter(occasions::search_text.matches(search_query))
         .into_boxed();
 
     if let Some(author_user_id) = author_user_id {
-        matching_instance_ids =
-            matching_instance_ids.filter(occasions::user_id.eq(author_user_id));
+        matching_occasion_ids =
+            matching_occasion_ids.filter(occasions::user_id.eq(author_user_id));
     }
 
-    let instance_posts = alias!(posts as instance_posts);
-    let instance_users = alias!(users as instance_users);
+    let occasion_posts = alias!(posts as occasion_posts);
+    let occasion_users = alias!(users as occasion_users);
 
     let binding: Vec<EventLoadData> = occasions::table
         .inner_join(events::table.on(events::post_id.eq(occasions::event_id)))
         .inner_join(posts::table.on(posts::id.eq(events::post_id)))
         .left_join(users::table.on(posts::user_id.eq(users::id.nullable())))
-        .inner_join(instance_posts.on(occasions::post_id.eq(instance_posts.field(posts::id))))
+        .inner_join(occasion_posts.on(occasions::post_id.eq(occasion_posts.field(posts::id))))
         .left_join(
-            instance_users.on(instance_posts
+            occasion_users.on(occasion_posts
                 .field(posts::user_id)
-                .eq(instance_users.field(users::id).nullable())),
+                .eq(occasion_users.field(users::id).nullable())),
         )
-        .filter(occasions::post_id.eq_any(matching_instance_ids))
+        .filter(occasions::post_id.eq_any(matching_occasion_ids))
         .select((
             models::OCCASION_COLUMNS,
             events::all_columns,
             models::POST_COLUMNS,
             AUTHOR_COLUMNS.nullable(),
-            instance_posts.fields(models::POST_COLUMNS),
-            instance_users.fields(AUTHOR_COLUMNS).nullable(),
+            occasion_posts.fields(models::POST_COLUMNS),
+            occasion_users.fields(AUTHOR_COLUMNS).nullable(),
         ))
         // Search results are ordered by match quality first, falling back to start time to keep
         // ordering stable across the (common, with prefix matching) rank ties -- mirrors
@@ -495,31 +495,31 @@ fn get_search_events(
 // their owning `Event`/`Occasion` data in one request rather than one
 // `occasion_id`-scoped `GetEvents` call per starred post. Unlike
 // `get_event_by_id` (which returns the *whole* `Event` with every one of its
-// instances, for the single-event detail page's date-picker strip), this
+// occasions, for the single-event detail page's date-picker strip), this
 // mirrors `get_public_and_following_events`'s "one `Event` entry per matching
 // `Occasion`" shape (see `marshalable_event_data!`) -- each requested
-// post id maps to exactly one instance, so the response shouldn't bloat with
-// sibling instances the caller never asked about. `occasions::post_id`
+// post id maps to exactly one occasion, so the response shouldn't bloat with
+// sibling occasions the caller never asked about. `occasions::post_id`
 // is a plain (unaliased) column on the base `occasions::table` the
 // `query_visible_events!` macro already joins in, so -- same as
 // `get_group_events`'s own extra `.filter()`s -- this can filter on it
-// directly without needing the macro to expose its internal `instance_posts`
+// directly without needing the macro to expose its internal `occasion_posts`
 // alias.
-fn get_events_by_instance_post_ids(
+fn get_events_by_occasion_post_ids(
     user: &Option<&models::User>,
     post_ids: &[String],
     conn: &mut PgPooledConnection,
 ) -> Result<Vec<MarshalableEvent>, Status> {
-    let instance_post_db_ids: Vec<i64> = post_ids
+    let occasion_post_db_ids: Vec<i64> = post_ids
         .iter()
         .filter_map(|post_id| post_id.to_string().to_db_id().ok())
         .collect();
-    if instance_post_db_ids.is_empty() {
+    if occasion_post_db_ids.is_empty() {
         return Ok(vec![]);
     }
 
     let query = query_visible_events!(user, None::<TimeFilter>)
-        .filter(occasions::post_id.eq_any(instance_post_db_ids));
+        .filter(occasions::post_id.eq_any(occasion_post_db_ids));
     let binding = query.load::<EventLoadData>(conn).unwrap();
     let event_data: Vec<&EventLoadData> = binding.iter().collect();
 
@@ -590,12 +590,12 @@ fn get_event_by_id(
         event_data
             .iter()
             .map(
-                |(instance, _event, _event_post, _event_author, instance_post, instance_author)| {
+                |(occasion, _event, _event_post, _event_author, occasion_post, occasion_author)| {
                     MarshalableOccasion(
-                        instance.clone(),
+                        occasion.clone(),
                         MarshalablePost(
-                            instance_post.clone(),
-                            instance_author.clone(),
+                            occasion_post.clone(),
+                            occasion_author.clone(),
                             None,
                             None,
                             vec![],

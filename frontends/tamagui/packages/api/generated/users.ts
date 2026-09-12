@@ -200,7 +200,7 @@ export interface User {
   eventCount?:
     | number
     | undefined;
-  /** The number of event instances this user has created (across all of their events). */
+  /** The number of occasions this user has created (across all of their events). */
   occasionCount?:
     | number
     | undefined;

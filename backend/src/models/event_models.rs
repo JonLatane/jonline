@@ -35,10 +35,10 @@ pub struct Occasion {
     pub location: Option<serde_json::Value>,
     pub created_at: SystemTime,
     pub updated_at: Option<SystemTime>,
-    /// When this synced instance first stopped appearing in its `SyncSource`'s feed --
-    /// `None` while it's present (or for instances never touched by sync). Gives it a grace
-    /// period before `event_sync::reconcile_instances` actually deletes it, so a transient/partial
-    /// upstream response can't permanently orphan the Post backing the instance's comment
+    /// When this synced Occasion first stopped appearing in its `SyncSource`'s feed --
+    /// `None` while it's present (or for Occasions never touched by sync). Gives it a grace
+    /// period before `event_sync::reconcile_occasions` actually deletes it, so a transient/partial
+    /// upstream response can't permanently orphan the Post backing the Occasion's comment
     /// thread/media.
     pub sync_missing_since: Option<SystemTime>,
     /// An explicit IANA timezone (e.g. "America/New_York"), set by hand (`CreateNewPanel`/
@@ -52,10 +52,10 @@ pub struct Occasion {
 /// - `search_text`, a denormalized tsvector used only for full-text search filtering/indexing --
 ///   see `backend/migrations/2026-07-30-170000_add_search_text_to_occasions` -- mirroring
 ///   why `POST_COLUMNS` (`post_models.rs`) excludes `posts.search_text`.
-/// - `user_id`, denormalized from the instance's own Post's author purely so a composite GIN
+/// - `user_id`, denormalized from the Occasion's own Post's author purely so a composite GIN
 ///   index can cover author-scoped search in one scan (see that same migration) -- never read
 ///   back into application code, and `Occasion` derives `AsChangeset`, so a field here would
-///   let a stray `.set(&existing_instance)` stomp the trigger-maintained value with stale data.
+///   let a stray `.set(&existing_occasion)` stomp the trigger-maintained value with stale data.
 pub const OCCASION_COLUMNS: (
     occasions::event_id,
     occasions::post_id,

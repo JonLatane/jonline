@@ -448,15 +448,15 @@ pub struct EventOpts {
     /// `EventInfo`'s proto doc for the full set of recognized keys.
     pub info: serde_json::Value,
     /// An `Event` with zero `Occasion`s can't actually exist in production -- `create_event`
-    /// (the RPC) rejects `instances: vec![]` with `at_least_one_instance_required`, and
+    /// (the RPC) rejects `occasions: vec![]` with `at_least_one_occasion_required`, and
     /// `get_events`' own visibility query (`query_visible_events!`) starts from an `INNER JOIN` on
-    /// `occasions`, so a zero-instance event is unqueryable even if it existed. Defaults to
+    /// `occasions`, so a zero-occasion event is unqueryable even if it existed. Defaults to
     /// `Some(OccasionOpts::default())` so `create_event` always seeds one, owned by the same
     /// `author`, keeping every fixture built from this factory realistic without callers having to
     /// remember to add one themselves. Pass `None` when a test wants full control over its own
-    /// instance(s) instead (custom `OccasionOpts`, a different owner, etc.) -- see
+    /// occasion(s) instead (custom `OccasionOpts`, a different owner, etc.) -- see
     /// `get_events_tests::create_simple_event`.
-    pub default_instance: Option<OccasionOpts>,
+    pub default_occasion: Option<OccasionOpts>,
 }
 
 impl Default for EventOpts {
@@ -466,24 +466,24 @@ impl Default for EventOpts {
             moderation: Moderation::Unmoderated,
             title: Some("Test Post".to_string()),
             info: serde_json::json!({}),
-            default_instance: Some(OccasionOpts::default()),
+            default_occasion: Some(OccasionOpts::default()),
         }
     }
 }
 
 /// Inserts an `events` row directly (bypassing `rpcs::create_event`) along with its container
-/// `Post` (context `EVENT`, per `create_event.rs`), plus -- unless `opts.default_instance` is
+/// `Post` (context `EVENT`, per `create_event.rs`), plus -- unless `opts.default_occasion` is
 /// `None` -- one `Occasion` (see that field's doc for why). Returns just the event/its own
 /// post, matching `rpcs::create_event`'s own `(Event, Post)`-shaped read path (`get_events`
-/// filters on the container post's visibility/moderation/user_id independently of any instance's
-/// own post); callers that need to reference the seeded instance itself should pass
-/// `default_instance: None` and call `create_occasion` directly instead.
+/// filters on the container post's visibility/moderation/user_id independently of any occasion's
+/// own post); callers that need to reference the seeded occasion itself should pass
+/// `default_occasion: None` and call `create_occasion` directly instead.
 pub fn create_event(
     conn: &mut PgPooledConnection,
     author: &models::User,
     opts: EventOpts,
 ) -> (models::Event, models::Post) {
-    let default_instance = opts.default_instance;
+    let default_occasion = opts.default_occasion;
     let post = create_post(
         conn,
         Some(author),
@@ -502,14 +502,14 @@ pub fn create_event(
         })
         .get_result::<models::Event>(conn)
         .expect("failed to create test event");
-    if let Some(instance_opts) = default_instance {
-        create_occasion(conn, &event, Some(author), instance_opts);
+    if let Some(occasion_opts) = default_occasion {
+        create_occasion(conn, &event, Some(author), occasion_opts);
     }
     (event, post)
 }
 
 /// Options for `create_occasion`'s underlying `Post` (context `OCCASION`) plus its
-/// `starts_at`/`ends_at`. Defaults to a one-hour instance starting a day from now.
+/// `starts_at`/`ends_at`. Defaults to a one-hour occasion starting a day from now.
 pub struct OccasionOpts {
     pub visibility: Visibility,
     pub moderation: Moderation,
@@ -542,9 +542,9 @@ impl Default for OccasionOpts {
 
 /// Inserts an `occasions` row directly, along with its own `Post` (context
 /// `OCCASION`) - `get_events`' `query_visible_events!` requires *both* the parent event's
-/// post and the instance's own post to independently pass visibility/moderation, so tests need
+/// post and the occasion's own post to independently pass visibility/moderation, so tests need
 /// separate control over each. `author: None` mirrors `create_post`'s own `author: None` (e.g. an
-/// instance post left behind by a deleted user).
+/// occasion post left behind by a deleted user).
 pub fn create_occasion(
     conn: &mut PgPooledConnection,
     event: &models::Event,
@@ -562,7 +562,7 @@ pub fn create_occasion(
             ..Default::default()
         },
     );
-    let instance = insert_into(occasions::table)
+    let occasion = insert_into(occasions::table)
         .values(&models::NewOccasion {
             event_id: event.post_id,
             post_id: post.id,
@@ -574,8 +574,8 @@ pub fn create_occasion(
         })
         .returning(models::OCCASION_COLUMNS)
         .get_result::<models::Occasion>(conn)
-        .expect("failed to create test event instance");
-    (instance, post)
+        .expect("failed to create test event occasion");
+    (occasion, post)
 }
 
 /// Options for `create_event_attendance`. Defaults to an unmoderated, logged-in-user-less
@@ -608,12 +608,12 @@ impl Default for EventAttendanceOpts {
 /// `get_event_attendances`/`get_events`' visibility rules.
 pub fn create_event_attendance(
     conn: &mut PgPooledConnection,
-    instance: &models::Occasion,
+    occasion: &models::Occasion,
     opts: EventAttendanceOpts,
 ) -> models::EventAttendance {
     insert_into(event_attendances::table)
         .values(&models::NewEventAttendance {
-            occasion_id: instance.post_id,
+            occasion_id: occasion.post_id,
             user_id: opts.user_id,
             anonymous_attendee: opts.anonymous_attendee,
             number_of_guests: 0,
@@ -715,19 +715,19 @@ pub fn create_sync_destination_row(
 /// API -- see `sync_destination_rpc_tests`' own note on that).
 pub fn create_occasion_sync_destination_row(
     conn: &mut PgPooledConnection,
-    instance: &models::Occasion,
+    occasion: &models::Occasion,
     destination: &models::SyncDestination,
 ) {
     insert_into(occasion_sync_destinations::table)
         .values(&models::NewOccasionSyncDestination {
-            occasion_id: instance.post_id,
+            occasion_id: occasion.post_id,
             sync_destination_id: destination.id,
             destination_instance_id: Some("test-post-id".to_string()),
             destination_url: Some("https://www.facebook.com/test-post-id".to_string()),
             synced_at: Some(SystemTime::now()),
         })
         .execute(conn)
-        .expect("failed to create test event instance sync destination");
+        .expect("failed to create test event occasion sync destination");
 }
 
 /// Inserts a `post_sync_destinations` row directly -- mirrors

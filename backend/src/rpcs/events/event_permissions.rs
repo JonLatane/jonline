@@ -51,25 +51,25 @@ pub(super) fn validate_event_edit_permission(
     )
 }
 
-/// Looks up an `Occasion` belonging to `event_id` by `instance.post.id` (an `Occasion`'s
-/// identity *is* its own Post's ID -- there's no separate surrogate ID), or `None` if `instance`
+/// Looks up an `Occasion` belonging to `event_id` by `occasion.post.id` (an `Occasion`'s
+/// identity *is* its own Post's ID -- there's no separate surrogate ID), or `None` if `occasion`
 /// has no `post`, `post.id` doesn't parse, or it belongs to a different (or no) event -- the same
-/// "not really this event's instance" test `update_event.rs`'s original merge loop used to decide
-/// "treat this as a new instance". A `None` `post` can therefore never match an existing instance:
-/// unlike the old surrogate-ID scheme, there's no way to identify *which* instance to update
+/// "not really this event's occasion" test `update_event.rs`'s original merge loop used to decide
+/// "treat this as a new occasion". A `None` `post` can therefore never match an existing occasion:
+/// unlike the old surrogate-ID scheme, there's no way to identify *which* occasion to update
 /// without including its Post (see `update_occasions_impl`'s doc for what that means for
-/// resetting an instance's Post to `PRIVATE`).
-pub(super) fn find_existing_instance(
-    instance: &Occasion,
+/// resetting an occasion's Post to `PRIVATE`).
+pub(super) fn find_existing_occasion(
+    occasion: &Occasion,
     event_id: i64,
     conn: &mut PgPooledConnection,
 ) -> Option<models::Occasion> {
     use crate::schema::occasions;
 
-    let instance_post_id = instance.post.as_ref()?.id.to_db_id().ok()?;
+    let occasion_post_id = occasion.post.as_ref()?.id.to_db_id().ok()?;
     occasions::table
         .select(models::OCCASION_COLUMNS)
-        .filter(occasions::post_id.eq(instance_post_id))
+        .filter(occasions::post_id.eq(occasion_post_id))
         .filter(occasions::event_id.eq(event_id))
         .first::<models::Occasion>(conn)
         .ok()

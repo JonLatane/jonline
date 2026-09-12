@@ -170,27 +170,27 @@ pub async fn generate_media(
         // `GenerateMediaRequest.target`'s own proto doc. Each Occasion's own Post can carry its
         // own ownership/moderation/visibility independent of the parent Event's (a single
         // "repetition" of a recurring Event may be reassigned/moderated on its own), so both
-        // `event_post`/`instance_post` are loaded and their title/content combined -- mirroring
+        // `event_post`/`occasion_post` are loaded and their title/content combined -- mirroring
         // `rpcs::events::sync_occasion`'s own `combine_title`/`combine_content`/
         // `build_occasion_message` call exactly (down to the Event-first title/content
         // ordering), just duplicated locally rather than reused cross-module (those helpers are
         // private to that RPC).
         Some(generate_media_request::Target::OccasionId(id)) => {
-            let instance_id = id.to_owned().to_db_id_or_err("occasion_id")?;
-            let instance = models::get_occasion(instance_id, &Some(current_user), conn)?;
-            let event = models::get_event(instance.event_id, &Some(current_user), conn)?;
+            let occasion_id = id.to_owned().to_db_id_or_err("occasion_id")?;
+            let occasion = models::get_occasion(occasion_id, &Some(current_user), conn)?;
+            let event = models::get_event(occasion.event_id, &Some(current_user), conn)?;
             let event_post: models::Post = posts::table
                 .select(POST_COLUMNS)
                 .filter(posts::id.eq(event.post_id))
                 .first(conn)
                 .map_err(|_| Status::new(Code::NotFound, "event_post_not_found"))?;
-            let instance_post: models::Post = posts::table
+            let occasion_post: models::Post = posts::table
                 .select(POST_COLUMNS)
-                .filter(posts::id.eq(instance.post_id))
+                .filter(posts::id.eq(occasion.post_id))
                 .first(conn)
                 .map_err(|_| Status::new(Code::NotFound, "occasion_post_not_found"))?;
             // The generated image is always attached to the Event's own Post (see this match arm's
-            // own doc/`GenerateMediaRequest.target`'s), so that -- not the instance's own, separate
+            // own doc/`GenerateMediaRequest.target`'s), so that -- not the occasion's own, separate
             // ownership -- is what actually gates this.
             if event_post.user_id != Some(current_user.id) && !admin {
                 validate_any_permission(
@@ -199,11 +199,11 @@ pub async fn generate_media(
                 )?;
             }
 
-            let title = combine_title_or_content(&event_post.title, &instance_post.title, ": ");
-            let content = combine_title_or_content(&event_post.content, &instance_post.content, "\n\n---\n\n");
-            let starts_at: DateTime<Utc> = instance.starts_at.into();
-            let ends_at: DateTime<Utc> = instance.ends_at.into();
-            let location = instance
+            let title = combine_title_or_content(&event_post.title, &occasion_post.title, ": ");
+            let content = combine_title_or_content(&event_post.content, &occasion_post.content, "\n\n---\n\n");
+            let starts_at: DateTime<Utc> = occasion.starts_at.into();
+            let ends_at: DateTime<Utc> = occasion.ends_at.into();
+            let location = occasion
                 .location
                 .as_ref()
                 .and_then(|l| l.get("uniformly_formatted_address"))
@@ -211,11 +211,11 @@ pub async fn generate_media(
                 .filter(|a| !a.trim().is_empty())
                 .map(str::to_string);
             let timezone = location.as_deref().and_then(crate::logic::resolve_timezone);
-            let event_url = frontend_url(conn, "event", instance.post_id)?;
+            let event_url = frontend_url(conn, "event", occasion.post_id)?;
             let message = build_occasion_message(OccasionMessageInput {
                 title: &title,
                 content: &content,
-                link: &instance_post.link,
+                link: &occasion_post.link,
                 starts_at,
                 ends_at,
                 location: &location,
@@ -468,16 +468,16 @@ async fn load_reference_images(
     Ok(images)
 }
 
-/// `"{event_title}: {instance_title}"`/`"{event_content}\n\n---\n\n{instance_content}"`-shaped
+/// `"{event_title}: {occasion_title}"`/`"{event_content}\n\n---\n\n{occasion_content}"`-shaped
 /// combination of an Occasion's own title/content override with its parent Event's, in that
 /// order -- mirrors `rpcs::events::sync_occasion`'s own `combine`/`combine_title`/
 /// `combine_content` exactly (down to falling back to whichever side is actually set, and `None`
 /// when neither is); duplicated locally since those are private to that module. `separator` is `": "`
 /// for titles, `"\n\n---\n\n"` for content -- see this function's two call sites.
-fn combine_title_or_content(event_side: &Option<String>, instance_side: &Option<String>, separator: &str) -> Option<String> {
+fn combine_title_or_content(event_side: &Option<String>, occasion_side: &Option<String>, separator: &str) -> Option<String> {
     let event_side = event_side.as_deref().map(str::trim).filter(|s| !s.is_empty());
-    let instance_side = instance_side.as_deref().map(str::trim).filter(|s| !s.is_empty());
-    match (event_side, instance_side) {
+    let occasion_side = occasion_side.as_deref().map(str::trim).filter(|s| !s.is_empty());
+    match (event_side, occasion_side) {
         (Some(e), Some(i)) => Some(format!("{e}{separator}{i}")),
         (Some(e), None) => Some(e.to_string()),
         (None, Some(i)) => Some(i.to_string()),

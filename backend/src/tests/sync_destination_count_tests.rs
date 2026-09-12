@@ -31,7 +31,7 @@ fn reports_zero_when_nothing_has_been_synced() {
 }
 
 #[test]
-fn counts_synced_instances_for_the_right_destination_only() {
+fn counts_synced_occasions_for_the_right_destination_only() {
     let mut conn = test_conn();
     conn.test_transaction::<_, tonic::Status, _>(|conn| {
         let owner = create_user(conn, "sdct_count");
@@ -42,16 +42,16 @@ fn counts_synced_instances_for_the_right_destination_only() {
             conn,
             &owner,
             EventOpts {
-                default_instance: None,
+                default_occasion: None,
                 ..Default::default()
             },
         );
-        let (instance_1, _) = create_occasion(conn, &event, Some(&owner), Default::default());
-        let (instance_2, _) = create_occasion(conn, &event, Some(&owner), Default::default());
+        let (occasion_1, _) = create_occasion(conn, &event, Some(&owner), Default::default());
+        let (occasion_2, _) = create_occasion(conn, &event, Some(&owner), Default::default());
 
-        create_occasion_sync_destination_row(conn, &instance_1, &destination_a);
-        create_occasion_sync_destination_row(conn, &instance_2, &destination_a);
-        create_occasion_sync_destination_row(conn, &instance_1, &destination_b);
+        create_occasion_sync_destination_row(conn, &occasion_1, &destination_a);
+        create_occasion_sync_destination_row(conn, &occasion_2, &destination_a);
+        create_occasion_sync_destination_row(conn, &occasion_1, &destination_b);
 
         let response =
             get_sync_destinations(User::default(), &owner, conn).expect("get should succeed");

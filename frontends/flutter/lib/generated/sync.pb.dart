@@ -1288,7 +1288,7 @@ class SyncSource extends $pb.GeneratedMessage {
   @$pb.TagNumber(7)
   void clearEventCount() => clearField(7);
 
-  /// The number of event instances total associated with this SyncSource. Recomputed
+  /// The number of occasions total associated with this SyncSource. Recomputed
   /// on each sync.
   @$pb.TagNumber(8)
   $fixnum.Int64 get occasionCount => $_getI64(7);

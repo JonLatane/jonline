@@ -120,7 +120,7 @@ This `Maybe` is the *only* gate on whether push/delete controls show at all -- d
 pass `Just` (only `UserProfilePage`'s own embedded feeds, for now) is entirely the caller's call;
 this module has no opinion on `AccountsPanel`/permissions.
 
-Shared by `Components.Events.eventSyncDestinationsView` (passing `instance.syncDestinations`) and
+Shared by `Components.Events.eventSyncDestinationsView` (passing `occasion.syncDestinations`) and
 `Components.Posts.postSyncDestinationsView` (passing `post.syncDestinations`) -- both thin
 wrappers over this. Rendered with the platform-agnostic `.card-sync-destinations`/
 `.card-sync-destination-*`/`.synced-to*` classes `events.css` defines for this row layout, rather

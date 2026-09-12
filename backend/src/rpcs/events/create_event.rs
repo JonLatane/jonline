@@ -39,20 +39,20 @@ pub fn create_event(
         media.id.to_db_id_or_err("media")?;
         //TODO further media ID validations?
     }
-    let instances = request.instances;
-    if instances.len() == 0 {
+    let occasions = request.occasions;
+    if occasions.len() == 0 {
         return Err(Status::new(
             Code::InvalidArgument,
-            "at_least_one_instance_required",
+            "at_least_one_occasion_required",
         ));
     }
-    for instance in &instances {
-        match &instance.post {
+    for occasion in &occasions {
+        match &occasion.post {
             Some(p) => {
-                validate_max_length(p.link.to_owned(), "instance.post.link", 10000)?;
-                validate_max_length(p.content.to_owned(), "instance.post.content", 10000)?;
+                validate_max_length(p.link.to_owned(), "occasion.post.link", 10000)?;
+                validate_max_length(p.content.to_owned(), "occasion.post.content", 10000)?;
                 for m in &p.media {
-                    m.id.to_db_id_or_err("instance.media")?;
+                    m.id.to_db_id_or_err("occasion.media")?;
                 }
                 let visibility = match p.visibility() {
                     Visibility::Unknown => Visibility::GlobalPublic,
@@ -70,7 +70,7 @@ pub fn create_event(
             }
             None => {}
         }
-        if instance.starts_at.is_none() || instance.ends_at.is_none() {
+        if occasion.starts_at.is_none() || occasion.ends_at.is_none() {
             return Err(Status::new(
                 Code::InvalidArgument,
                 "start_and_end_times_required",
@@ -128,9 +128,9 @@ pub fn create_event(
                 info: serde_json::to_value(request.info).unwrap_or(json!({})),
             })
             .get_result::<models::Event>(conn)?;
-        let mut inserted_instances: Vec<MarshalableOccasion> = vec![];
-        for instance in &instances {
-            let new_post = instance.post.as_ref().map_or(
+        let mut inserted_occasions: Vec<MarshalableOccasion> = vec![];
+        for occasion in &occasions {
+            let new_post = occasion.post.as_ref().map_or(
                 models::NewPost {
                     user_id: Some(user.id),
                     parent_post_id: None,
@@ -156,11 +156,11 @@ pub fn create_event(
                     media: p.media.iter().map(|m| m.id.to_db_id().unwrap()).collect(),
                 },
             );
-            let instance_post: models::Post = insert_into(posts::table)
+            let occasion_post: models::Post = insert_into(posts::table)
                 .values(&new_post)
                 .returning(models::POST_COLUMNS)
                 .get_result::<models::Post>(conn)?;
-            // let instance_post: Option<models::Post> = match &instance.post {
+            // let occasion_post: Option<models::Post> = match &occasion.post {
             //     Some(p) => Some(
             //         insert_into(posts::table)
             //             .values(&models::NewPost {
@@ -179,32 +179,32 @@ pub fn create_event(
             //     ),
             //     None => None,
             // };
-            let inserted_instance = insert_into(occasions::table)
+            let inserted_occasion = insert_into(occasions::table)
                 .values(&models::NewOccasion {
                     event_id: inserted_event.post_id,
-                    post_id: instance_post.id,
-                    starts_at: instance.starts_at.as_ref().unwrap().to_db(),
-                    ends_at: instance.ends_at.as_ref().unwrap().to_db(),
-                    location: instance
+                    post_id: occasion_post.id,
+                    starts_at: occasion.starts_at.as_ref().unwrap().to_db(),
+                    ends_at: occasion.ends_at.as_ref().unwrap().to_db(),
+                    location: occasion
                         .location
                         .as_ref()
                         .map(|c| serde_json::to_value(c).unwrap()),
                     info: json!({}),
-                    timezone: instance.timezone.clone(),
+                    timezone: occasion.timezone.clone(),
                 })
                 .returning(models::OCCASION_COLUMNS)
                 .get_result::<models::Occasion>(conn)?;
-            let marshalable_instance = MarshalableOccasion(
-                inserted_instance,
-                MarshalablePost(instance_post, Some(author.clone()), None, None, vec![]),
+            let marshalable_occasion = MarshalableOccasion(
+                inserted_occasion,
+                MarshalablePost(occasion_post, Some(author.clone()), None, None, vec![]),
             );
-            inserted_instances.push(marshalable_instance);
+            inserted_occasions.push(marshalable_occasion);
         }
         crate::logic::update_event_counts(user.id, conn)?;
         Ok(MarshalableEvent(
             inserted_event,
             MarshalablePost(event_post, Some(author), None, None, vec![]),
-            inserted_instances,
+            inserted_occasions,
         ))
     });
 
@@ -213,12 +213,12 @@ pub fn create_event(
             let event = &marshalable_event.0;
             let marshalable_post = &marshalable_event.1;
             let post = &marshalable_post.0;
-            let instances = &marshalable_event.2;
+            let occasions = &marshalable_event.2;
             log::info!("Event created! EventID: {:?}", event.post_id);
             let mut media_ids = post.media.clone();
             user.avatar_media_id.map(|id| media_ids.push(Some(id)));
             media_ids.append(
-                &mut instances
+                &mut occasions
                     .iter()
                     .map(|MarshalableOccasion(_, p)| p.0.media.clone())
                     .flatten()

@@ -14,14 +14,14 @@ import { HasIdFromServer } from "../federation";
 // the store (and any code reading a `FederatedEvent`/`FederatedOccasion` out of it) can keep
 // treating `.id` as a normal field, same as any other entity (User, Post, Group, etc.).
 export type IdentifiedOccasion = Occasion & HasIdFromServer;
-export type IdentifiedEvent = Omit<Event, "instances"> & HasIdFromServer & { instances: IdentifiedOccasion[] };
+export type IdentifiedEvent = Omit<Event, "occasions"> & HasIdFromServer & { occasions: IdentifiedOccasion[] };
 export type IdentifiedGetEventsResponse = Omit<GetEventsResponse, "events"> & { events: IdentifiedEvent[] };
 
-export function identifyOccasion(instance: Occasion): IdentifiedOccasion {
-  return { ...instance, id: instance.post!.id };
+export function identifyOccasion(occasion: Occasion): IdentifiedOccasion {
+  return { ...occasion, id: occasion.post!.id };
 }
 export function identifyEvent(event: Event): IdentifiedEvent {
-  return { ...event, id: event.post!.id, instances: event.instances.map(identifyOccasion) };
+  return { ...event, id: event.post!.id, occasions: event.occasions.map(identifyOccasion) };
 }
 export function identifyGetEventsResponse(response: GetEventsResponse): IdentifiedGetEventsResponse {
   return { ...response, events: response.events.map(identifyEvent) };
@@ -81,16 +81,16 @@ export const loadEventsPage: AsyncThunk<IdentifiedGetEventsResponse, LoadEventsR
   // }
 );
 
-export type LoadEvent = { id?: string, postId?: string, instanceId?: string } & AccountOrServer;
+export type LoadEvent = { id?: string, postId?: string, occasionId?: string } & AccountOrServer;
 export const loadEvent: AsyncThunk<IdentifiedEvent, LoadEvent, any> = createAsyncThunk<IdentifiedEvent, LoadEvent>(
   "events/loadOne",
   async (request) => {
     const client = await getCredentialClient(request);
     // `event_id`/`occasion_id` were removed from `GetEventsRequest` -- `post_id` is a
     // strict superset (looks up by the Event's own Post ID *or* any of its Occasions' Post
-    // ID), so any of `id`/`postId`/`instanceId` (all historically post ids under the hood) works.
+    // ID), so any of `id`/`postId`/`occasionId` (all historically post ids under the hood) works.
     const response = await client.getEvents(GetEventsRequest.create({
-      postId: request.id ?? request.postId ?? request.instanceId
+      postId: request.id ?? request.postId ?? request.occasionId
     }), client.credential);
     if (response.events.length == 0) throw 'Event not found';
     const event = response.events[0]!;

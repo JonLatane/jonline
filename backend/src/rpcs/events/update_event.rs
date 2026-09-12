@@ -15,11 +15,11 @@ use super::update_occasions::update_occasions_impl;
 /// `UpdateOccasions`, and `DeleteRemovedOccasions` each expose standalone -- but calling
 /// their shared `_impl` functions directly (rather than those RPCs themselves) so this runs as one
 /// coherent operation instead of four independent ones:
-/// - Create must run before Delete, so a request that both drops an old instance and adds a new
-///   one never transiently leaves the event with zero instances (which `get_events`' `INNER JOIN`
-///   can't represent -- see `deleting_the_only_instance_leaves_the_event_unretrievable_by_get_events`).
-/// - Delete needs Create's *resolved* instances (ids filled in for newly-created entries), not the
-///   original request -- otherwise a just-created instance (whose request entry has no id) looks
+/// - Create must run before Delete, so a request that both drops an old occasion and adds a new
+///   one never transiently leaves the event with zero occasions (which `get_events`' `INNER JOIN`
+///   can't represent -- see `deleting_the_only_occasion_leaves_the_event_unretrievable_by_get_events`).
+/// - Delete needs Create's *resolved* occasions (ids filled in for newly-created entries), not the
+///   original request -- otherwise a just-created occasion (whose request entry has no id) looks
 ///   indistinguishable from an omitted one and gets deleted immediately after being created.
 /// - Only one final `get_events` call, at the very end, builds the returned `Event`.
 pub fn update_event(
@@ -32,10 +32,10 @@ pub fn update_event(
 
     let event = models::get_event(event_id, &Some(current_user), conn)?;
     validate_event_edit_permission(&event, current_user, conn)?;
-    let resolved_instances =
-        create_new_occasions_impl(&event, &request.instances, current_user, conn)?;
-    update_occasions_impl(&event, &request.instances, conn)?;
-    delete_removed_occasions_impl(&event, &resolved_instances, current_user, conn)?;
+    let resolved_occasions =
+        create_new_occasions_impl(&event, &request.occasions, current_user, conn)?;
+    update_occasions_impl(&event, &request.occasions, conn)?;
+    delete_removed_occasions_impl(&event, &resolved_occasions, current_user, conn)?;
 
     Ok(super::get_events(
         GetEventsRequest {

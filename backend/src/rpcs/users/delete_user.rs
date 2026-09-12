@@ -105,7 +105,7 @@ pub async fn delete_user(
         .await?;
     }
 
-    // SyncSources/SyncDestinations -- any events/instances/posts they'd synced were already
+    // SyncSources/SyncDestinations -- any events/occasions/posts they'd synced were already
     // covered above, so these are just detached rather than cascading further deletes.
     // `delete_sync_destination` cleans up join rows in both `occasion_sync_destinations` and
     // `post_sync_destinations` for the destination, so a synced Post/Occasion of *this*

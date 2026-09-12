@@ -20,24 +20,24 @@ export interface EventsState {
   pagesStatus: FederatedPagesStatus;
   ids: EntityId[];
   entities: Dictionary<FederatedEvent>;
-  // Links instance IDs to Event IDs.
-  instanceEvents: Dictionary<string>;
-  // instances: Dictionary<Occasion>;
+  // Links occasion IDs to Event IDs.
+  occasionEvents: Dictionary<string>;
+  // occasions: Dictionary<Occasion>;
   occasionPages: Federated<GroupedOccasionPages>;
   failedEventIds: string[];
-  failedInstanceIds: string[];
+  failedOccasionIds: string[];
   failedPostIds: string[];
   // Maps Post IDs to Event IDs.
   postEvents: Dictionary<string>;
   // Maps Post IDs to Occasion IDs.
-  postInstances: Dictionary<string>;
+  postOccasions: Dictionary<string>;
   upcomingEventsTime: string;
   upcomingEventsTimeFilter?: TimeFilter;
   // Maps Occasion IDs to RSVP data.
   rsvpData: Dictionary<EventAttendances>;
 }
 
-// Stores pages of listed event *instances* for listing types used in the UI.
+// Stores pages of listed event *occasions* for listing types used in the UI.
 // i.e.: eventPages[EventListingType.ALL_ACCESSIBLE_EVENTS]['{"ends_after":null}'][0]:  -> ["occasionId1", "occasionId2"].
 // Events should be loaded from the adapter/slice's entities.
 // Maps EventListingType -> serialized timeFilter-> page (as a number) -> occasionIds
@@ -56,12 +56,12 @@ export const eventsAdapter: EntityAdapter<FederatedEvent> = createEntityAdapter<
 const initialState: EventsState = {
   pagesStatus: createFederatedPagesStatus(),
   failedEventIds: [],
-  failedInstanceIds: [],
+  failedOccasionIds: [],
   failedPostIds: [],
   occasionPages: createFederated({}),
-  instanceEvents: {},
+  occasionEvents: {},
   postEvents: {},
-  postInstances: {},
+  postOccasions: {},
   upcomingEventsTime: moment(Date.now()).toISOString(true),
   rsvpData: {},
   ...eventsAdapter.getInitialState(),
@@ -79,17 +79,17 @@ export const eventsSlice = createSlice({
       const eventsIdsToRemove = state.ids
         .filter(id => parseFederatedId(id as string).serverHost === action.payload.serverHost);
       eventsAdapter.removeMany(state, eventsIdsToRemove);
-      Object.keys(state.instanceEvents)
+      Object.keys(state.occasionEvents)
         .filter(id => parseFederatedId(id).serverHost === action.payload.serverHost)
-        .forEach(id => delete state.instanceEvents[id]);
+        .forEach(id => delete state.occasionEvents[id]);
       Object.keys(state.postEvents)
         .filter(id => parseFederatedId(id).serverHost === action.payload.serverHost)
         .forEach(id => delete state.postEvents[id]);
-      Object.keys(state.postInstances)
+      Object.keys(state.postOccasions)
         .filter(id => parseFederatedId(id).serverHost === action.payload.serverHost)
-        .forEach(id => delete state.postInstances[id]);
+        .forEach(id => delete state.postOccasions[id]);
       state.failedEventIds = state.failedEventIds.filter(id => parseFederatedId(id).serverHost !== action.payload.serverHost);
-      state.failedInstanceIds = state.failedInstanceIds.filter(id => parseFederatedId(id).serverHost !== action.payload.serverHost);
+      state.failedOccasionIds = state.failedOccasionIds.filter(id => parseFederatedId(id).serverHost !== action.payload.serverHost);
       delete state.occasionPages.values[action.payload.serverHost];
       delete state.pagesStatus.values[action.payload.serverHost];
     },
@@ -108,11 +108,11 @@ export const eventsSlice = createSlice({
     builder.addCase(createEvent.fulfilled, (state, action) => {
       const payload = federatedPayload(action);
       eventsAdapter.upsertOne(state, payload);
-      const instanceIds = payload.instances.map(instance => federateId(instance.id, action));
-      state.instanceEvents = {
-        ...state.instanceEvents,
+      const occasionIds = payload.occasions.map(occasion => federateId(occasion.id, action));
+      state.occasionEvents = {
+        ...state.occasionEvents,
         ...Object.fromEntries(
-          instanceIds.map(instanceId => [instanceId, federateId(payload.id, action)])
+          occasionIds.map(occasionId => [occasionId, federateId(payload.id, action)])
         )
       };
 
@@ -126,7 +126,7 @@ export const eventsSlice = createSlice({
           const listingType = parseInt(listingTypeStr) as EventListingType;
           for (const filterStr of Object.keys(occasionPages[listingType]!)) {
             for (const pageStr of Object.keys(occasionPages[listingType]![filterStr]!)) {
-              occasionPages[listingType]![filterStr]![pageStr]!.unshift(...instanceIds);
+              occasionPages[listingType]![filterStr]![pageStr]!.unshift(...occasionIds);
             }
           }
         }
@@ -150,7 +150,7 @@ export const eventsSlice = createSlice({
       const events = federatedEntities(action.payload.events, action);
       events.forEach((e) => mergeEvent(state, e, action));
 
-      const instanceIds = action.payload.events.flatMap(event => event.instances.map(instance => federateId(instance.id, action)));
+      const occasionIds = action.payload.events.flatMap(event => event.occasions.map(occasion => federateId(occasion.id, action)));
 
       const page = action.meta.arg.page || 0;
       const listingType = action.meta.arg.listingType ?? defaultEventListingType;
@@ -161,7 +161,7 @@ export const eventsSlice = createSlice({
       if (!serverEventPages[listingType]![serializedFilter] || page === 0) serverEventPages[listingType]![serializedFilter] = [];
 
       const eventPages: string[][] = serverEventPages[listingType]![serializedFilter]!;
-      eventPages[page] = instanceIds;
+      eventPages[page] = occasionIds;
       setFederated(state.occasionPages, action, serverEventPages);
     });
     builder.addCase(loadEventsPage.rejected, (state, action) => {
@@ -173,15 +173,15 @@ export const eventsSlice = createSlice({
     };
     builder.addCase(loadEvent.fulfilled, saveSingleEvent);
     builder.addCase(loadEvent.rejected, (state, action) => {
-      const { id: eventId, postId, instanceId } = action.meta.arg;
+      const { id: eventId, postId, occasionId } = action.meta.arg;
       if (eventId) {
         state.failedEventIds.push(federateId(eventId, action));
       }
       if (postId) {
         state.failedPostIds.push(federateId(postId, action));
       }
-      if (instanceId) {
-        state.failedInstanceIds.push(federateId(instanceId, action));
+      if (occasionId) {
+        state.failedOccasionIds.push(federateId(occasionId, action));
       }
     });
 
@@ -203,8 +203,8 @@ export const eventsSlice = createSlice({
     });
     builder.addCase(loadRsvpData.fulfilled, (state, action) => {
       const rsvpData = action.payload;
-      const instanceId = federateId(action.meta.arg.occasionId, action);
-      state.rsvpData[instanceId] = rsvpData;
+      const occasionId = federateId(action.meta.arg.occasionId, action);
+      state.rsvpData[occasionId] = rsvpData;
     })
   },
 });
@@ -216,18 +216,18 @@ const mergeEvent = (state: EventsState, event: FederatedEvent, action: HasServer
   if (event.post) {
     state.postEvents[federateId(event.post!.id, action)] = federatedEventId;
   }
-  let instances = event.instances;
-  instances.forEach(instance => {
-    const federatedInstanceId = federateId(instance.id, action);
-    const federatedInstancePostId = federateId(instance.post!.id, action);
-    state.instanceEvents[federatedInstanceId] = federatedEventId;
-    state.postInstances[federatedInstancePostId] = federatedInstanceId;
+  let occasions = event.occasions;
+  occasions.forEach(occasion => {
+    const federatedOccasionId = federateId(occasion.id, action);
+    const federatedOccasionPostId = federateId(occasion.post!.id, action);
+    state.occasionEvents[federatedOccasionId] = federatedEventId;
+    state.postOccasions[federatedOccasionPostId] = federatedOccasionId;
   });
   if (oldEvent) {
-    instances = oldEvent.instances.filter(oi => !instances.find(ni => ni.id == oi.id)).concat(event.instances);
+    occasions = oldEvent.occasions.filter(oi => !occasions.find(ni => ni.id == oi.id)).concat(event.occasions);
   }
-  event.instances.sort((a, b) => moment.utc(a.startsAt).unix() - moment.utc(b.startsAt).unix());
-  eventsAdapter.upsertOne(state, { ...event, instances });
+  event.occasions.sort((a, b) => moment.utc(a.startsAt).unix() - moment.utc(b.startsAt).unix());
+  eventsAdapter.upsertOne(state, { ...event, occasions });
 };
 
 export const { removeEvent, resetEvents, setUpcomingEventsTimeFilter } = eventsSlice.actions;

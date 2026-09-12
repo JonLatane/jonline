@@ -627,7 +627,7 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
       atomically, literally calling the <a href="#grpc-api-UpdatePost"><code>UpdatePost</code></a> RPC), then <a href="#grpc-api-CreateNewOccasions"><code>CreateNewOccasions</code></a>,
       <a href="#grpc-api-UpdateOccasions"><code>UpdateOccasions</code></a>, and finally <a href="#grpc-api-DeleteRemovedOccasions"><code>DeleteRemovedOccasions</code></a>.
       Create must run before Delete so that a request which both drops an old <a href="#rellm-Occasion"><code>Occasion</code></a> and adds a new one never transiently
-      leaves the <a href="#rellm-Event"><code>Event</code></a> with zero instances.
+      leaves the <a href="#rellm-Event"><code>Event</code></a> with zero Occasions.
     </p>
     <p>
       Because moderation/visibility lives at the <a href="#rellm-Post"><code>Post</code></a> level, and <a href="#grpc-api-UpdateEventDetails"><code>UpdateEventDetails</code></a> runs first, this means that a developer error in the
@@ -1006,20 +1006,20 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
       An <a href="#rellm-Event"><code>Event</code></a> is a wrapper for <em>at least two</em> <a href="#rellm-Post"><code>Post</code></a>s. It always has its own top-level <a href="#rellm-Post"><code>Post</code></a>
       (<code>PostContext.EVENT</code>, holding the event's overall title/description) <em>and</em> it must have at least one
       <a href="#rellm-Occasion"><code>Occasion</code></a> (see below), each of which in turn must have its own <a href="#rellm-Post"><code>Post</code></a>
-      (<code>PostContext.OCCASION</code>, carrying that instance's start/end time, <a href="#rellm-Location"><code>Location</code></a>, and optional per-instance
+      (<code>PostContext.OCCASION</code>, carrying that Occasion's start/end time, <a href="#rellm-Location"><code>Location</code></a>, and optional per-Occasion
       title/link/content override). So the smallest possible Event already backs 2 Posts, and events with recurring/multiple
-      instances back one Post per instance beyond that.
+      Occasions back one Post per Occasion beyond that.
     </p>
     <h5 id="occasions"><a class="anchor" aria-hidden="true" tabindex="-1" href="#occasions"><span class="octicon octicon-link"></span></a>Occasions</h5>
     <p>
       An <a href="#rellm-Occasion"><code>Occasion</code></a> is the actual time-boxed occurrence of an <a href="#rellm-Event"><code>Event</code></a> -
       it carries the <code>starts_at</code>/<code>ends_at</code> timestamps and optional <a href="#rellm-Location"><code>Location</code></a> that the parent <a href="#rellm-Event"><code>Event</code></a> itself does not have.
-      An <a href="#rellm-Event"><code>Event</code></a> with zero instances is meaningless (no time or place to attach to), so every <a href="#rellm-Event"><code>Event</code></a> must have at least one.
+      An <a href="#rellm-Event"><code>Event</code></a> with zero Occasions is meaningless (no time or place to attach to), so every <a href="#rellm-Event"><code>Event</code></a> must have at least one.
     </p>
     <pre><code class="code-highlight"><span class="code-line line-number" line="1">- **EventAttendances**: An [`EventAttendance`](#rellm-EventAttendance) (an &#x26;#34;RSVP&#x26;#34;) tracks one attendee&#x26;#39;s status
 </span><span class="code-line line-number" line="2">(`INTERESTED`, `REQUESTED`, `GOING`, `NOT_GOING`) for a specific [`Occasion`](#rellm-Occasion). Attendees may be logged-in [`User`](#rellm-User)s
 </span><span class="code-line line-number" line="3">or anonymous (tracked via [`AnonymousAttendee`](#rellm-AnonymousAttendee) plus an `auth_token`), and are subject to their own [`Moderation`](#rellm-Moderation),
-</span><span class="code-line line-number" line="4">independent of the Event&#x26;#39;s/Instance&#x26;#39;s own Post moderation.
+</span><span class="code-line line-number" line="4">independent of the Event&#x26;#39;s/Occasion&#x26;#39;s own Post moderation.
 </span><span class="code-line line-number" line="5">
 </span><span class="code-line line-number" line="6">- **SyncSource**: It&#x26;#39;s actually the parent [`Event`](#rellm-Event) (not the [`Occasion`](#rellm-Occasion)) that can be synced *in* from a
 </span><span class="code-line line-number" line="7">user-owned [`SyncSource`](#rellm-SyncSource) (e.g. an iCal subscription). The relationship is
@@ -1029,13 +1029,13 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
 </span><span class="code-line line-number" line="11">- **SyncDestinations**: Conversely, it&#x26;#39;s each [`Occasion`](#rellm-Occasion) (not the parent [`Event`](#rellm-Event)) that syncs *out* to
 </span><span class="code-line line-number" line="12">[`SyncDestination`](#rellm-SyncDestination)s (e.g. connected Facebook Pages) - the same mechanism [`Post`](#rellm-Post)s use
 </span><span class="code-line line-number" line="13">(see above). Unlike [`SyncSource`](#rellm-SyncSource), this is the outlier&#x26;#39;s counterpart - a many-to-many relationship: each
-</span><span class="code-line line-number" line="14">instance may push to several destinations at once, tracked per-destination via the repeated
+</span><span class="code-line line-number" line="14">Occasion may push to several destinations at once, tracked per-destination via the repeated
 </span><span class="code-line line-number" line="15">`Occasion.sync_destinations` (each a [`SyncDestinationStatus`](#rellm-SyncDestinationStatus)), carrying
 </span><span class="code-line line-number" line="16">the destination&#x26;#39;s resulting post ID/URL and last-synced time.
 </span></code><div onclick="copied(this)" data-code="- **EventAttendances**: An [&#x60;EventAttendance&#x60;](#rellm-EventAttendance) (an &#x26;#34;RSVP&#x26;#34;) tracks one attendee&#x26;#39;s status
 (&#x60;INTERESTED&#x60;, &#x60;REQUESTED&#x60;, &#x60;GOING&#x60;, &#x60;NOT_GOING&#x60;) for a specific [&#x60;Occasion&#x60;](#rellm-Occasion). Attendees may be logged-in [&#x60;User&#x60;](#rellm-User)s
 or anonymous (tracked via [&#x60;AnonymousAttendee&#x60;](#rellm-AnonymousAttendee) plus an &#x60;auth_token&#x60;), and are subject to their own [&#x60;Moderation&#x60;](#rellm-Moderation),
-independent of the Event&#x26;#39;s/Instance&#x26;#39;s own Post moderation.
+independent of the Event&#x26;#39;s/Occasion&#x26;#39;s own Post moderation.
 
 - **SyncSource**: It&#x26;#39;s actually the parent [&#x60;Event&#x60;](#rellm-Event) (not the [&#x60;Occasion&#x60;](#rellm-Occasion)) that can be synced *in* from a
 user-owned [&#x60;SyncSource&#x60;](#rellm-SyncSource) (e.g. an iCal subscription). The relationship is
@@ -1045,7 +1045,7 @@ user-owned [&#x60;SyncSource&#x60;](#rellm-SyncSource) (e.g. an iCal subscriptio
 - **SyncDestinations**: Conversely, it&#x26;#39;s each [&#x60;Occasion&#x60;](#rellm-Occasion) (not the parent [&#x60;Event&#x60;](#rellm-Event)) that syncs *out* to
 [&#x60;SyncDestination&#x60;](#rellm-SyncDestination)s (e.g. connected Facebook Pages) - the same mechanism [&#x60;Post&#x60;](#rellm-Post)s use
 (see above). Unlike [&#x60;SyncSource&#x60;](#rellm-SyncSource), this is the outlier&#x26;#39;s counterpart - a many-to-many relationship: each
-instance may push to several destinations at once, tracked per-destination via the repeated
+Occasion may push to several destinations at once, tracked per-destination via the repeated
 &#x60;Occasion.sync_destinations&#x60; (each a [&#x60;SyncDestinationStatus&#x60;](#rellm-SyncDestinationStatus)), carrying
 the destination&#x26;#39;s resulting post ID/URL and last-synced time.
 " class="copied"><svg class="octicon-copy" aria-hidden="true" viewBox="0 0 16 16" fill="currentColor" height="12" width="12"><path fill-rule="evenodd" d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 010 1.5h-1.5a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-1.5a.75.75 0 011.5 0v1.5A1.75 1.75 0 019.25 16h-7.5A1.75 1.75 0 010 14.25v-7.5z"></path><path fill-rule="evenodd" d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0114.25 11h-7.5A1.75 1.75 0 015 9.25v-7.5zm1.75-.25a.25.25 0 00-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 00.25-.25v-7.5a.25.25 0 00-.25-.25h-7.5z"></path></svg><svg class="octicon-check" aria-hidden="true" viewBox="0 0 16 16" fill="currentColor" height="12" width="12"><path fill-rule="evenodd" d="M13.78 4.22a.75.75 0 010 1.06l-7.25 7.25a.75.75 0 01-1.06 0L2.22 9.28a.75.75 0 011.06-1.06L6 10.94l6.72-6.72a.75.75 0 011.06 0z"></path></svg></div></pre>
@@ -1298,8 +1298,8 @@ the destination&#x26;#39;s resulting post ID/URL and last-synced time.
       <code>/flutter</code>, <code>/tamagui</code>, <code>/elm</code> - plus any <code>CustomNavigationTabSet.tabs</code> paths configured on the server (excluding
       the reserved <code>posts</code>/<code>events</code>/<code>people</code>/<code>about</code> paths, which are always included above), each qualified with the
       request's <code>Host</code>. It also enumerates individual pages: every <a href="#rellm-Post"><code>Post</code></a> from an unauthenticated <a href="#grpc-api-GetPosts"><code>GetPosts</code></a> (the same
-      "first page" an anonymous visitor sees) as <code>/post/{id}</code>, and every <a href="#rellm-Event"><code>Event</code></a> instance from an unauthenticated
-      <a href="#grpc-api-GetEvents"><code>GetEvents</code></a> starting <code>EventSettings.calendar_lookback_days</code> (or 14, if unset) ago as <code>/event/{instance_id}</code>.
+      "first page" an anonymous visitor sees) as <code>/post/{id}</code>, and every <a href="#rellm-Occasion"><code>Occasion</code></a> from an unauthenticated
+      <a href="#grpc-api-GetEvents"><code>GetEvents</code></a> starting <code>EventSettings.calendar_lookback_days</code> (or 14, if unset) ago as <code>/event/{occasion_id}</code>.
       It does not (yet) enumerate individual <a href="#rellm-User"><code>User</code></a> pages.
     </p>
     <h5 id="get-faviconico-ico-favicon"><a class="anchor" aria-hidden="true" tabindex="-1" href="#get-faviconico-ico-favicon"><span class="octicon octicon-link"></span></a><code>GET /favicon.ico</code>: ICO Favicon</h5>
@@ -1818,13 +1818,13 @@ directory</a> is (<code>{name}</code> denotes a
           <td>CreateNewOccasions</td>
           <td><a href="#rellm-Event">Event</a></td>
           <td><a href="#rellm-Event">Event</a></td>
-          <td>Creates Occasions in an existing Event for every Occasion in the request that isn't already on the event. <em>Authenticated.</em> Any other instances in the request are ignored.</td>
+          <td>Creates Occasions in an existing Event for every Occasion in the request that isn't already on the event. <em>Authenticated.</em> Any other Occasions in the request are ignored.</td>
         </tr>
         <tr>
           <td>UpdateOccasions</td>
           <td><a href="#rellm-Event">Event</a></td>
           <td><a href="#rellm-Event">Event</a></td>
-          <td>Updates Occasions in an existing Event for every Occasion in the request that's already on the event. Any other instances in the request are ignored. <em>Authenticated.</em></td>
+          <td>Updates Occasions in an existing Event for every Occasion in the request that's already on the event. Any other Occasions in the request are ignored. <em>Authenticated.</em></td>
         </tr>
         <tr>
           <td>DeleteRemovedOccasions</td>
@@ -3227,7 +3227,7 @@ directory</a> is (<code>{name}</code> denotes a
           <td>occasion_count</td>
           <td><a href="#int32">int32</a></td>
           <td>optional</td>
-          <td>The number of event instances this user has created (across all of their events).</td>
+          <td>The number of occasions this user has created (across all of their events).</td>
         </tr>
         <tr>
           <td>current_user_follow</td>
@@ -5225,10 +5225,10 @@ directory</a> is (<code>{name}</code> denotes a
           <td>Event configuration like whether to allow (anonymous) RSVPs, etc.</td>
         </tr>
         <tr>
-          <td>instances</td>
+          <td>occasions</td>
           <td><a href="#rellm-Occasion">Occasion</a></td>
           <td>repeated</td>
-          <td>A list of instances for the Event. <em>Events will only include all instances if the request is for a single event.</em></td>
+          <td>A list of occasions for the Event. <em>Events will only include all occasions if the request is for a single event.</em></td>
         </tr>
       </tbody>
     </table>
@@ -5507,7 +5507,7 @@ directory</a> is (<code>{name}</code> denotes a
           <td>occasion_post_ids</td>
           <td><a href="#string">string</a></td>
           <td>repeated</td>
-          <td>Loads multiple events by their event instances' Post IDs - returns one Event per matching Occasion (see GetEventsResponse's own doc), not the requested Occasion's whole parent Event's full instance list.</td>
+          <td>Loads multiple events by their occasions' Post IDs - returns one Event per matching Occasion (see GetEventsResponse's own doc), not the requested Occasion's whole parent Event's full occasion list.</td>
         </tr>
         <tr>
           <td>anonymous_attendee_auth_token</td>
@@ -5522,14 +5522,14 @@ directory</a> is (<code>{name}</code> denotes a
     <p>A list of <a href="#rellm-Event"><code>Event</code></a>s with a maybe-incomplete (see <a href="#rellm-GetEventsRequest"><code>GetEventsRequest</code></a>) set of their <a href="#rellm-Occasion"><code>Occasion</code></a>s.</p>
     <p>
       Note that <code>GetEventsResponse</code> may often include duplicate Events with the same ID.
-      I.E. something like: <code>{events: [{id: a, instances: [{id: x}]}, {id: a, instances: [{id: y}]}, ]}</code> is a valid response.
-      This semantically means: "Event A has both instances X and Y in the time frame the client asked for."
+      I.E. something like: <code>{events: [{id: a, occasions: [{id: x}]}, {id: a, occasions: [{id: y}]}, ]}</code> is a valid response.
+      This semantically means: "Event A has both occasions X and Y in the time frame the client asked for."
       The client should be able to handle this.
     </p>
     <p>
       In the React/Tamagui client, this is handled by the Redux store, which
       effectively "compacts" all response into its own internal Events store, in a form something like:
-      <code>{events: {a: {id: a, instances: [{id: x}, {id: y}]}, ...}, instanceEventIds: {x:a, y:a}}</code>.
+      <code>{events: {a: {id: a, occasions: [{id: x}, {id: y}]}, ...}, occasionEventIds: {x:a, y:a}}</code>.
       (In reality it uses <code>EntityAdapter</code> which is a bit more complicated, but the idea is the same.)
     </p>
     <table>
@@ -5577,13 +5577,13 @@ directory</a> is (<code>{name}</code> denotes a
           <td>post</td>
           <td><a href="#rellm-Post">Post</a></td>
           <td></td>
-          <td>Optional <a href="#rellm-Post"><code>Post</code></a> containing alternate title/link/description for this particular instance. Its <a href="#rellm-PostContext"><code>PostContext</code></a> should be <code>OCCASION</code>. An <code>Occasion</code>'s ID <em>is</em> its <code>post.id</code> - there is no separate surrogate ID.</td>
+          <td>Optional <a href="#rellm-Post"><code>Post</code></a> containing alternate title/link/description for this particular Occasion. Its <a href="#rellm-PostContext"><code>PostContext</code></a> should be <code>OCCASION</code>. An <code>Occasion</code>'s ID <em>is</em> its <code>post.id</code> - there is no separate surrogate ID.</td>
         </tr>
         <tr>
           <td>info</td>
           <td><a href="#rellm-OccasionInfo">OccasionInfo</a></td>
           <td></td>
-          <td>Additional configuration for this instance of this <a href="#rellm-Occasion"><code>Occasion</code></a> beyond the <a href="#rellm-EventInfo"><code>EventInfo</code></a> in its parent <a href="#rellm-Event"><code>Event</code></a>.</td>
+          <td>Additional configuration for this <a href="#rellm-Occasion"><code>Occasion</code></a> beyond the <a href="#rellm-EventInfo"><code>EventInfo</code></a> in its parent <a href="#rellm-Event"><code>Event</code></a>.</td>
         </tr>
         <tr>
           <td>starts_at</td>
@@ -5613,25 +5613,25 @@ directory</a> is (<code>{name}</code> denotes a
           <td>attendances</td>
           <td><a href="#rellm-EventAttendances">EventAttendances</a></td>
           <td>optional</td>
-          <td>RSVP + invite data for this instance.</td>
+          <td>RSVP + invite data for this Occasion.</td>
         </tr>
         <tr>
           <td>current_user_attendance</td>
           <td><a href="#rellm-EventAttendance">EventAttendance</a></td>
           <td>optional</td>
-          <td>If the request was made by a logged-in user, this is the current user's attendance for this instance.</td>
+          <td>If the request was made by a logged-in user, this is the current user's attendance for this Occasion.</td>
         </tr>
         <tr>
           <td>sync_destinations</td>
           <td><a href="#rellm-SyncDestinationStatus">SyncDestinationStatus</a></td>
           <td>repeated</td>
-          <td>SyncDestinations this instance has been synced (cross-posted) to, and their status.</td>
+          <td>SyncDestinations this Occasion has been synced (cross-posted) to, and their status.</td>
         </tr>
         <tr>
           <td>timezone</td>
           <td><a href="#string">string</a></td>
           <td>optional</td>
-          <td>A time zone for the event instance. Used when serializing it for, e.g., Facebook or Instagram posts, or generating media.</td>
+          <td>A time zone for the Occasion. Used when serializing it for, e.g., Facebook or Instagram posts, or generating media.</td>
         </tr>
       </tbody>
     </table>
@@ -5655,7 +5655,7 @@ directory</a> is (<code>{name}</code> denotes a
           <td>rsvp_info</td>
           <td><a href="#rellm-OccasionRsvpInfo">OccasionRsvpInfo</a></td>
           <td>optional</td>
-          <td>RSVP configuration and metadata for the event instance.</td>
+          <td>RSVP configuration and metadata for the Occasion.</td>
         </tr>
       </tbody>
     </table>
@@ -5679,19 +5679,19 @@ directory</a> is (<code>{name}</code> denotes a
           <td>allows_rsvps</td>
           <td><a href="#bool">bool</a></td>
           <td>optional</td>
-          <td>Overrides <code>EventInfo.allows_rsvps</code>, if set, for this instance.</td>
+          <td>Overrides <code>EventInfo.allows_rsvps</code>, if set, for this Occasion.</td>
         </tr>
         <tr>
           <td>allows_anonymous_rsvps</td>
           <td><a href="#bool">bool</a></td>
           <td>optional</td>
-          <td>Overrides <code>EventInfo.allows_anonymous_rsvps</code>, if set, for this instance.</td>
+          <td>Overrides <code>EventInfo.allows_anonymous_rsvps</code>, if set, for this Occasion.</td>
         </tr>
         <tr>
           <td>max_attendees</td>
           <td><a href="#uint32">uint32</a></td>
           <td>optional</td>
-          <td>Overrides <code>EventInfo.max_attendees</code>, if set, for this instance. Not yet supported.</td>
+          <td>Overrides <code>EventInfo.max_attendees</code>, if set, for this Occasion. Not yet supported.</td>
         </tr>
         <tr>
           <td>going_rsvps</td>
@@ -7906,7 +7906,7 @@ Instagram account</strong>. Unlike <a href="#rellm-FacebookPage"><code>FacebookP
           <td>occasion_count</td>
           <td><a href="#uint64">uint64</a></td>
           <td></td>
-          <td>The number of event instances total associated with this SyncSource. Recomputed on each sync.</td>
+          <td>The number of occasions total associated with this SyncSource. Recomputed on each sync.</td>
         </tr>
         <tr>
           <td>post_count</td>

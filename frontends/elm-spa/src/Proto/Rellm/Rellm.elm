@@ -92,7 +92,7 @@ To run it, add a dependency via `elm install` on [`elm-protocol-buffers`](https:
  atomically, literally calling the [`UpdatePost`](#grpc-api-UpdatePost) RPC), then [`CreateNewOccasions`](#grpc-api-CreateNewOccasions),
  [`UpdateOccasions`](#grpc-api-UpdateOccasions), and finally [`DeleteRemovedOccasions`](#grpc-api-DeleteRemovedOccasions).
  Create must run before Delete so that a request which both drops an old [`Occasion`](#rellm-Occasion) and adds a new one never transiently
- leaves the [`Event`](#rellm-Event) with zero instances.
+ leaves the [`Event`](#rellm-Event) with zero Occasions.
 
  Because moderation/visibility lives at the [`Post`](#rellm-Post) level, and [`UpdateEventDetails`](#grpc-api-UpdateEventDetails) runs first, this means that a developer error in the
  later [`Occasion`](#rellm-Occasion)-processing steps cannot prevent visibility and moderation changes from being made in Events, even if there are errors elsewhere.
@@ -423,19 +423,19 @@ To run it, add a dependency via `elm install` on [`elm-protocol-buffers`](https:
  An [`Event`](#rellm-Event) is a wrapper for *at least two* [`Post`](#rellm-Post)s. It always has its own top-level [`Post`](#rellm-Post)
  (`PostContext.EVENT`, holding the event's overall title/description) *and* it must have at least one
  [`Occasion`](#rellm-Occasion) (see below), each of which in turn must have its own [`Post`](#rellm-Post)
- (`PostContext.OCCASION`, carrying that instance's start/end time, [`Location`](#rellm-Location), and optional per-instance
+ (`PostContext.OCCASION`, carrying that Occasion's start/end time, [`Location`](#rellm-Location), and optional per-Occasion
  title/link/content override). So the smallest possible Event already backs 2 Posts, and events with recurring/multiple
- instances back one Post per instance beyond that.
+ Occasions back one Post per Occasion beyond that.
 
  ##### Occasions
  An [`Occasion`](#rellm-Occasion) is the actual time-boxed occurrence of an [`Event`](#rellm-Event) -
  it carries the `starts_at`/`ends_at` timestamps and optional [`Location`](#rellm-Location) that the parent [`Event`](#rellm-Event) itself does not have.
- An [`Event`](#rellm-Event) with zero instances is meaningless (no time or place to attach to), so every [`Event`](#rellm-Event) must have at least one.
+ An [`Event`](#rellm-Event) with zero Occasions is meaningless (no time or place to attach to), so every [`Event`](#rellm-Event) must have at least one.
 
      - **EventAttendances**: An [`EventAttendance`](#rellm-EventAttendance) (an "RSVP") tracks one attendee's status
      (`INTERESTED`, `REQUESTED`, `GOING`, `NOT_GOING`) for a specific [`Occasion`](#rellm-Occasion). Attendees may be logged-in [`User`](#rellm-User)s
      or anonymous (tracked via [`AnonymousAttendee`](#rellm-AnonymousAttendee) plus an `auth_token`), and are subject to their own [`Moderation`](#rellm-Moderation),
-     independent of the Event's/Instance's own Post moderation.
+     independent of the Event's/Occasion's own Post moderation.
 
      - **SyncSource**: It's actually the parent [`Event`](#rellm-Event) (not the [`Occasion`](#rellm-Occasion)) that can be synced *in* from a
      user-owned [`SyncSource`](#rellm-SyncSource) (e.g. an iCal subscription). The relationship is
@@ -445,7 +445,7 @@ To run it, add a dependency via `elm install` on [`elm-protocol-buffers`](https:
      - **SyncDestinations**: Conversely, it's each [`Occasion`](#rellm-Occasion) (not the parent [`Event`](#rellm-Event)) that syncs *out* to
      [`SyncDestination`](#rellm-SyncDestination)s (e.g. connected Facebook Pages) - the same mechanism [`Post`](#rellm-Post)s use
      (see above). Unlike [`SyncSource`](#rellm-SyncSource), this is the outlier's counterpart - a many-to-many relationship: each
-     instance may push to several destinations at once, tracked per-destination via the repeated
+     Occasion may push to several destinations at once, tracked per-destination via the repeated
      `Occasion.sync_destinations` (each a [`SyncDestinationStatus`](#rellm-SyncDestinationStatus)), carrying
      the destination's resulting post ID/URL and last-synced time.
 
@@ -642,8 +642,8 @@ To run it, add a dependency via `elm install` on [`elm-protocol-buffers`](https:
  `/flutter`, `/tamagui`, `/elm` - plus any `CustomNavigationTabSet.tabs` paths configured on the server (excluding
  the reserved `posts`/`events`/`people`/`about` paths, which are always included above), each qualified with the
  request's `Host`. It also enumerates individual pages: every [`Post`](#rellm-Post) from an unauthenticated [`GetPosts`](#grpc-api-GetPosts) (the same
- "first page" an anonymous visitor sees) as `/post/{id}`, and every [`Event`](#rellm-Event) instance from an unauthenticated
- [`GetEvents`](#grpc-api-GetEvents) starting `EventSettings.calendar_lookback_days` (or 14, if unset) ago as `/event/{instance_id}`.
+ "first page" an anonymous visitor sees) as `/post/{id}`, and every [`Occasion`](#rellm-Occasion) from an unauthenticated
+ [`GetEvents`](#grpc-api-GetEvents) starting `EventSettings.calendar_lookback_days` (or 14, if unset) ago as `/event/{occasion_id}`.
  It does not (yet) enumerate individual [`User`](#rellm-User) pages.
 
  ##### `GET /favicon.ico`: ICO Favicon
@@ -1372,7 +1372,7 @@ deleteRemovedOccasions =
 {-| A template for a gRPC call to the method 'UpdateOccasions' sending a `Event` to get back a `Event`.
 
  Updates Occasions in an existing Event for every Occasion in the request that's already on the event.
- Any other instances in the request are ignored. *Authenticated.*
+ Any other Occasions in the request are ignored. *Authenticated.*
 
 
 -}
@@ -1390,7 +1390,7 @@ updateOccasions =
 {-| A template for a gRPC call to the method 'CreateNewOccasions' sending a `Event` to get back a `Event`.
 
  Creates Occasions in an existing Event for every Occasion in the request that isn't already on the event. *Authenticated.*
- Any other instances in the request are ignored.
+ Any other Occasions in the request are ignored.
 
 
 -}

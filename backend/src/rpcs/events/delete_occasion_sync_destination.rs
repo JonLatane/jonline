@@ -28,7 +28,7 @@ pub fn delete_occasion_sync_destination(
         ],
     )?;
 
-    let instance_id = request
+    let occasion_id = request
         .occasion_id
         .to_db_id_or_err("occasion_id")?;
     let destination_id = request
@@ -43,15 +43,15 @@ pub fn delete_occasion_sync_destination(
     diesel::delete(
         occasion_sync_destinations::table.filter(
             occasion_sync_destinations::occasion_id
-                .eq(instance_id)
+                .eq(occasion_id)
                 .and(occasion_sync_destinations::sync_destination_id.eq(destination.id)),
         ),
     )
     .execute(conn)
     .map_err(|e| {
         log::error!(
-            "Failed to delete event instance sync destination ({}, {}): {:?}",
-            instance_id,
+            "Failed to delete event occasion sync destination ({}, {}): {:?}",
+            occasion_id,
             destination.id,
             e
         );

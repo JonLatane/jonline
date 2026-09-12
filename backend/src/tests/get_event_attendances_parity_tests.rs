@@ -22,7 +22,7 @@ struct Scenario {
     owner: crate::models::User,
     pending_user: crate::models::User,
     approved_user: crate::models::User,
-    instance: crate::models::Occasion,
+    occasion: crate::models::Occasion,
     approved_attendance: crate::models::EventAttendance,
     pending_attendance: crate::models::EventAttendance,
     anonymous_attendance: crate::models::EventAttendance,
@@ -37,8 +37,8 @@ fn location_json(address: &str) -> serde_json::Value {
     .unwrap()
 }
 
-/// A `GlobalPublic` event/instance (owned by `owner`) with `hide_location_until_rsvp_approved`
-/// set and a location on the instance, plus three attendances covering every visibility bucket
+/// A `GlobalPublic` event/occasion (owned by `owner`) with `hide_location_until_rsvp_approved`
+/// set and a location on the occasion, plus three attendances covering every visibility bucket
 /// `get_event_attendances` distinguishes: an `Approved` logged-in user, a `Pending` logged-in
 /// user, and a `Pending` anonymous attendee (unlocked by `ANONYMOUS_AUTH_TOKEN`).
 fn build_scenario(conn: &mut crate::db_connection::PgPooledConnection, suffix: &str) -> Scenario {
@@ -55,7 +55,7 @@ fn build_scenario(conn: &mut crate::db_connection::PgPooledConnection, suffix: &
             ..Default::default()
         },
     );
-    let (instance, _instance_post) = create_occasion(
+    let (occasion, _occasion_post) = create_occasion(
         conn,
         &event,
         Some(&owner),
@@ -68,7 +68,7 @@ fn build_scenario(conn: &mut crate::db_connection::PgPooledConnection, suffix: &
 
     let approved_attendance = create_event_attendance(
         conn,
-        &instance,
+        &occasion,
         EventAttendanceOpts {
             user_id: Some(approved_user.id),
             status: AttendanceStatus::Going,
@@ -79,7 +79,7 @@ fn build_scenario(conn: &mut crate::db_connection::PgPooledConnection, suffix: &
     );
     let pending_attendance = create_event_attendance(
         conn,
-        &instance,
+        &occasion,
         EventAttendanceOpts {
             user_id: Some(pending_user.id),
             status: AttendanceStatus::Interested,
@@ -90,7 +90,7 @@ fn build_scenario(conn: &mut crate::db_connection::PgPooledConnection, suffix: &
     );
     let anonymous_attendance = create_event_attendance(
         conn,
-        &instance,
+        &occasion,
         EventAttendanceOpts {
             anonymous_attendee: Some(serde_json::json!({
                 "name": "Anonymous Guest",
@@ -107,7 +107,7 @@ fn build_scenario(conn: &mut crate::db_connection::PgPooledConnection, suffix: &
         owner,
         pending_user,
         approved_user,
-        instance,
+        occasion,
         approved_attendance,
         pending_attendance,
         anonymous_attendance,
@@ -117,12 +117,12 @@ fn build_scenario(conn: &mut crate::db_connection::PgPooledConnection, suffix: &
 fn via_get_events(
     conn: &mut crate::db_connection::PgPooledConnection,
     user: &Option<&crate::models::User>,
-    instance_id: i64,
+    occasion_id: i64,
     anonymous_attendee_auth_token: Option<String>,
 ) -> Occasion {
     let response = get_events(
         GetEventsRequest {
-            post_id: Some(instance_id.to_proto_id()),
+            post_id: Some(occasion_id.to_proto_id()),
             anonymous_attendee_auth_token,
             ..Default::default()
         },
@@ -135,21 +135,21 @@ fn via_get_events(
         .into_iter()
         .next()
         .expect("get_events returned no event")
-        .instances
+        .occasions
         .into_iter()
-        .find(|instance| instance.post.as_ref().unwrap().id == instance_id.to_proto_id())
-        .expect("get_events response is missing the instance")
+        .find(|occasion| occasion.post.as_ref().unwrap().id == occasion_id.to_proto_id())
+        .expect("get_events response is missing the occasion")
 }
 
 fn via_get_event_attendances(
     conn: &mut crate::db_connection::PgPooledConnection,
     user: &Option<&crate::models::User>,
-    instance_id: i64,
+    occasion_id: i64,
     anonymous_attendee_auth_token: Option<String>,
 ) -> EventAttendances {
     get_event_attendances(
         GetEventAttendancesRequest {
-            occasion_id: instance_id.to_proto_id(),
+            occasion_id: occasion_id.to_proto_id(),
             anonymous_attendee_auth_token,
         },
         user,
@@ -166,29 +166,29 @@ fn notes_by_id(attendances: &EventAttendances) -> BTreeMap<String, String> {
         .collect()
 }
 
-/// Fetches the same instance/viewer combination through both RPCs and asserts they agree on
+/// Fetches the same occasion/viewer combination through both RPCs and asserts they agree on
 /// exactly which attendances are visible, each row's `private_note` redaction, and whether the
 /// location is revealed - both via `EventAttendances.hidden_location` (present on both RPCs'
 /// response shape) and via `Occasion.location` itself (`get_events`-only, since a plain
-/// `get_event_attendances` caller may never have fetched the instance at all).
+/// `get_event_attendances` caller may never have fetched the occasion at all).
 fn assert_parity(
     conn: &mut crate::db_connection::PgPooledConnection,
     user: &Option<&crate::models::User>,
-    instance_id: i64,
+    occasion_id: i64,
     anonymous_attendee_auth_token: Option<String>,
 ) -> (Occasion, EventAttendances) {
-    let events_instance = via_get_events(
+    let events_occasion = via_get_events(
         conn,
         user,
-        instance_id,
+        occasion_id,
         anonymous_attendee_auth_token.clone(),
     );
     let attendances =
-        via_get_event_attendances(conn, user, instance_id, anonymous_attendee_auth_token);
-    let events_attendances = events_instance
+        via_get_event_attendances(conn, user, occasion_id, anonymous_attendee_auth_token);
+    let events_attendances = events_occasion
         .attendances
         .clone()
-        .expect("get_events instance is missing its attendances field");
+        .expect("get_events occasion is missing its attendances field");
 
     assert_eq!(
         notes_by_id(&events_attendances),
@@ -202,12 +202,12 @@ fn assert_parity(
         "get_events and get_event_attendances disagree on whether the location is revealed"
     );
     assert_eq!(
-        events_instance.location.is_some(),
+        events_occasion.location.is_some(),
         attendances.hidden_location.is_some(),
         "Occasion.location should be revealed exactly when EventAttendances.hidden_location is"
     );
 
-    (events_instance, attendances)
+    (events_occasion, attendances)
 }
 
 #[test]
@@ -216,15 +216,15 @@ fn public_viewer_sees_only_the_approved_attendance_notes_redacted_and_location_h
     conn.test_transaction::<_, Status, _>(|conn| {
         let scenario = build_scenario(conn, "pub");
 
-        let (events_instance, attendances) = assert_parity(conn, &None, scenario.instance.post_id, None);
+        let (events_occasion, attendances) = assert_parity(conn, &None, scenario.occasion.post_id, None);
 
         assert_eq!(
             notes_by_id(&attendances),
             BTreeMap::from([(scenario.approved_attendance.id.to_proto_id(), "".to_string())]),
             "an unauthenticated viewer should see only the approved attendance, with no private_note"
         );
-        assert!(events_instance.location.is_none());
-        assert!(events_instance.current_user_attendance.is_none());
+        assert!(events_occasion.location.is_none());
+        assert!(events_occasion.current_user_attendance.is_none());
         Ok(())
     });
 }
@@ -235,10 +235,10 @@ fn own_pending_attendee_sees_their_own_row_but_location_stays_hidden() {
     conn.test_transaction::<_, Status, _>(|conn| {
         let scenario = build_scenario(conn, "pending");
 
-        let (events_instance, attendances) = assert_parity(
+        let (events_occasion, attendances) = assert_parity(
             conn,
             &Some(&scenario.pending_user),
-            scenario.instance.post_id,
+            scenario.occasion.post_id,
             None,
         );
 
@@ -257,11 +257,11 @@ fn own_pending_attendee_sees_their_own_row_but_location_stays_hidden() {
             "a pending attendee should see their own private_note but not the approved stranger's"
         );
         assert!(
-            events_instance.location.is_none(),
+            events_occasion.location.is_none(),
             "a merely-Pending (not Approved) attendee shouldn't unlock the hidden location"
         );
         assert_eq!(
-            events_instance
+            events_occasion
                 .current_user_attendance
                 .expect("current_user_attendance should be set")
                 .id,
@@ -277,19 +277,19 @@ fn approved_attendee_unlocks_the_hidden_location() {
     conn.test_transaction::<_, Status, _>(|conn| {
         let scenario = build_scenario(conn, "approved");
 
-        let (events_instance, _attendances) = assert_parity(
+        let (events_occasion, _attendances) = assert_parity(
             conn,
             &Some(&scenario.approved_user),
-            scenario.instance.post_id,
+            scenario.occasion.post_id,
             None,
         );
 
         assert!(
-            events_instance.location.is_some(),
+            events_occasion.location.is_some(),
             "an Approved attendee should unlock the hidden location"
         );
         assert_eq!(
-            events_instance
+            events_occasion
                 .current_user_attendance
                 .expect("current_user_attendance should be set")
                 .id,
@@ -305,10 +305,10 @@ fn anonymous_attendee_sees_their_own_pending_row_via_auth_token() {
     conn.test_transaction::<_, Status, _>(|conn| {
         let scenario = build_scenario(conn, "anon");
 
-        let (events_instance, attendances) = assert_parity(
+        let (events_occasion, attendances) = assert_parity(
             conn,
             &None,
-            scenario.instance.post_id,
+            scenario.occasion.post_id,
             Some(ANONYMOUS_AUTH_TOKEN.to_string()),
         );
 
@@ -327,11 +327,11 @@ fn anonymous_attendee_sees_their_own_pending_row_via_auth_token() {
             "the matching auth token should unlock only the anonymous attendee's own row"
         );
         assert!(
-            events_instance.location.is_none(),
+            events_occasion.location.is_none(),
             "the anonymous attendee is only Pending, so the location should stay hidden"
         );
         assert_eq!(
-            events_instance
+            events_occasion
                 .current_user_attendance
                 .expect("current_user_attendance should be set")
                 .id,
@@ -347,10 +347,10 @@ fn wrong_auth_token_is_treated_like_no_token() {
     conn.test_transaction::<_, Status, _>(|conn| {
         let scenario = build_scenario(conn, "wrongtoken");
 
-        let (events_instance, attendances) = assert_parity(
+        let (events_occasion, attendances) = assert_parity(
             conn,
             &None,
-            scenario.instance.post_id,
+            scenario.occasion.post_id,
             Some("not-the-right-token".to_string()),
         );
 
@@ -361,8 +361,8 @@ fn wrong_auth_token_is_treated_like_no_token() {
                 "".to_string()
             )]),
         );
-        assert!(events_instance.location.is_none());
-        assert!(events_instance.current_user_attendance.is_none());
+        assert!(events_occasion.location.is_none());
+        assert!(events_occasion.current_user_attendance.is_none());
         Ok(())
     });
 }
@@ -373,8 +373,8 @@ fn event_owner_sees_every_attendance_unredacted_and_the_real_location() {
     conn.test_transaction::<_, Status, _>(|conn| {
         let scenario = build_scenario(conn, "owner");
 
-        let (events_instance, attendances) =
-            assert_parity(conn, &Some(&scenario.owner), scenario.instance.post_id, None);
+        let (events_occasion, attendances) =
+            assert_parity(conn, &Some(&scenario.owner), scenario.occasion.post_id, None);
 
         assert_eq!(
             notes_by_id(&attendances),
@@ -394,9 +394,9 @@ fn event_owner_sees_every_attendance_unredacted_and_the_real_location() {
             ]),
             "the event owner should see every attendance's private_note, moderation status aside"
         );
-        assert!(events_instance.location.is_some());
+        assert!(events_occasion.location.is_some());
         assert!(
-            events_instance.current_user_attendance.is_none(),
+            events_occasion.current_user_attendance.is_none(),
             "the owner never RSVP'd to their own event in this scenario"
         );
         Ok(())

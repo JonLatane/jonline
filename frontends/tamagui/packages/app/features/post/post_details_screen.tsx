@@ -96,8 +96,8 @@ export function useReplyAncestors(subjectPost?: FederatedPost) {
     }
   }, [ancestorPosts]);
 
-  const ancestorOccasionId = useAppSelector(state => state.events.postInstances[federateId(ancestorPosts[0]?.id ?? '', server)]);
-  const ancestorEventId = useAppSelector(state => ancestorOccasionId ? state.events.instanceEvents[ancestorOccasionId] : undefined);
+  const ancestorOccasionId = useAppSelector(state => state.events.postOccasions[federateId(ancestorPosts[0]?.id ?? '', server)]);
+  const ancestorEventId = useAppSelector(state => ancestorOccasionId ? state.events.occasionEvents[ancestorOccasionId] : undefined);
   const ancestorEvent = useAppSelector(state => ancestorEventId ? selectEventById(state.events, ancestorEventId) : undefined);
   useEffect(() => {
     if (ancestorPosts[0]?.context === PostContext.OCCASION && !ancestorEvent) {
@@ -195,8 +195,8 @@ export function PostDetailsScreen() {
   //   }
   // }, [ancestorPosts]);
 
-  // const ancestorOccasionId = useAppSelector(state => state.events.postInstances[federateId(ancestorPosts[0]?.id ?? '', server)]);
-  // const ancestorEventId = useAppSelector(state => ancestorOccasionId ? state.events.instanceEvents[ancestorOccasionId] : undefined);
+  // const ancestorOccasionId = useAppSelector(state => state.events.postOccasions[federateId(ancestorPosts[0]?.id ?? '', server)]);
+  // const ancestorEventId = useAppSelector(state => ancestorOccasionId ? state.events.occasionEvents[ancestorOccasionId] : undefined);
   // const ancestorEvent = useAppSelector(state => ancestorEventId ? selectEventById(state.events, ancestorEventId) : undefined);
   // useEffect(() => {
   //   if (ancestorPosts[0]?.context === PostContext.OCCASION && !ancestorEvent) {

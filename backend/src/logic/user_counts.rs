@@ -68,8 +68,8 @@ pub fn group_count(user_id: i64, conn: &mut PgPooledConnection) -> QueryResult<i
     Ok(count as i32)
 }
 
-/// Top-level `Post`s (`PostContext::Post`) authored by `user_id`. Excludes replies, events, event
-/// instances -- see [`response_count`]/[`event_count`].
+/// Top-level `Post`s (`PostContext::Post`) authored by `user_id`. Excludes replies, events,
+/// occasions -- see [`response_count`]/[`event_count`].
 pub fn post_count(user_id: i64, conn: &mut PgPooledConnection) -> QueryResult<i32> {
     let count: i64 = posts::table
         .filter(posts::user_id.eq(user_id))
@@ -103,7 +103,7 @@ pub fn event_count(user_id: i64, conn: &mut PgPooledConnection) -> QueryResult<i
 }
 
 /// `Occasion`s across all of `user_id`'s events. `occasions::user_id` is denormalized
-/// (by DB trigger) from the instance's own Post's author -- see
+/// (by DB trigger) from the Occasion's own Post's author -- see
 /// `2026-07-30-170000_add_search_text_to_occasions` -- and always matches the parent
 /// Event's author in this codebase.
 pub fn occasion_count(user_id: i64, conn: &mut PgPooledConnection) -> QueryResult<i32> {
@@ -168,12 +168,12 @@ pub fn update_post_counts(user_id: i64, conn: &mut PgPooledConnection) -> QueryR
 
 pub fn update_event_counts(user_id: i64, conn: &mut PgPooledConnection) -> QueryResult<()> {
     let events = event_count(user_id, conn)?;
-    let instances = occasion_count(user_id, conn)?;
+    let occasions = occasion_count(user_id, conn)?;
     update(users::table)
         .filter(users::id.eq(user_id))
         .set((
             users::event_count.eq(events),
-            users::occasion_count.eq(instances),
+            users::occasion_count.eq(occasions),
         ))
         .execute(conn)?;
     Ok(())
@@ -191,7 +191,7 @@ pub fn update_all_counts(user_id: i64, conn: &mut PgPooledConnection) -> QueryRe
     let posts = post_count(user_id, conn)?;
     let responses = response_count(user_id, conn)?;
     let events = event_count(user_id, conn)?;
-    let instances = occasion_count(user_id, conn)?;
+    let occasions = occasion_count(user_id, conn)?;
     update(users::table)
         .filter(users::id.eq(user_id))
         .set((
@@ -202,7 +202,7 @@ pub fn update_all_counts(user_id: i64, conn: &mut PgPooledConnection) -> QueryRe
             users::post_count.eq(posts),
             users::response_count.eq(responses),
             users::event_count.eq(events),
-            users::occasion_count.eq(instances),
+            users::occasion_count.eq(occasions),
         ))
         .execute(conn)?;
     Ok(())

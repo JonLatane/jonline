@@ -164,7 +164,7 @@ I am going to send you a list of one or more events pasted from a user. Please p
 ]
 \`\`\`
 
-All generated events should have only one instance. Do not include the example "Sunrise Yoga" event, unless it is in the actual user input at the end of this request. Do not invent content if there is none - title-only events are fine.
+All generated events should have only one occasion. Do not include the example "Sunrise Yoga" event, unless it is in the actual user input at the end of this request. Do not invent content if there is none - title-only events are fine.
 
 ${trimmedInstructions ?
       `${trimmedInstructions}${trimmedInstructions.endsWith('.') ||
@@ -209,7 +209,7 @@ ${aiText}
         content: event.content,
         author: Author.create(account?.user ?? {}),
       },
-      instances: [
+      occasions: [
         {
           startsAt: event.startsAt,
           endsAt: event.endsAt,

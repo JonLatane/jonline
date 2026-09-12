@@ -150,13 +150,13 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({
   // useEffect(pagination.reset, [queryEndsAfter, debouncedSearchText]);
 
   // const setBigCalendar = (v: boolean) => dispatch(setShowBigCalendar(v));
-  const [modalInstanceId, setModalInstanceId] = useState<string | undefined>(undefined);
-  // console.log('EventsFullCalendar', { modalInstanceId })
-  const modalInstance = useMemo(
-    () => allEvents.find((e) => federateId(e.instances[0]?.id ?? '', e.serverHost) === modalInstanceId),
-    [modalInstanceId, allEvents]
+  const [modalOccasionId, setModalOccasionId] = useState<string | undefined>(undefined);
+  // console.log('EventsFullCalendar', { modalOccasionId })
+  const modalOccasion = useMemo(
+    () => allEvents.find((e) => federateId(e.occasions[0]?.id ?? '', e.serverHost) === modalOccasionId),
+    [modalOccasionId, allEvents]
   );
-  // console.log('modalInstanceId', modalInstanceId, 'modalInstance', modalInstance);
+  // console.log('modalOccasionId', modalOccasionId, 'modalOccasion', modalOccasion);
   const hideNavigation = useHideNavigation();
 
   const serverColors = useAppSelector(selectServerColors());
@@ -175,22 +175,22 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({
   const starredPostIds = useAppSelector(state => state.config.starredPostIds);
 
   const startTimes = allEvents.map((event) => {
-    const instance = event.instances[0];
-    const startsAt = moment(instance?.startsAt ?? 0);
+    const occasion = event.occasions[0];
+    const startsAt = moment(occasion?.startsAt ?? 0);
     const startsAtTime = startsAt.format('HH:mm:ss');
     return startsAtTime;
   });
   const modeStartTime = mode(startTimes);
   const earliestDate = moment.min(
-    allEvents.map((event) => moment(event.instances[0]?.startsAt ?? 0).startOf('day'))
+    allEvents.map((event) => moment(event.occasions[0]?.startsAt ?? 0).startOf('day'))
   );
   const latestDate = moment.max(
-    allEvents.map((event) => moment(event.instances[0]?.endsAt ?? 0).endOf('day'))
+    allEvents.map((event) => moment(event.occasions[0]?.endsAt ?? 0).endOf('day'))
   );
   const scrollToTime = (scrollToTimeParam
     ? moment(scrollToTimeParam)
-    : //modalInstance
-    //  ? moment(modalInstance?.instances[0]?.startsAt)
+    : //modalOccasion
+    //  ? moment(modalOccasion?.occasions[0]?.startsAt)
     //  : 
     moment()
   ).subtract(30, 'minutes');
@@ -198,10 +198,10 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({
   // const [calendarImplementation]: 'fullcalendar' | 'big-calendar' = 'big-calendar';
   const fullCalendarEvents = allEvents.map((event) => {
     const starred = starredPostIds.includes(
-      federateId(event.instances[0]?.post?.id ?? 'invalid', event.serverHost)
+      federateId(event.occasions[0]?.post?.id ?? 'invalid', event.serverHost)
     );
     return {
-      id: federateId(event.instances[0]?.id ?? '', event.serverHost),
+      id: federateId(event.occasions[0]?.id ?? '', event.serverHost),
       title: starred ? `⭐️ ${event.post?.title}` : event.post?.title,
       color: serverColors[event.serverHost]?.color,
       style: {
@@ -210,8 +210,8 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({
         // borderRadius: 10,
         // borderColor: 'blue',
       },
-      start: moment(event.instances[0]?.startsAt ?? 0).toDate(),
-      end: moment(event.instances[0]?.endsAt ?? 0).toDate()
+      start: moment(event.occasions[0]?.startsAt ?? 0).toDate(),
+      end: moment(event.occasions[0]?.endsAt ?? 0).toDate()
     }
   });
   const renderingKey = `calendar-rendering-${window.innerWidth
@@ -224,41 +224,41 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({
   const isEmpty = allEvents.length === 0;
 
   const sortedEvents = useMemo(
-    () => allEvents.sort((a, b) => moment(a.instances[0]?.startsAt ?? 0).unix() - moment(b.instances[0]?.startsAt ?? 0).unix()),
-    [allEvents.map(e => federateId(e.instances[0]?.id ?? '', e.serverHost))]
+    () => allEvents.sort((a, b) => moment(a.occasions[0]?.startsAt ?? 0).unix() - moment(b.occasions[0]?.startsAt ?? 0).unix()),
+    [allEvents.map(e => federateId(e.occasions[0]?.id ?? '', e.serverHost))]
   );
   const findNeighborEvent = useCallback((offset: number) => {
-    if (modalInstance) {
-      const index = sortedEvents.findIndex((e) => e.instances[0]?.id === modalInstance.instances[0]?.id && e.serverHost === modalInstance.serverHost);
+    if (modalOccasion) {
+      const index = sortedEvents.findIndex((e) => e.occasions[0]?.id === modalOccasion.occasions[0]?.id && e.serverHost === modalOccasion.serverHost);
       return sortedEvents[index + offset];
     }
   }, [
-    modalInstance ? federateId(modalInstance.instances[0]?.id ?? '', modalInstance.serverHost) : undefined,
-    sortedEvents.map(e => federateId(e.instances[0]?.id ?? '', e.serverHost))
+    modalOccasion ? federateId(modalOccasion.occasions[0]?.id ?? '', modalOccasion.serverHost) : undefined,
+    sortedEvents.map(e => federateId(e.occasions[0]?.id ?? '', e.serverHost))
   ]);
   const nextEvent = useMemo(() => findNeighborEvent(1), [findNeighborEvent]);
   const prevEvent = useMemo(() => findNeighborEvent(-1), [findNeighborEvent]);
 
 
-  // <div key={modalInstance?.id} onKeyDown={modalInstance
+  // <div key={modalOccasion?.id} onKeyDown={modalOccasion
   //   ? (e) => {
   //     if (e.key === 'ArrowRight' && nextEvent) {
-  //       setModalInstanceId(federateId(nextEvent.instances[0]!.id, nextEvent.serverHost));
+  //       setModalOccasionId(federateId(nextEvent.occasions[0]!.id, nextEvent.serverHost));
   //     } else if (e.key === 'ArrowLeft' && prevEvent) {
-  //       setModalInstanceId(federateId(prevEvent.instances[0]!.id, prevEvent.serverHost));
+  //       setModalOccasionId(federateId(prevEvent.occasions[0]!.id, prevEvent.serverHost));
   //     }
   //   }
   //   : undefined} />
-  // const nextEventId = nextEvent ? federateId(nextEvent.instances[0]!.id, nextEvent.serverHost) : undefined;
-  // const prevEventId = prevEvent ? federateId(prevEvent.instances[0]!.id, prevEvent.serverHost) : undefined;
+  // const nextEventId = nextEvent ? federateId(nextEvent.occasions[0]!.id, nextEvent.serverHost) : undefined;
+  // const prevEventId = prevEvent ? federateId(prevEvent.occasions[0]!.id, prevEvent.serverHost) : undefined;
   // useEffect(() => {
   //   const handleKeyDown = (e: KeyboardEvent) => {
   //     if (e.key === 'ArrowRight' && nextEvent) {
   //       console.log('right');
-  //       setModalInstanceId(nextEventId);
+  //       setModalOccasionId(nextEventId);
   //     } else if (e.key === 'ArrowLeft' && prevEvent) {
   //       console.log('left');
-  //       setModalInstanceId(prevEventId);
+  //       setModalOccasionId(prevEventId);
   //     }
 
   //   };
@@ -269,7 +269,7 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({
   //   };
 
   // }, [nextEventId, prevEventId]);
-  const modalInstanceDebounced = useDebounceValue(modalInstance, 300);
+  const modalOccasionDebounced = useDebounceValue(modalOccasion, 300);
   return (<>
 
     <YStack w='100%' px='$1'>
@@ -365,7 +365,7 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({
                 height='100%'
                 events={fullCalendarEvents}
                 eventClick={disableSelection ? undefined : (modelEvent) => {
-                  setModalInstanceId(modelEvent.event.id);
+                  setModalOccasionId(modelEvent.event.id);
                 }}
               />
 
@@ -387,21 +387,21 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({
                   scrollToTime={scrollToTime.toDate()}
                   defaultDate={scrollToTime.toDate()}
                   events={allEvents.map((event) => {
-                    const federatedId = federateId(event.instances[0]?.id ?? '', event.serverHost);
+                    const federatedId = federateId(event.occasions[0]?.id ?? '', event.serverHost);
                     return {
                       serverHost: event.serverHost,
                       resource: { event, federatedId },
                       title: event.post?.title,
                       selected: true,
-                      start: moment(event.instances[0]?.startsAt ?? 0).toDate(),
-                      end: moment(event.instances[0]?.endsAt ?? 0).toDate()
+                      start: moment(event.occasions[0]?.startsAt ?? 0).toDate(),
+                      end: moment(event.occasions[0]?.endsAt ?? 0).toDate()
                     }
                   })}
                   eventPropGetter={(event) => {
                     // console.log('BigCalendar EventPropGetter', event);
                     const serverEventId = parseFederatedId(event.resource.federatedId).id;
                     const starred = starredPostIds.includes(
-                      federateId(event.resource.event.instances[0]?.post?.id ?? 'invalid', event.serverHost)
+                      federateId(event.resource.event.occasions[0]?.post?.id ?? 'invalid', event.serverHost)
                     );
                     // event.resource.
                     return {
@@ -417,7 +417,7 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({
                     }
                   }}
                   onSelectEvent={disableSelection ? undefined : (modelEvent) => {
-                    setModalInstanceId(modelEvent.resource.federatedId);
+                    setModalOccasionId(modelEvent.resource.federatedId);
                   }}
                   dayPropGetter={(date) => {
                     return {
@@ -441,7 +441,7 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({
         </Text>
       </YStack>
     </YStack>
-    <Dialog modal open={!!modalInstance} onOpenChange={(o) => o ? null : setModalInstanceId(undefined)}>
+    <Dialog modal open={!!modalOccasion} onOpenChange={(o) => o ? null : setModalOccasionId(undefined)}>
 
       <Dialog.Portal zi={100000}>
         <Dialog.Overlay
@@ -479,7 +479,7 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({
                 icon={ChevronLeft}
                 disabled={!prevEvent}
                 o={prevEvent ? 1 : 0.5}
-                onPress={() => setModalInstanceId(federateId(prevEvent!.instances[0]!.id, prevEvent!.serverHost))}
+                onPress={() => setModalOccasionId(federateId(prevEvent!.occasions[0]!.id, prevEvent!.serverHost))}
               />
               <Button
                 size='$2'
@@ -487,7 +487,7 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({
                 icon={ChevronRight}
                 disabled={!nextEvent}
                 o={nextEvent ? 1 : 0.5}
-                onPress={() => setModalInstanceId(federateId(nextEvent!.instances[0]!.id, nextEvent!.serverHost))}
+                onPress={() => setModalOccasionId(federateId(nextEvent!.occasions[0]!.id, nextEvent!.serverHost))}
               />
               <Dialog.Close asChild>
                 <Button
@@ -501,9 +501,9 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({
             </XStack>
             {/* <YStack w='100%' my='auto' f={1}> */}
             <ScrollView f={1}>
-              {modalInstanceDebounced
+              {modalOccasionDebounced
                 ? <XStack mt={-9}>
-                  <EventCard key={modalInstanceDebounced?.id} event={modalInstanceDebounced!} isModalPreview />
+                  <EventCard key={modalOccasionDebounced?.id} event={modalOccasionDebounced!} isModalPreview />
                 </XStack>
                 : <XStack h={window.innerHeight / 2} ai='center' jc='center' w='100%'>
                   <Spinner

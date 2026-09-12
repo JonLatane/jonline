@@ -84,7 +84,7 @@ pub struct Post {
     /// The SyncSource's own stable identifier for this Post (an iCal `UID`, an RSS `guid`, an
     /// Atom `id`), scoped to `sync_source_id`.
     pub sync_source_uid: Option<String>,
-    /// For a recurring Event's per-occurrence instance Post only: that occurrence's stable
+    /// For a recurring Event's per-occurrence Occasion Post only: that occurrence's stable
     /// identity within its series (see `logic::sync_sources::event_sync`'s module doc comment).
     /// `None` for every other kind of synced Post (a plain synced Post, or an Event's own
     /// series-level Post).

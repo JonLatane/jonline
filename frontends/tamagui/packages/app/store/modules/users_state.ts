@@ -209,14 +209,14 @@ export const usersSlice = createSlice({
       // debugger;
       // console.log('state.idOccasions[userId]', state.idOccasions[userId]);
 
-      const oldInstanceIds = state.idOccasions[userId]?.map(id => id);
-      if (!oldInstanceIds) return;
+      const oldOccasionIds = state.idOccasions[userId]?.map(id => id);
+      if (!oldOccasionIds) return;
 
-      const instanceIds = action.payload.instances.map(instance => federateId(instance.id, action));
-      const newInstanceIds = [...instanceIds, ...oldInstanceIds];
-      // console.log('UserState createEvent.fulfilled', userId, instanceIds, oldInstanceIds, newInstanceIds);
+      const occasionIds = action.payload.occasions.map(occasion => federateId(occasion.id, action));
+      const newOccasionIds = [...occasionIds, ...oldOccasionIds];
+      // console.log('UserState createEvent.fulfilled', userId, occasionIds, oldOccasionIds, newOccasionIds);
       // debugger;
-      state.idOccasions[userId] = newInstanceIds;
+      state.idOccasions[userId] = newOccasionIds;
     });
     builder.addCase(loadUserReplies.fulfilled, (state, action) => {
       const replies = federatedEntities(action.payload.posts, action);
@@ -230,7 +230,7 @@ export const usersSlice = createSlice({
     builder.addCase(loadUserEvents.fulfilled, (state, action) => {
       const events = federatedEntities(action.payload.events, action);
       const userId = federateUserId(action);
-      const newOccasionIds = new Set(events.map(e => federateId(e.instances[0]!.id, action)));
+      const newOccasionIds = new Set(events.map(e => federateId(e.occasions[0]!.id, action)));
       const updatedUserOccasionIds = state.idOccasions[userId]
         ?.filter((p) => !newOccasionIds.has(p))
         || [];

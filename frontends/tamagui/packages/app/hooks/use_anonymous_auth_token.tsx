@@ -8,19 +8,19 @@ const { useParam: useTokenParam } = createParam<{ anonymousAuthToken: string }>(
 //
 // The parameter should be of either the form: 
 // * <authToken1> 
-//    * Here, the instanceId must be in other path components. This is used for saveable links.
-// * <instanceId1>-<authToken1>--<instanceId2>-<authToken2>--<instanceId3>-<authToken3>
-//    * Here, multiple instances' auth tokens can be stored in a single query parameter.
+//    * Here, the occasionId must be in other path components. This is used for saveable links.
+// * <occasionId1>-<authToken1>--<occasionId2>-<authToken2>--<occasionId3>-<authToken3>
+//    * Here, multiple occasions' auth tokens can be stored in a single query parameter.
 //      Multiple EventRsvpManagers on the same page can share the same query parameter
 //      and manage multiple simultaenous auth tokens. (Note that each EventRsvpManager
 //      on the page is still assumed to have a distinct Occasion.)
 export function useAnonymousAuthToken(occasionId: string) {
   const [_queryAnonAuthToken, _setQueryAnonAuthToken] = useTokenParam('anonymousAuthToken');
   const tokenPairSeparator = '--';
-  const instanceTokenSeparator = '-';
-  // [instanceId, authToken][]
+  const occasionTokenSeparator = '-';
+  // [occasionId, authToken][]
   const anonymousAuthTokens = (_queryAnonAuthToken ?? '').split(tokenPairSeparator)
-    .map(t => t.trim().split(instanceTokenSeparator))
+    .map(t => t.trim().split(occasionTokenSeparator))
     .filter(t => t[0] && t[0].length > 0) as [string, string][];
   function setAnonymousAuthToken(token: string) {
     if (!token) {
@@ -30,8 +30,8 @@ export function useAnonymousAuthToken(occasionId: string) {
 
     const updatedTokens = [
       ...anonymousAuthTokens.filter(t => t[0] != occasionId)
-        .map(t => t.join(instanceTokenSeparator)),
-      `${occasionId}${instanceTokenSeparator}${token}`
+        .map(t => t.join(occasionTokenSeparator)),
+      `${occasionId}${occasionTokenSeparator}${token}`
     ];
     _setQueryAnonAuthToken(updatedTokens.join(tokenPairSeparator));
   }
@@ -44,8 +44,8 @@ export function useAnonymousAuthToken(occasionId: string) {
     // console.log("firstAuthToken", firstAuthToken);
     if (firstAuthToken && firstAuthToken[0].length > 0 && !firstAuthToken[1]) {
       const updatedTokens = [
-        `${occasionId}${instanceTokenSeparator}${firstAuthToken[0]}`,
-        ...anonymousAuthTokens.slice(1).map(t => t.join(instanceTokenSeparator)),
+        `${occasionId}${occasionTokenSeparator}${firstAuthToken[0]}`,
+        ...anonymousAuthTokens.slice(1).map(t => t.join(occasionTokenSeparator)),
       ];
       _setQueryAnonAuthToken(updatedTokens.join(tokenPairSeparator));
     }

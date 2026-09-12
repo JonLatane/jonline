@@ -582,7 +582,7 @@ linking any unique [`Group`](https://jonline.io/docs/protocol#rellm-Group) to an
 
 [`Event`](https://jonline.io/docs/protocol#rellm-Event)s are a thin layer atop [`Post`](https://jonline.io/docs/protocol#rellm-Post)s. Any Event has a single Post, as well as at least one Occasion. An Occasion has a start time, end time, location, and RSVP/attendance data. Group Events work through the [`GroupPost`](https://jonline.io/docs/protocol#rellm-GroupPost) mechanism.
 
-An [`Event`](https://jonline.io/docs/protocol#rellm-Event)'s ID *is* its own [`Post`](https://jonline.io/docs/protocol#rellm-Post)'s ID, and likewise an [`Occasion`](https://jonline.io/docs/protocol#rellm-Occasion)'s ID is its own Post's ID - neither carries a separate surrogate ID. [`GetEventsRequest.post_id`](https://jonline.io/docs/protocol#rellm-GetEventsRequest) looks a single Event up either way (by its own Post ID, or by any of its Occasions' Post IDs), always returning the whole Event with all its instances.
+An [`Event`](https://jonline.io/docs/protocol#rellm-Event)'s ID *is* its own [`Post`](https://jonline.io/docs/protocol#rellm-Post)'s ID, and likewise an [`Occasion`](https://jonline.io/docs/protocol#rellm-Occasion)'s ID is its own Post's ID - neither carries a separate surrogate ID. [`GetEventsRequest.post_id`](https://jonline.io/docs/protocol#rellm-GetEventsRequest) looks a single Event up either way (by its own Post ID, or by any of its Occasions' Post IDs), always returning the whole Event with all its Occasions.
 
 ### Messages
 
