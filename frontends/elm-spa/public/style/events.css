@@ -734,6 +734,21 @@
   margin-left: .2em;
 }
 
+/* Week/month day headings ("Tue 10/13") on a phone: seven narrow columns, so the date has to be small enough to
+   fit its own cell (it wraps as "Tue" over "10/13"). Custom CSS templates keep this (see CustomCssTemplates). */
+@media (max-width: 639px) {
+  .events-calendar .fc .fc-col-header-cell-cushion {
+    font-size: 0.7rem;
+    padding: 4px 0;
+  }
+
+  /* The hour labels down the left ("6am", "all-day") shrink with them, so the axis column stays slim. */
+  .events-calendar .fc .fc-timegrid-slot-label-cushion,
+  .events-calendar .fc .fc-timegrid-axis-cushion {
+    font-size: 0.7rem;
+  }
+}
+
 .events-calendar .fc .fc-toolbar-title {
   font-size: 1.0rem;
   font-weight: 600;

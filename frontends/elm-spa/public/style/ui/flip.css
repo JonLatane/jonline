@@ -52,11 +52,16 @@
 .flip-animated-item>* {
   overflow: hidden;
   padding-bottom: 0.6rem;
-  /* Headroom for a card that lifts on hover (`transform: translateY(-1px)` in several Custom CSS
-     templates) or casts an upward shadow: the clip above would otherwise shear off its top
-     border/shadow, since the card starts flush with this box's top edge. The equal negative margin
-     cancels the padding's effect on layout, so nothing shifts. (The previous sibling's
-     `padding-bottom` is larger, so the overlap never touches a visible card.) */
+}
+
+/* Headroom for a card that lifts on hover (`transform: translateY(-1px)` in several Custom CSS templates) or
+   casts an upward shadow: the clip above would otherwise shear off its top border/shadow, since the card starts
+   flush with the clip box's top edge. The equal negative margin cancels the padding's effect on layout, so
+   nothing shifts. (The previous sibling's `padding-bottom` is larger, so the overlap never touches a visible
+   card.) Only for the classless clip `div`s of vertical lists -- in a horizontal strip the flip item's child can be the
+   chip itself (with its own padding), where the negative margin just shifted it up and out of the strip's
+   `overflow-y: hidden` (the Event page's occasion chips). */
+.flip-animated-column>.flip-animated-item:not(.horizontal)>div:not([class]) {
   padding-top: 6px;
   margin-top: -6px;
 }

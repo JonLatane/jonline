@@ -210,6 +210,84 @@ select, select.custom-css-template-select {
 """
 
 
+{-| Appended to every template, after its own CSS: fixes for places where a template's global rules (its
+fonts, letter-spacing, and `main button` look) leak into parts of the app they weren't designed for.
+
+  - **Calendar headings and hour labels.** FullCalendar's week and month headings ("Tue 10/13") inherit the page font, size
+    and letter-spacing; a wide display face, an enlarged accessibility size or tracked-out capitals pushes the
+    date past its cell on a phone (seven day columns in ~48px each) and overlaps the next column. On narrow
+    screens they become a small system sans that wraps as "Tue" over "10/13"; wider screens keep the template's
+    own font but at a fixed modest size, with no tracking or case change.
+  - **Text-style buttons.** A media card's title, the pinned-posts toggle, the "Show more" and RSVP toggles and
+    similar are `button`s that look like plain text (zero padding, no border). A template's blanket `main button` look gave them a
+    background and border with no padding, so the text touched its own edges -- or, with white button text,
+    vanished. They stay plain text in every template (a template that wants them styled does so with a more
+    specific selector, as Fiesta does for song titles).
+-}
+sharedRefinements : String
+sharedRefinements =
+    """
+/* Calendar day headings: small enough to fit a phone's seven columns. */
+.events-calendar .fc .fc-col-header-cell-cushion {
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  line-height: 1.2;
+  padding: 4px 2px;
+}
+/* The hour labels down the left ("6am", "all-day") likewise. */
+.events-calendar .fc .fc-timegrid-slot-label-cushion,
+.events-calendar .fc .fc-timegrid-axis-cushion {
+  letter-spacing: 0;
+  text-transform: none;
+}
+@media (max-width: 639px) {
+  .events-calendar .fc .fc-col-header-cell-cushion,
+  .events-calendar .fc .fc-timegrid-slot-label-cushion,
+  .events-calendar .fc .fc-timegrid-axis-cushion {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 0.7rem;
+    font-weight: 600;
+  }
+  .events-calendar .fc .fc-col-header-cell-cushion { padding: 4px 0; }
+}
+
+/* Text-style buttons stay plain text: no background, border or shadow, and their own text color back. */
+main button.media-card-title,
+main button.pinned-posts-header,
+main button.post-detail-content-toggle,
+main button.rsvp-summary,
+main button.rsvp-details-toggle,
+main button.rsvp-card-edit,
+main button.message-row-mark-unread,
+main button.messages-group-expand-toggle,
+main button.event-occasion-add-more-back,
+main button.profile-federated-remove,
+main button.permission-remove,
+main button.user-picker-chip-remove {
+  background: none;
+  border: 0;
+  box-shadow: none;
+  text-shadow: none;
+  text-transform: none;
+  letter-spacing: normal;
+}
+main button.media-card-title { color: var(--fg); }
+main button.pinned-posts-header,
+main button.rsvp-summary,
+main button.rsvp-details-toggle,
+main button.rsvp-card-edit { color: inherit; }
+main button.post-detail-content-toggle,
+main button.message-row-mark-unread,
+main button.messages-group-expand-toggle,
+main button.event-occasion-add-more-back,
+main button.profile-federated-remove,
+main button.permission-remove,
+main button.user-picker-chip-remove { color: var(--muted); }
+"""
+
+
 {-| A style's three templates -- no images, one, two -- named `Style`, `Style (1 image)`, `Style (2 images)`
 (`imageNoun` is what the dropdown calls them).
 -}
@@ -221,7 +299,7 @@ style group imageNoun forced css =
             { name = name
             , group = group
             , imageCount = imageCount
-            , css = css imageCount ++ "\n" ++ selectChevron
+            , css = css imageCount ++ "\n" ++ selectChevron ++ "\n" ++ sharedRefinements
             , forceLightTheme = forced == ForcesLight
             , forceDarkTheme = forced == ForcesDark
             }
@@ -1736,6 +1814,25 @@ main button:not(.remove-btn) {
   color: #3a1a0a;
   font-weight: 800;
   letter-spacing: 0.04em;
+}
+
+/* Song and media titles: the same chili-orange pill, padded so the text clears its edge. In the audio list a
+   negative left margin lets the pill extend past the text instead of pushing the text in, so titles still line up
+   with the rows beneath them (nothing extends on the right, so the page can't gain a horizontal scrollbar). */
+main .media-card .media-card-meta button.media-card-title {
+  border: 2px solid var(--fiesta-dark-red);
+  border-radius: 999px;
+  background: linear-gradient(var(--fiesta-yellow), var(--fiesta-orange));
+  color: #3a1a0a;
+  letter-spacing: 0.02em;
+  padding: 0.1rem 0.75rem;
+  margin: 0 0 0.15rem;
+  max-width: 100%;
+}
+/* Beside a thumbnail (the audio list) the pill can extend left into the gap, so the text stays aligned. */
+main .audio-row .media-card-meta button.media-card-title {
+  margin-left: -0.75rem;
+  max-width: calc(100% + 0.75rem);
 }
 """
         , eventSurfaces
@@ -3696,7 +3793,7 @@ h1, h2, h3, .section-title, .post-card-title {
 }
 
 /* Buttons are raised, and press in. */
-main button:not(.remove-btn) {
+main button:not(.remove-btn, .media-card-title, .pinned-posts-header, .post-detail-content-toggle, .rsvp-summary, .rsvp-details-toggle, .rsvp-card-edit, .message-row-mark-unread, .messages-group-expand-toggle, .event-occasion-add-more-back, .profile-federated-remove, .permission-remove, .user-picker-chip-remove) {
   background: #c0c0c0 !important;
   color: #000;
   border: 2px solid;
@@ -3704,7 +3801,7 @@ main button:not(.remove-btn) {
   border-radius: 0;
   box-shadow: 1px 1px 0 #000;
 }
-main button:not(.remove-btn):active {
+main button:not(.remove-btn, .media-card-title, .pinned-posts-header, .post-detail-content-toggle, .rsvp-summary, .rsvp-details-toggle, .rsvp-card-edit, .message-row-mark-unread, .messages-group-expand-toggle, .event-occasion-add-more-back, .profile-federated-remove, .permission-remove, .user-picker-chip-remove):active {
   border-color: #404040 #fff #fff #404040;
 }
 """
