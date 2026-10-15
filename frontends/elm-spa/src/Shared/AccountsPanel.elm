@@ -149,7 +149,8 @@ type alias Model =
     -- independently -- only one of the three tabs can be open at a time
     -- anyway, so one shared `Maybe` replaces all three. Irrelevant (the form
     -- always shows, defaulting to `RellmServerFormType` -- see
-    -- `activeAddAccountServerFormType`) when `accounts` is empty.
+    -- `activeAddAccountServerFormType`) when `accounts` is empty. Reset to `Nothing` by a
+    -- successful Rellm/Mastodon/Bluesky login or reauth, so the accounts list re-appears.
     , addAccountServerFormType : Maybe AccountOrServerFormType
 
     -- The (server, username) of the account a "Reauthentication Required"/"Password Required"
@@ -2097,6 +2098,10 @@ sendUpdate req msg model =
                                     { form | password = "", showPasswordAsText = False, status = Idle }
                                 , newAccountType = Nothing
                                 , acceptedCreateAccount = Nothing
+
+                                -- Collapse the form (and any reauth filter) so the accounts list re-appears.
+                                , addAccountServerFormType = Nothing
+                                , reauthenticatingAccount = Nothing
                             }
                     in
                     ( newModel, persist newModel )
@@ -3979,6 +3984,8 @@ sendUpdate req msg model =
                 newModel =
                     { model
                         | mastodonConnectPopupOpen = Nothing
+                        , addAccountServerFormType = Nothing
+                        , reauthenticatingAccount = Nothing
                         , mastodonAccounts =
                             account
                                 :: List.filter
@@ -4083,7 +4090,12 @@ sendUpdate req msg model =
                     BlueskyAccounts.disableOtherBlueskyAccounts account.handle
                         (account :: List.filter (not << sameHandle) model.blueskyAccounts)
             in
-            ( { model | blueskyConnectForm = emptyBlueskyConnectForm, blueskyAccounts = newAccounts }
+            ( { model
+                | blueskyConnectForm = emptyBlueskyConnectForm
+                , blueskyAccounts = newAccounts
+                , addAccountServerFormType = Nothing
+                , reauthenticatingAccount = Nothing
+              }
             , Cmd.batch
                 [ Ports.persistBlueskyAccounts (BlueskyAccounts.encodeList newAccounts)
                 , Task.attempt (GotBlueskyProfileResult account.handle) (BlueskyAccounts.fetchProfileTask account.handle account.accessToken)
