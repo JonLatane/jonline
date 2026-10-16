@@ -184,6 +184,7 @@
 
 .create-new-panel-title-input,
 .create-new-panel-link-input,
+.create-new-panel-quoted-post-input,
 .create-new-panel-date-input,
 .create-new-panel-timezone-select {
   background: var(--bg);
@@ -232,3 +233,12 @@
    added alongside it in Shared/CreateNewPanel.elm's `view`, keyed by the
    posting-as account's own server, same convention as
    `.markdown-panel-save`/`.my-media-panel-save`. */
+
+/* `Shared.CreateNewPanel.quotedPostField`'s read-only summary of the post an `OpenQuoting` handed it. */
+.create-new-panel-quoted-post-preview {
+  margin-top: 0.3rem;
+  padding: 0.3rem 0.5rem;
+  border-left: 3px solid var(--border);
+  color: var(--muted);
+  font-size: 0.85rem;
+}

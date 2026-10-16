@@ -545,6 +545,27 @@ editContentButton maybeAccount onEditClicked post =
             text ""
 
 
+{-| The "quote post" icon button in `postDetail`'s meta row -- opens `Shared.CreateNewPanel` with this
+post as its "quoted post" (see `CreateNewPanel.OpenQuoting`). `Nothing` (no button at all) when the
+caller has no account on this post's server that could create posts, or isn't a context where
+quoting makes sense.
+-}
+quoteButton : Maybe msg -> Html msg
+quoteButton onQuoteClicked =
+    case onQuoteClicked of
+        Just msg ->
+            button
+                [ class "post-quote-button"
+                , Html.Events.onClick msg
+                , title "Quote this post"
+                , attribute "aria-label" "Quote this post"
+                ]
+                [ text "❝" ]
+
+        Nothing ->
+            text ""
+
+
 {-| `editButton`'s counterpart for `postDetail`'s media block -- shown below
 `MultiMediaRenderer.view` (see `postDetail`) to `post`'s own author (same
 `isAuthor` gate as `editButton`) _or_ an `ADMIN` account, mirroring
@@ -1058,6 +1079,8 @@ without the hover fill-in, since this one isn't a link). `onEditClicked`
 drives `editButton`, shown in the meta line's `post-meta-right` group only to
 the post's own author.
 
+`onQuoteClicked` drives `quoteButton` (`Nothing` for no button), right after the star button.
+
 Only a plain `POST` gets a title at all -- a `REPLY`/`EVENT`/etc. has no real
 title of its own (`postTitleText`'s fallback to a truncated `content` exists
 for contexts, like `postCard`'s feed entries, where _something_ short is
@@ -1119,8 +1142,8 @@ a Post's own dedicated page) always renders the content in full, with no toggle 
 caller's own measurement, not decided in here.
 
 -}
-postDetail : SharedTime.Model -> String -> String -> String -> Maybe RellmServer -> Maybe RellmAccount -> (String -> msg) -> MediaRenderer.Model -> (String -> msg) -> Bool -> msg -> Maybe msg -> (String -> msg) -> Bool -> Maybe msg -> msg -> Html msg -> Html msg -> Maybe (List SyncDestination) -> (String -> Bool) -> (String -> Maybe String) -> (String -> msg) -> (String -> String -> msg) -> Maybe (ContentCollapse msg) -> Post -> Html msg
-postDetail time basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked mediaPlayState onMediaPlayClicked readOnly onMediaEditClicked onGenerateMediaClicked onMediaLayoutChanged starred onStarClicked onEditClicked visibilityView moderationView availableSyncDestinations isPushing pushError onPush onDelete contentCollapse post =
+postDetail : SharedTime.Model -> String -> String -> String -> Maybe RellmServer -> Maybe RellmAccount -> (String -> msg) -> MediaRenderer.Model -> (String -> msg) -> Bool -> msg -> Maybe msg -> (String -> msg) -> Bool -> Maybe msg -> msg -> Maybe msg -> Html msg -> Html msg -> Maybe (List SyncDestination) -> (String -> Bool) -> (String -> Maybe String) -> (String -> msg) -> (String -> String -> msg) -> Maybe (ContentCollapse msg) -> Post -> Html msg
+postDetail time basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked mediaPlayState onMediaPlayClicked readOnly onMediaEditClicked onGenerateMediaClicked onMediaLayoutChanged starred onStarClicked onEditClicked onQuoteClicked visibilityView moderationView availableSyncDestinations isPushing pushError onPush onDelete contentCollapse post =
     div [ classes [ "post-detail", hostnameToCSSClass postServerHost, "border-color-primary-anchor-50" ] ]
         [ div [ class "post-detail-title-row" ]
             [ if post.context == POST then
@@ -1190,12 +1213,19 @@ postDetail time basePath viewingServerHost postServerHost maybeServer maybeAccou
             , span [ class "post-meta-right" ]
                 [ timestampsText time post
                 , starButton postServerHost starred onStarClicked post
+                , quoteButton onQuoteClicked
                 , text (commentCountText post)
                 ]
             ]
         , case post.content of
             Just content ->
                 postDetailContentView contentCollapse post.id content
+
+            Nothing ->
+                text ""
+        , case post.quotedPost of
+            Just quoted ->
+                quotedPostCard time basePath viewingServerHost postServerHost mediaPlayState onMediaPlayClicked Nothing (unwrapPost quoted)
 
             Nothing ->
                 text ""

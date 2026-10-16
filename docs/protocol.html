@@ -5424,7 +5424,13 @@ directory</a> is (<code>{name}</code> denotes a
           <td>quoted_post</td>
           <td><a href="#rellm-Post">Post</a></td>
           <td>optional</td>
-          <td>A post this post quotes (embeds), for posts translated from a federated network such as Bluesky or Mastodon. Only ever set client-side by the Elm frontend&#39;s federation translators -- Rellm servers never populate it. May itself quote another post, up to however many levels the client chose to resolve.</td>
+          <td>The post this post quotes (embeds). Output only, never read from requests (see <code>quoted_post_id</code>). Rellm servers populate it one level deep (the quoted post's own <code>quoted_post</code> is not filled in) when the viewer can see the quoted post; the Elm frontend's Bluesky/Mastodon translators also set it, resolving as many levels as they choose.</td>
+        </tr>
+        <tr>
+          <td>quoted_post_id</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td>The ID of a post this post quotes. Set it on <code>CreatePost</code>/<code>UpdatePost</code> to quote a post (any post visible to the author); the server validates it, and then returns it on every read of the quoting post, along with <code>quoted_post</code> populated (if the <em>viewer</em> can see the quoted post). Only valid for a post whose <code>context</code> is <code>POST</code> -- a reply, <code>EVENT</code>, or <code>OCCASION</code> with a <code>quoted_post_id</code> is an error. If the quoted post is later deleted, this is cleared.</td>
         </tr>
       </tbody>
     </table>

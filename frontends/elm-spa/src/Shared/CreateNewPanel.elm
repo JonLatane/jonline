@@ -1,4 +1,4 @@
-module Shared.CreateNewPanel exposing (CreatedItem(..), Mode, Model, Msg(..), allTimezoneNames, hasEligibleAccount, init, isOpen, update, view)
+module Shared.CreateNewPanel exposing (CreatedItem(..), Mode, Model, Msg(..), QuotedPostPreview, allTimezoneNames, hasEligibleAccount, init, isOpen, update, view)
 
 {-| A single, app-wide "New Post"/"New Event" composer -- title (the only
 field required in both modes), an optional link, optional media (picked via
@@ -90,6 +90,13 @@ type alias Model =
     , media : List MediaReference
     , content : String
 
+    -- `PostMode`-only. The id sent as `Post.quotedPostId` (blank = quote nothing); editable as plain
+    -- text, but normally populated by `OpenQuoting` (the quote button on a post's own page), which
+    -- also fills `quotedPostPreview` so the field can show what's being quoted. See `resolve` for
+    -- the same-server requirement.
+    , quotedPostId : String
+    , quotedPostPreview : Maybe QuotedPostPreview
+
     -- `EventMode`-only, both required -- see module doc.
     , startsAt : Maybe Time.Posix
     , endsAt : Maybe Time.Posix
@@ -113,8 +120,23 @@ type alias Model =
     }
 
 
+{-| What `OpenQuoting` was handed -- the post being quoted and the `frontendHost` of the server it
+lives on (a post id is only meaningful on its own server, see `resolve`).
+-}
+type alias QuotedPostPreview =
+    { host : String
+    , post : Proto.Rellm.Post
+    }
+
+
 type Msg
     = ToggleOpen
+      -- Opens the panel in `PostMode` with `post` (on server `host`) as the quoted post -- see
+      -- `Components.Posts.quoteButton`. Like `ToggleOpen` opening, `Shared.update` closes the other
+      -- panels that share this one's screen position.
+    | OpenQuoting String Proto.Rellm.Post
+    | QuotedPostIdChanged String
+    | QuotedPostCleared
     | CloseClicked
     | CancelClicked
     | ModeChanged Mode
@@ -176,6 +198,8 @@ init =
     , link = ""
     , media = []
     , content = ""
+    , quotedPostId = ""
+    , quotedPostPreview = Nothing
     , startsAt = Nothing
     , endsAt = Nothing
     , timezone = Nothing
@@ -245,6 +269,50 @@ update browserTimeZone now accountsPanelModel msg model =
                         model
             in
             ( { withDefaultTimes | open = opening }, Cmd.none, noForward )
+
+        OpenQuoting host post ->
+            let
+                -- An account on the quoted post's own server, if there is one -- a post id only means
+                -- anything there, see `resolve`. Falls back to whatever's already selected.
+                postingAs : Maybe String
+                postingAs =
+                    eligibleAccounts PostMode accountsPanelModel
+                        |> List.filter (\account -> account.server == host)
+                        |> List.head
+                        |> Maybe.map RellmAccounts.rellmAccountId
+                        |> (\onThatServer -> if onThatServer == Nothing then model.postingAs else onThatServer)
+            in
+            ( { model
+                | open = True
+                , mode = PostMode
+                , postingAs = postingAs
+                , quotedPostId = post.id
+                , quotedPostPreview = Just { host = host, post = post }
+              }
+            , Cmd.none
+            , noForward
+            )
+
+        QuotedPostIdChanged quotedPostId ->
+            ( { model
+                | quotedPostId = quotedPostId
+                , quotedPostPreview =
+                    model.quotedPostPreview
+                        |> Maybe.andThen
+                            (\preview ->
+                                if preview.post.id == String.trim quotedPostId then
+                                    Just preview
+
+                                else
+                                    Nothing
+                            )
+              }
+            , Cmd.none
+            , noForward
+            )
+
+        QuotedPostCleared ->
+            ( { model | quotedPostId = "", quotedPostPreview = Nothing }, Cmd.none, noForward )
 
         CloseClicked ->
             ( { model | open = False }, Cmd.none, noForward )
@@ -447,6 +515,19 @@ resolve accountsPanelModel model =
         case model.mode of
             PostMode ->
                 resolveAccount accountsPanelModel model
+                    |> Result.andThen
+                        (\resolved ->
+                            case model.quotedPostPreview of
+                                Just preview ->
+                                    if nonEmptyTrimmed model.quotedPostId /= Nothing && preview.host /= resolved.server.frontendHost then
+                                        Err ("The quoted post is on " ++ preview.host ++ " -- post as an account there, or remove the quote.")
+
+                                    else
+                                        Ok resolved
+
+                                Nothing ->
+                                    Ok resolved
+                        )
 
             EventMode ->
                 case ( model.startsAt, model.endsAt ) of
@@ -619,7 +700,7 @@ saveTask browserTimeZone accountsPanelModel resolved model =
             in
             case model.mode of
                 PostMode ->
-                    Grpc.new Rellm.createPost { post | context = POST }
+                    Grpc.new Rellm.createPost { post | context = POST, quotedPostId = nonEmptyTrimmed model.quotedPostId }
                         |> Grpc.setHost (RellmServers.rellmServerUrl server)
                         |> withAccessToken (Just token)
                         |> Grpc.toTask
@@ -709,6 +790,12 @@ view browserTimeZone accountsPanelModel model =
                   , mediaField accountsPanelModel model host
                   , contentField model
                   ]
+                , case model.mode of
+                    PostMode ->
+                        [ quotedPostField model ]
+
+                    EventMode ->
+                        []
                 ]
             )
         , case errorMessage of
@@ -863,6 +950,51 @@ dateField zone labelText posix toMsg =
             , onInput toMsg
             ]
             []
+        ]
+
+
+{-| The "quoted post" input -- the id `saveTask` sends as `Post.quotedPostId` (PostMode only; a reply or
+event can't quote anything, see `create_post.rs`) -- with a short preview of what it resolves to
+(`model.quotedPostPreview`, when the panel was opened via `OpenQuoting`) and a Remove button.
+-}
+quotedPostField : Model -> Html Msg
+quotedPostField model =
+    div [ class "create-new-panel-field" ]
+        [ div [ class "create-new-panel-field-header" ]
+            [ label [ class "create-new-panel-label" ] [ text "Quoted post (optional)" ]
+            , if String.isEmpty model.quotedPostId then
+                text ""
+
+              else
+                button [ class "create-new-panel-edit-button", onClick QuotedPostCleared ] [ text "Remove" ]
+            ]
+        , input
+            [ type_ "text"
+            , class "create-new-panel-quoted-post-input"
+            , value model.quotedPostId
+            , onInput QuotedPostIdChanged
+            , placeholder "Post ID"
+            ]
+            []
+        , case model.quotedPostPreview of
+            Just preview ->
+                div [ class "create-new-panel-quoted-post-preview" ]
+                    [ div [ class "create-new-panel-quoted-post-title" ]
+                        [ text
+                            (Posts.postTitleText preview.post
+                                ++ (case preview.post.author |> Maybe.andThen .username of
+                                        Just username ->
+                                            " · " ++ username
+
+                                        Nothing ->
+                                            ""
+                                   )
+                            )
+                        ]
+                    ]
+
+            Nothing ->
+                text ""
         ]
 
 
