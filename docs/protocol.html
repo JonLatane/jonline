@@ -5420,6 +5420,12 @@ directory</a> is (<code>{name}</code> denotes a
           <td>optional</td>
           <td>If the Post was created/is kept in sync from a <a href="#rellm-SyncSource"><code>SyncSource</code></a> (an ICS Event/Occasion, or an RSS/Atom feed item), this is the source it was synced from. Only its media should be considered editable for such a Post.</td>
         </tr>
+        <tr>
+          <td>quoted_post</td>
+          <td><a href="#rellm-Post">Post</a></td>
+          <td>optional</td>
+          <td>A post this post quotes (embeds), for posts translated from a federated network such as Bluesky or Mastodon. Only ever set client-side by the Elm frontend&#39;s federation translators -- Rellm servers never populate it. May itself quote another post, up to however many levels the client chose to resolve.</td>
+        </tr>
       </tbody>
     </table>
     <p><a name="rellm-SyncPostRequest"></a></p>

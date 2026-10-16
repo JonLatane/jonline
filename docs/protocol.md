@@ -2642,6 +2642,7 @@ and Occasions.
 | unauthenticated_star_count | [int64](#int64) |  | The number of unauthenticated stars on the post. |
 | sync_destinations | [SyncDestinationStatus](#rellm-SyncDestinationStatus) | repeated | SyncDestinations this post has been synced (cross-posted) to, and their status. |
 | sync_source | [SyncSource](#rellm-SyncSource) | optional | If the Post was created/is kept in sync from a [`SyncSource`](#rellm-SyncSource) (an ICS Event/Occasion, or an RSS/Atom feed item), this is the source it was synced from. Only its media should be considered editable for such a Post. |
+| quoted_post | [Post](#rellm-Post) | optional | A post this post quotes (embeds), for posts translated from a federated network such as Bluesky or Mastodon. Only ever set client-side by the Elm frontend&#39;s federation translators -- Rellm servers never populate it. May itself quote another post, up to however many levels the client chose to resolve. |
 
 
 

@@ -4785,6 +4785,7 @@ fieldNumbersPost :
     , unauthenticatedStarCount : Int
     , syncDestinations : Int
     , syncSource : Int
+    , quotedPost : Int
     }
 fieldNumbersPost =
     Proto.Rellm.Internals_.fieldNumbersProto__Rellm__Post

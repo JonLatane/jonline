@@ -383,7 +383,16 @@ export interface Post {
    * Event/Occasion, or an RSS/Atom feed item), this is the source it was synced from.
    * Only its media should be considered editable for such a Post.
    */
-  syncSource?: SyncSource | undefined;
+  syncSource?:
+    | SyncSource
+    | undefined;
+  /**
+   * A post this post quotes (embeds), for posts translated from a federated network such as Bluesky
+   * or Mastodon. Only ever set client-side by the Elm frontend's federation translators -- Rellm
+   * servers never populate it. May itself quote another post, up to however many levels the client
+   * chose to resolve.
+   */
+  quotedPost?: Post | undefined;
 }
 
 /** Syncs (cross-posts) a single Post to one SyncDestination. */
@@ -761,6 +770,7 @@ function createBasePost(): Post {
     unauthenticatedStarCount: 0,
     syncDestinations: [],
     syncSource: undefined,
+    quotedPost: undefined,
   };
 }
 
@@ -843,6 +853,9 @@ export const Post: MessageFns<Post> = {
     }
     if (message.syncSource !== undefined) {
       SyncSource.encode(message.syncSource, writer.uint32(210).fork()).join();
+    }
+    if (message.quotedPost !== undefined) {
+      Post.encode(message.quotedPost, writer.uint32(218).fork()).join();
     }
     return writer;
   },
@@ -1062,6 +1075,14 @@ export const Post: MessageFns<Post> = {
           message.syncSource = SyncSource.decode(reader, reader.uint32());
           continue;
         }
+        case 27: {
+          if (tag !== 218) {
+            break;
+          }
+
+          message.quotedPost = Post.decode(reader, reader.uint32());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1103,6 +1124,7 @@ export const Post: MessageFns<Post> = {
         ? object.syncDestinations.map((e: any) => SyncDestinationStatus.fromJSON(e))
         : [],
       syncSource: isSet(object.syncSource) ? SyncSource.fromJSON(object.syncSource) : undefined,
+      quotedPost: isSet(object.quotedPost) ? Post.fromJSON(object.quotedPost) : undefined,
     };
   },
 
@@ -1186,6 +1208,9 @@ export const Post: MessageFns<Post> = {
     if (message.syncSource !== undefined) {
       obj.syncSource = SyncSource.toJSON(message.syncSource);
     }
+    if (message.quotedPost !== undefined) {
+      obj.quotedPost = Post.toJSON(message.quotedPost);
+    }
     return obj;
   },
 
@@ -1225,6 +1250,9 @@ export const Post: MessageFns<Post> = {
     message.syncDestinations = object.syncDestinations?.map((e) => SyncDestinationStatus.fromPartial(e)) || [];
     message.syncSource = (object.syncSource !== undefined && object.syncSource !== null)
       ? SyncSource.fromPartial(object.syncSource)
+      : undefined;
+    message.quotedPost = (object.quotedPost !== undefined && object.quotedPost !== null)
+      ? Post.fromPartial(object.quotedPost)
       : undefined;
     return message;
   },

@@ -173,6 +173,9 @@ impl ToProtoMarshalablePost for MarshalablePost {
                 .sync_source_id
                 .and_then(|id| sync_source_lookup.find_sync_source(id))
                 .map(|source| source.to_proto()),
+
+            // Only ever populated client-side, for posts translated from federated networks.
+            quoted_post: None,
         }
     }
 }

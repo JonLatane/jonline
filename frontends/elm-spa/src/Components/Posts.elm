@@ -31,6 +31,7 @@ module Components.Posts exposing
     , postTimestamp
     , postTitleText
     , postVisibilityText
+    , quotedPostCard
     , replyCard
     , showPostVisibility
     , starButton
@@ -62,7 +63,7 @@ import Grpc
 import Html exposing (Html, a, button, div, h1, option, select, span, text)
 import Html.Attributes exposing (attribute, class, href, id, rel, selected, style, target, title, value)
 import Html.Events
-import Proto.Rellm exposing (GetPostsResponse, Post, SyncDestination, defaultGetPostsRequest, defaultPost)
+import Proto.Rellm exposing (GetPostsResponse, Post, SyncDestination, defaultGetPostsRequest, defaultPost, unwrapPost)
 import Proto.Rellm.Moderation exposing (Moderation(..))
 import Proto.Rellm.Permission exposing (Permission(..))
 import Proto.Rellm.PostContext exposing (PostContext(..))
@@ -784,6 +785,12 @@ postCardView time basePath viewingServerHost postServerHost maybeServer maybeAcc
 
             Nothing ->
                 text ""
+        , case post.quotedPost of
+            Just quoted ->
+                quotedPostCard time basePath viewingServerHost postServerHost mediaPlayState onMediaPlayClicked Nothing (unwrapPost quoted)
+
+            Nothing ->
+                text ""
         , div [ class "post-card-meta" ]
             [ span [ class "post-meta-left" ]
                 ((if isFederatedHost postServerHost then
@@ -820,6 +827,71 @@ postCardView time basePath viewingServerHost postServerHost maybeServer maybeAcc
 
           else
             text ""
+        ]
+
+
+{-| A federated post's `Post.quotedPost`, as a compact card embedded in the quoting post's own -- see
+`Shared.Federation.Bluesky`/`Mastodon`'s `toPostWith`. It's its own link (`.post-card-link-overlay`,
+see that class's doc: later in the DOM and positioned, so it wins the click over the quoting card's
+overlay) to the quoted post's page, with its author link and timestamp painted above that. It renders
+its own `quotedPost` the same way, so a post's page, whose chain of quotes is resolved deeper than a
+feed card's (see `fetchPostWithQuotes`), nests as deep as that goes.
+
+`maybeOnMediaClicked` is `Just` where the caller can open `Shared.MediaViewerPanel` for _this_ post's
+media (a post's own page), rendering small media previews like a card does. Everywhere else (a feed card,
+whose own `onMediaClicked` is for the quoting post's media, not this one's) it's `Nothing`, and attached
+media is just noted -- the whole quote is one link to the page that shows it.
+-}
+quotedPostCard : SharedTime.Model -> String -> String -> String -> MediaRenderer.Model -> (String -> msg) -> Maybe (Post -> String -> msg) -> Post -> Html msg
+quotedPostCard time basePath viewingServerHost postServerHost mediaPlayState onMediaPlayClicked maybeOnMediaClicked quoted =
+    div [ classes [ "post-card-quote", "border-color-primary-anchor-50" ] ]
+        [ a
+            [ href (postHref basePath viewingServerHost postServerHost quoted)
+            , class "post-card-link-overlay"
+            , attribute "aria-label" (postTitleText quoted)
+            ]
+            []
+        , div [ class "post-card-quote-meta" ]
+            [ span [ class "post-meta-left" ]
+                [ Authors.link basePath viewingServerHost postServerHost Nothing Nothing quoted.author ]
+            , span [ class "post-meta-right" ] [ timestampsText time quoted ]
+            ]
+        , if hasHiddenSensitiveMedia quoted then
+            div [ class "post-card-sensitive-media-notice" ] [ text "This post contains sensitive media. Click to view." ]
+
+          else
+            case ( maybeOnMediaClicked, mediaServer Nothing postServerHost ) of
+                ( Just onMediaClicked, Just server ) ->
+                    MultiMediaRenderer.previewExtraSmall server Nothing mediaPlayState onMediaPlayClicked (onMediaClicked quoted) quoted.media
+
+                _ ->
+                    if List.isEmpty quoted.media then
+                        text ""
+
+                    else
+                        div [ class "post-card-quote-media-note" ]
+                            [ text
+                                (String.fromInt (List.length quoted.media)
+                                    ++ (if List.length quoted.media == 1 then
+                                            " attachment"
+
+                                        else
+                                            " attachments"
+                                       )
+                                )
+                            ]
+        , case quoted.content of
+            Just content ->
+                Markdown.view [ class "post-card-content-preview" ] content
+
+            Nothing ->
+                text ""
+        , case quoted.quotedPost of
+            Just nested ->
+                quotedPostCard time basePath viewingServerHost postServerHost mediaPlayState onMediaPlayClicked maybeOnMediaClicked (unwrapPost nested)
+
+            Nothing ->
+                text ""
         ]
 
 
