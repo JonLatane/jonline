@@ -1,4 +1,4 @@
-module Shared.CreateNewPanel exposing (CreatedItem(..), Mode, Model, Msg(..), QuotedPostPreview, allTimezoneNames, hasEligibleAccount, init, isOpen, update, view)
+module Shared.CreateNewPanel exposing (CreatedItem(..), Mode, Model, Msg(..), QuotedPost, allTimezoneNames, hasEligibleAccount, init, isOpen, update, view)
 
 {-| A single, app-wide "New Post"/"New Event" composer -- title (the only
 field required in both modes), an optional link, optional media (picked via
@@ -51,7 +51,7 @@ import Components.Posts as Posts
 import Dict
 import Grpc
 import Html exposing (Html, button, div, img, input, label, option, select, span, text)
-import Html.Attributes exposing (alt, attribute, class, disabled, placeholder, selected, src, type_, value)
+import Html.Attributes exposing (alt, attribute, class, disabled, placeholder, selected, src, title, type_, value)
 import Html.Events exposing (onClick, onInput)
 import Proto.Rellm exposing (MediaReference, defaultEvent, defaultEventInfo, defaultOccasion, defaultPost)
 import Proto.Rellm.Permission exposing (Permission(..))
@@ -90,12 +90,12 @@ type alias Model =
     , media : List MediaReference
     , content : String
 
-    -- `PostMode`-only. The id sent as `Post.quotedPostId` (blank = quote nothing); editable as plain
-    -- text, but normally populated by `OpenQuoting` (the quote button on a post's own page), which
-    -- also fills `quotedPostPreview` so the field can show what's being quoted. See `resolve` for
-    -- the same-server requirement.
-    , quotedPostId : String
-    , quotedPostPreview : Maybe QuotedPostPreview
+    -- The post being quoted, set by `OpenQuoting` (the quote button on a post's own page) and
+    -- cleared by the card's X (`QuotedPostCleared`) or a successful save. Kept across `ModeChanged` --
+    -- flipping to `EventMode` and back doesn't lose it -- but `quotedPostField` hides it in
+    -- `EventMode`, and `saveTask` only ever sends it from `PostMode` (a quote is only valid on a
+    -- `POST`, see `create_post.rs`). See `resolve` for the same-server requirement.
+    , quotedPost : Maybe QuotedPost
 
     -- `EventMode`-only, both required -- see module doc.
     , startsAt : Maybe Time.Posix
@@ -123,7 +123,7 @@ type alias Model =
 {-| What `OpenQuoting` was handed -- the post being quoted and the `frontendHost` of the server it
 lives on (a post id is only meaningful on its own server, see `resolve`).
 -}
-type alias QuotedPostPreview =
+type alias QuotedPost =
     { host : String
     , post : Proto.Rellm.Post
     }
@@ -135,8 +135,8 @@ type Msg
       -- `Components.Posts.quoteButton`. Like `ToggleOpen` opening, `Shared.update` closes the other
       -- panels that share this one's screen position.
     | OpenQuoting String Proto.Rellm.Post
-    | QuotedPostIdChanged String
     | QuotedPostCleared
+    | NoOp
     | CloseClicked
     | CancelClicked
     | ModeChanged Mode
@@ -198,8 +198,7 @@ init =
     , link = ""
     , media = []
     , content = ""
-    , quotedPostId = ""
-    , quotedPostPreview = Nothing
+    , quotedPost = Nothing
     , startsAt = Nothing
     , endsAt = Nothing
     , timezone = Nothing
@@ -286,33 +285,17 @@ update browserTimeZone now accountsPanelModel msg model =
                 | open = True
                 , mode = PostMode
                 , postingAs = postingAs
-                , quotedPostId = post.id
-                , quotedPostPreview = Just { host = host, post = post }
-              }
-            , Cmd.none
-            , noForward
-            )
-
-        QuotedPostIdChanged quotedPostId ->
-            ( { model
-                | quotedPostId = quotedPostId
-                , quotedPostPreview =
-                    model.quotedPostPreview
-                        |> Maybe.andThen
-                            (\preview ->
-                                if preview.post.id == String.trim quotedPostId then
-                                    Just preview
-
-                                else
-                                    Nothing
-                            )
+                , quotedPost = Just { host = host, post = post }
               }
             , Cmd.none
             , noForward
             )
 
         QuotedPostCleared ->
-            ( { model | quotedPostId = "", quotedPostPreview = Nothing }, Cmd.none, noForward )
+            ( { model | quotedPost = Nothing }, Cmd.none, noForward )
+
+        NoOp ->
+            ( model, Cmd.none, noForward )
 
         CloseClicked ->
             ( { model | open = False }, Cmd.none, noForward )
@@ -517,10 +500,10 @@ resolve accountsPanelModel model =
                 resolveAccount accountsPanelModel model
                     |> Result.andThen
                         (\resolved ->
-                            case model.quotedPostPreview of
-                                Just preview ->
-                                    if nonEmptyTrimmed model.quotedPostId /= Nothing && preview.host /= resolved.server.frontendHost then
-                                        Err ("The quoted post is on " ++ preview.host ++ " -- post as an account there, or remove the quote.")
+                            case model.quotedPost of
+                                Just quoted ->
+                                    if quoted.host /= resolved.server.frontendHost then
+                                        Err ("The quoted post is on " ++ quoted.host ++ " -- post as an account there, or remove the quote.")
 
                                     else
                                         Ok resolved
@@ -700,7 +683,7 @@ saveTask browserTimeZone accountsPanelModel resolved model =
             in
             case model.mode of
                 PostMode ->
-                    Grpc.new Rellm.createPost { post | context = POST, quotedPostId = nonEmptyTrimmed model.quotedPostId }
+                    Grpc.new Rellm.createPost { post | context = POST, quotedPostId = Maybe.map (.post >> .id) model.quotedPost }
                         |> Grpc.setHost (RellmServers.rellmServerUrl server)
                         |> withAccessToken (Just token)
                         |> Grpc.toTask
@@ -735,8 +718,8 @@ saveTask browserTimeZone accountsPanelModel resolved model =
 `hostnameToCSSClass` (see module doc) so its Save button/mode chrome matches
 the server the draft will actually be posted to.
 -}
-view : SharedTime.BrowserTimeZone -> AccountsPanel.Model -> Model -> Html Msg
-view browserTimeZone accountsPanelModel model =
+view : SharedTime.Model -> String -> AccountsPanel.Model -> Model -> Html Msg
+view time basePath accountsPanelModel model =
     let
         host : String
         host =
@@ -785,6 +768,11 @@ view browserTimeZone accountsPanelModel model =
                         []
 
                     EventMode ->
+                        let
+                            browserTimeZone : SharedTime.BrowserTimeZone
+                            browserTimeZone =
+                                time.browserTimeZone
+                        in
                         [ startsAtField browserTimeZone.zone model, endsAtField browserTimeZone.zone model, timezoneField browserTimeZone model ]
                 , [ linkField model
                   , mediaField accountsPanelModel model host
@@ -792,7 +780,7 @@ view browserTimeZone accountsPanelModel model =
                   ]
                 , case model.mode of
                     PostMode ->
-                        [ quotedPostField model ]
+                        [ quotedPostField time basePath accountsPanelModel model ]
 
                     EventMode ->
                         []
@@ -953,49 +941,50 @@ dateField zone labelText posix toMsg =
         ]
 
 
-{-| The "quoted post" input -- the id `saveTask` sends as `Post.quotedPostId` (PostMode only; a reply or
-event can't quote anything, see `create_post.rs`) -- with a short preview of what it resolves to
-(`model.quotedPostPreview`, when the panel was opened via `OpenQuoting`) and a Remove button.
+{-| The quoted post (`model.quotedPost`, PostMode only -- hidden, but kept, in `EventMode`) as the same
+`Posts.postCard` the feeds use, with an X in its corner (`QuotedPostCleared`) to drop the quote. Nothing
+at all when there's no quote. The card's own link opens the quoted post's page; the draft survives
+that (see module doc).
 -}
-quotedPostField : Model -> Html Msg
-quotedPostField model =
-    div [ class "create-new-panel-field" ]
-        [ div [ class "create-new-panel-field-header" ]
-            [ label [ class "create-new-panel-label" ] [ text "Quoted post (optional)" ]
-            , if String.isEmpty model.quotedPostId then
-                text ""
-
-              else
-                button [ class "create-new-panel-edit-button", onClick QuotedPostCleared ] [ text "Remove" ]
-            ]
-        , input
-            [ type_ "text"
-            , class "create-new-panel-quoted-post-input"
-            , value model.quotedPostId
-            , onInput QuotedPostIdChanged
-            , placeholder "Post ID"
-            ]
-            []
-        , case model.quotedPostPreview of
-            Just preview ->
-                div [ class "create-new-panel-quoted-post-preview" ]
-                    [ div [ class "create-new-panel-quoted-post-title" ]
-                        [ text
-                            (Posts.postTitleText preview.post
-                                ++ (case preview.post.author |> Maybe.andThen .username of
-                                        Just username ->
-                                            " · " ++ username
-
-                                        Nothing ->
-                                            ""
-                                   )
-                            )
+quotedPostField : SharedTime.Model -> String -> AccountsPanel.Model -> Model -> Html Msg
+quotedPostField time basePath accountsPanelModel model =
+    case model.quotedPost of
+        Just quoted ->
+            div [ class "create-new-panel-field" ]
+                [ label [ class "create-new-panel-label" ] [ text "Quoting" ]
+                , div [ class "create-new-panel-quoted-post" ]
+                    [ Posts.postCard time
+                        basePath
+                        accountsPanelModel.mainFrontendHost
+                        quoted.host
+                        (RellmServers.rellmServerForHost accountsPanelModel.servers quoted.host)
+                        (RellmAccounts.enabledRellmAccountForServer accountsPanelModel.accounts quoted.host)
+                        (\_ -> NoOp)
+                        MediaRenderer.init
+                        (\_ -> NoOp)
+                        True
+                        False
+                        False
+                        Nothing
+                        False
+                        Nothing
+                        (\_ -> False)
+                        (\_ -> Nothing)
+                        (\_ -> NoOp)
+                        (\_ _ -> NoOp)
+                        quoted.post
+                    , button
+                        [ class "create-new-panel-quoted-post-remove"
+                        , onClick QuotedPostCleared
+                        , attribute "aria-label" "Remove quoted post"
+                        , title "Remove quoted post"
                         ]
+                        [ text "✕" ]
                     ]
+                ]
 
-            Nothing ->
-                text ""
-        ]
+        Nothing ->
+            text ""
 
 
 linkField : Model -> Html Msg
