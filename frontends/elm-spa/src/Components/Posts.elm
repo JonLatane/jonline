@@ -75,6 +75,7 @@ import Shared.AccountsPanel as AccountsPanel exposing (performWithAccountServer,
 import Shared.AccountsPanel.RellmAccounts exposing (RellmAccount)
 import Shared.AccountsPanel.RellmServers as RellmServers exposing (RellmServer, withAccessToken)
 import Shared.Conversions exposing (int64ToInt, posixToTimestamp, timestampToPosix)
+import Shared.Federation.Bluesky as Bluesky
 import Shared.Federation.Common exposing (sensitiveMediaHiddenId)
 import Shared.Time as SharedTime
 import Task exposing (Task)
@@ -1350,10 +1351,17 @@ postHref basePath viewingServerHost postServerHost post =
         -- otherwise split the one `:postId` route segment into several (a "Page not found"), so
         -- federated ids are percent-encoded (`Url.Parser.string` decodes them back on the way in).
         -- A real Rellm id is a plain UUID, unaffected either way.
+        --
+        -- A Bluesky post's id is shortened to `did~rkey` (`Bluesky.routeId`), and its host to the bare
+        -- `bluesky:` tag -- which connected account's handle the post was reached through doesn't
+        -- matter to anything that reads this back (`parseFederatedPostId`).
         postId : String
         postId =
             if postServerHost == viewingServerHost then
                 post.id
+
+            else if String.startsWith "bluesky:" postServerHost then
+                Bluesky.routeId post.id ++ "@bluesky:"
 
             else
                 Url.percentEncode post.id ++ "@" ++ postServerHost
@@ -1753,7 +1761,18 @@ parsePostRouteId mainFrontendHost rawPostId =
             -- here rather than trusting the router to (`Url.Parser.string` hands the segment
             -- through still encoded), or the fetch would encode it a second time. A no-op for an
             -- id with nothing encoded in it.
-            ( Url.percentDecode id |> Maybe.withDefault id, host )
+            let
+                decoded : String
+                decoded =
+                    Url.percentDecode id |> Maybe.withDefault id
+            in
+            ( if String.startsWith "bluesky:" host then
+                Bluesky.fromRouteId decoded
+
+              else
+                decoded
+            , host
+            )
 
         _ ->
             ( rawPostId, mainFrontendHost )

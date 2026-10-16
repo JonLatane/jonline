@@ -12,7 +12,9 @@ module Shared.Federation.Bluesky exposing
     , fetchPostWithQuotes
     , fetchPosts
     , fetchThread
+    , fromRouteId
     , searchActors
+    , routeId
     , searchPosts
     , setLike
     , toPost
@@ -826,6 +828,49 @@ repoWrite accessToken method body =
         , resolver = jsonResolver (Decode.succeed ()) (\metadata _ -> Http.BadStatus metadata.statusCode)
         , timeout = Just 10000
         }
+
+
+{-| A Bluesky post's `at://{did}/app.bsky.feed.post/{rkey}` URI as the short form `Components.Posts.postHref`
+puts in a `/post/:postId` route -- `{did}~{rkey}`. The `at://` scheme and the collection are the same for
+every post, and `~` is a safe separator: a DID never contains one. (An rkey _may_, which is why
+`fromRouteId` splits on the first.) Anything that isn't exactly that shape (another collection, a DID
+with a `%`, which the route's percent-decoding would mangle) falls back to the whole URI,
+percent-encoded, which `fromRouteId` also accepts.
+-}
+routeId : String -> String
+routeId uri =
+    case String.split "/" uri of
+        [ "at:", "", did, "app.bsky.feed.post", rkey ] ->
+            if String.startsWith "did:" did && not (String.contains "%" did) && not (String.contains "%" rkey) && not (String.isEmpty rkey) then
+                did ++ "~" ++ rkey
+
+            else
+                Url.percentEncode uri
+
+        _ ->
+            Url.percentEncode uri
+
+
+{-| `routeId`'s inverse, applied to the already percent-decoded id -- a full `at://` URI (the older, long
+route form) passes through unchanged.
+-}
+fromRouteId : String -> String
+fromRouteId id =
+    case String.indexes "~" id |> List.head of
+        Just separator ->
+            let
+                did : String
+                did =
+                    String.left separator id
+            in
+            if String.startsWith "did:" did then
+                "at://" ++ did ++ "/app.bsky.feed.post/" ++ String.dropLeft (separator + 1) id
+
+            else
+                id
+
+        Nothing ->
+            id
 
 
 {-| `at://{did}/app.bsky.feed.post/{rkey}` -> `https://bsky.app/profile/{handle}/post/{rkey}` --
