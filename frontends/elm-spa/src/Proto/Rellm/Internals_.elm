@@ -6394,7 +6394,6 @@ fieldNumbersProto__Rellm__Post :
     , syncDestinations : Int
     , syncSource : Int
     , quotedPost : Int
-    , quotedPostId : Int
     }
 fieldNumbersProto__Rellm__Post =
     { id = 1
@@ -6424,7 +6423,6 @@ fieldNumbersProto__Rellm__Post =
     , syncDestinations = 25
     , syncSource = 26
     , quotedPost = 27
-    , quotedPostId = 28
     }
 
 
@@ -6460,7 +6458,6 @@ defaultProto__Rellm__Post =
     , syncDestinations = []
     , syncSource = Nothing
     , quotedPost = Nothing
-    , quotedPostId = Nothing
     }
 
 
@@ -6536,10 +6533,6 @@ decodeProto__Rellm__Post =
                 (Protobuf.Decode.map Proto__Rellm__Post_ <| Protobuf.Decode.lazy <| \_ -> decodeProto__Rellm__Post)
             )
             (\a r -> { r | quotedPost = a })
-        , Protobuf.Decode.optional
-            28
-            (Protobuf.Decode.map Just Protobuf.Decode.string)
-            (\a r -> { r | quotedPostId = a })
         ]
 
 
@@ -6601,7 +6594,6 @@ encodeProto__Rellm__Post value =
           , (Maybe.map (unwrapProto__Rellm__Post >> encodeProto__Rellm__Post) >> Maybe.withDefault Protobuf.Encode.none)
                 value.quotedPost
           )
-        , ( 28, (Maybe.map Protobuf.Encode.string >> Maybe.withDefault Protobuf.Encode.none) value.quotedPostId )
         ]
 
 
@@ -6636,7 +6628,6 @@ type alias Proto__Rellm__Post =
     , syncDestinations : List Proto__Rellm__SyncDestinationStatus
     , syncSource : Maybe Proto__Rellm__SyncSource
     , quotedPost : Maybe Proto__Rellm__Post_
-    , quotedPostId : Maybe String
     }
 
 

@@ -2669,7 +2669,7 @@ starredPostView time basePath accountsPanelModel currentPostKey currentOccasionI
 
                         Nothing ->
                             text ""
-                    , Posts.postCard time basePath accountsPanelModel.mainFrontendHost host maybeServer maybeAccount onMediaClicked mediaRendererModel onMediaPlayClicked True current starred onStarClicked False Nothing (\_ -> False) (\_ -> Nothing) (\_ -> NoOp) (\_ _ -> NoOp) post
+                    , Posts.postCard time basePath accountsPanelModel.mainFrontendHost host maybeServer maybeAccount onMediaClicked mediaRendererModel onMediaPlayClicked True current starred onStarClicked False Nothing (\_ -> False) (\_ -> Nothing) (\_ -> NoOp) (\_ _ -> NoOp) (text "") post
                     ]
 
         Just FetchingPost ->

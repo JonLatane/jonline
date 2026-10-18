@@ -174,8 +174,7 @@ impl ToProtoMarshalablePost for MarshalablePost {
                 .and_then(|id| sync_source_lookup.find_sync_source(id))
                 .map(|source| source.to_proto()),
 
-            quoted_post_id: post.quoted_post_id.map(|id| id.to_proto_id()),
-            // Hydrated per-viewer (visibility-checked) by `rpcs::posts::attach_quoted_posts`.
+            // Only ever populated client-side, for posts translated from federated networks.
             quoted_post: None,
         }
     }

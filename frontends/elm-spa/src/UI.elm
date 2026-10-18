@@ -4581,7 +4581,7 @@ it (see `create_new_panel.css`'s own z-index comment).
 -}
 createNewPanel : Shared.Model -> Html Shared.Msg
 createNewPanel shared =
-    Html.map Shared.CreateNewPanelMsg (CreateNewPanel.view shared.time shared.basePath shared.accounts shared.panels.createNewPanel)
+    Html.map Shared.CreateNewPanelMsg (CreateNewPanel.view shared.time shared.basePath shared.accounts shared.quoteLinks shared.panels.createNewPanel)
 
 
 {-| The app-wide Markdown editor (see `Shared.MarkdownPanel`) -- unlike the

@@ -233,22 +233,15 @@
    posting-as account's own server, same convention as
    `.markdown-panel-save`/`.my-media-panel-save`. */
 
-/* `Shared.CreateNewPanel.quotedPostField`: the quoted post's `postCard` with an X pinned to its corner.
-   `z-index` lifts the X above the card's own `.post-card-link-overlay` (and the card itself), so it
-   stays clickable rather than opening the quoted post. */
-.create-new-panel-quoted-post {
-  position: relative;
-}
-
-.create-new-panel-quoted-post .post-card {
-  margin: 0;
+/* `Shared.CreateNewPanel.quotedPostField`: the quote's link, an X to drop it, and the quoted post's embedded
+   card (`Components.QuotedLink`, styled by `.post-card-quote` in `posts.css`) below. */
+.create-new-panel-quoted-link {
+  color: var(--muted);
+  font-size: 0.8rem;
+  overflow-wrap: anywhere;
 }
 
 .create-new-panel-quoted-post-remove {
-  position: absolute;
-  top: 0.3rem;
-  right: 0.3rem;
-  z-index: 2;
   width: 1.6rem;
   height: 1.6rem;
   padding: 0;

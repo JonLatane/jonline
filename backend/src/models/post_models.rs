@@ -89,11 +89,6 @@ pub struct Post {
     /// `None` for every other kind of synced Post (a plain synced Post, or an Event's own
     /// series-level Post).
     pub sync_source_recurrence_anchor: Option<SystemTime>,
-
-    /// The Post this one quotes, if any. Only ever set on a `PostContext::Post` Post -- see
-    /// `rpcs::posts::create_post`/`update_post`. Cleared (`ON DELETE SET NULL`) if the quoted
-    /// Post is deleted.
-    pub quoted_post_id: Option<i64>,
 }
 
 /// Explicit column list for `posts`, excluding:
@@ -132,7 +127,6 @@ pub const POST_COLUMNS: (
     posts::sync_source_id,
     posts::sync_source_uid,
     posts::sync_source_recurrence_anchor,
-    posts::quoted_post_id,
 ) = (
     posts::id,
     posts::user_id,
@@ -159,7 +153,6 @@ pub const POST_COLUMNS: (
     posts::sync_source_id,
     posts::sync_source_uid,
     posts::sync_source_recurrence_anchor,
-    posts::quoted_post_id,
 );
 
 #[derive(Debug, Insertable)]

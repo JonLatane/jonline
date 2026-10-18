@@ -33,6 +33,7 @@ import Browser.Navigation
 import Components.FederatedAuthors as FederatedAuthors exposing (FederatedAuthor)
 import Components.MediaRenderer as MediaRenderer
 import Components.Posts as Posts
+import Components.QuotedLink as QuotedLink
 import Components.Users exposing (usernameHref)
 import Components.Users.ProfileHeading as ProfileHeading
 import Dict exposing (Dict)
@@ -62,6 +63,7 @@ import Shared.CreateNewPanel as CreateNewPanel
 import Shared.Federation.Bluesky as Bluesky
 import Shared.Federation.Mastodon as Mastodon
 import Shared.MediaViewerPanel as MediaViewerPanel
+import Shared.QuoteLinks as QuoteLinks
 import Shared.StarredPanel as StarredPanel
 import Shared.Time as SharedTime
 import Shared.UserPreferences as UserPreferences
@@ -608,7 +610,58 @@ update shared msg model =
         ( newModel, effect ) =
             updateInner shared msg model
     in
-    ( newModel, Effect.batch [ effect, setBreadcrumbsRoot shared newModel ] )
+    ( newModel, Effect.batch [ effect, setBreadcrumbsRoot shared newModel, quoteRequestEffect shared newModel ] )
+
+
+{-| Asks `Shared.QuoteLinks` for the quoted post of every Rellm `POST` this page is showing that links to one
+-- only the ones it hasn't seen (`QuoteLinks.unrequested`), so this is `Effect.none` on nearly every update.
+-}
+quoteRequestEffect : Shared.Model -> Model -> Effect Msg
+quoteRequestEffect shared model =
+    let
+        pairs : List ( String, String )
+        pairs =
+            model.postsByServer
+                |> Dict.values
+                |> List.concatMap
+                    (\feed ->
+                        case feed.status of
+                            Loaded posts ->
+                                posts
+                                    |> List.filterMap
+                                        (\post ->
+                                            if QuotedLink.targetOf feed.host post /= Nothing then
+                                                Maybe.map (\link -> ( feed.host, link )) post.link
+
+                                            else
+                                                Nothing
+                                        )
+
+                            _ ->
+                                []
+                    )
+    in
+    case QuoteLinks.unrequested shared.quoteLinks pairs of
+        [] ->
+            Effect.none
+
+        toRequest ->
+            Effect.fromShared (Shared.QuoteLinksMsg (QuoteLinks.RequestLinks toRequest))
+
+
+{-| How a quote's embed (`Components.QuotedLink`) talks back to the app.
+-}
+quoteConfig : Shared.Model -> QuotedLink.Config Msg
+quoteConfig shared =
+    { time = shared.time
+    , basePath = shared.basePath
+    , accounts = QuotedLink.accountsInfo shared.accounts
+    , quotes = shared.quoteLinks
+    , mediaPlayState = shared.mediaRenderer
+    , onMediaPlayClicked = \mediaId -> SharedMsg (Shared.MediaRendererMsg (MediaRenderer.PlayClicked mediaId))
+    , onAddServerClicked = \host -> SharedMsg (Shared.AccountsPanelMsg (AccountsPanel.RecommendedServerClicked host))
+    , onEnableServerClicked = \host -> SharedMsg (Shared.AccountsPanelMsg (AccountsPanel.ToggleServerEnabled host))
+    }
 
 
 updateInner : Shared.Model -> Msg -> Model -> ( Model, Effect Msg )
@@ -2201,4 +2254,5 @@ postCardView shared showSyncDestinations availableSyncDestinations pushStatuses 
         pushError
         onPush
         onDelete
+        (QuotedLink.view (quoteConfig shared) host displayPost)
         displayPost

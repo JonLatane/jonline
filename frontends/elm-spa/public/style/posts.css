@@ -1014,3 +1014,24 @@
 .post-quote-button:hover {
   opacity: 1;
 }
+
+/* `Components.QuotedLink`: a Rellm post's quote of another post, in its card/page. */
+.quoted-post-loading {
+  margin: 0.4rem 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+/* The "Add <server>" row under a quote from a server the user hasn't added. `position: relative` lifts the
+   button above the quoting card's full-card `.post-card-link-overlay`, like `.post-card-meta`'s. */
+.quoted-post-server-row {
+  position: relative;
+  margin: 0.2rem 0 0.4rem;
+}
+
+/* A quoted post's own title (a Rellm post has one; a federated post doesn't) above its author row. */
+.post-card-quote-title {
+  position: relative;
+  font-weight: 700;
+  margin-bottom: 0.1rem;
+}

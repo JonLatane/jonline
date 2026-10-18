@@ -1,12 +1,13 @@
 module QuotedPostProtoTests exposing (suite)
 
-{-| `Post.quotedPostId`/`quotedPost` (protos/posts.proto, fields 28/27) survive the same binary
-encode/decode the gRPC-Web client does for every Post -- including a `quotedPost` itself carrying
-its own `quotedPostId`, which is what the server returns (one level hydrated).
+{-| `Post.quotedPost` (protos/posts.proto, field 27) survives the same binary encode/decode the gRPC-Web client
+does for every Post -- including a quoted post that itself quotes another, which is how a post's page shows a
+chain of them. (Only the Elm client ever sets it: see `Shared.Federation.Bluesky`/`Mastodon`, and
+`Components.QuotedLink` for how a Rellm post's `link` becomes one.)
 -}
 
 import Expect
-import Proto.Rellm exposing (Post, decodePost, defaultPost, encodePost, wrapPost)
+import Proto.Rellm exposing (Post, decodePost, defaultPost, encodePost, unwrapPost, wrapPost)
 import Protobuf.Decode as Decode
 import Protobuf.Encode as Encode
 import Test exposing (Test, describe, test)
@@ -19,28 +20,35 @@ roundTrip post =
 
 suite : Test
 suite =
-    describe "Post.quotedPostId / quotedPost"
-        [ test "a quotedPostId round-trips" <|
+    describe "Post.quotedPost"
+        [ test "a quoted post round-trips" <|
             \_ ->
-                { defaultPost | id = "2", quotedPostId = Just "1" }
-                    |> roundTrip
-                    |> Maybe.map .quotedPostId
-                    |> Expect.equal (Just (Just "1"))
-        , test "a nested quotedPost round-trips along with its own quotedPostId" <|
-            \_ ->
-                { defaultPost
-                    | id = "3"
-                    , quotedPostId = Just "2"
-                    , quotedPost = Just (wrapPost { defaultPost | id = "2", content = Just "quoted", quotedPostId = Just "1" })
-                }
+                { defaultPost | id = "2", quotedPost = Just (wrapPost { defaultPost | id = "1", content = Just "quoted" }) }
                     |> roundTrip
                     |> Maybe.andThen .quotedPost
-                    |> Maybe.map (\quoted -> ( quoted |> Proto.Rellm.unwrapPost |> .content, quoted |> Proto.Rellm.unwrapPost |> .quotedPostId ))
-                    |> Expect.equal (Just ( Just "quoted", Just "1" ))
-        , test "no quote at all stays Nothing" <|
+                    |> Maybe.map (unwrapPost >> .content)
+                    |> Expect.equal (Just (Just "quoted"))
+        , test "a chain of quotes round-trips" <|
+            \_ ->
+                let
+                    first : Post
+                    first =
+                        { defaultPost | id = "1", content = Just "first" }
+
+                    second : Post
+                    second =
+                        { defaultPost | id = "2", content = Just "second", quotedPost = Just (wrapPost first) }
+                in
+                { defaultPost | id = "3", quotedPost = Just (wrapPost second) }
+                    |> roundTrip
+                    |> Maybe.andThen .quotedPost
+                    |> Maybe.andThen (unwrapPost >> .quotedPost)
+                    |> Maybe.map (unwrapPost >> .content)
+                    |> Expect.equal (Just (Just "first"))
+        , test "no quote stays Nothing" <|
             \_ ->
                 { defaultPost | id = "1" }
                     |> roundTrip
-                    |> Maybe.map (\post -> ( post.quotedPostId, post.quotedPost == Nothing ))
-                    |> Expect.equal (Just ( Nothing, True ))
+                    |> Maybe.map (\post -> post.quotedPost == Nothing)
+                    |> Expect.equal (Just True)
         ]

@@ -640,6 +640,7 @@ pinnedPostView config model postId =
                             (\_ -> config.noOp)
                             (\_ _ -> config.noOp)
                             contentCollapse
+                            (text "")
                             post
                         ]
                     )

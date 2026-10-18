@@ -504,7 +504,7 @@ targetCardView time accountsPanelModel basePath host target =
     in
     case target of
         TargetPost post ->
-            Posts.postCard time basePath accountsPanelModel.mainFrontendHost host maybeServer maybeAccount (\_ -> NoOp) MediaRenderer.init (\_ -> NoOp) True False False Nothing False Nothing (\_ -> False) (\_ -> Nothing) (\_ -> NoOp) (\_ _ -> NoOp) post
+            Posts.postCard time basePath accountsPanelModel.mainFrontendHost host maybeServer maybeAccount (\_ -> NoOp) MediaRenderer.init (\_ -> NoOp) True False False Nothing False Nothing (\_ -> False) (\_ -> Nothing) (\_ -> NoOp) (\_ _ -> NoOp) (text "") post
 
         TargetEvent event occasion ->
             Events.eventCard time basePath accountsPanelModel.mainFrontendHost host maybeServer maybeAccount (\_ -> NoOp) MediaRenderer.init (\_ -> NoOp) MediaRenderer.ExtraSmall False Nothing False False False Nothing (\_ -> False) (\_ -> Nothing) (\_ -> NoOp) (\_ _ -> NoOp) Events.noCardSlots event occasion

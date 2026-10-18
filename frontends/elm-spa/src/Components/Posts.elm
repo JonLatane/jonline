@@ -700,6 +700,10 @@ the overlay's paint order itself.
 post rows, tighter on vertical space than the Home page's own feed of these
 same cards.
 
+`quoteView` is what `Components.QuotedLink.view` rendered for this post's own `link` -- the quoted
+post, embedded (`Html.text ""` for a post that doesn't quote one) -- see that module for why it's rendered by
+the caller rather than here.
+
 `showSyncDestinations`/`availableSyncDestinations`/`isPushing`/`pushError`/`onPush`/`onDelete`
 mirror `Components.Events.eventCard`'s own trailing params of the same name/shape exactly (just
 without an `Events`-style `showSyncSource`/`syncSourceView` pair -- a plain Post _can_ now have a
@@ -712,8 +716,8 @@ push/delete controls render nowhere else. Ignored entirely by the `REPLY` fallba
 below -- a reply is never synced to anything.
 
 -}
-postCard : SharedTime.Model -> String -> String -> String -> Maybe RellmServer -> Maybe RellmAccount -> (String -> msg) -> MediaRenderer.Model -> (String -> msg) -> Bool -> Bool -> Bool -> Maybe msg -> Bool -> Maybe (List SyncDestination) -> (String -> Bool) -> (String -> Maybe String) -> (String -> msg) -> (String -> String -> msg) -> Post -> Html msg
-postCard time basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked mediaPlayState onMediaPlayClicked extraSmallMedia current starred onStarClicked showSyncDestinations availableSyncDestinations isPushing pushError onPush onDelete post =
+postCard : SharedTime.Model -> String -> String -> String -> Maybe RellmServer -> Maybe RellmAccount -> (String -> msg) -> MediaRenderer.Model -> (String -> msg) -> Bool -> Bool -> Bool -> Maybe msg -> Bool -> Maybe (List SyncDestination) -> (String -> Bool) -> (String -> Maybe String) -> (String -> msg) -> (String -> String -> msg) -> Html msg -> Post -> Html msg
+postCard time basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked mediaPlayState onMediaPlayClicked extraSmallMedia current starred onStarClicked showSyncDestinations availableSyncDestinations isPushing pushError onPush onDelete quoteView post =
     -- A federated reply still gets the full-card-link `postCardView` (content preview, no title) --
     -- `replyCard` has no card-wide link overlay, which a Starred/feed card needs; only a real thread
     -- (`Components.FederatedThread`) calls `replyCard` directly for federated replies.
@@ -721,15 +725,15 @@ postCard time basePath viewingServerHost postServerHost maybeServer maybeAccount
         replyCard basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked mediaPlayState onMediaPlayClicked 0 True False False Nothing Nothing Nothing post
 
     else
-        postCardView time basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked mediaPlayState onMediaPlayClicked extraSmallMedia current starred onStarClicked showSyncDestinations availableSyncDestinations isPushing pushError onPush onDelete post
+        postCardView time basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked mediaPlayState onMediaPlayClicked extraSmallMedia current starred onStarClicked showSyncDestinations availableSyncDestinations isPushing pushError onPush onDelete quoteView post
 
 
 {-| The plain (non-`REPLY`) rendering `postCard` falls back to -- see its own
 doc comment above for why `REPLY` posts instead defer entirely to
 `replyCard`.
 -}
-postCardView : SharedTime.Model -> String -> String -> String -> Maybe RellmServer -> Maybe RellmAccount -> (String -> msg) -> MediaRenderer.Model -> (String -> msg) -> Bool -> Bool -> Bool -> Maybe msg -> Bool -> Maybe (List SyncDestination) -> (String -> Bool) -> (String -> Maybe String) -> (String -> msg) -> (String -> String -> msg) -> Post -> Html msg
-postCardView time basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked mediaPlayState onMediaPlayClicked extraSmallMedia current starred onStarClicked showSyncDestinations availableSyncDestinations isPushing pushError onPush onDelete post =
+postCardView : SharedTime.Model -> String -> String -> String -> Maybe RellmServer -> Maybe RellmAccount -> (String -> msg) -> MediaRenderer.Model -> (String -> msg) -> Bool -> Bool -> Bool -> Maybe msg -> Bool -> Maybe (List SyncDestination) -> (String -> Bool) -> (String -> Maybe String) -> (String -> msg) -> (String -> String -> msg) -> Html msg -> Post -> Html msg
+postCardView time basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked mediaPlayState onMediaPlayClicked extraSmallMedia current starred onStarClicked showSyncDestinations availableSyncDestinations isPushing pushError onPush onDelete quoteView post =
     div
         [ classes
             ([ "post-card"
@@ -807,6 +811,7 @@ postCardView time basePath viewingServerHost postServerHost maybeServer maybeAcc
 
             Nothing ->
                 text ""
+        , quoteView
         , case post.quotedPost of
             Just quoted ->
                 quotedPostCard time basePath viewingServerHost postServerHost mediaPlayState onMediaPlayClicked Nothing (unwrapPost quoted)
@@ -868,11 +873,17 @@ quotedPostCard : SharedTime.Model -> String -> String -> String -> MediaRenderer
 quotedPostCard time basePath viewingServerHost postServerHost mediaPlayState onMediaPlayClicked maybeOnMediaClicked quoted =
     div [ classes [ "post-card-quote", "border-color-primary-anchor-50" ] ]
         [ a
-            [ href (postHref basePath viewingServerHost postServerHost quoted)
+            [ href (quotedHref basePath viewingServerHost postServerHost quoted)
             , class "post-card-link-overlay"
             , attribute "aria-label" (postTitleText quoted)
             ]
             []
+        , case quoted.title |> Maybe.map String.trim |> Maybe.andThen (\trimmed -> if String.isEmpty trimmed then Nothing else Just trimmed) of
+            Just quotedTitle ->
+                div [ class "post-card-quote-title" ] [ text quotedTitle ]
+
+            Nothing ->
+                text ""
         , div [ class "post-card-quote-meta" ]
             [ span [ class "post-meta-left" ]
                 [ Authors.link basePath viewingServerHost postServerHost Nothing Nothing quoted.author ]
@@ -915,6 +926,29 @@ quotedPostCard time basePath viewingServerHost postServerHost mediaPlayState onM
             Nothing ->
                 text ""
         ]
+
+
+{-| `postHref`, except an `EVENT`/`OCCASION` post (a quote of an event, see `Components.QuotedLink`) goes to
+its own `/event/:id` page, same as `Components.Events.occasionHref`, since `/post/:id` would show it without
+any of the event.
+-}
+quotedHref : String -> String -> String -> Post -> String
+quotedHref basePath viewingServerHost postServerHost quoted =
+    if quoted.context == EVENT || quoted.context == OCCASION then
+        basePath
+            ++ Gen.Route.toHref
+                (Gen.Route.Event__PostId_
+                    { postId =
+                        if postServerHost == viewingServerHost then
+                            quoted.id
+
+                        else
+                            quoted.id ++ "@" ++ postServerHost
+                    }
+                )
+
+    else
+        postHref basePath viewingServerHost postServerHost quoted
 
 
 {-| A single reply's card -- author, content, a Reply button, and (bottom
@@ -1143,8 +1177,8 @@ a Post's own dedicated page) always renders the content in full, with no toggle 
 caller's own measurement, not decided in here.
 
 -}
-postDetail : SharedTime.Model -> String -> String -> String -> Maybe RellmServer -> Maybe RellmAccount -> (String -> msg) -> MediaRenderer.Model -> (String -> msg) -> Bool -> msg -> Maybe msg -> (String -> msg) -> Bool -> Maybe msg -> msg -> Maybe msg -> Html msg -> Html msg -> Maybe (List SyncDestination) -> (String -> Bool) -> (String -> Maybe String) -> (String -> msg) -> (String -> String -> msg) -> Maybe (ContentCollapse msg) -> Post -> Html msg
-postDetail time basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked mediaPlayState onMediaPlayClicked readOnly onMediaEditClicked onGenerateMediaClicked onMediaLayoutChanged starred onStarClicked onEditClicked onQuoteClicked visibilityView moderationView availableSyncDestinations isPushing pushError onPush onDelete contentCollapse post =
+postDetail : SharedTime.Model -> String -> String -> String -> Maybe RellmServer -> Maybe RellmAccount -> (String -> msg) -> MediaRenderer.Model -> (String -> msg) -> Bool -> msg -> Maybe msg -> (String -> msg) -> Bool -> Maybe msg -> msg -> Maybe msg -> Html msg -> Html msg -> Maybe (List SyncDestination) -> (String -> Bool) -> (String -> Maybe String) -> (String -> msg) -> (String -> String -> msg) -> Maybe (ContentCollapse msg) -> Html msg -> Post -> Html msg
+postDetail time basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked mediaPlayState onMediaPlayClicked readOnly onMediaEditClicked onGenerateMediaClicked onMediaLayoutChanged starred onStarClicked onEditClicked onQuoteClicked visibilityView moderationView availableSyncDestinations isPushing pushError onPush onDelete contentCollapse quoteView post =
     div [ classes [ "post-detail", hostnameToCSSClass postServerHost, "border-color-primary-anchor-50" ] ]
         [ div [ class "post-detail-title-row" ]
             [ if post.context == POST then
@@ -1224,6 +1258,7 @@ postDetail time basePath viewingServerHost postServerHost maybeServer maybeAccou
 
             Nothing ->
                 text ""
+        , quoteView
         , case post.quotedPost of
             Just quoted ->
                 quotedPostCard time basePath viewingServerHost postServerHost mediaPlayState onMediaPlayClicked Nothing (unwrapPost quoted)

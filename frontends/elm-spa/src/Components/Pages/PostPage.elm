@@ -29,6 +29,7 @@ import Components.AIProviders as AIProviders
 import Components.MediaRenderer as MediaRenderer
 import Components.PostReplies as PostReplies
 import Components.Posts as Posts
+import Components.QuotedLink as QuotedLink
 import Components.ServerDependentView as ServerDependentView
 import Components.SyncDestinations as SyncDestinations
 import Components.Users as Users
@@ -54,6 +55,7 @@ import Shared.MarkdownPanel as MarkdownPanel
 import Shared.MediaGeneratorPanel as MediaGeneratorPanel
 import Shared.MediaViewerPanel as MediaViewerPanel
 import Shared.MyMediaPanel as MyMediaPanel
+import Shared.QuoteLinks as QuoteLinks
 import Shared.StarredPanel as StarredPanel
 import Task
 import Time
@@ -287,6 +289,42 @@ subscriptions model =
 
 update : Shared.Model -> Msg -> Model -> ( Model, Effect Msg )
 update shared msg model =
+    let
+        ( newModel, effect ) =
+            updateInner shared msg model
+    in
+    ( newModel, Effect.batch [ effect, quoteRequestEffect shared newModel ] )
+
+
+{-| Asks `Shared.QuoteLinks` for the quoted post of the post being shown, if it quotes one (see
+`Components.QuotedLink`) and it isn't already known -- `Effect.none` on nearly every update.
+-}
+quoteRequestEffect : Shared.Model -> Model -> Effect Msg
+quoteRequestEffect shared model =
+    case model.postStatus of
+        PostLoaded post ->
+            case QuoteLinks.unrequested shared.quoteLinks (quotePairs model.targetHost post) of
+                [] ->
+                    Effect.none
+
+                toRequest ->
+                    Effect.fromShared (Shared.QuoteLinksMsg (QuoteLinks.RequestLinks toRequest))
+
+        _ ->
+            Effect.none
+
+
+quotePairs : String -> Post -> List ( String, String )
+quotePairs host post =
+    if QuotedLink.targetOf host post /= Nothing then
+        post.link |> Maybe.map (\link -> [ ( host, link ) ]) |> Maybe.withDefault []
+
+    else
+        []
+
+
+updateInner : Shared.Model -> Msg -> Model -> ( Model, Effect Msg )
+updateInner shared msg model =
     case msg of
         GotPost (Ok ( maybeAccountsPanelMsg, response )) ->
             let
@@ -965,7 +1003,23 @@ postDetailView shared model post =
             SharedMsg (Shared.RequestDelete (Shared.ConfirmPostSyncDestinationDelete displayPost destinationId destinationLabel model.targetHost))
         )
         Nothing
+        (QuotedLink.view (quoteConfig shared) model.targetHost displayPost)
         displayPost
+
+
+{-| How a quote's embed (`Components.QuotedLink`) talks back to the app.
+-}
+quoteConfig : Shared.Model -> QuotedLink.Config Msg
+quoteConfig shared =
+    { time = shared.time
+    , basePath = shared.basePath
+    , accounts = QuotedLink.accountsInfo shared.accounts
+    , quotes = shared.quoteLinks
+    , mediaPlayState = shared.mediaRenderer
+    , onMediaPlayClicked = \mediaId -> SharedMsg (Shared.MediaRendererMsg (MediaRenderer.PlayClicked mediaId))
+    , onAddServerClicked = \host -> SharedMsg (Shared.AccountsPanelMsg (AccountsPanel.RecommendedServerClicked host))
+    , onEnableServerClicked = \host -> SharedMsg (Shared.AccountsPanelMsg (AccountsPanel.ToggleServerEnabled host))
+    }
 
 
 {-| The visibility segment of `postDetail`'s meta line (see `postDetail`'s own
