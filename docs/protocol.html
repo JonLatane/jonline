@@ -5428,7 +5428,7 @@ directory</a> is (<code>{name}</code> denotes a
         </tr>
       </tbody>
     </table>
-    <p>A Rellm post quotes another post by putting a link to it in its own <code>link</code> -- clients embed it when <code>link</code> is (or points at) a <code>/post/{id}</code>, <code>/event/{id}</code> or short <code>/{x}{id}</code> URL on any Rellm server. That's only meaningful on a <code>POST</code>-context post (<code>link</code> is invalid for replies). |</p>
+    <p>A Rellm post quotes another post by putting a link to it in its own <code>link</code> -- clients embed it when <code>link</code> is (or points at) a <code>/post/{id}</code>, <code>/event/{id}</code> or short <code>/{x}{id}</code> URL on any Rellm server, or a Bluesky or Mastodon post (its own URL, or a Rellm <code>/post/{id}@bluesky:</code> / <code>@mastodon:{host}</code> route). That's only meaningful on a <code>POST</code>-context post (<code>link</code> is invalid for replies). |</p>
     <p><a name="rellm-SyncPostRequest"></a></p>
     <h3 id="syncpostrequest"><a class="anchor" aria-hidden="true" tabindex="-1" href="#syncpostrequest"><span class="octicon octicon-link"></span></a>SyncPostRequest</h3>
     <p>Syncs (cross-posts) a single Post to one SyncDestination.</p>

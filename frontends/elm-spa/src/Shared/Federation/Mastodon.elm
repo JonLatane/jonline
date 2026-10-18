@@ -8,6 +8,7 @@ module Shared.Federation.Mastodon exposing
     , fetchFollowing
     , fetchPosts
     , fetchFavourites
+    , fetchEmbeddedStatus
     , fetchStatus
     , fetchStatusWithQuotes
     , fetchThread
@@ -368,6 +369,15 @@ fetchStatus : String -> String -> Task Http.Error ( Post, Bool )
 fetchStatus instanceHost statusId =
     fetchRawStatus instanceHost statusId
         |> Task.map (\status -> ( toPostIncludingSensitiveMedia instanceHost status, status.sensitive ))
+
+
+{-| A status to embed as a quote card (`Components.QuotedLink`), translated like a feed card (`toPost`:
+sensitive media stays hidden, the first quote carried along). Fails (any `Http.Error`) when `instanceHost` isn't
+a Mastodon server or the status isn't public -- which is how `Shared.QuoteLinks` finds out a link wasn't one.
+-}
+fetchEmbeddedStatus : String -> String -> Task Http.Error Post
+fetchEmbeddedStatus instanceHost statusId =
+    fetchRawStatus instanceHost statusId |> Task.map (toPost instanceHost)
 
 
 {-| `fetchStatus`, but also resolving the status' chain of quotes up to `maxPageQuoteDepth` deep into

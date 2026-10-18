@@ -394,7 +394,8 @@ export interface Post {
    *
    * A Rellm post quotes another post by putting a link to it in its own `link` -- clients embed it
    * when `link` is (or points at) a `/post/{id}`, `/event/{id}` or short `/{x}{id}` URL on any Rellm
-   * server. That's only meaningful on a `POST`-context post (`link` is invalid for replies).
+   * server, or a Bluesky or Mastodon post (its own URL, or a Rellm `/post/{id}@bluesky:` /
+   * `@mastodon:{host}` route). That's only meaningful on a `POST`-context post (`link` is invalid for replies).
    */
   quotedPost?: Post | undefined;
 }

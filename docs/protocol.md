@@ -2644,7 +2644,7 @@ and Occasions.
 | sync_source | [SyncSource](#rellm-SyncSource) | optional | If the Post was created/is kept in sync from a [`SyncSource`](#rellm-SyncSource) (an ICS Event/Occasion, or an RSS/Atom feed item), this is the source it was synced from. Only its media should be considered editable for such a Post. |
 | quoted_post | [Post](#rellm-Post) | optional | A post this post quotes (embeds), for posts translated from a federated network such as Bluesky or Mastodon. Only ever set client-side by the Elm frontend&#39;s federation translators -- Rellm servers never populate it. May itself quote another post, up to however many levels the client chose to resolve.
 
-A Rellm post quotes another post by putting a link to it in its own `link` -- clients embed it when `link` is (or points at) a `/post/{id}`, `/event/{id}` or short `/{x}{id}` URL on any Rellm server. That&#39;s only meaningful on a `POST`-context post (`link` is invalid for replies). |
+A Rellm post quotes another post by putting a link to it in its own `link` -- clients embed it when `link` is (or points at) a `/post/{id}`, `/event/{id}` or short `/{x}{id}` URL on any Rellm server, or a Bluesky or Mastodon post (its own URL, or a Rellm `/post/{id}@bluesky:` / `@mastodon:{host}` route). That&#39;s only meaningful on a `POST`-context post (`link` is invalid for replies). |
 
 
 

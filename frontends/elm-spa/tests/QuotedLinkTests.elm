@@ -14,6 +14,7 @@ import Html.Attributes
 import Proto.Rellm exposing (Post, defaultAuthor, defaultEvent, defaultOccasion, wrapPost)
 import Proto.Rellm.PostContext exposing (PostContext(..))
 import Set
+import Shared.Federation.FederatedLinks as FederatedLinks
 import Shared.Federation.RellmLinks as RellmLinks
 import Shared.QuoteLinks as QuoteLinks
 import Support.PostFactory as PostFactory
@@ -114,6 +115,41 @@ loaded host id =
     { entries = Dict.singleton (RellmLinks.key { host = host, id = id }) (QuoteLinks.Loaded quoted) }
 
 
+blueskyTarget : FederatedLinks.Target
+blueskyTarget =
+    FederatedLinks.BlueskyUri "at://did:plc:abc/app.bsky.feed.post/3k"
+
+
+mastodonTarget : FederatedLinks.Target
+mastodonTarget =
+    FederatedLinks.MastodonStatus { instanceHost = "mastodon.social", statusId = "1" }
+
+
+{-| What `Shared.Federation.Bluesky`/`Mastodon` translate a post into: `id` is the bare `at://` URI / status id.
+-}
+federated : FederatedLinks.Target -> QuoteLinks.Model
+federated target =
+    let
+        id : String
+        id =
+            case target of
+                FederatedLinks.MastodonStatus { statusId } ->
+                    statusId
+
+                FederatedLinks.BlueskyUri uri ->
+                    uri
+
+                FederatedLinks.BlueskyHandle { rkey } ->
+                    rkey
+    in
+    withKey (FederatedLinks.key target) (QuoteLinks.Loaded { quoted | id = id })
+
+
+withKey : String -> QuoteLinks.Entry -> QuoteLinks.Model
+withKey entryKey entry =
+    { entries = Dict.singleton entryKey entry }
+
+
 eventCardSelector : Selector.Selector
 eventCardSelector =
     Selector.class "event-card"
@@ -173,9 +209,9 @@ suite =
     describe "Components.QuotedLink"
         [ describe "targetOf"
             [ test "a POST on a Rellm server whose link is a Rellm post link" <|
-                \_ -> QuotedLink.targetOf "rellm.org" (quoting "/post/abc") |> Expect.equal (Just { host = "rellm.org", id = "abc" })
+                \_ -> QuotedLink.targetOf "rellm.org" (quoting "/post/abc") |> Expect.equal (Just (QuoteLinks.RellmLink { host = "rellm.org", id = "abc" }))
             , test "an absolute link to another server" <|
-                \_ -> QuotedLink.targetOf "rellm.org" (quoting "https://jonline.io/~abc") |> Expect.equal (Just { host = "jonline.io", id = "abc" })
+                \_ -> QuotedLink.targetOf "rellm.org" (quoting "https://jonline.io/~abc") |> Expect.equal (Just (QuoteLinks.RellmLink { host = "jonline.io", id = "abc" }))
             , test "no link, or a link that isn't to a Rellm post" <|
                 \_ ->
                     let
@@ -228,6 +264,50 @@ suite =
                 \_ ->
                     rendered (loaded "rellm.org" "abc") "rellm.org" (quoting "https://example.com/article")
                         |> lacks [ card ]
+            ]
+        , describe "a quote of a Bluesky or Mastodon post"
+            [ test "shows the post as a card linking to Rellm's own page for it" <|
+                \_ ->
+                    rendered (federated blueskyTarget) "rellm.org" (quoting "https://bsky.app/profile/did:plc:abc/post/3k")
+                        |> Query.find [ Selector.class "post-card-link-overlay" ]
+                        |> Query.has [ Selector.attribute (Html.Attributes.href "/post/did:plc:abc~3k@bluesky:") ]
+            , test "with its content" <|
+                \_ ->
+                    rendered (federated blueskyTarget) "rellm.org" (quoting "https://bsky.app/profile/did:plc:abc/post/3k")
+                        |> Query.has [ card, quotedContent ]
+            , test "a Mastodon status links to its own /post/id@mastodon:instance page" <|
+                \_ ->
+                    rendered (federated mastodonTarget) "rellm.org" (quoting "https://mastodon.social/@a/1")
+                        |> Query.find [ Selector.class "post-card-link-overlay" ]
+                        |> Query.has [ Selector.attribute (Html.Attributes.href "/post/1@mastodon:mastodon.social") ]
+            , test "a Rellm-route link to a federated post embeds it too" <|
+                \_ ->
+                    rendered (federated blueskyTarget) "rellm.org" (quoting "/post/did:plc:abc~3k@bluesky:")
+                        |> Query.has [ card ]
+            , test "there's no Add or Enable button -- no server involved" <|
+                \_ ->
+                    rendered (federated blueskyTarget) "rellm.org" (quoting "https://bsky.app/profile/did:plc:abc/post/3k")
+                        |> lacks [ addButton, Selector.tag "button" ]
+            , test "while it loads, a loading line" <|
+                \_ ->
+                    rendered (withKey (FederatedLinks.key mastodonTarget) QuoteLinks.Loading) "rellm.org" (quoting "https://mastodon.social/@a/1")
+                        |> Query.has [ Selector.class "quoted-post-loading" ]
+            , test "a post that couldn't be fetched shows nothing" <|
+                \_ ->
+                    rendered (withKey (FederatedLinks.key mastodonTarget) QuoteLinks.Unavailable) "rellm.org" (quoting "https://mastodon.social/@a/1")
+                        |> lacks [ card, Selector.class "quoted-post-loading" ]
+            , test "targetOf: a federated link counts as a quote on a POST, not on a reply or a federated post" <|
+                \_ ->
+                    let
+                        post : Post
+                        post =
+                            quoting "https://mastodon.social/@a/1"
+                    in
+                    [ QuotedLink.targetOf "rellm.org" post |> Maybe.map (\_ -> True)
+                    , QuotedLink.targetOf "rellm.org" { post | context = REPLY } |> Maybe.map (\_ -> True)
+                    , QuotedLink.targetOf "bluesky:" post |> Maybe.map (\_ -> True)
+                    ]
+                        |> Expect.equalLists [ Just True, Nothing, Nothing ]
             ]
         , describe "a quote of an event"
             [ test "shows an event card instead of a post card" <|

@@ -11,6 +11,7 @@ import Expect
 import Proto.Rellm exposing (Event, Occasion, Post, defaultEvent, defaultOccasion)
 import Proto.Rellm.PostContext exposing (PostContext(..))
 import Set
+import Shared.Federation.FederatedLinks as FederatedLinks
 import Shared.Federation.RellmLinks as RellmLinks
 import Shared.QuoteLinks as QuoteLinks exposing (Entry(..), Plan(..), World)
 import Support.PostFactory as PostFactory
@@ -87,7 +88,7 @@ suite =
             [ test "a post on an enabled server is fetched right away" <|
                 \_ ->
                     let
-                        result : { model : QuoteLinks.Model, fetch : List RellmLinks.Target, previewHosts : List String }
+                        result : { model : QuoteLinks.Model, fetch : List RellmLinks.Target, previewHosts : List String, fetchFederated : List FederatedLinks.Target }
                         result =
                             QuoteLinks.request world [ ( "rellm.org", "/post/abc" ) ] QuoteLinks.init
                     in
@@ -96,7 +97,7 @@ suite =
             , test "a relative link means the quoting post's server; an absolute one means its own" <|
                 \_ ->
                     let
-                        result : { model : QuoteLinks.Model, fetch : List RellmLinks.Target, previewHosts : List String }
+                        result : { model : QuoteLinks.Model, fetch : List RellmLinks.Target, previewHosts : List String, fetchFederated : List FederatedLinks.Target }
                         result =
                             QuoteLinks.request world [ ( "rellm.org", "/~abc" ), ( "rellm.org", "https://bullcity.social/post/def" ) ] QuoteLinks.init
                     in
@@ -104,7 +105,7 @@ suite =
             , test "a post on a server the user hasn't added waits, and asks for that server's preview -- once, however many posts" <|
                 \_ ->
                     let
-                        result : { model : QuoteLinks.Model, fetch : List RellmLinks.Target, previewHosts : List String }
+                        result : { model : QuoteLinks.Model, fetch : List RellmLinks.Target, previewHosts : List String, fetchFederated : List FederatedLinks.Target }
                         result =
                             QuoteLinks.request world
                                 [ ( "rellm.org", "https://new-server.example/post/a" ), ( "rellm.org", "https://new-server.example/~b" ) ]
@@ -115,7 +116,7 @@ suite =
             , test "a post on a disabled server waits, without asking for a preview (it's one of the user's own servers)" <|
                 \_ ->
                     let
-                        result : { model : QuoteLinks.Model, fetch : List RellmLinks.Target, previewHosts : List String }
+                        result : { model : QuoteLinks.Model, fetch : List RellmLinks.Target, previewHosts : List String, fetchFederated : List FederatedLinks.Target }
                         result =
                             QuoteLinks.request world [ ( "rellm.org", "https://jonline.io/post/abc" ) ] QuoteLinks.init
                     in
@@ -124,7 +125,7 @@ suite =
             , test "a post on a host that isn't a Rellm server is marked unavailable, with nothing fetched or previewed" <|
                 \_ ->
                     let
-                        result : { model : QuoteLinks.Model, fetch : List RellmLinks.Target, previewHosts : List String }
+                        result : { model : QuoteLinks.Model, fetch : List RellmLinks.Target, previewHosts : List String, fetchFederated : List FederatedLinks.Target }
                         result =
                             QuoteLinks.request world [ ( "rellm.org", "https://some-blog.example/post/abc" ), ( "rellm.org", "http://192.168.1.5/post/abc" ) ] QuoteLinks.init
                     in
@@ -133,7 +134,7 @@ suite =
             , test "links that aren't Rellm post links, and federated posts' links, are ignored entirely" <|
                 \_ ->
                     let
-                        result : { model : QuoteLinks.Model, fetch : List RellmLinks.Target, previewHosts : List String }
+                        result : { model : QuoteLinks.Model, fetch : List RellmLinks.Target, previewHosts : List String, fetchFederated : List FederatedLinks.Target }
                         result =
                             QuoteLinks.request world
                                 [ ( "rellm.org", "https://example.com/some/page" ), ( "bluesky:alice.bsky.social", "/post/abc" ), ( "rellm.org", "" ) ]
@@ -144,7 +145,7 @@ suite =
             , test "the same post named three ways is one entry, one fetch" <|
                 \_ ->
                     let
-                        result : { model : QuoteLinks.Model, fetch : List RellmLinks.Target, previewHosts : List String }
+                        result : { model : QuoteLinks.Model, fetch : List RellmLinks.Target, previewHosts : List String, fetchFederated : List FederatedLinks.Target }
                         result =
                             QuoteLinks.request world [ ( "rellm.org", "/post/abc" ), ( "rellm.org", "/event/abc" ), ( "rellm.org", "https://rellm.org/:abc" ) ] QuoteLinks.init
                     in
@@ -157,16 +158,108 @@ suite =
                         pairs =
                             [ ( "rellm.org", "/post/abc" ), ( "rellm.org", "https://new-server.example/post/a" ) ]
 
-                        first : { model : QuoteLinks.Model, fetch : List RellmLinks.Target, previewHosts : List String }
+                        first : { model : QuoteLinks.Model, fetch : List RellmLinks.Target, previewHosts : List String, fetchFederated : List FederatedLinks.Target }
                         first =
                             QuoteLinks.request world pairs QuoteLinks.init
 
-                        second : { model : QuoteLinks.Model, fetch : List RellmLinks.Target, previewHosts : List String }
+                        second : { model : QuoteLinks.Model, fetch : List RellmLinks.Target, previewHosts : List String, fetchFederated : List FederatedLinks.Target }
                         second =
                             QuoteLinks.request world pairs first.model
                     in
                     ( second.fetch, second.previewHosts, second.model == first.model )
                         |> Expect.equal ( [], [], True )
+            ]
+        , describe "Bluesky and Mastodon links"
+            [ test "a Bluesky link is fetched (from the public AppView) -- no Rellm server, preview or account involved" <|
+                \_ ->
+                    let
+                        result : { model : QuoteLinks.Model, fetch : List RellmLinks.Target, previewHosts : List String, fetchFederated : List FederatedLinks.Target }
+                        result =
+                            QuoteLinks.request emptyWorld [ ( "rellm.org", "https://bsky.app/profile/did:plc:abc/post/3k" ) ] QuoteLinks.init
+                    in
+                    ( result.fetch, result.previewHosts, result.fetchFederated )
+                        |> Expect.equal ( [], [], [ FederatedLinks.BlueskyUri "at://did:plc:abc/app.bsky.feed.post/3k" ] )
+            , test "a Mastodon link on a public domain is fetched from that instance" <|
+                \_ ->
+                    QuoteLinks.request emptyWorld [ ( "rellm.org", "https://mastodon.social/@a/1" ) ] QuoteLinks.init
+                        |> .fetchFederated
+                        |> Expect.equal [ FederatedLinks.MastodonStatus { instanceHost = "mastodon.social", statusId = "1" } ]
+            , test "but never one on an address that isn't a public domain name" <|
+                \_ ->
+                    let
+                        result : { model : QuoteLinks.Model, fetch : List RellmLinks.Target, previewHosts : List String, fetchFederated : List FederatedLinks.Target }
+                        result =
+                            QuoteLinks.request emptyWorld [ ( "rellm.org", "https://192.168.1.5/@a/1" ), ( "rellm.org", "https://printer.local/@a/1" ) ] QuoteLinks.init
+                    in
+                    ( result.fetchFederated, Dict.values result.model.entries )
+                        |> Expect.equal ( [], [ Unavailable, Unavailable ] )
+            , test "federatedPlan: Bluesky always, Mastodon only on a public domain" <|
+                \_ ->
+                    [ QuoteLinks.federatedPlan (FederatedLinks.BlueskyUri "at://did:plc:abc/app.bsky.feed.post/3k")
+                    , QuoteLinks.federatedPlan (FederatedLinks.BlueskyHandle { handle = "a.bsky.social", rkey = "3k" })
+                    , QuoteLinks.federatedPlan (FederatedLinks.MastodonStatus { instanceHost = "mastodon.social", statusId = "1" })
+                    , QuoteLinks.federatedPlan (FederatedLinks.MastodonStatus { instanceHost = "localhost", statusId = "1" })
+                    ]
+                        |> Expect.equalLists [ Fetch, Fetch, Fetch, GiveUp ]
+            , test "a Rellm-route link to a federated post works whichever Rellm server it names" <|
+                \_ ->
+                    QuoteLinks.request emptyWorld [ ( "rellm.org", "https://some-rellm.example/post/9@mastodon:fosstodon.org" ) ] QuoteLinks.init
+                        |> .fetchFederated
+                        |> Expect.equal [ FederatedLinks.MastodonStatus { instanceHost = "fosstodon.org", statusId = "9" } ]
+            , test "the same post spelled two ways is fetched once" <|
+                \_ ->
+                    QuoteLinks.request emptyWorld
+                        [ ( "rellm.org", "https://bsky.app/profile/did:plc:abc/post/3k" )
+                        , ( "rellm.org", "/post/did:plc:abc~3k@bluesky:" )
+                        , ( "rellm.org", "at://did:plc:abc/app.bsky.feed.post/3k" )
+                        ]
+                        QuoteLinks.init
+                        |> .fetchFederated
+                        |> List.length
+                        |> Expect.equal 1
+            , test "asking again never refetches" <|
+                \_ ->
+                    let
+                        pairs : List ( String, String )
+                        pairs =
+                            [ ( "rellm.org", "https://mastodon.social/@a/1" ) ]
+
+                        first : { model : QuoteLinks.Model, fetch : List RellmLinks.Target, previewHosts : List String, fetchFederated : List FederatedLinks.Target }
+                        first =
+                            QuoteLinks.request emptyWorld pairs QuoteLinks.init
+                    in
+                    ( QuoteLinks.request emptyWorld pairs first.model |> .fetchFederated, QuoteLinks.unrequested first.model pairs )
+                        |> Expect.equal ( [], [] )
+            , test "a Rellm link and a federated one in the same request are each handled their own way" <|
+                \_ ->
+                    let
+                        result : { model : QuoteLinks.Model, fetch : List RellmLinks.Target, previewHosts : List String, fetchFederated : List FederatedLinks.Target }
+                        result =
+                            QuoteLinks.request world [ ( "rellm.org", "/post/abc" ), ( "rellm.org", "https://mastodon.social/@a/1" ) ] QuoteLinks.init
+                    in
+                    ( result.fetch, List.length result.fetchFederated ) |> Expect.equal ( [ target "rellm.org" "abc" ], 1 )
+            , test "unrequested counts a federated link as something to ask for" <|
+                \_ ->
+                    QuoteLinks.unrequested QuoteLinks.init [ ( "rellm.org", "https://bsky.app/profile/did:plc:abc/post/3k" ), ( "rellm.org", "https://example.com" ) ]
+                        |> List.length
+                        |> Expect.equal 1
+            , test "parseLink: a Rellm link is a Rellm link, a federated one federated, anything else nothing" <|
+                \_ ->
+                    [ QuoteLinks.parseLink "rellm.org" "/post/abc" |> Maybe.map (\_ -> "rellm")
+                    , QuoteLinks.parseLink "rellm.org" "https://mastodon.social/@a/1" |> Maybe.map (\_ -> "federated")
+                    , QuoteLinks.parseLink "rellm.org" "https://example.com" |> Maybe.map (\_ -> "other")
+                    ]
+                        |> Expect.equalLists [ Just "rellm", Just "federated", Nothing ]
+            , test "a fetched federated post is loaded under its own key" <|
+                \_ ->
+                    let
+                        linked : QuoteLinks.Linked
+                        linked =
+                            QuoteLinks.FederatedLink (FederatedLinks.MastodonStatus { instanceHost = "mastodon.social", statusId = "1" })
+                    in
+                    QuoteLinks.receive (QuoteLinks.linkKey linked) (Just quotedPost) QuoteLinks.init
+                        |> (\model -> QuoteLinks.entryForLinked model linked)
+                        |> Expect.equal (Just (Loaded quotedPost))
             ]
         , describe "unrequested -- what a page checks before waking Shared.update"
             [ test "only quote links it hasn't seen" <|

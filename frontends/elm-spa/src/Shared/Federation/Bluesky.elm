@@ -8,11 +8,13 @@ module Shared.Federation.Bluesky exposing
     , fetchFollowers
     , fetchFollows
     , fetchLikes
+    , fetchEmbeddedPost
     , fetchPost
     , fetchPostWithQuotes
     , fetchPosts
     , fetchThread
     , fromRouteId
+    , resolveHandle
     , searchActors
     , routeId
     , searchPosts
@@ -547,6 +549,30 @@ fetchPost : String -> String -> Task Http.Error ( Post, Bool )
 fetchPost accessToken uri =
     fetchFeedPost accessToken uri
         |> Task.map (\feedPost -> ( toPostIncludingSensitiveMedia feedPost, feedPost.sensitive ))
+
+
+{-| A post to embed as a quote card (`Components.QuotedLink`): read anonymously from the public AppView -- no
+connected account needed, and no token rotation to race -- and translated like a feed card (`toPost`:
+sensitive media stays hidden, the first quote carried along).
+-}
+fetchEmbeddedPost : String -> Task Http.Error Post
+fetchEmbeddedPost uri =
+    fetchFeedPost "" uri |> Task.map toPost
+
+
+{-| `GET /xrpc/com.atproto.identity.resolveHandle` -- the DID behind a handle, for a link like
+`bsky.app/profile/alice.bsky.social/post/…` (`getPosts` only takes DID-based `at://` URIs). Public, no auth.
+-}
+resolveHandle : String -> Task Http.Error String
+resolveHandle handle =
+    Http.task
+        { method = "GET"
+        , headers = []
+        , url = "https://public.api.bsky.app/xrpc/com.atproto.identity.resolveHandle?handle=" ++ Url.percentEncode handle
+        , body = Http.emptyBody
+        , resolver = jsonResolver (Decode.field "did" Decode.string) (\metadata _ -> Http.BadStatus metadata.statusCode)
+        , timeout = Just 10000
+        }
 
 
 {-| `fetchPost`, but also resolving the post's chain of quotes (a post quoting a post quoting a post

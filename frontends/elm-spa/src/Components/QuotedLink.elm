@@ -19,7 +19,9 @@ prompts on a post page) wherever the two overlap:
     `AccountsPanel` already previewed for it -- or, if the post itself can't be seen anonymously, just the
     button;
   - one the user hasn't added that isn't a Rellm server (or isn't known yet): nothing at all, so a post that
-    merely links to some website looks exactly as it did before.
+    merely links to some website looks exactly as it did before;
+  - a Bluesky or Mastodon post (`Shared.Federation.FederatedLinks`): its card, with no server to add or enable,
+    or nothing if it can't be fetched.
 
 -}
 
@@ -37,7 +39,8 @@ import Set exposing (Set)
 import Shared.AccountsPanel as AccountsPanel
 import Shared.AccountsPanel.RellmAccounts as RellmAccounts exposing (RellmAccount)
 import Shared.AccountsPanel.RellmServers as RellmServers exposing (RellmServer)
-import Shared.Federation.RellmLinks as RellmLinks exposing (Target)
+import Shared.Federation.FederatedLinks as FederatedLinks
+import Shared.Federation.RellmLinks exposing (Target)
 import Shared.QuoteLinks as QuoteLinks
 import Shared.Time as SharedTime
 
@@ -87,10 +90,10 @@ federated post's `link` is just a link -- a federated post's own quote arrives a
 `Post.quotedPost`, see `Shared.Federation.Bluesky`/`Mastodon`) whose `link` is a Rellm post/event link. `postServerHost` is the
 server `post` came from, which a relative link means.
 -}
-targetOf : String -> Post -> Maybe Target
+targetOf : String -> Post -> Maybe QuoteLinks.Linked
 targetOf postServerHost post =
     if post.context == POST && not (Posts.isFederatedHost postServerHost) && post.quotedPost == Nothing then
-        post.link |> Maybe.andThen (RellmLinks.parse postServerHost)
+        post.link |> Maybe.andThen (QuoteLinks.parseLink postServerHost)
 
     else
         Nothing
@@ -101,8 +104,8 @@ targetOf postServerHost post =
 view : Config msg -> String -> Post -> Html msg
 view config postServerHost post =
     case targetOf postServerHost post of
-        Just target ->
-            viewTarget config target
+        Just linked ->
+            viewLinked config linked
 
         Nothing ->
             text ""
@@ -113,12 +116,61 @@ one means, as for `Shared.Federation.RellmLinks.parse`.
 -}
 viewLink : Config msg -> String -> String -> Html msg
 viewLink config postServerHost link =
-    case RellmLinks.parse postServerHost link of
-        Just target ->
-            viewTarget config target
+    case QuoteLinks.parseLink postServerHost link of
+        Just linked ->
+            viewLinked config linked
 
         Nothing ->
             text ""
+
+
+viewLinked : Config msg -> QuoteLinks.Linked -> Html msg
+viewLinked config linked =
+    case linked of
+        QuoteLinks.RellmLink target ->
+            viewTarget config target
+
+        QuoteLinks.FederatedLink target ->
+            viewFederated config target
+
+
+{-| A Bluesky or Mastodon post: just the card (it links through to Rellm's own page for it), or a loading line --
+there's no server to add or enable. Nothing if it couldn't be fetched (not public, not a Mastodon host, ...).
+-}
+viewFederated : Config msg -> FederatedLinks.Target -> Html msg
+viewFederated config target =
+    case QuoteLinks.entryForLinked config.quotes (QuoteLinks.FederatedLink target) of
+        Just (QuoteLinks.Loaded quoted) ->
+            div [ class "quoted-post" ]
+                [ Posts.quotedPostCard
+                    config.time
+                    config.basePath
+                    config.accounts.mainFrontendHost
+                    (federatedHost target)
+                    config.mediaPlayState
+                    config.onMediaPlayClicked
+                    Nothing
+                    quoted
+                ]
+
+        Just QuoteLinks.Loading ->
+            div [ class "quoted-post-loading" ] [ text "Loading quoted post…" ]
+
+        _ ->
+            text ""
+
+
+{-| The synthetic `postServerHost` a federated post is rendered under (`Components.Posts.isFederatedHost`), which
+`Posts.postHref` turns into its `/post/…@bluesky:` / `@mastodon:{host}` page.
+-}
+federatedHost : FederatedLinks.Target -> String
+federatedHost target =
+    case target of
+        FederatedLinks.MastodonStatus { instanceHost } ->
+            "mastodon:" ++ instanceHost
+
+        _ ->
+            "bluesky:"
 
 
 viewTarget : Config msg -> Target -> Html msg

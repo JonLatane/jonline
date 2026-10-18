@@ -1,5 +1,6 @@
 module Shared.QuoteLinks exposing
     ( Entry(..)
+    , Linked(..)
     , Model
     , Msg(..)
     , Plan(..)
@@ -7,7 +8,11 @@ module Shared.QuoteLinks exposing
     , advance
     , eventOf
     , entryFor
+    , entryForLinked
+    , federatedPlan
     , init
+    , linkKey
+    , parseLink
     , plan
     , receive
     , receiveEvent
@@ -37,6 +42,11 @@ ones:
   - A server the user added but disabled isn't contacted at all (see `Components.ServerDependentView`, which
     `Components.QuotedLink` shows the usual "Enable" prompt through).
 
+A link to a Bluesky or Mastodon post (`Shared.Federation.FederatedLinks`) skips all of that: Bluesky is read
+anonymously from the public AppView (a handle is resolved to a DID first), Mastodon straight from the instance
+the link names -- only if that looks like a public domain name (`federatedPlan`), and a host that isn't Mastodon
+just fails the fetch (`Unavailable`).
+
 A fetched post whose `PostContext` is `EVENT` or `OCCASION` gets a `GetEvents` follow-up (`wantsEvent`), and
 is shown as an event card (`LoadedEvent`) rather than a plain post card -- whichever link shape named it.
 
@@ -49,6 +59,7 @@ import Components.Events as Events
 import Components.Posts as Posts
 import Dict exposing (Dict)
 import Grpc
+import Http
 import Proto.Rellm exposing (Event, GetEventsResponse, GetPostsResponse, Occasion, Post, defaultGetEventsRequest, defaultGetPostsRequest)
 import Proto.Rellm.PostContext exposing (PostContext(..))
 import Proto.Rellm.Rellm as Rellm
@@ -56,6 +67,9 @@ import Set exposing (Set)
 import Shared.AccountsPanel as AccountsPanel
 import Shared.AccountsPanel.RellmAccounts as RellmAccounts
 import Shared.AccountsPanel.RellmServers as RellmServers exposing (RellmServer)
+import Shared.Federation.Bluesky as Bluesky
+import Shared.Federation.FederatedLinks as FederatedLinks
+import Shared.Federation.Mastodon as Mastodon
 import Shared.Federation.RellmLinks as RellmLinks exposing (Target)
 import Task exposing (Task)
 
@@ -96,6 +110,8 @@ type Msg
       -- The follow-up fetch for a post that turned out to be an event/occasion (`wantsEvent`); the post
       -- stands in if it fails.
     | GotEvent Target Post (Result Grpc.Error ( Maybe AccountsPanel.Msg, GetEventsResponse ))
+      -- A Bluesky or Mastodon post fetched straight from its network (`FederatedLinks`), by cache key.
+    | GotFederated String (Result Http.Error Post)
 
 
 {-| What to do about one target right now. Pure -- see `World` -- so every branch of the server-selection
@@ -163,6 +179,60 @@ entryFor model target =
     Dict.get (RellmLinks.key target) model.entries
 
 
+{-| What a quoting post's `link` points at: a post/event on a Rellm server, or a Bluesky/Mastodon post
+(`FederatedLinks`) -- whichever the link is, including a Rellm-route link to a federated post.
+-}
+type Linked
+    = RellmLink Target
+    | FederatedLink FederatedLinks.Target
+
+
+{-| `postServerHost` is what a relative Rellm link means (a federated link needs no such context).
+-}
+parseLink : String -> String -> Maybe Linked
+parseLink postServerHost link =
+    case RellmLinks.parse postServerHost link of
+        Just target ->
+            Just (RellmLink target)
+
+        Nothing ->
+            FederatedLinks.parse link |> Maybe.map FederatedLink
+
+
+linkKey : Linked -> String
+linkKey linked =
+    case linked of
+        RellmLink target ->
+            RellmLinks.key target
+
+        FederatedLink target ->
+            FederatedLinks.key target
+
+
+entryForLinked : Model -> Linked -> Maybe Entry
+entryForLinked model linked =
+    Dict.get (linkKey linked) model.entries
+
+
+{-| A Bluesky post is read from the public AppView, so always `Fetch`. A Mastodon status is read from the
+instance the link names, so only when that looks like a public domain name (`RellmLinks.isProbeableHost`:
+a link in somebody's post shouldn't make the viewer's browser poke at their own network); a host that turns
+out not to be Mastodon just fails the fetch, which is `Unavailable`.
+-}
+federatedPlan : FederatedLinks.Target -> Plan
+federatedPlan target =
+    case target of
+        FederatedLinks.MastodonStatus { instanceHost } ->
+            if RellmLinks.isProbeableHost instanceHost then
+                Fetch
+
+            else
+                GiveUp
+
+        _ ->
+            Fetch
+
+
 {-| Of `( postServerHost, link )` pairs, the ones that parse to a target this cache hasn't seen -- so a page
 only sends `RequestLinks` (and so only wakes `Shared.update`) when there's actually something new.
 -}
@@ -171,9 +241,9 @@ unrequested model pairs =
     pairs
         |> List.filter
             (\( postServerHost, link ) ->
-                case RellmLinks.parse postServerHost link of
-                    Just target ->
-                        not (Dict.member (RellmLinks.key target) model.entries)
+                case parseLink postServerHost link of
+                    Just linked ->
+                        not (Dict.member (linkKey linked) model.entries)
 
                     Nothing ->
                         False
@@ -184,15 +254,59 @@ unrequested model pairs =
 happen next -- which targets to fetch now, and which hosts need a preview connection first. Targets already
 known are left alone.
 -}
-request : World -> List ( String, String ) -> Model -> { model : Model, fetch : List Target, previewHosts : List String }
+request : World -> List ( String, String ) -> Model -> { model : Model, fetch : List Target, previewHosts : List String, fetchFederated : List FederatedLinks.Target }
 request world pairs model =
     let
+        linked : List Linked
+        linked =
+            pairs |> List.filterMap (\( postServerHost, link ) -> parseLink postServerHost link)
+
         targets : List Target
         targets =
-            pairs
-                |> List.filterMap (\( postServerHost, link ) -> RellmLinks.parse postServerHost link)
+            linked
+                |> List.filterMap
+                    (\one ->
+                        case one of
+                            RellmLink target ->
+                                Just target
+
+                            FederatedLink _ ->
+                                Nothing
+                    )
                 |> dedupe
                 |> List.filter (\target -> not (Dict.member (RellmLinks.key target) model.entries))
+
+        federated : List FederatedLinks.Target
+        federated =
+            linked
+                |> List.filterMap
+                    (\one ->
+                        case one of
+                            FederatedLink target ->
+                                Just target
+
+                            RellmLink _ ->
+                                Nothing
+                    )
+                |> List.foldl
+                    (\target acc ->
+                        if List.any (\seen -> FederatedLinks.key seen == FederatedLinks.key target) acc then
+                            acc
+
+                        else
+                            acc ++ [ target ]
+                    )
+                    []
+                |> List.filter (\target -> not (Dict.member (FederatedLinks.key target) model.entries))
+
+        federatedStep : FederatedLinks.Target -> { entries : Dict String Entry, fetch : List FederatedLinks.Target } -> { entries : Dict String Entry, fetch : List FederatedLinks.Target }
+        federatedStep target acc =
+            case federatedPlan target of
+                Fetch ->
+                    { entries = Dict.insert (FederatedLinks.key target) Loading acc.entries, fetch = acc.fetch ++ [ target ] }
+
+                _ ->
+                    { acc | entries = Dict.insert (FederatedLinks.key target) Unavailable acc.entries }
 
         step : Target -> { entries : Dict String Entry, fetch : List Target, previewHosts : List String } -> { entries : Dict String Entry, fetch : List Target, previewHosts : List String }
         step target acc =
@@ -217,8 +331,16 @@ request world pairs model =
         result : { entries : Dict String Entry, fetch : List Target, previewHosts : List String }
         result =
             List.foldl step { entries = model.entries, fetch = [], previewHosts = [] } targets
+
+        federatedResult : { entries : Dict String Entry, fetch : List FederatedLinks.Target }
+        federatedResult =
+            List.foldl federatedStep { entries = result.entries, fetch = [] } federated
     in
-    { model = { model | entries = result.entries }, fetch = result.fetch, previewHosts = result.previewHosts }
+    { model = { model | entries = federatedResult.entries }
+    , fetch = result.fetch
+    , previewHosts = result.previewHosts
+    , fetchFederated = federatedResult.fetch
+    }
 
 
 {-| Re-plans every `Awaiting` entry against `world` -- what `advance` runs after every message, since what
@@ -320,13 +442,12 @@ update accounts msg model =
     case msg of
         RequestLinks pairs ->
             let
-                result : { model : Model, fetch : List Target, previewHosts : List String }
+                result : { model : Model, fetch : List Target, previewHosts : List String, fetchFederated : List FederatedLinks.Target }
                 result =
                     request (worldOf accounts) pairs model
-
             in
             ( result.model
-            , Cmd.batch (List.map (fetchCmd accounts) result.fetch)
+            , Cmd.batch (List.map (fetchCmd accounts) result.fetch ++ List.map fetchFederatedCmd result.fetchFederated)
             , if List.isEmpty result.previewHosts then
                 []
 
@@ -372,6 +493,9 @@ update accounts msg model =
                 Err _ ->
                     ( receive (RellmLinks.key target) Nothing model, Cmd.none, [] )
 
+        GotFederated entryKey result ->
+            ( receive entryKey (Result.toMaybe result) model, Cmd.none, [] )
+
         GotEvent target post result ->
             case result of
                 Ok ( maybeAccountsPanelMsg, response ) ->
@@ -415,6 +539,22 @@ fetchCmd : AccountsPanel.Model -> Target -> Cmd Msg
 fetchCmd accounts target =
     fetchTask accounts target
         |> Task.attempt (GotPost target)
+
+
+fetchFederatedCmd : FederatedLinks.Target -> Cmd Msg
+fetchFederatedCmd target =
+    (case target of
+        FederatedLinks.BlueskyUri uri ->
+            Bluesky.fetchEmbeddedPost uri
+
+        FederatedLinks.BlueskyHandle { handle, rkey } ->
+            Bluesky.resolveHandle handle
+                |> Task.andThen (\did -> Bluesky.fetchEmbeddedPost ("at://" ++ did ++ "/app.bsky.feed.post/" ++ rkey))
+
+        FederatedLinks.MastodonStatus { instanceHost, statusId } ->
+            Mastodon.fetchEmbeddedStatus instanceHost statusId
+    )
+        |> Task.attempt (GotFederated (FederatedLinks.key target))
 
 
 fetchEventCmd : AccountsPanel.Model -> Target -> Post -> Cmd Msg
