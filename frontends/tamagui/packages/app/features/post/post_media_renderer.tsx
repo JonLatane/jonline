@@ -64,11 +64,17 @@ export const PostMediaRenderer: React.FC<PostMediaRendererProps> = ({
   });
   const detailsLink: LinkProps = useMemo(() => parentDetailsLink ?? postDetailsLink, [parentDetailsLink, postDetailsLink]);
 
-  const embedSupported = useMemo(() => post.embedLink && post.link && post.link.length, [post.embedLink, post.link]);
+  // Links to supported social media sites are always embedded.
+  const embedSupported = useMemo(() => post.link && post.link.length, [post.link]);
   const embedComponent = useMemo(() => {
     let embed: React.ReactNode | undefined = undefined;
     if (embedSupported) {
-      const url = new URL(post.link!);
+      let url: URL;
+      try {
+        url = new URL(post.link!);
+      } catch {
+        return undefined; // Not a parseable URL, so nothing to embed.
+      }
       const hostname = url.hostname.split(':')[0]!;
       if (hostname.endsWith('twitter.com') || hostname.endsWith('t.co') || hostname.endsWith('x.com')) {
         embed = <XEmbed url={post.link!} />;

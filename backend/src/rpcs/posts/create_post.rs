@@ -116,7 +116,6 @@ pub fn create_post(
                 }
                 .to_string_post_context(),
                 visibility: visibility.to_string_visibility(),
-                embed_link: request.embed_link.to_owned(),
                 media: request
                     .media
                     .iter()

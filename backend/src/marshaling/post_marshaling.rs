@@ -146,7 +146,6 @@ impl ToProtoMarshalablePost for MarshalablePost {
                 None => vec![],
             }, // self.media.iter().map(|v| v.to_proto_id()).collect_vec(),
             media_generated: post.media_generated,
-            embed_link: post.embed_link,
             shareable: post.shareable,
 
             context: post.context.to_i32_post_context(),

@@ -252,8 +252,7 @@ I plan to re-implement the Orbifold in BeatScratch, at which point this app will
       [DemoGroup.music],
       Post()
         ..title = "Jack Stratton rockin a Harpejji"
-        ..link = "https://www.instagram.com/reel/CsY_NinvWDW/"
-        ..embedLink = true),
+        ..link = "https://www.instagram.com/reel/CsY_NinvWDW/"),
   DemoPost(
     [DemoGroup.everyoneWelcome, DemoGroup.tech, DemoGroup.programming],
     Post()

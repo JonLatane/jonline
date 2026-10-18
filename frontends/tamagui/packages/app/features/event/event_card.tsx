@@ -12,7 +12,6 @@ import { useAppSelector, useComponentKey, useCurrentAccountOrServer, useFederate
 import { themedButtonBackground } from "app/utils/themed_button_background";
 import { occasionTimeSort, isNotPastOccasion, isPastOccasion } from "app/utils/time";
 import moment from "moment";
-import { FacebookEmbed, InstagramEmbed, LinkedInEmbed, PinterestEmbed, TikTokEmbed, TwitterEmbed, YouTubeEmbed } from "react-social-media-embed";
 import { useLink } from "solito/link";
 // import { PostMediaRenderer } from "../post/post_media_renderer";
 import { PayloadAction } from '@reduxjs/toolkit';
@@ -97,7 +96,6 @@ export const EventCard: React.FC<Props> = ({
   const [editedLink, setEditedLink] = useState(eventPost.link);
   const [editedContent, setEditedContent] = useState(eventPost.content);
   const [editedMedia, setEditedMedia] = useState(eventPost.media);
-  const [editedEmbedLink, setEditedEmbedLink] = useState(eventPost.embedLink);
   const [editedVisibility, setEditedVisibility] = useState(eventPost.visibility);
   const [editedShareable, setEditedShareable] = useState(eventPost.shareable);
 
@@ -121,7 +119,6 @@ export const EventCard: React.FC<Props> = ({
   const title = editing ? editedTitle : eventPost.title;
   const content = editing ? editedContent : eventPost.content;
   const media = editing ? editedMedia : eventPost.media;
-  const embedLink = editing ? editedEmbedLink : eventPost.embedLink;
   const visibility = editing ? editedVisibility : eventPost.visibility;
   const shareable = editing ? editedShareable : eventPost.shareable;
   const occasions = editing ? editedOccasions : event.occasions;
@@ -283,7 +280,7 @@ export const EventCard: React.FC<Props> = ({
     : undefined;
   // console.log({ maxTotalContentHeight })
   const numContentSections = ((content?.length ?? 0) > 0 ? 1 : 0)
-    + (embedLink || media.length > 0 ? 1 : 0);
+    + ((eventPost.link?.length ?? 0) > 0 || media.length > 0 ? 1 : 0);
   const maxContentSectionHeight = isPreview ?
     (maxTotalContentHeight! - (maxTotalContentHeight! * (2 - numContentSections) * 0.25)) / numContentSections
     : undefined;
@@ -301,29 +298,6 @@ export const EventCard: React.FC<Props> = ({
     shadowOffset: { width: -5, height: -5 },
     shadowRadius: 10
   } : {};
-  const embedSupported = eventPost.embedLink && eventPost.link && eventPost.link.length;
-  const embedComponent = useMemo(() => {
-    if (embedSupported) {
-      const url = new URL(eventPost.link!);
-      const hostname = url.hostname.split(':')[0]!;
-      if (hostname.endsWith('twitter.com')) {
-        return <TwitterEmbed url={eventPost.link!} />;
-      } else if (hostname.endsWith('instagram.com')) {
-        return <InstagramEmbed url={eventPost.link!} />;
-      } else if (hostname.endsWith('facebook.com')) {
-        return <FacebookEmbed url={eventPost.link!} />;
-      } else if (hostname.endsWith('youtube.com')) {
-        return <YouTubeEmbed url={eventPost.link!} />;
-      } else if (hostname.endsWith('tiktok.com')) {
-        return <TikTokEmbed url={eventPost.link!} />;
-      } else if (hostname.endsWith('pinterest.com')) {
-        return <PinterestEmbed url={eventPost.link!} />;
-      } else if (hostname.endsWith('linkedin.com')) {
-        return <LinkedInEmbed url={eventPost.link!} />;
-      }
-    }
-    return undefined;
-  }, [embedSupported, eventPost.link]);
 
   const imagePreview = useMemo(() => media?.find(isImageMedia), [media]);
   const showScrollableMediaPreviews = useMemo(() => (media?.filter(m => !m.generated).length ?? 0) >= 2, [media]);
@@ -894,11 +868,8 @@ export const EventCard: React.FC<Props> = ({
                           {editing && !previewingEdits
                             ? <PostMediaManager
                               key='media-edit'
-                              link={eventPost.link}
                               media={editedMedia}
                               setMedia={setEditedMedia}
-                              embedLink={editedEmbedLink}
-                              setEmbedLink={setEditedEmbedLink}
                               disableInputs={savingEdits}
                             />
                             : <PostMediaRenderer
@@ -909,8 +880,7 @@ export const EventCard: React.FC<Props> = ({
                               {...{ detailsLink, isPreview, groupContext: selectedGroup }}
                               post={{
                                 ...eventPost,
-                                media,
-                                embedLink
+                                media
                               }} />}
                         </YStack>
                         <YStack px='$3' key='content' maxHeight={maxContentSectionHeight} overflow='hidden'>

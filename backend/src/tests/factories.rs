@@ -208,7 +208,6 @@ pub fn create_post(
             visibility: opts.visibility.to_string_visibility(),
             moderation: opts.moderation.to_string_moderation(),
             media: vec![],
-            embed_link: false,
         })
         // posts::search_text has no corresponding field on `models::Post` (see POST_COLUMNS'
         // doc comment), so a plain `RETURNING *` can't deserialize into it - the explicit

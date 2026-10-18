@@ -4770,7 +4770,6 @@ fieldNumbersPost :
     , groupCount : Int
     , media : Int
     , mediaGenerated : Int
-    , embedLink : Int
     , shareable : Int
     , context : Int
     , visibility : Int
@@ -4855,11 +4854,6 @@ encodePost =
 
  Flag indicating whether Media has been generated for this Post.
  Currently previews are generated for any Link post.
-
-
-### embedLink
-
- Flag indicating
 
 
 ### shareable

@@ -6378,7 +6378,6 @@ fieldNumbersProto__Rellm__Post :
     , groupCount : Int
     , media : Int
     , mediaGenerated : Int
-    , embedLink : Int
     , shareable : Int
     , context : Int
     , visibility : Int
@@ -6407,7 +6406,6 @@ fieldNumbersProto__Rellm__Post =
     , groupCount = 9
     , media = 10
     , mediaGenerated = 11
-    , embedLink = 12
     , shareable = 13
     , context = 14
     , visibility = 15
@@ -6442,7 +6440,6 @@ defaultProto__Rellm__Post =
     , groupCount = 0
     , media = []
     , mediaGenerated = False
-    , embedLink = False
     , shareable = False
     , context = Proto.Rellm.PostContext.defaultPostContext
     , visibility = Proto.Rellm.Visibility.defaultVisibility
@@ -6482,7 +6479,6 @@ decodeProto__Rellm__Post =
         , Protobuf.Decode.optional 9 Protobuf.Decode.int32 (\a r -> { r | groupCount = a })
         , Protobuf.Decode.repeated 10 decodeProto__Rellm__MediaReference .media (\a r -> { r | media = a })
         , Protobuf.Decode.optional 11 Protobuf.Decode.bool (\a r -> { r | mediaGenerated = a })
-        , Protobuf.Decode.optional 12 Protobuf.Decode.bool (\a r -> { r | embedLink = a })
         , Protobuf.Decode.optional 13 Protobuf.Decode.bool (\a r -> { r | shareable = a })
         , Protobuf.Decode.optional 14 Proto.Rellm.PostContext.decodePostContext (\a r -> { r | context = a })
         , Protobuf.Decode.optional 15 Proto.Rellm.Visibility.decodeVisibility (\a r -> { r | visibility = a })
@@ -6553,7 +6549,6 @@ encodeProto__Rellm__Post value =
         , ( 9, Protobuf.Encode.int32 value.groupCount )
         , ( 10, (Protobuf.Encode.list encodeProto__Rellm__MediaReference) value.media )
         , ( 11, Protobuf.Encode.bool value.mediaGenerated )
-        , ( 12, Protobuf.Encode.bool value.embedLink )
         , ( 13, Protobuf.Encode.bool value.shareable )
         , ( 14, Proto.Rellm.PostContext.encodePostContext value.context )
         , ( 15, Proto.Rellm.Visibility.encodeVisibility value.visibility )
@@ -6612,7 +6607,6 @@ type alias Proto__Rellm__Post =
     , groupCount : Int
     , media : List Proto__Rellm__MediaReference
     , mediaGenerated : Bool
-    , embedLink : Bool
     , shareable : Bool
     , context : Proto.Rellm.PostContext.PostContext
     , visibility : Proto.Rellm.Visibility.Visibility

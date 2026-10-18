@@ -29,7 +29,7 @@ Don't call `Grpc.addHeader "authorization"` with a token you're holding onto —
 
 ## Read-modify-write safety
 
-Some RPCs take and **unconditionally apply a whole record** server-side — e.g. `UpdatePost` (`backend/src/rpcs/posts/update_post.rs`) overwrites `visibility`/`media`/`embed_link`/`shareable`/etc. from whatever `Post` you send, not just the field you intended to change. If you're changing one field of something fetched a while ago (user was editing in a text box, a panel sat open, etc.), **re-fetch it fresh immediately before submitting** and overlay only your change onto that fresh copy — don't resubmit a possibly-stale in-hand snapshot. See `Shared/MarkdownPanel.elm`'s `saveTask` (`Task.andThen`s a fresh `GetPosts` into the eventual `UpdatePost`) for the pattern. Check the corresponding `backend/src/rpcs/**/*.rs` handler when in doubt about which fields get blindly overwritten vs. merged.
+Some RPCs take and **unconditionally apply a whole record** server-side — e.g. `UpdatePost` (`backend/src/rpcs/posts/update_post.rs`) overwrites `visibility`/`media`/`shareable`/etc. from whatever `Post` you send, not just the field you intended to change. If you're changing one field of something fetched a while ago (user was editing in a text box, a panel sat open, etc.), **re-fetch it fresh immediately before submitting** and overlay only your change onto that fresh copy — don't resubmit a possibly-stale in-hand snapshot. See `Shared/MarkdownPanel.elm`'s `saveTask` (`Task.andThen`s a fresh `GetPosts` into the eventual `UpdatePost`) for the pattern. Check the corresponding `backend/src/rpcs/**/*.rs` handler when in doubt about which fields get blindly overwritten vs. merged.
 
 ## Errors
 

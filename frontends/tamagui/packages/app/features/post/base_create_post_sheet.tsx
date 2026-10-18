@@ -137,7 +137,6 @@ export function BaseCreatePostSheet({
     }
   }, [link]);
   const [content, setContent] = useState('');
-  const [embedLink, setEmbedLink] = useState(false);
   const [media, setMedia] = useState<MediaReference[]>([]);
 
   function resetPost() {
@@ -149,7 +148,6 @@ export function BaseCreatePostSheet({
     setTitle('');
     setLink('');
     setContent('');
-    setEmbedLink(false);
     setMedia([]);
 
     setRenderType(RenderType.Edit);
@@ -175,7 +173,7 @@ export function BaseCreatePostSheet({
   }
 
   const previewPost = Post.create({
-    title, link, content, shareable, embedLink, media, visibility,
+    title, link, content, shareable, media, visibility,
     author: { userId: account?.user.id, username: account?.user.username }
   })
   const textAreaRef = React.createRef<TextInput>();
@@ -223,9 +221,6 @@ export function BaseCreatePostSheet({
       // }
     }
   }, [openDebounced]);
-
-  const canEmbedLink = ['instagram', 'facebook', 'linkedin', 'tiktok', 'youtube', 'twitter', 'pinterest']
-    .map(x => link.includes(x)).reduce((a, b) => a || b, false);
 
   const isPosting = posting;
   const disableInputs = isPosting;
@@ -486,7 +481,7 @@ export function BaseCreatePostSheet({
                             ? <AccountOrServerContextProvider key='media' value={accountOrServer}>
                               {/* <XStack w='auto' maw='100%' mx='auto'> */}
                               <PostMediaManager key='post-media-manager'
-                                {...{ link, media, setMedia, embedLink, setEmbedLink }} />
+                                {...{ media, setMedia }} />
                               {/* </XStack> */}
                             </AccountOrServerContextProvider>
                             : undefined}

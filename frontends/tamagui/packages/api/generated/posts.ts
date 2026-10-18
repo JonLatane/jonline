@@ -329,8 +329,6 @@ export interface Post {
    * Currently previews are generated for any Link post.
    */
   mediaGenerated: boolean;
-  /** Flag indicating */
-  embedLink: boolean;
   /**
    * Flag indicating a `LIMITED` or `SERVER_PUBLIC` post can be shared with groups and individuals,
    * and a `DIRECT` post can be shared with individuals.
@@ -760,7 +758,6 @@ function createBasePost(): Post {
     groupCount: 0,
     media: [],
     mediaGenerated: false,
-    embedLink: false,
     shareable: false,
     context: 0,
     visibility: 0,
@@ -813,9 +810,6 @@ export const Post: MessageFns<Post> = {
     }
     if (message.mediaGenerated !== false) {
       writer.uint32(88).bool(message.mediaGenerated);
-    }
-    if (message.embedLink !== false) {
-      writer.uint32(96).bool(message.embedLink);
     }
     if (message.shareable !== false) {
       writer.uint32(104).bool(message.shareable);
@@ -960,14 +954,6 @@ export const Post: MessageFns<Post> = {
           message.mediaGenerated = reader.bool();
           continue;
         }
-        case 12: {
-          if (tag !== 96) {
-            break;
-          }
-
-          message.embedLink = reader.bool();
-          continue;
-        }
         case 13: {
           if (tag !== 104) {
             break;
@@ -1110,7 +1096,6 @@ export const Post: MessageFns<Post> = {
       groupCount: isSet(object.groupCount) ? globalThis.Number(object.groupCount) : 0,
       media: globalThis.Array.isArray(object?.media) ? object.media.map((e: any) => MediaReference.fromJSON(e)) : [],
       mediaGenerated: isSet(object.mediaGenerated) ? globalThis.Boolean(object.mediaGenerated) : false,
-      embedLink: isSet(object.embedLink) ? globalThis.Boolean(object.embedLink) : false,
       shareable: isSet(object.shareable) ? globalThis.Boolean(object.shareable) : false,
       context: isSet(object.context) ? postContextFromJSON(object.context) : 0,
       visibility: isSet(object.visibility) ? visibilityFromJSON(object.visibility) : 0,
@@ -1167,9 +1152,6 @@ export const Post: MessageFns<Post> = {
     }
     if (message.mediaGenerated !== false) {
       obj.mediaGenerated = message.mediaGenerated;
-    }
-    if (message.embedLink !== false) {
-      obj.embedLink = message.embedLink;
     }
     if (message.shareable !== false) {
       obj.shareable = message.shareable;
@@ -1237,7 +1219,6 @@ export const Post: MessageFns<Post> = {
     message.groupCount = object.groupCount ?? 0;
     message.media = object.media?.map((e) => MediaReference.fromPartial(e)) || [];
     message.mediaGenerated = object.mediaGenerated ?? false;
-    message.embedLink = object.embedLink ?? false;
     message.shareable = object.shareable ?? false;
     message.context = object.context ?? 0;
     message.visibility = object.visibility ?? 0;

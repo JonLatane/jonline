@@ -296,7 +296,6 @@ class Post extends $pb.GeneratedMessage {
     $core.int? groupCount,
     $core.Iterable<$5.MediaReference>? media,
     $core.bool? mediaGenerated,
-    $core.bool? embedLink,
     $core.bool? shareable,
     PostContext? context,
     $14.Visibility? visibility,
@@ -346,9 +345,6 @@ class Post extends $pb.GeneratedMessage {
     }
     if (mediaGenerated != null) {
       $result.mediaGenerated = mediaGenerated;
-    }
-    if (embedLink != null) {
-      $result.embedLink = embedLink;
     }
     if (shareable != null) {
       $result.shareable = shareable;
@@ -413,7 +409,6 @@ class Post extends $pb.GeneratedMessage {
     ..a<$core.int>(9, _omitFieldNames ? '' : 'groupCount', $pb.PbFieldType.O3)
     ..pc<$5.MediaReference>(10, _omitFieldNames ? '' : 'media', $pb.PbFieldType.PM, subBuilder: $5.MediaReference.create)
     ..aOB(11, _omitFieldNames ? '' : 'mediaGenerated')
-    ..aOB(12, _omitFieldNames ? '' : 'embedLink')
     ..aOB(13, _omitFieldNames ? '' : 'shareable')
     ..e<PostContext>(14, _omitFieldNames ? '' : 'context', $pb.PbFieldType.OE, defaultOrMaker: PostContext.POST, valueOf: PostContext.valueOf, enumValues: PostContext.values)
     ..e<$14.Visibility>(15, _omitFieldNames ? '' : 'visibility', $pb.PbFieldType.OE, defaultOrMaker: $14.Visibility.VISIBILITY_UNKNOWN, valueOf: $14.Visibility.valueOf, enumValues: $14.Visibility.values)
@@ -560,162 +555,152 @@ class Post extends $pb.GeneratedMessage {
   @$pb.TagNumber(11)
   void clearMediaGenerated() => clearField(11);
 
-  /// Flag indicating
-  @$pb.TagNumber(12)
-  $core.bool get embedLink => $_getBF(11);
-  @$pb.TagNumber(12)
-  set embedLink($core.bool v) { $_setBool(11, v); }
-  @$pb.TagNumber(12)
-  $core.bool hasEmbedLink() => $_has(11);
-  @$pb.TagNumber(12)
-  void clearEmbedLink() => clearField(12);
-
   /// Flag indicating a `LIMITED` or `SERVER_PUBLIC` post can be shared with groups and individuals,
   /// and a `DIRECT` post can be shared with individuals.
   @$pb.TagNumber(13)
-  $core.bool get shareable => $_getBF(12);
+  $core.bool get shareable => $_getBF(11);
   @$pb.TagNumber(13)
-  set shareable($core.bool v) { $_setBool(12, v); }
+  set shareable($core.bool v) { $_setBool(11, v); }
   @$pb.TagNumber(13)
-  $core.bool hasShareable() => $_has(12);
+  $core.bool hasShareable() => $_has(11);
   @$pb.TagNumber(13)
   void clearShareable() => clearField(13);
 
   /// Context of the Post (`POST`, `REPLY`, `EVENT`, or `OCCASION`.)
   @$pb.TagNumber(14)
-  PostContext get context => $_getN(13);
+  PostContext get context => $_getN(12);
   @$pb.TagNumber(14)
   set context(PostContext v) { setField(14, v); }
   @$pb.TagNumber(14)
-  $core.bool hasContext() => $_has(13);
+  $core.bool hasContext() => $_has(12);
   @$pb.TagNumber(14)
   void clearContext() => clearField(14);
 
   /// The visibility of the Post.
   @$pb.TagNumber(15)
-  $14.Visibility get visibility => $_getN(14);
+  $14.Visibility get visibility => $_getN(13);
   @$pb.TagNumber(15)
   set visibility($14.Visibility v) { setField(15, v); }
   @$pb.TagNumber(15)
-  $core.bool hasVisibility() => $_has(14);
+  $core.bool hasVisibility() => $_has(13);
   @$pb.TagNumber(15)
   void clearVisibility() => clearField(15);
 
   /// The moderation of the Post.
   @$pb.TagNumber(16)
-  $14.Moderation get moderation => $_getN(15);
+  $14.Moderation get moderation => $_getN(14);
   @$pb.TagNumber(16)
   set moderation($14.Moderation v) { setField(16, v); }
   @$pb.TagNumber(16)
-  $core.bool hasModeration() => $_has(15);
+  $core.bool hasModeration() => $_has(14);
   @$pb.TagNumber(16)
   void clearModeration() => clearField(16);
 
   /// The desired end-user layout of Media attached to the post.
   @$pb.TagNumber(17)
-  PostMediaLayout get postMediaLayout => $_getN(16);
+  PostMediaLayout get postMediaLayout => $_getN(15);
   @$pb.TagNumber(17)
   set postMediaLayout(PostMediaLayout v) { setField(17, v); }
   @$pb.TagNumber(17)
-  $core.bool hasPostMediaLayout() => $_has(16);
+  $core.bool hasPostMediaLayout() => $_has(15);
   @$pb.TagNumber(17)
   void clearPostMediaLayout() => clearField(17);
 
   /// If the Post was retrieved from GetPosts with a group_id, the GroupPost
   /// metadata may be returned along with the Post.
   @$pb.TagNumber(18)
-  GroupPost get currentGroupPost => $_getN(17);
+  GroupPost get currentGroupPost => $_getN(16);
   @$pb.TagNumber(18)
   set currentGroupPost(GroupPost v) { setField(18, v); }
   @$pb.TagNumber(18)
-  $core.bool hasCurrentGroupPost() => $_has(17);
+  $core.bool hasCurrentGroupPost() => $_has(16);
   @$pb.TagNumber(18)
   void clearCurrentGroupPost() => clearField(18);
   @$pb.TagNumber(18)
-  GroupPost ensureCurrentGroupPost() => $_ensure(17);
+  GroupPost ensureCurrentGroupPost() => $_ensure(16);
 
   /// Hierarchical replies to this post. There will never be more than `reply_count` replies. However,
   /// there may be fewer than `reply_count` replies if some replies are
   /// hidden by moderation or visibility. Replies are not generally loaded by default, but can be added to Posts
   /// in the frontend.
   @$pb.TagNumber(19)
-  $core.List<Post> get replies => $_getList(18);
+  $core.List<Post> get replies => $_getList(17);
 
   /// The time the post was created.
   @$pb.TagNumber(20)
-  $13.Timestamp get createdAt => $_getN(19);
+  $13.Timestamp get createdAt => $_getN(18);
   @$pb.TagNumber(20)
   set createdAt($13.Timestamp v) { setField(20, v); }
   @$pb.TagNumber(20)
-  $core.bool hasCreatedAt() => $_has(19);
+  $core.bool hasCreatedAt() => $_has(18);
   @$pb.TagNumber(20)
   void clearCreatedAt() => clearField(20);
   @$pb.TagNumber(20)
-  $13.Timestamp ensureCreatedAt() => $_ensure(19);
+  $13.Timestamp ensureCreatedAt() => $_ensure(18);
 
   /// The time the post was last updated.
   @$pb.TagNumber(21)
-  $13.Timestamp get updatedAt => $_getN(20);
+  $13.Timestamp get updatedAt => $_getN(19);
   @$pb.TagNumber(21)
   set updatedAt($13.Timestamp v) { setField(21, v); }
   @$pb.TagNumber(21)
-  $core.bool hasUpdatedAt() => $_has(20);
+  $core.bool hasUpdatedAt() => $_has(19);
   @$pb.TagNumber(21)
   void clearUpdatedAt() => clearField(21);
   @$pb.TagNumber(21)
-  $13.Timestamp ensureUpdatedAt() => $_ensure(20);
+  $13.Timestamp ensureUpdatedAt() => $_ensure(19);
 
   /// The time the post was published (its visibility first changed to `SERVER_PUBLIC` or `GLOBAL_PUBLIC`).
   @$pb.TagNumber(22)
-  $13.Timestamp get publishedAt => $_getN(21);
+  $13.Timestamp get publishedAt => $_getN(20);
   @$pb.TagNumber(22)
   set publishedAt($13.Timestamp v) { setField(22, v); }
   @$pb.TagNumber(22)
-  $core.bool hasPublishedAt() => $_has(21);
+  $core.bool hasPublishedAt() => $_has(20);
   @$pb.TagNumber(22)
   void clearPublishedAt() => clearField(22);
   @$pb.TagNumber(22)
-  $13.Timestamp ensurePublishedAt() => $_ensure(21);
+  $13.Timestamp ensurePublishedAt() => $_ensure(20);
 
   /// The time the post was last interacted with (replied to, etc.)
   @$pb.TagNumber(23)
-  $13.Timestamp get lastActivityAt => $_getN(22);
+  $13.Timestamp get lastActivityAt => $_getN(21);
   @$pb.TagNumber(23)
   set lastActivityAt($13.Timestamp v) { setField(23, v); }
   @$pb.TagNumber(23)
-  $core.bool hasLastActivityAt() => $_has(22);
+  $core.bool hasLastActivityAt() => $_has(21);
   @$pb.TagNumber(23)
   void clearLastActivityAt() => clearField(23);
   @$pb.TagNumber(23)
-  $13.Timestamp ensureLastActivityAt() => $_ensure(22);
+  $13.Timestamp ensureLastActivityAt() => $_ensure(21);
 
   /// The number of unauthenticated stars on the post.
   @$pb.TagNumber(24)
-  $fixnum.Int64 get unauthenticatedStarCount => $_getI64(23);
+  $fixnum.Int64 get unauthenticatedStarCount => $_getI64(22);
   @$pb.TagNumber(24)
-  set unauthenticatedStarCount($fixnum.Int64 v) { $_setInt64(23, v); }
+  set unauthenticatedStarCount($fixnum.Int64 v) { $_setInt64(22, v); }
   @$pb.TagNumber(24)
-  $core.bool hasUnauthenticatedStarCount() => $_has(23);
+  $core.bool hasUnauthenticatedStarCount() => $_has(22);
   @$pb.TagNumber(24)
   void clearUnauthenticatedStarCount() => clearField(24);
 
   /// SyncDestinations this post has been synced (cross-posted) to, and their status.
   @$pb.TagNumber(25)
-  $core.List<$10.SyncDestinationStatus> get syncDestinations => $_getList(24);
+  $core.List<$10.SyncDestinationStatus> get syncDestinations => $_getList(23);
 
   /// If the Post was created/is kept in sync from a [`SyncSource`](#rellm-SyncSource) (an ICS
   /// Event/Occasion, or an RSS/Atom feed item), this is the source it was synced from.
   /// Only its media should be considered editable for such a Post.
   @$pb.TagNumber(26)
-  $10.SyncSource get syncSource => $_getN(25);
+  $10.SyncSource get syncSource => $_getN(24);
   @$pb.TagNumber(26)
   set syncSource($10.SyncSource v) { setField(26, v); }
   @$pb.TagNumber(26)
-  $core.bool hasSyncSource() => $_has(25);
+  $core.bool hasSyncSource() => $_has(24);
   @$pb.TagNumber(26)
   void clearSyncSource() => clearField(26);
   @$pb.TagNumber(26)
-  $10.SyncSource ensureSyncSource() => $_ensure(25);
+  $10.SyncSource ensureSyncSource() => $_ensure(24);
 
   ///  A post this post quotes (embeds), for posts translated from a federated network such as Bluesky
   ///  or Mastodon. Only ever set client-side by the Elm frontend's federation translators -- Rellm
@@ -727,15 +712,15 @@ class Post extends $pb.GeneratedMessage {
   ///  server, or a Bluesky or Mastodon post (its own URL, or a Rellm `/post/{id}@bluesky:` /
   ///  `@mastodon:{host}` route). That's only meaningful on a `POST`-context post (`link` is invalid for replies).
   @$pb.TagNumber(27)
-  Post get quotedPost => $_getN(26);
+  Post get quotedPost => $_getN(25);
   @$pb.TagNumber(27)
   set quotedPost(Post v) { setField(27, v); }
   @$pb.TagNumber(27)
-  $core.bool hasQuotedPost() => $_has(26);
+  $core.bool hasQuotedPost() => $_has(25);
   @$pb.TagNumber(27)
   void clearQuotedPost() => clearField(27);
   @$pb.TagNumber(27)
-  Post ensureQuotedPost() => $_ensure(26);
+  Post ensureQuotedPost() => $_ensure(25);
 }
 
 /// Syncs (cross-posts) a single Post to one SyncDestination.

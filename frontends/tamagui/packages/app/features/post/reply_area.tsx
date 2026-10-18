@@ -26,7 +26,6 @@ export const ReplyArea: React.FC<ReplyAreaProps> = ({ replyingToPath, hidden, on
   const accountOrServer = useAccountOrServerContext() ?? currentAccountOrServer;
   const { primaryColor, primaryTextColor, navColor, navTextColor } = useServerTheme(accountOrServer.server);
   const [media, setMedia] = useState([] as MediaRef[]);
-  const [embedLink, setEmbedLink] = useState(false);
 
   const [replyText, setReplyText] = useState('');
   const [previewReply, setPreviewReply] = useState(false);
@@ -107,7 +106,7 @@ export const ReplyArea: React.FC<ReplyAreaProps> = ({ replyingToPath, hidden, on
           </Button>
           {showMedia
             ? <PostMediaManager
-              {...{ media, setMedia, embedLink, setEmbedLink }}
+              {...{ media, setMedia }}
               disableInputs={isSendingReply}
             />
             : undefined}
@@ -118,7 +117,7 @@ export const ReplyArea: React.FC<ReplyAreaProps> = ({ replyingToPath, hidden, on
           <ScrollView maxHeight={maxPreviewHeight}>
             {!showMedia && media.length > 0
               ? <PostMediaRenderer {...{
-                post: Post.create({ id: '', media, embedLink })
+                post: Post.create({ id: '', media })
               }} />
               : undefined}
             <TamaguiMarkdown text={replyText} shrink />

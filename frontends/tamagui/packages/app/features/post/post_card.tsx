@@ -102,13 +102,11 @@ export const PostCard: React.FC<PostCardProps> = ({
 
   const [editedContent, setEditedContent] = useState(post.content);
   const [editedMedia, setEditedMedia] = useState(post.media);
-  const [editedEmbedLink, setEditedEmbedLink] = useState(post.embedLink);
   const [editedVisibility, setEditedVisibility] = useState(post.visibility);
   const [editedShareable, setEditedShareable] = useState(post.shareable);
 
   const content = editing ? editedContent : post.content;
   const media = editing ? editedMedia : post.media;
-  const embedLink = editing ? editedEmbedLink : post.embedLink;
   const visibility = editing ? editedVisibility : post.visibility;
   const shareable = editing ? editedShareable : post.shareable;
   const { imagePostBackgrounds, fancyPostBackgrounds, shrinkPreviews: appShrinkPreviews } = useLocalConfiguration();
@@ -123,7 +121,6 @@ export const PostCard: React.FC<PostCardProps> = ({
         ...accountOrServer, ...post,
         content: editedContent,
         media: editedMedia,
-        embedLink: editedEmbedLink,
         visibility: editedVisibility,
         shareable: editedShareable,
         postIdPath: replyPostIdPath
@@ -137,7 +134,7 @@ export const PostCard: React.FC<PostCardProps> = ({
         }));
 
     })
-  }, [savingEdits, accountOrServer, post, editedContent, editedMedia, editedEmbedLink, editedVisibility, editedShareable, replyPostIdPath, dispatch]);
+  }, [savingEdits, accountOrServer, post, editedContent, editedMedia, editedVisibility, editedShareable, replyPostIdPath, dispatch]);
 
   const [deleted, setDeleted] = useState(post.author === undefined);
   const [deleting, setDeleting] = useState(false);
@@ -233,28 +230,6 @@ export const PostCard: React.FC<PostCardProps> = ({
     || (post.replies.length > 0 && !toggleCollapseReplies), [replyPostIdPath, post.replyCount, post.replies.length, toggleCollapseReplies]);
 
   const collapsed = useMemo(() => collapseReplies || post.replies?.length == 0, [collapseReplies, post.replies?.length]);
-
-  // const embedSupported = post.embedLink && post.link && post.link.length;
-  // let embedComponent: React.ReactNode | undefined = undefined;
-  // if (embedSupported) {
-  //   const url = new URL(post.link!);
-  //   const hostname = url.hostname.split(':')[0]!;
-  //   if (hostname.endsWith('twitter.com')) {
-  //     embedComponent = <TwitterEmbed url={post.link!} />;
-  //   } else if (hostname.endsWith('instagram.com')) {
-  //     embedComponent = <InstagramEmbed url={post.link!} />;
-  //   } else if (hostname.endsWith('facebook.com')) {
-  //     embedComponent = <FacebookEmbed url={post.link!} />;
-  //   } else if (hostname.endsWith('youtube.com')) {
-  //     embedComponent = <YouTubeEmbed url={post.link!} />;
-  //   } else if (hostname.endsWith('tiktok.com')) {
-  //     embedComponent = <TikTokEmbed url={post.link!} />;
-  //   } else if (hostname.endsWith('pinterest.com')) {
-  //     embedComponent = <PinterestEmbed url={post.link!} />;
-  //   } else if (hostname.endsWith('linkedin.com')) {
-  //     embedComponent = <LinkedInEmbed url={post.link!} />;
-  //   }
-  // }
 
   const imagePreview = media?.find(isImageMedia);
   const showScrollableMediaPreviews = (media?.filter(m => !m.generated).length ?? 0) >= 2;
@@ -468,17 +443,14 @@ export const PostCard: React.FC<PostCardProps> = ({
                         <YStack mah={isPreview ? window.innerHeight - 50 : undefined} overflow='hidden'>
                           {editing && !previewingEdits
                             ? <PostMediaManager
-                              link={post.link}
                               media={editedMedia}
                               setMedia={setEditedMedia}
-                              embedLink={editedEmbedLink}
-                              setEmbedLink={setEditedEmbedLink}
                               disableInputs={savingEdits}
                             />
                             : <PostMediaRenderer
                               groupContext={selectedGroup}
                               isVisible={isVisible || !isPreview}
-                              post={{ ...post, media, embedLink }}
+                              post={{ ...post, media }}
                               {...{ isPreview }} />}
                         </YStack>
                         <YStack {...isReply ? {} : { pl: '$3', pr: '$3' }}>

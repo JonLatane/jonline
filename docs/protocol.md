@@ -2627,7 +2627,6 @@ and Occasions.
 | group_count | [int32](#int32) |  | The number of groups this post is in. |
 | media | [MediaReference](#rellm-MediaReference) | repeated | List of Media IDs associated with this post. Order is preserved. |
 | media_generated | [bool](#bool) |  | Flag indicating whether Media has been generated for this Post. Currently previews are generated for any Link post. |
-| embed_link | [bool](#bool) |  | Flag indicating |
 | shareable | [bool](#bool) |  | Flag indicating a `LIMITED` or `SERVER_PUBLIC` post can be shared with groups and individuals, and a `DIRECT` post can be shared with individuals. |
 | context | [PostContext](#rellm-PostContext) |  | Context of the Post (`POST`, `REPLY`, `EVENT`, or `OCCASION`.) |
 | visibility | [Visibility](#rellm-Visibility) |  | The visibility of the Post. |

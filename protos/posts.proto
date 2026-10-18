@@ -119,6 +119,11 @@ enum PostContext {
 // of Visibility and Moderation management that is used throughout Posts, Replies, Events,
 // and Occasions.
 message Post {
+  // `embed_link` (12) was removed: a link to a supported social media site (or Rellm/Bluesky/Mastodon post) is
+  // always embedded by clients that support it.
+  reserved 12;
+  reserved "embed_link";
+
   // Unique ID of the post.
   string id = 1;
   // The author of the post. This is a smaller version of User.
@@ -145,8 +150,6 @@ message Post {
   // Flag indicating whether Media has been generated for this Post.
   // Currently previews are generated for any Link post.
   bool media_generated = 11;
-  // Flag indicating
-  bool embed_link = 12;
   // Flag indicating a `LIMITED` or `SERVER_PUBLIC` post can be shared with groups and individuals,
   // and a `DIRECT` post can be shared with individuals.
   bool shareable = 13;
