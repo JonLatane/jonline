@@ -669,7 +669,7 @@ update shared msg model =
                 newStatus =
                     case List.head response.events of
                         Just event ->
-                            case Events.findOccasion model.occasionId event of
+                            case Events.occasionFor model.occasionId event of
                                 Just occasion ->
                                     EventLoaded event occasion
 
@@ -1759,7 +1759,7 @@ applyUpdatedEvent now model updatedEvent =
             let
                 newOccasion : Occasion
                 newOccasion =
-                    Events.findOccasion model.occasionId updatedEvent |> Maybe.withDefault currentOccasion
+                    Events.occasionFor model.occasionId updatedEvent |> Maybe.withDefault currentOccasion
             in
             { model | eventStatus = EventLoaded updatedEvent newOccasion }
                 |> clampHistoryDisplay now newOccasion

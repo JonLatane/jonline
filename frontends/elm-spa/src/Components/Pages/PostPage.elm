@@ -3,6 +3,7 @@ module Components.Pages.PostPage exposing
     , Msg
     , fromShared
     , init
+    , loadedEventPost
     , subscriptions
     , titleFor
     , update
@@ -271,6 +272,23 @@ init shared pageIsSecure rawPostId navKey =
         , Effect.fromShared (Shared.AccountsPanelMsg (AccountsPanel.EnsureServerPreviews [ targetHost ]))
         ]
     )
+
+
+{-| The post this page has loaded, if it's an event's (`EVENT`) or an occasion's (`OCCASION`) own -- which
+belongs on its `/event/:id` page (`Pages.Post.PostId_` redirects there) -- with what that needs.
+-}
+loadedEventPost : Model -> Maybe { host : String, postId : String, navKey : Browser.Navigation.Key }
+loadedEventPost model =
+    case model.postStatus of
+        PostLoaded post ->
+            if post.context == EVENT || post.context == OCCASION then
+                Just { host = model.targetHost, postId = post.id, navKey = model.navKey }
+
+            else
+                Nothing
+
+        _ ->
+            Nothing
 
 
 subscriptions : Model -> Sub Msg

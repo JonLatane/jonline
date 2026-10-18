@@ -5,6 +5,7 @@ module Components.Events exposing
     , deleteOccasionSyncDestination
     , deleteRemovedOccasions
     , eventCard
+    , eventHref
     , eventSyncDestinationsView
     , fetchEvent
     , fetchEvents
@@ -15,6 +16,7 @@ module Components.Events exposing
     , meaningfulPost
     , noCardSlots
     , occasionEndsOrStartsAt
+    , occasionFor
     , occasionHref
     , occasionPairs
     , occasionStartsOrEndsAt
@@ -405,6 +407,42 @@ findOccasion occasionPostId event =
         |> List.head
 
 
+{-| The occasion a `/event/:id` route id names: the `Occasion` whose own `Post` has that id, or -- when it's
+the `Event`'s own `Post` id (an `EVENT`-context post, which is what a plain `/post/:id` link to an event
+carries) -- the event's first occasion.
+-}
+occasionFor : String -> Event -> Maybe Occasion
+occasionFor postId event =
+    case findOccasion postId event of
+        Just occasion ->
+            Just occasion
+
+        Nothing ->
+            if (event.post |> Maybe.map .id) == Just postId then
+                List.head event.occasions
+
+            else
+                Nothing
+
+
+{-| `/event/:id[@host]`, as seen from `viewingServerHost`: `postId` is an occasion's `Post` id or the event's
+own (see `occasionFor`).
+-}
+eventHref : String -> String -> String -> String -> String
+eventHref basePath viewingServerHost eventServerHost postId =
+    basePath
+        ++ Gen.Route.toHref
+            (Gen.Route.Event__PostId_
+                { postId =
+                    if eventServerHost == viewingServerHost then
+                        postId
+
+                    else
+                        postId ++ "@" ++ eventServerHost
+                }
+            )
+
+
 {-| The href for `occasion`, as seen from `viewingServerHost` -- mirrors
 `Components.Posts.postHref`, just keyed on an `Occasion`'s own `Post`
 id (the route segment, matching `Gen.Route`/`Gen.Params`'s own "postId"
@@ -419,16 +457,8 @@ occasionHref basePath viewingServerHost eventServerHost occasion =
         occasionPostId : String
         occasionPostId =
             occasion.post |> Maybe.map .id |> Maybe.withDefault ""
-
-        routeId : String
-        routeId =
-            if eventServerHost == viewingServerHost then
-                occasionPostId
-
-            else
-                occasionPostId ++ "@" ++ eventServerHost
     in
-    basePath ++ Gen.Route.toHref (Gen.Route.Event__PostId_ { postId = routeId })
+    eventHref basePath viewingServerHost eventServerHost occasionPostId
 
 
 
