@@ -631,6 +631,7 @@ pinnedPostView config model postId =
                             (config.isStarred post)
                             (config.onStarClicked post)
                             config.noOp
+                            Nothing
                             (text "")
                             (text "")
                             Nothing
@@ -639,6 +640,7 @@ pinnedPostView config model postId =
                             (\_ -> config.noOp)
                             (\_ _ -> config.noOp)
                             contentCollapse
+                            (text "")
                             post
                         ]
                     )

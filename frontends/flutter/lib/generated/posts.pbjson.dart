@@ -134,7 +134,6 @@ const Post$json = {
     {'1': 'group_count', '3': 9, '4': 1, '5': 5, '10': 'groupCount'},
     {'1': 'media', '3': 10, '4': 3, '5': 11, '6': '.rellm.MediaReference', '10': 'media'},
     {'1': 'media_generated', '3': 11, '4': 1, '5': 8, '10': 'mediaGenerated'},
-    {'1': 'embed_link', '3': 12, '4': 1, '5': 8, '10': 'embedLink'},
     {'1': 'shareable', '3': 13, '4': 1, '5': 8, '10': 'shareable'},
     {'1': 'context', '3': 14, '4': 1, '5': 14, '6': '.rellm.PostContext', '10': 'context'},
     {'1': 'visibility', '3': 15, '4': 1, '5': 14, '6': '.rellm.Visibility', '10': 'visibility'},
@@ -149,6 +148,7 @@ const Post$json = {
     {'1': 'unauthenticated_star_count', '3': 24, '4': 1, '5': 3, '10': 'unauthenticatedStarCount'},
     {'1': 'sync_destinations', '3': 25, '4': 3, '5': 11, '6': '.rellm.SyncDestinationStatus', '10': 'syncDestinations'},
     {'1': 'sync_source', '3': 26, '4': 1, '5': 11, '6': '.rellm.SyncSource', '9': 8, '10': 'syncSource', '17': true},
+    {'1': 'quoted_post', '3': 27, '4': 1, '5': 11, '6': '.rellm.Post', '9': 9, '10': 'quotedPost', '17': true},
   ],
   '8': [
     {'1': '_author'},
@@ -160,7 +160,12 @@ const Post$json = {
     {'1': '_updated_at'},
     {'1': '_published_at'},
     {'1': '_sync_source'},
+    {'1': '_quoted_post'},
   ],
+  '9': [
+    {'1': 12, '2': 13},
+  ],
+  '10': ['embed_link'],
 };
 
 /// Descriptor for `Post`. Decode as a `google.protobuf.DescriptorProto`.
@@ -171,25 +176,26 @@ final $typed_data.Uint8List postDescriptor = $convert.base64Decode(
     'oHY29udGVudBgGIAEoCUgEUgdjb250ZW50iAEBEiUKDnJlc3BvbnNlX2NvdW50GAcgASgFUg1y'
     'ZXNwb25zZUNvdW50Eh8KC3JlcGx5X2NvdW50GAggASgFUgpyZXBseUNvdW50Eh8KC2dyb3VwX2'
     'NvdW50GAkgASgFUgpncm91cENvdW50EisKBW1lZGlhGAogAygLMhUucmVsbG0uTWVkaWFSZWZl'
-    'cmVuY2VSBW1lZGlhEicKD21lZGlhX2dlbmVyYXRlZBgLIAEoCFIObWVkaWFHZW5lcmF0ZWQSHQ'
-    'oKZW1iZWRfbGluaxgMIAEoCFIJZW1iZWRMaW5rEhwKCXNoYXJlYWJsZRgNIAEoCFIJc2hhcmVh'
-    'YmxlEiwKB2NvbnRleHQYDiABKA4yEi5yZWxsbS5Qb3N0Q29udGV4dFIHY29udGV4dBIxCgp2aX'
-    'NpYmlsaXR5GA8gASgOMhEucmVsbG0uVmlzaWJpbGl0eVIKdmlzaWJpbGl0eRIxCgptb2RlcmF0'
-    'aW9uGBAgASgOMhEucmVsbG0uTW9kZXJhdGlvblIKbW9kZXJhdGlvbhJCChFwb3N0X21lZGlhX2'
-    'xheW91dBgRIAEoDjIWLnJlbGxtLlBvc3RNZWRpYUxheW91dFIPcG9zdE1lZGlhTGF5b3V0EkMK'
-    'EmN1cnJlbnRfZ3JvdXBfcG9zdBgSIAEoCzIQLnJlbGxtLkdyb3VwUG9zdEgFUhBjdXJyZW50R3'
-    'JvdXBQb3N0iAEBEiUKB3JlcGxpZXMYEyADKAsyCy5yZWxsbS5Qb3N0UgdyZXBsaWVzEjkKCmNy'
-    'ZWF0ZWRfYXQYFCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wUgljcmVhdGVkQXQSPg'
-    'oKdXBkYXRlZF9hdBgVIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBIBlIJdXBkYXRl'
-    'ZEF0iAEBEkIKDHB1Ymxpc2hlZF9hdBgWIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbX'
-    'BIB1ILcHVibGlzaGVkQXSIAQESRAoQbGFzdF9hY3Rpdml0eV9hdBgXIAEoCzIaLmdvb2dsZS5w'
-    'cm90b2J1Zi5UaW1lc3RhbXBSDmxhc3RBY3Rpdml0eUF0EjwKGnVuYXV0aGVudGljYXRlZF9zdG'
-    'FyX2NvdW50GBggASgDUhh1bmF1dGhlbnRpY2F0ZWRTdGFyQ291bnQSSQoRc3luY19kZXN0aW5h'
-    'dGlvbnMYGSADKAsyHC5yZWxsbS5TeW5jRGVzdGluYXRpb25TdGF0dXNSEHN5bmNEZXN0aW5hdG'
-    'lvbnMSNwoLc3luY19zb3VyY2UYGiABKAsyES5yZWxsbS5TeW5jU291cmNlSAhSCnN5bmNTb3Vy'
-    'Y2WIAQFCCQoHX2F1dGhvckITChFfcmVwbHlfdG9fcG9zdF9pZEIICgZfdGl0bGVCBwoFX2xpbm'
-    'tCCgoIX2NvbnRlbnRCFQoTX2N1cnJlbnRfZ3JvdXBfcG9zdEINCgtfdXBkYXRlZF9hdEIPCg1f'
-    'cHVibGlzaGVkX2F0Qg4KDF9zeW5jX3NvdXJjZQ==');
+    'cmVuY2VSBW1lZGlhEicKD21lZGlhX2dlbmVyYXRlZBgLIAEoCFIObWVkaWFHZW5lcmF0ZWQSHA'
+    'oJc2hhcmVhYmxlGA0gASgIUglzaGFyZWFibGUSLAoHY29udGV4dBgOIAEoDjISLnJlbGxtLlBv'
+    'c3RDb250ZXh0Ugdjb250ZXh0EjEKCnZpc2liaWxpdHkYDyABKA4yES5yZWxsbS5WaXNpYmlsaX'
+    'R5Ugp2aXNpYmlsaXR5EjEKCm1vZGVyYXRpb24YECABKA4yES5yZWxsbS5Nb2RlcmF0aW9uUgpt'
+    'b2RlcmF0aW9uEkIKEXBvc3RfbWVkaWFfbGF5b3V0GBEgASgOMhYucmVsbG0uUG9zdE1lZGlhTG'
+    'F5b3V0Ug9wb3N0TWVkaWFMYXlvdXQSQwoSY3VycmVudF9ncm91cF9wb3N0GBIgASgLMhAucmVs'
+    'bG0uR3JvdXBQb3N0SAVSEGN1cnJlbnRHcm91cFBvc3SIAQESJQoHcmVwbGllcxgTIAMoCzILLn'
+    'JlbGxtLlBvc3RSB3JlcGxpZXMSOQoKY3JlYXRlZF9hdBgUIAEoCzIaLmdvb2dsZS5wcm90b2J1'
+    'Zi5UaW1lc3RhbXBSCWNyZWF0ZWRBdBI+Cgp1cGRhdGVkX2F0GBUgASgLMhouZ29vZ2xlLnByb3'
+    'RvYnVmLlRpbWVzdGFtcEgGUgl1cGRhdGVkQXSIAQESQgoMcHVibGlzaGVkX2F0GBYgASgLMhou'
+    'Z29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEgHUgtwdWJsaXNoZWRBdIgBARJEChBsYXN0X2FjdG'
+    'l2aXR5X2F0GBcgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcFIObGFzdEFjdGl2aXR5'
+    'QXQSPAoadW5hdXRoZW50aWNhdGVkX3N0YXJfY291bnQYGCABKANSGHVuYXV0aGVudGljYXRlZF'
+    'N0YXJDb3VudBJJChFzeW5jX2Rlc3RpbmF0aW9ucxgZIAMoCzIcLnJlbGxtLlN5bmNEZXN0aW5h'
+    'dGlvblN0YXR1c1IQc3luY0Rlc3RpbmF0aW9ucxI3CgtzeW5jX3NvdXJjZRgaIAEoCzIRLnJlbG'
+    'xtLlN5bmNTb3VyY2VICFIKc3luY1NvdXJjZYgBARIxCgtxdW90ZWRfcG9zdBgbIAEoCzILLnJl'
+    'bGxtLlBvc3RICVIKcXVvdGVkUG9zdIgBAUIJCgdfYXV0aG9yQhMKEV9yZXBseV90b19wb3N0X2'
+    'lkQggKBl90aXRsZUIHCgVfbGlua0IKCghfY29udGVudEIVChNfY3VycmVudF9ncm91cF9wb3N0'
+    'Qg0KC191cGRhdGVkX2F0Qg8KDV9wdWJsaXNoZWRfYXRCDgoMX3N5bmNfc291cmNlQg4KDF9xdW'
+    '90ZWRfcG9zdEoECAwQDVIKZW1iZWRfbGluaw==');
 
 @$core.Deprecated('Use syncPostRequestDescriptor instead')
 const SyncPostRequest$json = {

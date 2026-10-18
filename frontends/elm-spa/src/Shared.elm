@@ -58,6 +58,7 @@ import Shared.MediaViewerPanel as MediaViewerPanel
 import Shared.MessagingPanel as MessagingPanel
 import Shared.MyMediaPanel as MyMediaPanel
 import Shared.PushNotificationLink as PushNotificationLink
+import Shared.QuoteLinks as QuoteLinks
 import Shared.StarredPanel as StarredPanel
 import Shared.Time as SharedTime
 import Shared.UserPreferences as UserPreferences
@@ -78,6 +79,11 @@ type alias Model =
     -- See `Panels` for the rest of the app-wide panels.
     , panels : Panels
     , breadcrumbs : Breadcrumbs.Model
+
+    -- The quoted posts fetched so far for Rellm posts whose `link` points at another post (see
+    -- `Shared.QuoteLinks`) -- app-wide so a post quoted by many cards is fetched once, and so the card
+    -- on a feed and the preview in `CreateNewPanel` share it.
+    , quoteLinks : QuoteLinks.Model
 
     -- See `Theme` for `preference`/`systemPrefersDark` themselves.
     , theme : Theme
@@ -188,6 +194,7 @@ type Msg
     | GotContactMethodStartPhoneVerificationTaskResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, ContactMethod ))
     | GotContactMethodVerifyPhoneCodeTaskResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, ContactMethod ))
     | CreateNewPanelMsg CreateNewPanel.Msg
+    | QuoteLinksMsg QuoteLinks.Msg
     | MessagingPanelMsg MessagingPanel.Msg
     | CloseAllPanels
     | BreadcrumbsMsg Breadcrumbs.Msg
@@ -560,6 +567,7 @@ init basePath req flags =
                 , confirmingDeleteFor = Nothing
                 }
             , breadcrumbs = Breadcrumbs.init
+            , quoteLinks = QuoteLinks.init
             , theme = { preference = themePreference, systemPrefersDark = systemPrefersDark }
             , userPreferences = UserPreferences.init userPreferencesFlags
             , basePath = basePath
@@ -687,15 +695,31 @@ update req msg model =
 
         ( hashedModel, hashCmd ) =
             trackHashSync req model linkedModel
+
+        -- Quotes waiting on a server (its preview connection landing, a server being added/enabled) get
+        -- another look after every message -- see `QuoteLinks.advance`.
+        ( quotedModel, quoteCmd ) =
+            quoteLinksAdvance hashedModel
     in
     case rootRedirectCmd req msg model of
         Just redirect ->
             -- Leaving the page anyway: skip the rest (notably hiding the splash, which would flash
             -- this soon-to-be-replaced page).
-            ( hashedModel, Cmd.batch [ cmd, redirect ] )
+            ( quotedModel, Cmd.batch [ cmd, redirect ] )
 
         Nothing ->
-            ( hashedModel, Cmd.batch [ cmd, followCmd, linkCmd, hashCmd, navBarColorCmd model newModel, themeCmd model newModel, splashHiddenCmd model newModel ] )
+            ( quotedModel, Cmd.batch [ cmd, followCmd, linkCmd, hashCmd, quoteCmd, navBarColorCmd model newModel, themeCmd model newModel, splashHiddenCmd model newModel ] )
+
+
+{-| `QuoteLinks.advance` against the current accounts -- see its own doc.
+-}
+quoteLinksAdvance : Model -> ( Model, Cmd Msg )
+quoteLinksAdvance model =
+    let
+        ( quoteLinks, cmd ) =
+            QuoteLinks.advance model.accounts model.quoteLinks
+    in
+    ( { model | quoteLinks = quoteLinks }, Cmd.map QuoteLinksMsg cmd )
 
 
 {-| `scheme://host[:port]` of `url` -- what a shared link to a track starts with.
@@ -1678,11 +1702,45 @@ sharedUpdate req msg model =
                 ]
             )
 
+        QuoteLinksMsg subMsg ->
+            let
+                ( quoteLinks, quoteCmd, accountsPanelMsgs ) =
+                    QuoteLinks.update model.accounts subMsg model.quoteLinks
+            in
+            -- What a fetch needs sent to `AccountsPanel` on its behalf (a preview connection to load, a
+            -- refreshed token to save) goes through the same update every other `AccountsPanelMsg` does.
+            List.foldl
+                (\accountsPanelMsg ( accumulatedModel, cmds ) ->
+                    let
+                        ( nextModel, nextCmd ) =
+                            sharedUpdate req (AccountsPanelMsg accountsPanelMsg) accumulatedModel
+                    in
+                    ( nextModel, nextCmd :: cmds )
+                )
+                ( { model | quoteLinks = quoteLinks }, [ Cmd.map QuoteLinksMsg quoteCmd ] )
+                accountsPanelMsgs
+                |> Tuple.mapSecond Cmd.batch
+
         CreateNewPanelMsg subMsg ->
             let
                 panels : Panels
                 panels =
                     model.panels
+
+                -- The quote button on a post's page hands over the post it's already holding -- seeded
+                -- into the quote cache so the preview doesn't refetch it.
+                quoteLinksAfter : QuoteLinks.Model
+                quoteLinksAfter =
+                    case subMsg of
+                        CreateNewPanel.OpenQuoting host post ->
+                            let
+                                ( seeded, _, _ ) =
+                                    QuoteLinks.update model.accounts (QuoteLinks.Provide host post) model.quoteLinks
+                            in
+                            seeded
+
+                        _ ->
+                            model.quoteLinks
 
                 ( subModel, subCmd, ( maybeAccountsPanelMsg, maybeMarkdownPanelMsg, maybeMyMediaPanelMsg ) ) =
                     CreateNewPanel.update model.time.browserTimeZone model.time.now model.accounts subMsg panels.createNewPanel
@@ -1733,6 +1791,9 @@ sharedUpdate req msg model =
                         CreateNewPanel.ToggleOpen ->
                             subModel.open
 
+                        CreateNewPanel.OpenQuoting _ _ ->
+                            True
+
                         _ ->
                             False
 
@@ -1755,6 +1816,9 @@ sharedUpdate req msg model =
                         CreateNewPanel.ToggleOpen ->
                             subModel.open
 
+                        CreateNewPanel.OpenQuoting _ _ ->
+                            True
+
                         _ ->
                             False
 
@@ -1774,6 +1838,9 @@ sharedUpdate req msg model =
                         CreateNewPanel.ToggleOpen ->
                             subModel.open
 
+                        CreateNewPanel.OpenQuoting _ _ ->
+                            True
+
                         _ ->
                             False
 
@@ -1790,6 +1857,7 @@ sharedUpdate req msg model =
             in
             ( { model
                 | accounts = closedAccountsPanelModel
+                , quoteLinks = quoteLinksAfter
                 , panels =
                     { panels
                         | createNewPanel = subModel

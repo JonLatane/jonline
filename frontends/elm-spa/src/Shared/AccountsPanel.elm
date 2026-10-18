@@ -67,7 +67,7 @@ import Proto.Rellm.Rellm as Rellm
 import Proto.Rellm.Visibility exposing (Visibility(..))
 import Proto.Rellm.WebUserInterface exposing (WebUserInterface)
 import Request exposing (Request)
-import Set
+import Set exposing (Set)
 import Shared.AccountsPanel.AdminTab as AdminTab
 import Shared.AccountsPanel.BlueskyAccounts as BlueskyAccounts exposing (BlueskyAccount)
 import Shared.AccountsPanel.DebugTab as DebugTab
@@ -120,6 +120,14 @@ type alias Model =
     -- Simply closing the panel leaves it in place -- harmless, and means
     -- reopening the strip doesn't re-fetch hosts it already has cached.
     , recommendedServerConnections : Dict String RellmServer
+
+    -- Hosts a preview connection (`fetchServerPreviews`) was attempted for and failed -- i.e. hosts that
+    -- aren't (reachable) Rellm servers. A negative cache so a link in a post to some ordinary website is only
+    -- ever probed once per session, however many posts mention it (`Shared.QuoteLinks`, the main reader;
+    -- see `isKnownNonRellmHost`). It can't tell "not a Rellm server" from "a Rellm server that's down right
+    -- now", so for a recommended-servers chip a failure here is just as sticky as its dimmed placeholder in
+    -- `recommendedServerConnections` already was -- retried next session. Never persisted.
+    , nonRellmHosts : Set String
 
     -- The account whose avatar menu (Media/Sync Sources/Sync Destinations/AI Models -- see
     -- `UI.accountAvatarMenuView`) is currently expanded open, if any -- toggled by clicking that
@@ -523,7 +531,7 @@ type Msg
     | DismissFederatedSignInNotice
     | MastodonConnectClicked String
     | GotMastodonLoginResult Decode.Value
-    | GotMastodonVerifyCredentialsResult String MastodonAccounts.MastodonLoginResult (Result Http.Error String)
+    | GotMastodonVerifyCredentialsResult String MastodonAccounts.MastodonLoginResult (Result Http.Error MastodonAccounts.MastodonProfile)
     | MastodonAccountRefreshed MastodonAccounts.MastodonAccount
     | MarkMastodonAccountNeedsReauth String String
     | AddAccountServerFormTypeSelected AccountOrServerFormType
@@ -1541,6 +1549,7 @@ init req flags blueskyAccountsFlags mastodonAccountsAndServersFlags =
       , accountsPanelOpened = False
       , recommendedServersExpanded = False
       , recommendedServerConnections = Dict.empty
+      , nonRellmHosts = Set.empty
       , focusedAccount = Nothing
       , focusedAccountContactMethods = Nothing
       , addAccountServerFormType = Nothing
@@ -1599,9 +1608,27 @@ init req flags blueskyAccountsFlags mastodonAccountsAndServersFlags =
     , Cmd.batch
         (Ports.checkPushSubscription Encode.null
             :: mainServerCmd
-            :: (List.map healthCheckMastodonAccountCmd persistedMastodon.accounts ++ reconnectCmds ++ missingServerCmds)
+            :: (List.map healthCheckMastodonAccountCmd persistedMastodon.accounts
+                    ++ List.map missingBlueskyAvatarCmd persistedBlueskyAccounts
+                    ++ reconnectCmds
+                    ++ missingServerCmds
+               )
         )
     )
+
+
+{-| Best-effort profile (avatar/display name) fetch at startup for a Bluesky account that has none yet
+-- it's what the Accounts Panel toggle button shows instead of "Login". A no-op for an account that
+already has one, and a failure (e.g. an expired token) is silently ignored, same as at connect time (see
+`GotBlueskyProfileResult`).
+-}
+missingBlueskyAvatarCmd : BlueskyAccount -> Cmd Msg
+missingBlueskyAvatarCmd account =
+    if account.avatarUrl == Nothing && not account.needsReauth then
+        Task.attempt (GotBlueskyProfileResult account.handle) (BlueskyAccounts.fetchProfileTask account.handle account.accessToken)
+
+    else
+        Cmd.none
 
 
 {-| Just the accounts' reorder-slide animations (see `moveAnimations`) --
@@ -2942,8 +2969,9 @@ sendUpdate req msg model =
                 Err _ ->
                     -- Leaves the disconnected placeholder `ToggleRecommendedServersExpanded`
                     -- already inserted in place -- same "still shows, just dimmed" treatment
-                    -- as any other unreachable server chip.
-                    ( model, Cmd.none )
+                    -- as any other unreachable server chip -- and remembers the host didn't answer
+                    -- like a Rellm server (`nonRellmHosts`).
+                    ( { model | nonRellmHosts = Set.insert host model.nonRellmHosts }, Cmd.none )
 
         RecommendedServerClicked host ->
             -- Reuses the connection already cached in `recommendedServerConnections`
@@ -3963,7 +3991,7 @@ sendUpdate req msg model =
                         Err _ ->
                             ( { model | mastodonConnectPopupOpen = Nothing }, Cmd.none )
 
-        GotMastodonVerifyCredentialsResult instanceHost loginResult (Ok username) ->
+        GotMastodonVerifyCredentialsResult instanceHost loginResult (Ok { username, avatarUrl }) ->
             let
                 -- A reconnect (`ReconnectMastodonAccountClicked`'s own use of this same
                 -- `MastodonConnectClicked` popup, see `UI.mastodonAccountRow`'s reauth button) lands
@@ -3978,6 +4006,7 @@ sendUpdate req msg model =
                     , username = username
                     , sortOrder = nextFrontAccountSortOrder model
                     , needsReauth = False
+                    , avatarUrl = avatarUrl
                     }
 
                 newModel : Model
@@ -4627,7 +4656,7 @@ account doesn't just sit there silently until some future feature tries to use i
 healthCheckMastodonAccountCmd : MastodonAccounts.MastodonAccount -> Cmd Msg
 healthCheckMastodonAccountCmd account =
     MastodonAccounts.performWithMastodonAccount account (MastodonAccounts.verifyMastodonCredentialsTask account.instanceHost)
-        |> Task.map (\( refreshedAccount, username ) -> MastodonAccountRefreshed { refreshedAccount | username = username })
+        |> Task.map (\( refreshedAccount, profile ) -> MastodonAccountRefreshed { refreshedAccount | username = profile.username, avatarUrl = profile.avatarUrl })
         |> Task.onError
             (\err ->
                 if MastodonAccounts.isReauthError err then

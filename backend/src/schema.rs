@@ -375,7 +375,6 @@ diesel::table! {
         group_count -> Int4,
         media -> Array<Nullable<Int8>>,
         media_generated -> Bool,
-        embed_link -> Bool,
         shareable -> Bool,
         context -> Varchar,
         visibility -> Varchar,

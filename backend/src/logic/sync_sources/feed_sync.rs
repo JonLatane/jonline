@@ -179,7 +179,6 @@ fn create_post_for_entry(
             link: link.clone(),
             content: content.clone(),
             visibility: Visibility::GlobalPublic.to_string_visibility(),
-            embed_link: false,
             context: PostContext::Post.to_string_post_context(),
             moderation: moderation.to_string(),
             media: vec![],

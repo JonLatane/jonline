@@ -11,7 +11,9 @@ Rellm post -- see that module's `initEmbedded`) so a vanity URL like `/weddings`
 indistinguishably from this page itself.
 -}
 
+import Browser.Navigation
 import Components.Bluesky.BlueskyPostPage as BlueskyPostPage
+import Components.Events as Events
 import Components.Mastodon.MastodonPostPage as MastodonPostPage
 import Components.Pages.PostPage as PostPage
 import Components.Posts as Posts
@@ -90,6 +92,7 @@ update shared msg model =
     case ( msg, model ) of
         ( RellmPostMsg subMsg, RellmPost subModel ) ->
             PostPage.update shared subMsg subModel
+                |> redirectEvent shared subModel
                 |> Tuple.mapFirst RellmPost
                 |> Tuple.mapSecond (Effect.map RellmPostMsg)
 
@@ -105,6 +108,7 @@ update shared msg model =
 
         ( SharedMsgReceived subMsg, RellmPost subModel ) ->
             PostPage.update shared (PostPage.fromShared subMsg) subModel
+                |> redirectEvent shared subModel
                 |> Tuple.mapFirst RellmPost
                 |> Tuple.mapSecond (Effect.map RellmPostMsg)
 
@@ -115,6 +119,27 @@ update shared msg model =
 
         _ ->
             ( model, Effect.none )
+
+
+{-| An event's (or occasion's) post has its own page: once `/post/:id` turns out to be one, replace the URL
+with its `/event/:id` (`replaceUrl`, so Back doesn't land on a redirect). Done here, not in
+`Components.Pages.PostPage`, which `Pages.Home_` and custom tabs also embed under URLs that must stay put.
+Only on the update that loads it, so a later refetch doesn't navigate again.
+-}
+redirectEvent : Shared.Model -> PostPage.Model -> ( PostPage.Model, Effect PostPage.Msg ) -> ( PostPage.Model, Effect PostPage.Msg )
+redirectEvent shared before ( after, effect ) =
+    case ( PostPage.loadedEventPost before, PostPage.loadedEventPost after ) of
+        ( Nothing, Just target ) ->
+            ( after
+            , Effect.batch
+                [ effect
+                , Browser.Navigation.replaceUrl target.navKey (Events.eventHref shared.basePath shared.accounts.mainFrontendHost target.host target.postId)
+                    |> Effect.fromCmd
+                ]
+            )
+
+        _ ->
+            ( after, effect )
 
 
 subscriptions : Model -> Sub Msg

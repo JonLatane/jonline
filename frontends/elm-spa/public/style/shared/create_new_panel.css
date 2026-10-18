@@ -232,3 +232,24 @@
    added alongside it in Shared/CreateNewPanel.elm's `view`, keyed by the
    posting-as account's own server, same convention as
    `.markdown-panel-save`/`.my-media-panel-save`. */
+
+/* `Shared.CreateNewPanel.quotedPostField`: the quote's link, an X to drop it, and the quoted post's embedded
+   card (`Components.QuotedLink`, styled by `.post-card-quote` in `posts.css`) below. */
+.create-new-panel-quoted-link {
+  color: var(--muted);
+  font-size: 0.8rem;
+  overflow-wrap: anywhere;
+}
+
+.create-new-panel-quoted-post-remove {
+  width: 1.6rem;
+  height: 1.6rem;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--chip-bg);
+  color: var(--fg);
+  font-size: 0.8rem;
+  line-height: 1;
+  cursor: pointer;
+}

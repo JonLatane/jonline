@@ -4,24 +4,18 @@ import { ArrowLeft, ArrowRight, Delete } from '@tamagui/lucide-icons';
 import React from 'react';
 import { MediaChooser } from '../media/media_chooser';
 import { MediaRenderer } from '../media/media_renderer';
-import { AutoAnimatedList, ToggleRow } from 'app/components';
+import { AutoAnimatedList } from 'app/components';
 
 export type PostMediaManagerProps = {
   entityName?: string;
-  link?: string;
   media: MediaReference[];
   setMedia: (media: MediaReference[]) => void;
-  embedLink: boolean;
-  setEmbedLink: (embedLink: boolean) => void;
   // editing?: boolean;
   disableInputs?: boolean;
 }
 
-export function PostMediaManager({ entityName = 'Post', media, setMedia, link = '', embedLink, setEmbedLink, disableInputs }: PostMediaManagerProps) {
+export function PostMediaManager({ entityName = 'Post', media, setMedia, disableInputs }: PostMediaManagerProps) {
   const mediaQuery = useMedia();
-
-  const canEmbedLink = ['instagram', 'facebook', 'linkedin', 'tiktok', 'youtube', 'twitter', 'pinterest']
-    .map(x => link.includes(x)).reduce((a, b) => a || b, false);
 
   function moveRefLeft(mediaRef: MediaReference, index: number) {
     const updatedMedia = new Array<MediaReference>(...media);
@@ -86,11 +80,5 @@ export function PostMediaManager({ entityName = 'Post', media, setMedia, link = 
     </ScrollView> : undefined}
     <MediaChooser selectedMedia={media} onMediaSelected={setMedia} multiselect />
     <YStack h='$0' mt='$2' />
-    {canEmbedLink
-      ? <ToggleRow name='Embed Link'
-        value={embedLink && canEmbedLink}
-        setter={(v) => setEmbedLink(v)}
-        disabled={disableInputs || !canEmbedLink} />
-      : undefined}
   </YStack>
 }

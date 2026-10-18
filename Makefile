@@ -155,6 +155,9 @@ test_elm:
 	$(MAKE) -C frontends/elm-spa test
 test_tamagui:
 	$(MAKE) -C frontends/tamagui test
+
+typecheck_tamagui:
+	$(MAKE) -C frontends/tamagui typecheck
 test_flutter:
 	$(MAKE) -C frontends/flutter test
 # Tests for deploys/'s Makefiles and scripts; no cluster needed (see deploys/README.md).

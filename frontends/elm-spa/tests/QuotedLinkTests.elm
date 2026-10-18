@@ -1,0 +1,430 @@
+module QuotedLinkTests exposing (suite)
+
+{-| `Components.QuotedLink`: which posts quote anything (`targetOf`), and what the embed shows for each kind of
+server the link can point at -- one of the user's own (enabled, disabled), one they haven't added that turns
+out to be a Rellm server, one that doesn't, or one we know nothing about yet.
+-}
+
+import Components.MediaRenderer as MediaRenderer
+import Components.QuotedLink as QuotedLink
+import Dict
+import Expect
+import Html exposing (div)
+import Html.Attributes
+import Proto.Rellm exposing (Post, defaultAuthor, defaultEvent, defaultOccasion, wrapPost)
+import Proto.Rellm.PostContext exposing (PostContext(..))
+import Set
+import Shared.Federation.FederatedLinks as FederatedLinks
+import Shared.Federation.RellmLinks as RellmLinks
+import Shared.QuoteLinks as QuoteLinks
+import Support.PostFactory as PostFactory
+import Support.RellmServerFactory as RellmServerFactory
+import Test exposing (Test, describe, test)
+import Test.Html.Event as Event
+import Test.Html.Query as Query
+import Test.Html.Selector as Selector
+import Time
+
+
+type Msg
+    = AddServer String
+    | EnableServer String
+    | PlayMedia
+    | NoOp
+
+
+{-| The server a button's message is about -- `Nothing` for `PlayMedia`.
+-}
+serverOf : Msg -> Maybe String
+serverOf msg =
+    case msg of
+        AddServer host ->
+            Just host
+
+        EnableServer host ->
+            Just host
+
+        PlayMedia ->
+            Nothing
+
+        NoOp ->
+            Nothing
+
+
+quoting : String -> Post
+quoting link =
+    let
+        post : Post
+        post =
+            PostFactory.post { id = "quoter", createdAtMillis = 1000 }
+    in
+    { post | context = POST, link = Just link, content = Just "my take" }
+
+
+quoted : Post
+quoted =
+    let
+        post : Post
+        post =
+            PostFactory.post { id = "abc", createdAtMillis = 1000 }
+    in
+    { post
+        | context = POST
+        , title = Just "The Original"
+        , content = Just "the quoted content"
+        , author = Just { defaultAuthor | userId = "u1", username = Just "alice" }
+    }
+
+
+{-| The user has rellm.org (enabled) and jonline.io (disabled), and previewed bullcity.social (a Rellm server
+they haven't added); a link to some-blog.example already failed its preview.
+-}
+accounts : QuotedLink.AccountsInfo
+accounts =
+    { servers =
+        [ RellmServerFactory.connected "rellm.org"
+        , (\server -> { server | enabled = False }) (RellmServerFactory.connected "jonline.io")
+        ]
+    , accounts = []
+    , previews =
+        Dict.fromList
+            [ ( "bullcity.social", RellmServerFactory.connected "bullcity.social" )
+            , ( "some-blog.example", RellmServerFactory.disconnected "some-blog.example" )
+            ]
+    , nonRellmHosts = Set.singleton "some-blog.example"
+    , mainFrontendHost = "rellm.org"
+    }
+
+
+config : QuoteLinks.Model -> QuotedLink.Config Msg
+config quotes =
+    { time = { browserTimeZone = { zone = Time.utc, name = "UTC", abbreviation = "UTC", uses24Hour = True }, now = Time.millisToPosix 0 }
+    , basePath = ""
+    , accounts = accounts
+    , quotes = quotes
+    , mediaPlayState = MediaRenderer.init
+    , onMediaPlayClicked = \_ -> PlayMedia
+    , onAddServerClicked = AddServer
+    , onEnableServerClicked = EnableServer
+    , noOp = NoOp
+    }
+
+
+loaded : String -> String -> QuoteLinks.Model
+loaded host id =
+    { entries = Dict.singleton (RellmLinks.key { host = host, id = id }) (QuoteLinks.Loaded quoted) }
+
+
+blueskyTarget : FederatedLinks.Target
+blueskyTarget =
+    FederatedLinks.BlueskyUri "at://did:plc:abc/app.bsky.feed.post/3k"
+
+
+mastodonTarget : FederatedLinks.Target
+mastodonTarget =
+    FederatedLinks.MastodonStatus { instanceHost = "mastodon.social", statusId = "1" }
+
+
+{-| What `Shared.Federation.Bluesky`/`Mastodon` translate a post into: `id` is the bare `at://` URI / status id.
+-}
+federated : FederatedLinks.Target -> QuoteLinks.Model
+federated target =
+    let
+        id : String
+        id =
+            case target of
+                FederatedLinks.MastodonStatus { statusId } ->
+                    statusId
+
+                FederatedLinks.BlueskyUri uri ->
+                    uri
+
+                FederatedLinks.BlueskyHandle { rkey } ->
+                    rkey
+    in
+    withKey (FederatedLinks.key target) (QuoteLinks.Loaded { quoted | id = id })
+
+
+withKey : String -> QuoteLinks.Entry -> QuoteLinks.Model
+withKey entryKey entry =
+    { entries = Dict.singleton entryKey entry }
+
+
+eventCardSelector : Selector.Selector
+eventCardSelector =
+    Selector.class "event-card"
+
+
+withEvent : String -> String -> QuoteLinks.Model
+withEvent host id =
+    let
+        eventPost : Post
+        eventPost =
+            (PostFactory.post { id = id, createdAtMillis = 1000 }) |> (\post -> { post | title = Just "Block party", context = EVENT })
+    in
+    with host id (QuoteLinks.LoadedEvent { defaultEvent | post = Just eventPost } { defaultOccasion | post = Just { eventPost | context = OCCASION } })
+
+
+with : String -> String -> QuoteLinks.Entry -> QuoteLinks.Model
+with host id entry =
+    { entries = Dict.singleton (RellmLinks.key { host = host, id = id }) entry }
+
+
+{-| Rendered inside a `div`, since `Test.Html.Query` needs an element root and `view` is allowed to be empty.
+-}
+rendered : QuoteLinks.Model -> String -> Post -> Query.Single Msg
+rendered quotes postServerHost post =
+    Query.fromHtml (div [] [ QuotedLink.view (config quotes) postServerHost post ])
+
+
+{-| `Components.Markdown.view` renders content through a `<rellm-markdown content="...">` element.
+-}
+quotedContent : Selector.Selector
+quotedContent =
+    Selector.attribute (Html.Attributes.attribute "content" "the quoted content")
+
+
+{-| None of `selectors` appears anywhere in the rendered output -- one count per selector, since
+`Query.hasNot` with several only fails when they _all_ match.
+-}
+lacks : List Selector.Selector -> Query.Single Msg -> Expect.Expectation
+lacks selectors query =
+    selectors
+        |> List.map (\selector -> \q -> q |> Query.findAll [ selector ] |> Query.count (Expect.equal 0))
+        |> (\checks -> Expect.all checks query)
+
+
+card : Selector.Selector
+card =
+    Selector.class "post-card-quote"
+
+
+addButton : Selector.Selector
+addButton =
+    Selector.all [ Selector.tag "button", Selector.class "server-action-button" ]
+
+
+suite : Test
+suite =
+    describe "Components.QuotedLink"
+        [ describe "targetOf"
+            [ test "a POST on a Rellm server whose link is a Rellm post link" <|
+                \_ -> QuotedLink.targetOf "rellm.org" (quoting "/post/abc") |> Expect.equal (Just (QuoteLinks.RellmLink { host = "rellm.org", id = "abc" }))
+            , test "an absolute link to another server" <|
+                \_ -> QuotedLink.targetOf "rellm.org" (quoting "https://jonline.io/~abc") |> Expect.equal (Just (QuoteLinks.RellmLink { host = "jonline.io", id = "abc" }))
+            , test "no link, or a link that isn't to a Rellm post" <|
+                \_ ->
+                    let
+                        noLink : Post
+                        noLink =
+                            quoting "x" |> (\post -> { post | link = Nothing })
+                    in
+                    [ QuotedLink.targetOf "rellm.org" noLink, QuotedLink.targetOf "rellm.org" (quoting "https://example.com/article") ]
+                        |> Expect.equalLists [ Nothing, Nothing ]
+            , test "only a top-level POST quotes: a reply, event or occasion with such a link just has a link" <|
+                \_ ->
+                    [ REPLY, EVENT, OCCASION ]
+                        |> List.map (\context -> QuotedLink.targetOf "rellm.org" (quoting "/post/abc" |> (\post -> { post | context = context })))
+                        |> Expect.equalLists [ Nothing, Nothing, Nothing ]
+            , test "a federated post's `link` is its original URL, not a quote -- its quote arrives resolved in `quotedPost`" <|
+                \_ ->
+                    [ QuotedLink.targetOf "bluesky:alice.bsky.social" (quoting "https://rellm.org/post/abc")
+                    , QuotedLink.targetOf "mastodon:mastodon.social" (quoting "https://rellm.org/post/abc")
+                    , QuotedLink.targetOf "rellm.org" (quoting "/post/abc" |> (\post -> { post | quotedPost = Just (wrapPost quoted) }))
+                    ]
+                        |> Expect.equalLists [ Nothing, Nothing, Nothing ]
+            ]
+        , describe "a quote from one of the user's own enabled servers"
+            [ test "shows the quoted post as a card" <|
+                \_ ->
+                    rendered (loaded "rellm.org" "abc") "rellm.org" (quoting "/post/abc")
+                        |> Query.has [ card, quotedContent ]
+            , test "the card links to the quoted post's own page" <|
+                \_ ->
+                    rendered (loaded "rellm.org" "abc") "rellm.org" (quoting "/post/abc")
+                        |> Query.find [ Selector.class "post-card-link-overlay" ]
+                        |> Query.has [ Selector.attribute (Html.Attributes.href "/post/abc") ]
+            , test "an absolute link works the same, and an unrelated server's post links with its host" <|
+                \_ ->
+                    rendered (loaded "rellm.org" "abc") "other.example" (quoting "https://rellm.org/post/abc")
+                        |> Query.has [ card ]
+            , test "while it loads, a loading line" <|
+                \_ ->
+                    rendered (with "rellm.org" "abc" QuoteLinks.Loading) "rellm.org" (quoting "/post/abc")
+                        |> Query.has [ Selector.class "quoted-post-loading" ]
+            , test "and while it waits for its server" <|
+                \_ ->
+                    rendered (with "rellm.org" "abc" (QuoteLinks.Awaiting { host = "rellm.org", id = "abc" })) "rellm.org" (quoting "/post/abc")
+                        |> Query.has [ Selector.class "quoted-post-loading" ]
+            , test "a post that can't be seen shows nothing at all" <|
+                \_ ->
+                    rendered (with "rellm.org" "abc" QuoteLinks.Unavailable) "rellm.org" (quoting "/post/abc")
+                        |> lacks [ card, Selector.class "quoted-post-loading", addButton ]
+            , test "a post that isn't a quote shows nothing" <|
+                \_ ->
+                    rendered (loaded "rellm.org" "abc") "rellm.org" (quoting "https://example.com/article")
+                        |> lacks [ card ]
+            ]
+        , describe "a quote of a Bluesky or Mastodon post"
+            [ test "shows the post as a card linking to Rellm's own page for it" <|
+                \_ ->
+                    rendered (federated blueskyTarget) "rellm.org" (quoting "https://bsky.app/profile/did:plc:abc/post/3k")
+                        |> Query.find [ Selector.class "post-card-link-overlay" ]
+                        |> Query.has [ Selector.attribute (Html.Attributes.href "/post/did:plc:abc~3k@bluesky:") ]
+            , test "with its content" <|
+                \_ ->
+                    rendered (federated blueskyTarget) "rellm.org" (quoting "https://bsky.app/profile/did:plc:abc/post/3k")
+                        |> Query.has [ card, quotedContent ]
+            , test "a Mastodon status links to its own /post/id@mastodon:instance page" <|
+                \_ ->
+                    rendered (federated mastodonTarget) "rellm.org" (quoting "https://mastodon.social/@a/1")
+                        |> Query.find [ Selector.class "post-card-link-overlay" ]
+                        |> Query.has [ Selector.attribute (Html.Attributes.href "/post/1@mastodon:mastodon.social") ]
+            , test "a Rellm-route link to a federated post embeds it too" <|
+                \_ ->
+                    rendered (federated blueskyTarget) "rellm.org" (quoting "/post/did:plc:abc~3k@bluesky:")
+                        |> Query.has [ card ]
+            , test "there's no Add or Enable button -- no server involved" <|
+                \_ ->
+                    rendered (federated blueskyTarget) "rellm.org" (quoting "https://bsky.app/profile/did:plc:abc/post/3k")
+                        |> lacks [ addButton, Selector.tag "button" ]
+            , test "while it loads, a loading line" <|
+                \_ ->
+                    rendered (withKey (FederatedLinks.key mastodonTarget) QuoteLinks.Loading) "rellm.org" (quoting "https://mastodon.social/@a/1")
+                        |> Query.has [ Selector.class "quoted-post-loading" ]
+            , test "a post that couldn't be fetched shows nothing" <|
+                \_ ->
+                    rendered (withKey (FederatedLinks.key mastodonTarget) QuoteLinks.Unavailable) "rellm.org" (quoting "https://mastodon.social/@a/1")
+                        |> lacks [ card, Selector.class "quoted-post-loading" ]
+            , test "targetOf: a federated link counts as a quote on a POST, not on a reply or a federated post" <|
+                \_ ->
+                    let
+                        post : Post
+                        post =
+                            quoting "https://mastodon.social/@a/1"
+                    in
+                    [ QuotedLink.targetOf "rellm.org" post |> Maybe.map (\_ -> True)
+                    , QuotedLink.targetOf "rellm.org" { post | context = REPLY } |> Maybe.map (\_ -> True)
+                    , QuotedLink.targetOf "bluesky:" post |> Maybe.map (\_ -> True)
+                    ]
+                        |> Expect.equalLists [ Just True, Nothing, Nothing ]
+            ]
+        , describe "a link to a post on a social media site"
+            [ test "a POST linking a YouTube video embeds it" <|
+                \_ ->
+                    rendered QuoteLinks.init "rellm.org" (quoting "https://www.youtube.com/watch?v=dQw4w9WgXcQ")
+                        |> Query.has [ Selector.class "rsme-embed", Selector.class "rsme-youtube-embed" ]
+            , test "each supported network" <|
+                \_ ->
+                    [ ( "https://x.com/jack/status/20", "rsme-x-embed" )
+                    , ( "https://www.instagram.com/p/CsY_NinvWDW/", "rsme-instagram-embed" )
+                    , ( "https://www.facebook.com/zuck/posts/1", "rsme-facebook-embed" )
+                    , ( "https://www.tiktok.com/@a/video/1", "rsme-tiktok-embed" )
+                    , ( "https://www.pinterest.com/pin/1/", "rsme-pinterest-embed" )
+                    , ( "https://www.linkedin.com/feed/update/urn:li:activity:1", "rsme-linkedin-embed" )
+                    ]
+                        |> List.map (\( link, networkClass ) -> \_ -> rendered QuoteLinks.init "rellm.org" (quoting link) |> Query.has [ Selector.class networkClass ])
+                        |> (\checks -> Expect.all checks ())
+            , test "it needs no fetch -- no quote cache entry involved" <|
+                \_ ->
+                    rendered QuoteLinks.init "rellm.org" (quoting "https://youtu.be/dQw4w9WgXcQ")
+                        |> lacks [ card, addButton, Selector.class "quoted-post-loading" ]
+            , test "not on a reply, or a federated post" <|
+                \_ ->
+                    let
+                        post : Post
+                        post =
+                            quoting "https://youtu.be/dQw4w9WgXcQ"
+                    in
+                    [ rendered QuoteLinks.init "rellm.org" { post | context = REPLY }
+                    , rendered QuoteLinks.init "bluesky:" post
+                    , rendered QuoteLinks.init "rellm.org" { post | quotedPost = Just (wrapPost quoted) }
+                    ]
+                        |> List.map (lacks [ Selector.class "rsme-embed" ])
+                        |> Expect.equalLists (List.repeat 3 Expect.pass)
+            , test "an ordinary website link, or no link, embeds nothing" <|
+                \_ ->
+                    [ rendered QuoteLinks.init "rellm.org" (quoting "https://example.com/article")
+                    , rendered QuoteLinks.init "rellm.org" (quoting "https://www.youtube.com/@somechannel")
+                    ]
+                        |> List.map (lacks [ Selector.class "rsme-embed" ])
+                        |> Expect.equalLists (List.repeat 2 Expect.pass)
+            , test "a Rellm post link is still a quote, not an embed" <|
+                \_ ->
+                    rendered (loaded "rellm.org" "abc") "rellm.org" (quoting "/post/abc")
+                        |> Expect.all [ Query.has [ card ], lacks [ Selector.class "rsme-embed" ] ]
+            ]
+        , describe "a quote of an event"
+            [ test "shows an event card instead of a post card" <|
+                \_ ->
+                    rendered (withEvent "rellm.org" "ev") "rellm.org" (quoting "/event/ev")
+                        |> Query.has [ eventCardSelector, Selector.text "Block party" ]
+            , test "and not the plain post card" <|
+                \_ ->
+                    rendered (withEvent "rellm.org" "ev") "rellm.org" (quoting "/~ev")
+                        |> lacks [ card ]
+            , test "the event card has no RSVP/calendar controls to act on" <|
+                \_ ->
+                    rendered (withEvent "rellm.org" "ev") "rellm.org" (quoting "/event/ev")
+                        |> lacks [ Selector.tag "button" ]
+            , test "from a server the user hasn't added, it's followed by the Add button" <|
+                \_ ->
+                    rendered (withEvent "bullcity.social" "ev") "rellm.org" (quoting "https://bullcity.social/event/ev")
+                        |> Query.has [ eventCardSelector, addButton ]
+            , test "an event card from a host known not to be Rellm isn't shown" <|
+                \_ ->
+                    rendered (withEvent "some-blog.example" "ev") "rellm.org" (quoting "https://some-blog.example/event/ev")
+                        |> lacks [ eventCardSelector ]
+            ]
+        , describe "a quote from a server the user disabled"
+            [ test "is Enable prompt, not the post -- a switched-off server isn't read from" <|
+                \_ ->
+                    rendered (loaded "jonline.io" "abc") "rellm.org" (quoting "https://jonline.io/post/abc")
+                        |> Expect.all
+                            [ Query.has [ Selector.class "server-dependent-prompt", Selector.text "jonline.io is disabled" ]
+                            , lacks [ card ]
+                            ]
+            , test "its button enables that server" <|
+                \_ ->
+                    rendered QuoteLinks.init "rellm.org" (quoting "https://jonline.io/post/abc")
+                        |> Query.find [ Selector.class "server-action-button" ]
+                        |> Event.simulate Event.click
+                        |> Event.toResult
+                        |> Result.map (\msg -> ( msg, serverOf msg ))
+                        |> Expect.equal (Ok ( EnableServer "jonline.io", Just "jonline.io" ))
+            ]
+        , describe "a quote from a Rellm server the user hasn't added"
+            [ test "shows the post and an Add button for the server" <|
+                \_ ->
+                    rendered (loaded "bullcity.social" "abc") "rellm.org" (quoting "https://bullcity.social/~abc")
+                        |> Expect.all
+                            [ Query.has [ card, quotedContent ]
+                            , Query.has [ addButton ]
+                            ]
+            , test "the button adds that server" <|
+                \_ ->
+                    rendered (loaded "bullcity.social" "abc") "rellm.org" (quoting "https://bullcity.social/~abc")
+                        |> Query.find [ addButton ]
+                        |> Event.simulate Event.click
+                        |> Event.toResult
+                        |> Result.map (\msg -> ( msg, serverOf msg ))
+                        |> Expect.equal (Ok ( AddServer "bullcity.social", Just "bullcity.social" ))
+            , test "if the post itself can't be seen, still offers the button -- it's a Rellm server" <|
+                \_ ->
+                    rendered (with "bullcity.social" "abc" QuoteLinks.Unavailable) "rellm.org" (quoting "https://bullcity.social/~abc")
+                        |> Expect.all
+                            [ lacks [ card ]
+                            , Query.has [ addButton ]
+                            ]
+            ]
+        , describe "a quote from a host that isn't (known to be) a Rellm server"
+            [ test "a host that failed its preview shows nothing, not even if something is cached for it" <|
+                \_ ->
+                    rendered (loaded "some-blog.example" "abc") "rellm.org" (quoting "https://some-blog.example/post/abc")
+                        |> lacks [ card, addButton ]
+            , test "a host we haven't heard back from yet shows nothing -- an ordinary-looking link doesn't flash a loader" <|
+                \_ ->
+                    rendered (with "new-server.example" "abc" (QuoteLinks.Awaiting { host = "new-server.example", id = "abc" })) "rellm.org" (quoting "https://new-server.example/post/abc")
+                        |> lacks [ card, addButton, Selector.class "quoted-post-loading" ]
+            ]
+        ]

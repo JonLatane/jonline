@@ -6378,7 +6378,6 @@ fieldNumbersProto__Rellm__Post :
     , groupCount : Int
     , media : Int
     , mediaGenerated : Int
-    , embedLink : Int
     , shareable : Int
     , context : Int
     , visibility : Int
@@ -6393,6 +6392,7 @@ fieldNumbersProto__Rellm__Post :
     , unauthenticatedStarCount : Int
     , syncDestinations : Int
     , syncSource : Int
+    , quotedPost : Int
     }
 fieldNumbersProto__Rellm__Post =
     { id = 1
@@ -6406,7 +6406,6 @@ fieldNumbersProto__Rellm__Post =
     , groupCount = 9
     , media = 10
     , mediaGenerated = 11
-    , embedLink = 12
     , shareable = 13
     , context = 14
     , visibility = 15
@@ -6421,6 +6420,7 @@ fieldNumbersProto__Rellm__Post =
     , unauthenticatedStarCount = 24
     , syncDestinations = 25
     , syncSource = 26
+    , quotedPost = 27
     }
 
 
@@ -6440,7 +6440,6 @@ defaultProto__Rellm__Post =
     , groupCount = 0
     , media = []
     , mediaGenerated = False
-    , embedLink = False
     , shareable = False
     , context = Proto.Rellm.PostContext.defaultPostContext
     , visibility = Proto.Rellm.Visibility.defaultVisibility
@@ -6455,6 +6454,7 @@ defaultProto__Rellm__Post =
     , unauthenticatedStarCount = Protobuf.Types.Int64.fromInts 0 0
     , syncDestinations = []
     , syncSource = Nothing
+    , quotedPost = Nothing
     }
 
 
@@ -6479,7 +6479,6 @@ decodeProto__Rellm__Post =
         , Protobuf.Decode.optional 9 Protobuf.Decode.int32 (\a r -> { r | groupCount = a })
         , Protobuf.Decode.repeated 10 decodeProto__Rellm__MediaReference .media (\a r -> { r | media = a })
         , Protobuf.Decode.optional 11 Protobuf.Decode.bool (\a r -> { r | mediaGenerated = a })
-        , Protobuf.Decode.optional 12 Protobuf.Decode.bool (\a r -> { r | embedLink = a })
         , Protobuf.Decode.optional 13 Protobuf.Decode.bool (\a r -> { r | shareable = a })
         , Protobuf.Decode.optional 14 Proto.Rellm.PostContext.decodePostContext (\a r -> { r | context = a })
         , Protobuf.Decode.optional 15 Proto.Rellm.Visibility.decodeVisibility (\a r -> { r | visibility = a })
@@ -6523,6 +6522,13 @@ decodeProto__Rellm__Post =
             26
             (Protobuf.Decode.map Just decodeProto__Rellm__SyncSource)
             (\a r -> { r | syncSource = a })
+        , Protobuf.Decode.optional
+            27
+            (Protobuf.Decode.map
+                Just
+                (Protobuf.Decode.map Proto__Rellm__Post_ <| Protobuf.Decode.lazy <| \_ -> decodeProto__Rellm__Post)
+            )
+            (\a r -> { r | quotedPost = a })
         ]
 
 
@@ -6543,7 +6549,6 @@ encodeProto__Rellm__Post value =
         , ( 9, Protobuf.Encode.int32 value.groupCount )
         , ( 10, (Protobuf.Encode.list encodeProto__Rellm__MediaReference) value.media )
         , ( 11, Protobuf.Encode.bool value.mediaGenerated )
-        , ( 12, Protobuf.Encode.bool value.embedLink )
         , ( 13, Protobuf.Encode.bool value.shareable )
         , ( 14, Proto.Rellm.PostContext.encodePostContext value.context )
         , ( 15, Proto.Rellm.Visibility.encodeVisibility value.visibility )
@@ -6580,6 +6585,10 @@ encodeProto__Rellm__Post value =
         , ( 24, Protobuf.Encode.int64 value.unauthenticatedStarCount )
         , ( 25, (Protobuf.Encode.list encodeProto__Rellm__SyncDestinationStatus) value.syncDestinations )
         , ( 26, (Maybe.map encodeProto__Rellm__SyncSource >> Maybe.withDefault Protobuf.Encode.none) value.syncSource )
+        , ( 27
+          , (Maybe.map (unwrapProto__Rellm__Post >> encodeProto__Rellm__Post) >> Maybe.withDefault Protobuf.Encode.none)
+                value.quotedPost
+          )
         ]
 
 
@@ -6598,7 +6607,6 @@ type alias Proto__Rellm__Post =
     , groupCount : Int
     , media : List Proto__Rellm__MediaReference
     , mediaGenerated : Bool
-    , embedLink : Bool
     , shareable : Bool
     , context : Proto.Rellm.PostContext.PostContext
     , visibility : Proto.Rellm.Visibility.Visibility
@@ -6613,6 +6621,7 @@ type alias Proto__Rellm__Post =
     , unauthenticatedStarCount : Protobuf.Types.Int64.Int64
     , syncDestinations : List Proto__Rellm__SyncDestinationStatus
     , syncSource : Maybe Proto__Rellm__SyncSource
+    , quotedPost : Maybe Proto__Rellm__Post_
     }
 
 

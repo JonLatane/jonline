@@ -329,8 +329,6 @@ export interface Post {
    * Currently previews are generated for any Link post.
    */
   mediaGenerated: boolean;
-  /** Flag indicating */
-  embedLink: boolean;
   /**
    * Flag indicating a `LIMITED` or `SERVER_PUBLIC` post can be shared with groups and individuals,
    * and a `DIRECT` post can be shared with individuals.
@@ -383,7 +381,21 @@ export interface Post {
    * Event/Occasion, or an RSS/Atom feed item), this is the source it was synced from.
    * Only its media should be considered editable for such a Post.
    */
-  syncSource?: SyncSource | undefined;
+  syncSource?:
+    | SyncSource
+    | undefined;
+  /**
+   * A post this post quotes (embeds), for posts translated from a federated network such as Bluesky
+   * or Mastodon. Only ever set client-side by the Elm frontend's federation translators -- Rellm
+   * servers never populate it. May itself quote another post, up to however many levels the client
+   * chose to resolve.
+   *
+   * A Rellm post quotes another post by putting a link to it in its own `link` -- clients embed it
+   * when `link` is (or points at) a `/post/{id}`, `/event/{id}` or short `/{x}{id}` URL on any Rellm
+   * server, or a Bluesky or Mastodon post (its own URL, or a Rellm `/post/{id}@bluesky:` /
+   * `@mastodon:{host}` route). That's only meaningful on a `POST`-context post (`link` is invalid for replies).
+   */
+  quotedPost?: Post | undefined;
 }
 
 /** Syncs (cross-posts) a single Post to one SyncDestination. */
@@ -746,7 +758,6 @@ function createBasePost(): Post {
     groupCount: 0,
     media: [],
     mediaGenerated: false,
-    embedLink: false,
     shareable: false,
     context: 0,
     visibility: 0,
@@ -761,6 +772,7 @@ function createBasePost(): Post {
     unauthenticatedStarCount: 0,
     syncDestinations: [],
     syncSource: undefined,
+    quotedPost: undefined,
   };
 }
 
@@ -798,9 +810,6 @@ export const Post: MessageFns<Post> = {
     }
     if (message.mediaGenerated !== false) {
       writer.uint32(88).bool(message.mediaGenerated);
-    }
-    if (message.embedLink !== false) {
-      writer.uint32(96).bool(message.embedLink);
     }
     if (message.shareable !== false) {
       writer.uint32(104).bool(message.shareable);
@@ -843,6 +852,9 @@ export const Post: MessageFns<Post> = {
     }
     if (message.syncSource !== undefined) {
       SyncSource.encode(message.syncSource, writer.uint32(210).fork()).join();
+    }
+    if (message.quotedPost !== undefined) {
+      Post.encode(message.quotedPost, writer.uint32(218).fork()).join();
     }
     return writer;
   },
@@ -940,14 +952,6 @@ export const Post: MessageFns<Post> = {
           }
 
           message.mediaGenerated = reader.bool();
-          continue;
-        }
-        case 12: {
-          if (tag !== 96) {
-            break;
-          }
-
-          message.embedLink = reader.bool();
           continue;
         }
         case 13: {
@@ -1062,6 +1066,14 @@ export const Post: MessageFns<Post> = {
           message.syncSource = SyncSource.decode(reader, reader.uint32());
           continue;
         }
+        case 27: {
+          if (tag !== 218) {
+            break;
+          }
+
+          message.quotedPost = Post.decode(reader, reader.uint32());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1084,7 +1096,6 @@ export const Post: MessageFns<Post> = {
       groupCount: isSet(object.groupCount) ? globalThis.Number(object.groupCount) : 0,
       media: globalThis.Array.isArray(object?.media) ? object.media.map((e: any) => MediaReference.fromJSON(e)) : [],
       mediaGenerated: isSet(object.mediaGenerated) ? globalThis.Boolean(object.mediaGenerated) : false,
-      embedLink: isSet(object.embedLink) ? globalThis.Boolean(object.embedLink) : false,
       shareable: isSet(object.shareable) ? globalThis.Boolean(object.shareable) : false,
       context: isSet(object.context) ? postContextFromJSON(object.context) : 0,
       visibility: isSet(object.visibility) ? visibilityFromJSON(object.visibility) : 0,
@@ -1103,6 +1114,7 @@ export const Post: MessageFns<Post> = {
         ? object.syncDestinations.map((e: any) => SyncDestinationStatus.fromJSON(e))
         : [],
       syncSource: isSet(object.syncSource) ? SyncSource.fromJSON(object.syncSource) : undefined,
+      quotedPost: isSet(object.quotedPost) ? Post.fromJSON(object.quotedPost) : undefined,
     };
   },
 
@@ -1140,9 +1152,6 @@ export const Post: MessageFns<Post> = {
     }
     if (message.mediaGenerated !== false) {
       obj.mediaGenerated = message.mediaGenerated;
-    }
-    if (message.embedLink !== false) {
-      obj.embedLink = message.embedLink;
     }
     if (message.shareable !== false) {
       obj.shareable = message.shareable;
@@ -1186,6 +1195,9 @@ export const Post: MessageFns<Post> = {
     if (message.syncSource !== undefined) {
       obj.syncSource = SyncSource.toJSON(message.syncSource);
     }
+    if (message.quotedPost !== undefined) {
+      obj.quotedPost = Post.toJSON(message.quotedPost);
+    }
     return obj;
   },
 
@@ -1207,7 +1219,6 @@ export const Post: MessageFns<Post> = {
     message.groupCount = object.groupCount ?? 0;
     message.media = object.media?.map((e) => MediaReference.fromPartial(e)) || [];
     message.mediaGenerated = object.mediaGenerated ?? false;
-    message.embedLink = object.embedLink ?? false;
     message.shareable = object.shareable ?? false;
     message.context = object.context ?? 0;
     message.visibility = object.visibility ?? 0;
@@ -1225,6 +1236,9 @@ export const Post: MessageFns<Post> = {
     message.syncDestinations = object.syncDestinations?.map((e) => SyncDestinationStatus.fromPartial(e)) || [];
     message.syncSource = (object.syncSource !== undefined && object.syncSource !== null)
       ? SyncSource.fromPartial(object.syncSource)
+      : undefined;
+    message.quotedPost = (object.quotedPost !== undefined && object.quotedPost !== null)
+      ? Post.fromPartial(object.quotedPost)
       : undefined;
     return message;
   },

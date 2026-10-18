@@ -60,7 +60,6 @@ pub struct Post {
 
     pub media: Vec<Option<i64>>,
     pub media_generated: bool,
-    pub embed_link: bool,
     pub shareable: bool,
 
     pub context: String,
@@ -113,7 +112,6 @@ pub const POST_COLUMNS: (
     posts::group_count,
     posts::media,
     posts::media_generated,
-    posts::embed_link,
     posts::shareable,
     posts::context,
     posts::visibility,
@@ -139,7 +137,6 @@ pub const POST_COLUMNS: (
     posts::group_count,
     posts::media,
     posts::media_generated,
-    posts::embed_link,
     posts::shareable,
     posts::context,
     posts::visibility,
@@ -167,7 +164,6 @@ pub struct NewPost {
     pub visibility: String,
     pub moderation: String,
     pub media: Vec<i64>,
-    pub embed_link: bool,
 }
 
 #[derive(Debug, Queryable, Identifiable, Associations, AsChangeset, Clone)]

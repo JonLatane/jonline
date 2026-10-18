@@ -1,4 +1,4 @@
-module Shared.CreateNewPanel exposing (CreatedItem(..), Mode, Model, Msg(..), allTimezoneNames, hasEligibleAccount, init, isOpen, update, view)
+module Shared.CreateNewPanel exposing (CreatedItem(..), Mode(..), Model, Msg(..), allTimezoneNames, hasEligibleAccount, init, isOpen, linkToSave, openQuoting, shownQuote, update, view)
 
 {-| A single, app-wide "New Post"/"New Event" composer -- title (the only
 field required in both modes), an optional link, optional media (picked via
@@ -48,10 +48,11 @@ import Components.Markdown as Markdown
 import Components.MediaRenderer as MediaRenderer
 import Components.MultiMediaRenderer as MultiMediaRenderer
 import Components.Posts as Posts
+import Components.QuotedLink as QuotedLink
 import Dict
 import Grpc
 import Html exposing (Html, button, div, img, input, label, option, select, span, text)
-import Html.Attributes exposing (alt, attribute, class, disabled, placeholder, selected, src, type_, value)
+import Html.Attributes exposing (alt, attribute, class, disabled, placeholder, selected, src, title, type_, value)
 import Html.Events exposing (onClick, onInput)
 import Proto.Rellm exposing (MediaReference, defaultEvent, defaultEventInfo, defaultOccasion, defaultPost)
 import Proto.Rellm.Permission exposing (Permission(..))
@@ -64,6 +65,8 @@ import Shared.AccountsPanel.RellmServers as RellmServers exposing (RellmServer, 
 import Shared.Conversions exposing (posixToTimestamp)
 import Shared.MarkdownPanel as MarkdownPanel
 import Shared.MyMediaPanel as MyMediaPanel
+import Shared.QuoteLinks as QuoteLinks
+import Shared.Federation.RellmLinks as RellmLinks
 import Shared.Time as SharedTime
 import Task exposing (Task)
 import Time
@@ -90,6 +93,14 @@ type alias Model =
     , media : List MediaReference
     , content : String
 
+    -- The link a quote is made with: a quote is just a `POST` whose `link` points at the quoted post (see
+    -- `Components.QuotedLink`), so this stands in for `link` while it's set -- set by `OpenQuoting` (the
+    -- quote button on a post's own page), cleared by the preview's X (`QuotedPostCleared`) or a successful
+    -- save. The `link` text the user typed is left alone, so removing the quote brings it back. Kept across
+    -- `ModeChanged`: flipping to `EventMode` and back doesn't lose it, but `quotedPostField` hides it in
+    -- `EventMode` and `saveTask` only ever sends it from `PostMode` -- an event's `link` is its own.
+    , quotedLink : Maybe String
+
     -- `EventMode`-only, both required -- see module doc.
     , startsAt : Maybe Time.Posix
     , endsAt : Maybe Time.Posix
@@ -115,6 +126,16 @@ type alias Model =
 
 type Msg
     = ToggleOpen
+      -- Opens the panel in `PostMode` quoting `post`, on server `host` -- see `Components.Posts.quoteButton`.
+      -- Like `ToggleOpen` opening, `Shared.update` closes the other panels that share this one's screen
+      -- position (and seeds `Shared.QuoteLinks` with `post`, so the preview doesn't refetch it).
+    | OpenQuoting String Proto.Rellm.Post
+    | QuotedPostCleared
+      -- The quote preview's "Add <server>"/"Enable" buttons (see `Components.QuotedLink`), forwarded to
+      -- `AccountsPanel` the same way `SaveClicked`'s token refreshes are.
+    | AddQuotedServerClicked String
+    | EnableQuotedServerClicked String
+    | NoOp
     | CloseClicked
     | CancelClicked
     | ModeChanged Mode
@@ -176,6 +197,7 @@ init =
     , link = ""
     , media = []
     , content = ""
+    , quotedLink = Nothing
     , startsAt = Nothing
     , endsAt = Nothing
     , timezone = Nothing
@@ -245,6 +267,21 @@ update browserTimeZone now accountsPanelModel msg model =
                         model
             in
             ( { withDefaultTimes | open = opening }, Cmd.none, noForward )
+
+        OpenQuoting host post ->
+            ( openQuoting host post model, Cmd.none, noForward )
+
+        QuotedPostCleared ->
+            ( { model | quotedLink = Nothing }, Cmd.none, noForward )
+
+        AddQuotedServerClicked host ->
+            ( model, Cmd.none, ( Just (AccountsPanel.RecommendedServerClicked host), Nothing, Nothing ) )
+
+        EnableQuotedServerClicked host ->
+            ( model, Cmd.none, ( Just (AccountsPanel.ToggleServerEnabled host), Nothing, Nothing ) )
+
+        NoOp ->
+            ( model, Cmd.none, noForward )
 
         CloseClicked ->
             ( { model | open = False }, Cmd.none, noForward )
@@ -356,6 +393,44 @@ update browserTimeZone now accountsPanelModel msg model =
 
         GotSaveResult (Err err) ->
             ( { model | status = SubmitFailed (AccountsPanel.grpcErrorToString err) }, Cmd.none, noForward )
+
+
+{-| `OpenQuoting`'s state change: open in `PostMode`, quoting `post` (on `host`) by its absolute link.
+-}
+openQuoting : String -> Proto.Rellm.Post -> Model -> Model
+openQuoting host post model =
+    { model
+        | open = True
+        , mode = PostMode
+        , quotedLink = Just (RellmLinks.canonicalLink { isEvent = post.context == EVENT || post.context == OCCASION } { host = host, id = post.id })
+    }
+
+
+{-| The quote the form shows (preview, X button): only in `PostMode`. In `EventMode` it's kept in the model
+-- switching back brings it back -- but hidden.
+-}
+shownQuote : Model -> Maybe String
+shownQuote model =
+    case model.mode of
+        PostMode ->
+            model.quotedLink
+
+        EventMode ->
+            Nothing
+
+
+{-| The `link` a save in `mode` sends. A `PostMode` quote stands in for the link the user typed (a post has one
+`link`, and a quote is made out of it); an event never quotes, so `EventMode` -- even with a quote still
+held in the model -- sends only what was typed.
+-}
+linkToSave : Mode -> Model -> Maybe String
+linkToSave mode model =
+    case ( mode, model.quotedLink ) of
+        ( PostMode, Just quotedLink ) ->
+            Just quotedLink
+
+        _ ->
+            nonEmptyTrimmed model.link
 
 
 {-| The permission (`CREATEPOSTS`/`CREATEEVENTS`) `eligibleAccounts` requires
@@ -611,7 +686,7 @@ saveTask browserTimeZone accountsPanelModel resolved model =
                 post =
                     { defaultPost
                         | title = Just (String.trim model.title)
-                        , link = nonEmptyTrimmed model.link
+                        , link = linkToSave model.mode model
                         , content = nonEmptyTrimmed model.content
                         , media = model.media
                         , visibility = resolvedVisibility model.mode resolved.account model
@@ -654,8 +729,8 @@ saveTask browserTimeZone accountsPanelModel resolved model =
 `hostnameToCSSClass` (see module doc) so its Save button/mode chrome matches
 the server the draft will actually be posted to.
 -}
-view : SharedTime.BrowserTimeZone -> AccountsPanel.Model -> Model -> Html Msg
-view browserTimeZone accountsPanelModel model =
+view : SharedTime.Model -> String -> AccountsPanel.Model -> QuoteLinks.Model -> Model -> Html Msg
+view time basePath accountsPanelModel quotes model =
     let
         host : String
         host =
@@ -704,9 +779,20 @@ view browserTimeZone accountsPanelModel model =
                         []
 
                     EventMode ->
+                        let
+                            browserTimeZone : SharedTime.BrowserTimeZone
+                            browserTimeZone =
+                                time.browserTimeZone
+                        in
                         [ startsAtField browserTimeZone.zone model, endsAtField browserTimeZone.zone model, timezoneField browserTimeZone model ]
-                , [ linkField model
-                  , mediaField accountsPanelModel model host
+                , case shownQuote model of
+                    -- A quote takes the place of the link: a post has the one `link`, and this is it.
+                    Just quotedLink ->
+                        [ quotedPostField time basePath accountsPanelModel quotes quotedLink ]
+
+                    Nothing ->
+                        [ linkField model ]
+                , [ mediaField accountsPanelModel model host
                   , contentField model
                   ]
                 ]
@@ -863,6 +949,42 @@ dateField zone labelText posix toMsg =
             , onInput toMsg
             ]
             []
+        ]
+
+
+{-| The quote (`model.quotedLink`, `PostMode` only -- hidden, but kept, in `EventMode`): the link itself, an X to
+drop it (`QuotedPostCleared`), and below them the same embedded card the quoting post will show
+(`Components.QuotedLink`) once it has loaded. The link stays visible even if there's no card -- the post
+can't be seen, or its server isn't reachable -- so the X is never the only thing there. The card's own link
+opens the quoted post's page; the draft survives that (see module doc).
+-}
+quotedPostField : SharedTime.Model -> String -> AccountsPanel.Model -> QuoteLinks.Model -> String -> Html Msg
+quotedPostField time basePath accountsPanelModel quotes quotedLink =
+    div [ class "create-new-panel-field" ]
+        [ div [ class "create-new-panel-field-header" ]
+            [ label [ class "create-new-panel-label" ] [ text "Quoting" ]
+            , button
+                [ class "create-new-panel-quoted-post-remove"
+                , onClick QuotedPostCleared
+                , attribute "aria-label" "Remove quoted post"
+                , title "Remove quoted post"
+                ]
+                [ text "✕" ]
+            ]
+        , div [ class "create-new-panel-quoted-link" ] [ text quotedLink ]
+        , QuotedLink.viewLink
+            { time = time
+            , basePath = basePath
+            , accounts = QuotedLink.accountsInfo accountsPanelModel
+            , quotes = quotes
+            , mediaPlayState = MediaRenderer.init
+            , onMediaPlayClicked = \_ -> NoOp
+            , onAddServerClicked = AddQuotedServerClicked
+            , onEnableServerClicked = EnableQuotedServerClicked
+            , noOp = NoOp
+            }
+            accountsPanelModel.mainFrontendHost
+            quotedLink
         ]
 
 

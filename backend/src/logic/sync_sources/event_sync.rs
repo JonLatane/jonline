@@ -288,7 +288,6 @@ fn create_event_for_group(
             link: group.link.clone(),
             content: group.content.clone(),
             visibility: Visibility::GlobalPublic.to_string_visibility(),
-            embed_link: false,
             context: PostContext::Event.to_string_post_context(),
             moderation: moderation.to_string(),
             media: vec![],
@@ -434,7 +433,6 @@ fn reconcile_occasions(
                             None
                         },
                         visibility: Visibility::GlobalPublic.to_string_visibility(),
-                        embed_link: false,
                         context: PostContext::Occasion.as_str_name().to_string(),
                         moderation: moderation.to_string(),
                         media: vec![],

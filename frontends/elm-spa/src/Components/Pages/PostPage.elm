@@ -3,6 +3,7 @@ module Components.Pages.PostPage exposing
     , Msg
     , fromShared
     , init
+    , loadedEventPost
     , subscriptions
     , titleFor
     , update
@@ -29,6 +30,7 @@ import Components.AIProviders as AIProviders
 import Components.MediaRenderer as MediaRenderer
 import Components.PostReplies as PostReplies
 import Components.Posts as Posts
+import Components.QuotedLink as QuotedLink
 import Components.ServerDependentView as ServerDependentView
 import Components.SyncDestinations as SyncDestinations
 import Components.Users as Users
@@ -49,10 +51,12 @@ import Shared.AccountsPanel as AccountsPanel
 import Shared.AccountsPanel.RellmAccounts as RellmAccounts exposing (RellmAccount)
 import Shared.AccountsPanel.RellmServers as RellmServers exposing (RellmServer)
 import Shared.Breadcrumbs as Breadcrumbs
+import Shared.CreateNewPanel as CreateNewPanel
 import Shared.MarkdownPanel as MarkdownPanel
 import Shared.MediaGeneratorPanel as MediaGeneratorPanel
 import Shared.MediaViewerPanel as MediaViewerPanel
 import Shared.MyMediaPanel as MyMediaPanel
+import Shared.QuoteLinks as QuoteLinks
 import Shared.StarredPanel as StarredPanel
 import Task
 import Time
@@ -134,6 +138,7 @@ type Msg
     | MediaClicked Post String
     | MediaEditClicked Post
     | GenerateMediaClicked Post
+    | QuoteClicked Post
     | GotMediaUpdateResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, Post ))
       -- `Components.Posts.mediaLayoutSelector`'s `onMediaLayoutChanged` --
       -- unlike `MediaEditClicked`, this saves straight away (no picker panel,
@@ -269,6 +274,23 @@ init shared pageIsSecure rawPostId navKey =
     )
 
 
+{-| The post this page has loaded, if it's an event's (`EVENT`) or an occasion's (`OCCASION`) own -- which
+belongs on its `/event/:id` page (`Pages.Post.PostId_` redirects there) -- with what that needs.
+-}
+loadedEventPost : Model -> Maybe { host : String, postId : String, navKey : Browser.Navigation.Key }
+loadedEventPost model =
+    case model.postStatus of
+        PostLoaded post ->
+            if post.context == EVENT || post.context == OCCASION then
+                Just { host = model.targetHost, postId = post.id, navKey = model.navKey }
+
+            else
+                Nothing
+
+        _ ->
+            Nothing
+
+
 subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.batch
@@ -285,6 +307,42 @@ subscriptions model =
 
 update : Shared.Model -> Msg -> Model -> ( Model, Effect Msg )
 update shared msg model =
+    let
+        ( newModel, effect ) =
+            updateInner shared msg model
+    in
+    ( newModel, Effect.batch [ effect, quoteRequestEffect shared newModel ] )
+
+
+{-| Asks `Shared.QuoteLinks` for the quoted post of the post being shown, if it quotes one (see
+`Components.QuotedLink`) and it isn't already known -- `Effect.none` on nearly every update.
+-}
+quoteRequestEffect : Shared.Model -> Model -> Effect Msg
+quoteRequestEffect shared model =
+    case model.postStatus of
+        PostLoaded post ->
+            case QuoteLinks.unrequested shared.quoteLinks (quotePairs model.targetHost post) of
+                [] ->
+                    Effect.none
+
+                toRequest ->
+                    Effect.fromShared (Shared.QuoteLinksMsg (QuoteLinks.RequestLinks toRequest))
+
+        _ ->
+            Effect.none
+
+
+quotePairs : String -> Post -> List ( String, String )
+quotePairs host post =
+    if QuotedLink.targetOf host post /= Nothing then
+        post.link |> Maybe.map (\link -> [ ( host, link ) ]) |> Maybe.withDefault []
+
+    else
+        []
+
+
+updateInner : Shared.Model -> Msg -> Model -> ( Model, Effect Msg )
+updateInner shared msg model =
     case msg of
         GotPost (Ok ( maybeAccountsPanelMsg, response )) ->
             let
@@ -445,6 +503,11 @@ update shared msg model =
                         model.targetHost
                     )
                 )
+            )
+
+        QuoteClicked post ->
+            ( model
+            , Effect.fromShared (Shared.CreateNewPanelMsg (CreateNewPanel.OpenQuoting model.targetHost post))
             )
 
         GenerateMediaClicked post ->
@@ -896,6 +959,21 @@ postDetailView shared model post =
         -- `Nothing` when the viewer has no image-capable `AIModel` at all -- see
         -- `Posts.generateMediaButton`'s own doc on why this decision lives at the call site rather
         -- than inside `Components.Posts`.
+        -- Only offered to a viewer with an account on this post's own server that could actually
+        -- create a post there -- a quote is just a new post (`CreateNewPanel`) carrying this one's id.
+        onQuoteClicked : Maybe Msg
+        onQuoteClicked =
+            case maybeAccount of
+                Just account ->
+                    if RellmAccounts.isAdmin account || List.member CREATEPOSTS account.permissions then
+                        Just (QuoteClicked displayPost)
+
+                    else
+                        Nothing
+
+                Nothing ->
+                    Nothing
+
         onGenerateMediaClicked : Maybe Msg
         onGenerateMediaClicked =
             case maybeAccount of
@@ -925,6 +1003,7 @@ postDetailView shared model post =
         starred
         onStarClicked
         (EditClicked post)
+        onQuoteClicked
         (visibilityView maybeAccount model.visibilityEdit displayPost)
         (moderationView maybeAccount model.moderationEdit displayPost)
         model.availableSyncDestinations
@@ -942,7 +1021,24 @@ postDetailView shared model post =
             SharedMsg (Shared.RequestDelete (Shared.ConfirmPostSyncDestinationDelete displayPost destinationId destinationLabel model.targetHost))
         )
         Nothing
+        (QuotedLink.view (quoteConfig shared) model.targetHost displayPost)
         displayPost
+
+
+{-| How a quote's embed (`Components.QuotedLink`) talks back to the app.
+-}
+quoteConfig : Shared.Model -> QuotedLink.Config Msg
+quoteConfig shared =
+    { time = shared.time
+    , basePath = shared.basePath
+    , accounts = QuotedLink.accountsInfo shared.accounts
+    , quotes = shared.quoteLinks
+    , mediaPlayState = shared.mediaRenderer
+    , onMediaPlayClicked = \mediaId -> SharedMsg (Shared.MediaRendererMsg (MediaRenderer.PlayClicked mediaId))
+    , onAddServerClicked = \host -> SharedMsg (Shared.AccountsPanelMsg (AccountsPanel.RecommendedServerClicked host))
+    , onEnableServerClicked = \host -> SharedMsg (Shared.AccountsPanelMsg (AccountsPanel.ToggleServerEnabled host))
+    , noOp = SharedMsg Shared.NoOp
+    }
 
 
 {-| The visibility segment of `postDetail`'s meta line (see `postDetail`'s own

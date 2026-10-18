@@ -129,7 +129,6 @@ pub fn update_post(
                     .collect::<Result<Vec<Option<i64>>, Status>>()
                     .map_err(|_| diesel::result::Error::RollbackTransaction)?;
 
-                existing_post.embed_link = request.embed_link;
                 existing_post.shareable = request.shareable;
                 existing_post.updated_at = now.into();
                 existing_post.visibility = request.visibility.to_string_visibility();

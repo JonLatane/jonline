@@ -4770,7 +4770,6 @@ fieldNumbersPost :
     , groupCount : Int
     , media : Int
     , mediaGenerated : Int
-    , embedLink : Int
     , shareable : Int
     , context : Int
     , visibility : Int
@@ -4785,6 +4784,7 @@ fieldNumbersPost :
     , unauthenticatedStarCount : Int
     , syncDestinations : Int
     , syncSource : Int
+    , quotedPost : Int
     }
 fieldNumbersPost =
     Proto.Rellm.Internals_.fieldNumbersProto__Rellm__Post
@@ -4854,11 +4854,6 @@ encodePost =
 
  Flag indicating whether Media has been generated for this Post.
  Currently previews are generated for any Link post.
-
-
-### embedLink
-
- Flag indicating
 
 
 ### shareable

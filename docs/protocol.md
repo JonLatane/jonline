@@ -2627,7 +2627,6 @@ and Occasions.
 | group_count | [int32](#int32) |  | The number of groups this post is in. |
 | media | [MediaReference](#rellm-MediaReference) | repeated | List of Media IDs associated with this post. Order is preserved. |
 | media_generated | [bool](#bool) |  | Flag indicating whether Media has been generated for this Post. Currently previews are generated for any Link post. |
-| embed_link | [bool](#bool) |  | Flag indicating |
 | shareable | [bool](#bool) |  | Flag indicating a `LIMITED` or `SERVER_PUBLIC` post can be shared with groups and individuals, and a `DIRECT` post can be shared with individuals. |
 | context | [PostContext](#rellm-PostContext) |  | Context of the Post (`POST`, `REPLY`, `EVENT`, or `OCCASION`.) |
 | visibility | [Visibility](#rellm-Visibility) |  | The visibility of the Post. |
@@ -2642,6 +2641,9 @@ and Occasions.
 | unauthenticated_star_count | [int64](#int64) |  | The number of unauthenticated stars on the post. |
 | sync_destinations | [SyncDestinationStatus](#rellm-SyncDestinationStatus) | repeated | SyncDestinations this post has been synced (cross-posted) to, and their status. |
 | sync_source | [SyncSource](#rellm-SyncSource) | optional | If the Post was created/is kept in sync from a [`SyncSource`](#rellm-SyncSource) (an ICS Event/Occasion, or an RSS/Atom feed item), this is the source it was synced from. Only its media should be considered editable for such a Post. |
+| quoted_post | [Post](#rellm-Post) | optional | A post this post quotes (embeds), for posts translated from a federated network such as Bluesky or Mastodon. Only ever set client-side by the Elm frontend&#39;s federation translators -- Rellm servers never populate it. May itself quote another post, up to however many levels the client chose to resolve.
+
+A Rellm post quotes another post by putting a link to it in its own `link` -- clients embed it when `link` is (or points at) a `/post/{id}`, `/event/{id}` or short `/{x}{id}` URL on any Rellm server, or a Bluesky or Mastodon post (its own URL, or a Rellm `/post/{id}@bluesky:` / `@mastodon:{host}` route). That&#39;s only meaningful on a `POST`-context post (`link` is invalid for replies). |
 
 
 

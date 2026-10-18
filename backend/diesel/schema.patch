@@ -10,28 +10,19 @@
  }
  
  diesel::table! {
-@@ -19,10 +16,10 @@
+@@ -19,7 +16,7 @@
          id -> Int8,
          ai_provider_id -> Int8,
          grantee_id -> Int8,
+-        model_names -> Array<Nullable<Varchar>>,
 +        model_names -> Array<Varchar>,
          tokens_remaining -> Int8,
          created_at -> Timestamp,
          updated_at -> Nullable<Timestamp>,
--        model_names -> Array<Nullable<Varchar>>,
-         overage -> Int8,
-     }
+@@ -39,6 +36,54 @@
  }
-@@ -33,8 +30,56 @@
-         user_id -> Int8,
-         name -> Varchar,
-         configuration -> Jsonb,
-+        created_at -> Timestamp,
-+        updated_at -> Nullable<Timestamp>,
-+    }
-+}
-+
-+diesel::table! {
+ 
+ diesel::table! {
 +    rsvps (id) {
 +        id -> Int8,
 +        occasion_id -> Int8,
@@ -70,16 +61,20 @@
 +        starts_at -> Timestamp,
 +        ends_at -> Timestamp,
 +        location -> Nullable<Jsonb>,
-         created_at -> Timestamp,
-         updated_at -> Nullable<Timestamp>,
++        created_at -> Timestamp,
++        updated_at -> Nullable<Timestamp>,
 +        search_text -> TsVector,
 +        user_id -> Nullable<Int8>,
 +        sync_missing_since -> Nullable<Timestamp>,
 +        timezone -> Nullable<Varchar>,
-     }
- }
- 
-@@ -188,9 +233,6 @@
++    }
++}
++
++diesel::table! {
+     events (post_id) {
+         post_id -> Int8,
+         info -> Jsonb,
+@@ -196,9 +241,6 @@
  }
  
  diesel::table! {
@@ -89,7 +84,7 @@
      media (id) {
          id -> Int8,
          user_id -> Nullable<Int8>,
-@@ -204,8 +246,23 @@
+@@ -212,8 +254,23 @@
          updated_at -> Timestamp,
          metadata -> Jsonb,
          sizes -> Jsonb,
@@ -114,7 +109,7 @@
      }
  }
  
-@@ -219,6 +276,9 @@
+@@ -227,6 +284,9 @@
      }
  }
  
@@ -124,7 +119,7 @@
  diesel::table! {
      memberships (id) {
          id -> Int8,
-@@ -255,7 +315,7 @@
+@@ -263,7 +323,7 @@
  
  diesel::table! {
      use diesel::sql_types::*;
@@ -133,7 +128,7 @@
  
      messages (id) {
          id -> Int8,
-@@ -266,7 +326,7 @@
+@@ -274,7 +334,7 @@
          email_message_id -> Nullable<Varchar>,
          email_object_storage_path -> Nullable<Varchar>,
          created_at -> Timestamp,
@@ -142,7 +137,7 @@
          messaging_group_id -> Int8,
      }
  }
-@@ -280,37 +340,6 @@
+@@ -288,37 +348,6 @@
  }
  
  diesel::table! {
@@ -180,7 +175,7 @@
      post_sync_destinations (post_id, sync_destination_id) {
          post_id -> Int8,
          sync_destination_id -> Int8,
-@@ -323,7 +352,7 @@
+@@ -331,7 +360,7 @@
  
  diesel::table! {
      use diesel::sql_types::*;
@@ -189,7 +184,7 @@
      use super::sql_types::PostMediaLayout;
  
      posts (id) {
-@@ -348,7 +377,7 @@
+@@ -355,7 +384,7 @@
          published_at -> Nullable<Timestamp>,
          last_activity_at -> Timestamp,
          unauthenticated_star_count -> Int8,
@@ -198,7 +193,7 @@
          sort_published_at -> Timestamp,
          post_media_layout -> PostMediaLayout,
          sync_source_id -> Nullable<Int8>,
-@@ -369,23 +398,6 @@
+@@ -376,23 +405,6 @@
  }
  
  diesel::table! {
@@ -222,7 +217,7 @@
      server_configurations (id) {
          id -> Int8,
          active -> Bool,
-@@ -485,7 +497,7 @@
+@@ -494,7 +506,7 @@
  
  diesel::table! {
      use diesel::sql_types::*;
@@ -231,7 +226,7 @@
  
      users (id) {
          id -> Int8,
-@@ -508,7 +520,7 @@
+@@ -517,7 +529,7 @@
          response_count -> Int4,
          created_at -> Timestamp,
          updated_at -> Timestamp,
@@ -240,7 +235,7 @@
          friend_count -> Int4,
          occasion_count -> Int4,
          media_storage_limit_bytes -> Nullable<Int8>,
-@@ -519,6 +531,11 @@
+@@ -528,6 +540,11 @@
  diesel::joinable!(ai_provider_grants -> ai_providers (ai_provider_id));
  diesel::joinable!(ai_provider_grants -> users (grantee_id));
  diesel::joinable!(ai_providers -> users (user_id));
@@ -252,7 +247,7 @@
  diesel::joinable!(events -> posts (post_id));
  diesel::joinable!(federated_accounts -> federated_servers (federated_server_id));
  diesel::joinable!(federated_accounts -> users (user_id));
-@@ -534,8 +551,6 @@
+@@ -544,8 +561,6 @@
  diesel::joinable!(market_purchases -> users (buyer_id));
  diesel::joinable!(market_subscriptions -> market_products (product_id));
  diesel::joinable!(market_subscriptions -> users (buyer_id));
@@ -261,7 +256,7 @@
  diesel::joinable!(memberships -> groups (group_id));
  diesel::joinable!(memberships -> users (user_id));
  diesel::joinable!(message_reads -> messages (message_id));
-@@ -544,16 +559,11 @@
+@@ -554,16 +569,11 @@
  diesel::joinable!(message_recipients -> users (user_id));
  diesel::joinable!(messages -> messaging_groups (messaging_group_id));
  diesel::joinable!(messages -> users (from_user_id));
@@ -278,7 +273,7 @@
  diesel::joinable!(sync_destinations -> users (user_id));
  diesel::joinable!(sync_sources -> users (user_id));
  diesel::joinable!(user_access_tokens -> user_refresh_tokens (refresh_token_id));
-@@ -565,6 +575,9 @@
+@@ -575,6 +585,9 @@
  diesel::allow_tables_to_appear_in_same_query!(
      ai_provider_grants,
      ai_providers,
@@ -288,7 +283,7 @@
      events,
      federated_accounts,
      federated_profiles,
-@@ -578,18 +591,16 @@
+@@ -589,18 +602,16 @@
      market_purchases,
      market_subscriptions,
      media,

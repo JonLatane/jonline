@@ -10,7 +10,7 @@ Rellm (formerly Jonline; the checkout directory and some old docs/memory still s
 - `backend/` — Rust (edition 2024) server: tonic, Rocket, Diesel + Postgres, S3-compatible object storage (MinIO locally).
 - `frontends/elm-spa/` — Elm SPA (elm-spa 6). The actively developed frontend; served by the backend at `/elm`.
 - `frontends/tamagui/` — React/Next.js (Tamagui) frontend, yarn workspaces (`apps/next`, `apps/expo`, `packages/{api,app,ui}`). Served at `/tamagui`.
-- `frontends/flutter/` — Flutter app.
+- `frontends/flutter/` — Flutter app (frozen). Its SDK is pinned in `.fvmrc` and managed with **FVM** — always `fvm flutter …`/`fvm dart …`, never a bare `flutter`/`dart`; first-time setup is `make -C frontends/flutter fvm_install` (see its README).
 - `deploys/` — Kubernetes/Docker/release scripts (own Makefile); `docs/` — protocol docs generated from protos; `.github/workflows/` — CI/CD.
 
 Repo-local skills in `.claude/skills/` (run-backend, run-elm, run-tamagui, rebuild-protos, elm-call-rpc, elm-add-panel, elm-add-drag-reorder, add-background-job) cover the detailed procedures below — use them.
@@ -19,7 +19,7 @@ Repo-local skills in `.claude/skills/` (run-backend, run-elm, run-tamagui, rebui
 
 Root `Makefile` delegates to per-project Makefiles (`make run_backend|run_elm|run_tamagui`, `build_*`, `test_*`, `stop_dev_servers`, `run_tmux` for backend + Elm side by side).
 
-**Protos** (after any edit under `protos/`): run `make` at repo root (= `protos docs graphs`). It regenerates Flutter, Tamagui (`yarn protos`), and Elm (`make -C frontends/elm-spa protos`, needs `protoc-gen-elm`) bindings. Rust bindings regenerate in `cargo build` via `build.rs`; if stale, `cd backend && make rebuild_protos`. Generated files (`frontends/elm-spa/src/Proto/**`, `backend/src/protos/`, Tamagui `packages/api/generated`) are committed.
+**Protos** (after any edit under `protos/`): run `make` at repo root (= `protos docs graphs`). It regenerates Flutter (via FVM — `fvm` must be installed and `make -C frontends/flutter fvm_install` run once, plus `protoc` on PATH), Tamagui (`yarn protos`), and Elm (`make -C frontends/elm-spa protos`, needs `protoc-gen-elm`) bindings. Rust bindings regenerate in `cargo build` via `build.rs`; if stale, `cd backend && make rebuild_protos`. Generated files (`frontends/elm-spa/src/Proto/**`, `frontends/flutter/lib/generated/`, `backend/src/protos/`, Tamagui `packages/api/generated`) are committed.
 
 **Backend** (`cd backend`; needs `backend/.env`, see `.env-example`: `DATABASE_URL`, `TEST_DATABASE_URL`, `MINIO_*`):
 - `make local_object_storage_start run` — start MinIO docker container + `cargo run`. Listens on ports 80 and 8000 (gRPC) locally. `make local_instances_stop` kills it.
@@ -32,7 +32,7 @@ Root `Makefile` delegates to per-project Makefiles (`make run_backend|run_elm|ru
 - `make test` = `elm-review` then `npx elm-test-rs`; single file: `npx elm-test-rs tests/MarketTests.elm`. `make review_fix` autofixes lint.
 - Prefer hand edits + `elm make`/`make build` over running `elm-format` on a file (it can reformat unrelated content).
 
-**Tamagui** (`cd frontends/tamagui`): `make run` (`yarn web`), `make build` (tsc + build + next prod build; slow), `yarn test` (vitest). For a quick sanity check, prefer the backend's `rebuild_tamagui_and_run`.
+**Tamagui** (`cd frontends/tamagui`): `make run` (`yarn web`), `make build` (tsc + build + next prod build; slow), `yarn test` (vitest). To type-check without the slow build: `make install_deps` (`yarn install --mode=skip-build`, once) then `make typecheck` (`yarn tsc --noEmit`, ~15s; or `make typecheck_tamagui` from the root). For a quick sanity check, prefer the backend's `rebuild_tamagui_and_run`.
 
 ## Backend architecture
 
@@ -49,6 +49,7 @@ Root `Makefile` delegates to per-project Makefiles (`make run_backend|run_elm|ru
 - elm-spa conventions: `src/Pages/**` are routes (file path = URL), `Shared.elm` holds app-wide model; `gen/` code is generated.
 - `Effect.elm` wraps `Cmd` and adds `fromShared`, letting pages send messages to `Shared` (which owns global panels). App-wide overlay panels live in `src/Shared/*Panel.elm` and are driven from `Shared.Model` (see `elm-add-panel` skill). With multiple server instances, `Effect.fromShared` broadcasts can fan out per instance — dedup them or toggles cancel out.
 - `src/Components/` are reusable views/data components; `src/UI/` is the shared widget kit (incl. `UI.Flip` for FLIP animations — see the reorder-cancels-CSS-transition note on its `remove` — and `UI.Drag` for drag-to-reorder on top of it; see the `elm-add-drag-reorder` skill).
+- A `POST` quotes another post (or event) by putting its URL in `link` (`/post/id`, `/event/id`, `/~id`, any Rellm server); `Shared.QuoteLinks` (cache) + `Components.QuotedLink` (view) embed it, probing unknown hosts via `AccountsPanel` previews and caching non-Rellm hosts in `nonRellmHosts`. Bluesky/Mastodon post links (`Shared.Federation.FederatedLinks`) embed the same way, fetched directly from their networks. Links to Facebook/Instagram/LinkedIn/Pinterest/TikTok/X/YouTube posts always embed as sandboxed iframes (`src/SocialMediaEmbed/`, an Elm port of react-social-media-embed; iframe auto-resize is a `message` listener in `public/index.html`). There is no `embed_link` flag anymore. `/post/:id` of an EVENT/OCCASION redirects to `/event/:id` (`Pages.Post.PostId_`).
 - Backend calls go through generated `src/Proto/**` gRPC-Web bindings (see `elm-call-rpc` skill). The client talks to multiple Rellm servers (`Shared/AccountsPanel`, `Shared/Federation`); remote prod servers may lack newly added RPCs, so test writes against a local server.
 - Use the run-elm driver (`.claude/skills/run-elm/driver.mjs`, Playwright) to verify UI/animation behavior in a live browser rather than relying on code reading.
 
