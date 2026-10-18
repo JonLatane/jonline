@@ -981,6 +981,7 @@ quotedPostField time basePath accountsPanelModel quotes quotedLink =
             , onMediaPlayClicked = \_ -> NoOp
             , onAddServerClicked = AddQuotedServerClicked
             , onEnableServerClicked = EnableQuotedServerClicked
+            , noOp = NoOp
             }
             accountsPanelModel.mainFrontendHost
             quotedLink

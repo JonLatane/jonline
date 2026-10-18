@@ -8,7 +8,8 @@ requests turn into entries/fetches/preview loads (`request`), how waiting entrie
 
 import Dict
 import Expect
-import Proto.Rellm exposing (Post)
+import Proto.Rellm exposing (Event, Occasion, Post, defaultEvent, defaultOccasion)
+import Proto.Rellm.PostContext exposing (PostContext(..))
 import Set
 import Shared.Federation.RellmLinks as RellmLinks
 import Shared.QuoteLinks as QuoteLinks exposing (Entry(..), Plan(..), World)
@@ -281,4 +282,60 @@ suite =
                         |> entryOf "rellm.org" "abc"
                         |> Expect.equal (Just (Loaded quotedPost))
             ]
+        , describe "events"
+            [ test "only an event's or occasion's own post needs a GetEvents follow-up" <|
+                \_ ->
+                    [ POST, REPLY, EVENT, OCCASION ]
+                        |> List.map (\context -> QuoteLinks.wantsEvent { quotedPost | context = context })
+                        |> Expect.equalLists [ False, False, True, True ]
+            , test "an event link shows the event's first occasion" <|
+                \_ ->
+                    QuoteLinks.eventOf { quotedPost | context = EVENT } (eventWith [ "o1", "o2" ])
+                        |> Maybe.map (Tuple.second >> occasionId)
+                        |> Expect.equal (Just "o1")
+            , test "an occasion link shows that occasion, not the first" <|
+                \_ ->
+                    QuoteLinks.eventOf { quotedPost | id = "o2", context = OCCASION } (eventWith [ "o1", "o2" ])
+                        |> Maybe.map (Tuple.second >> occasionId)
+                        |> Expect.equal (Just "o2")
+            , test "an occasion the event doesn't have, or an event with none, has nothing to show" <|
+                \_ ->
+                    [ QuoteLinks.eventOf { quotedPost | id = "zzz", context = OCCASION } (eventWith [ "o1" ])
+                    , QuoteLinks.eventOf { quotedPost | context = EVENT } (eventWith [])
+                    ]
+                        |> Expect.equalLists [ Nothing, Nothing ]
+            , test "receiveEvent loads an event card" <|
+                \_ ->
+                    QuoteLinks.receiveEvent "rellm.org|abc" { quotedPost | context = EVENT } (Just (eventWith [ "o1" ])) QuoteLinks.init
+                        |> entryOf "rellm.org" "abc"
+                        |> Maybe.map isEventEntry
+                        |> Expect.equal (Just True)
+            , test "if the event can't be fetched, the plain post stands in" <|
+                \_ ->
+                    QuoteLinks.receiveEvent "rellm.org|abc" { quotedPost | context = EVENT } Nothing QuoteLinks.init
+                        |> entryOf "rellm.org" "abc"
+                        |> Expect.equal (Just (Loaded { quotedPost | context = EVENT }))
+            ]
         ]
+
+
+eventWith : List String -> Event
+eventWith occasionIds =
+    { defaultEvent
+        | occasions = List.map (\id -> { defaultOccasion | post = Just { quotedPost | id = id, context = OCCASION } }) occasionIds
+    }
+
+
+occasionId : Occasion -> String
+occasionId occasion =
+    occasion.post |> Maybe.map .id |> Maybe.withDefault ""
+
+
+isEventEntry : Entry -> Bool
+isEventEntry entry =
+    case entry of
+        LoadedEvent _ _ ->
+            True
+
+        _ ->
+            False

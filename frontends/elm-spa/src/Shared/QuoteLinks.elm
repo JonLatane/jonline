@@ -5,12 +5,15 @@ module Shared.QuoteLinks exposing
     , Plan(..)
     , World
     , advance
+    , eventOf
     , entryFor
     , init
     , plan
     , receive
+    , receiveEvent
     , request
     , settle
+    , wantsEvent
     , unrequested
     , update
     )
@@ -39,10 +42,12 @@ Hosts that merely _appear in a link_ are only probed when they look like a publi
 
 -}
 
-import Dict exposing (Dict)
+import Components.Events as Events
 import Components.Posts as Posts
+import Dict exposing (Dict)
 import Grpc
-import Proto.Rellm exposing (GetPostsResponse, Post, defaultGetPostsRequest)
+import Proto.Rellm exposing (Event, GetEventsResponse, GetPostsResponse, Occasion, Post, defaultGetEventsRequest, defaultGetPostsRequest)
+import Proto.Rellm.PostContext exposing (PostContext(..))
 import Proto.Rellm.Rellm as Rellm
 import Set exposing (Set)
 import Shared.AccountsPanel as AccountsPanel
@@ -66,6 +71,9 @@ type Entry
     = Awaiting Target
     | Loading
     | Loaded Post
+      -- A link to an event: the `Event` and the `Occasion` the link names (or its first one), rendered as
+      -- an event card. See `wantsEvent`.
+    | LoadedEvent Event Occasion
     | Unavailable
 
 
@@ -81,7 +89,10 @@ type Msg
       -- A quote whose post the sender already has in hand (the quote button on a post's own page): the
       -- server's `frontendHost` and the post.
     | Provide String Post
-    | GotPost String (Result Grpc.Error ( Maybe AccountsPanel.Msg, GetPostsResponse ))
+    | GotPost Target (Result Grpc.Error ( Maybe AccountsPanel.Msg, GetPostsResponse ))
+      -- The follow-up fetch for a post that turned out to be an event/occasion (`wantsEvent`); the post
+      -- stands in if it fails.
+    | GotEvent Target Post (Result Grpc.Error ( Maybe AccountsPanel.Msg, GetEventsResponse ))
 
 
 {-| What to do about one target right now. Pure -- see `World` -- so every branch of the server-selection
@@ -257,6 +268,47 @@ receive entryKey maybePost model =
     }
 
 
+{-| Whether a fetched post is an event's (or one of its occasions') own `Post` -- every link shape fetches with
+`GetPosts` first, since a `/~id` link doesn't say what it points at, and an event then needs `GetEvents` for
+its occasions to be shown as an event card.
+-}
+wantsEvent : Post -> Bool
+wantsEvent post =
+    post.context == EVENT || post.context == OCCASION
+
+
+{-| The `Event` and `Occasion` to show for a fetched event `post`: the occasion `post` is (an `OCCASION`
+link), or the event's first one. `Nothing` if `event` has no such occasion.
+-}
+eventOf : Post -> Event -> Maybe ( Event, Occasion )
+eventOf post event =
+    (if post.context == OCCASION then
+        Events.findOccasion post.id event
+
+     else
+        List.head event.occasions
+    )
+        |> Maybe.map (\occasion -> ( event, occasion ))
+
+
+{-| `GetEvents`' outcome for `post`: an event card if there's an occasion to show, else the plain post.
+-}
+receiveEvent : String -> Post -> Maybe Event -> Model -> Model
+receiveEvent entryKey post maybeEvent model =
+    { model
+        | entries =
+            Dict.insert entryKey
+                (case maybeEvent |> Maybe.andThen (eventOf post) of
+                    Just ( event, occasion ) ->
+                        LoadedEvent event occasion
+
+                    Nothing ->
+                        Loaded post
+                )
+                model.entries
+    }
+
+
 {-| The third part of the result is the `AccountsPanel` messages this needs sent on its behalf:
 `EnsureServerPreviews` for hosts with no connection yet, and any token refresh a fetch ended up doing.
 -}
@@ -280,18 +332,53 @@ update accounts msg model =
             )
 
         Provide host post ->
-            ( receive (RellmLinks.key { host = host, id = post.id }) (Just post) model, Cmd.none, [] )
+            let
+                target : Target
+                target =
+                    { host = host, id = post.id }
+            in
+            if wantsEvent post then
+                -- An event's own page only has the `Post`; its occasions still have to be fetched.
+                ( { model | entries = Dict.insert (RellmLinks.key target) Loading model.entries }
+                , fetchEventCmd accounts target post
+                , []
+                )
 
-        GotPost entryKey result ->
+            else
+                ( receive (RellmLinks.key target) (Just post) model, Cmd.none, [] )
+
+        GotPost target result ->
             case result of
                 Ok ( maybeAccountsPanelMsg, response ) ->
-                    ( receive entryKey (List.head response.posts) model
+                    let
+                        accountsMsgs : List AccountsPanel.Msg
+                        accountsMsgs =
+                            maybeAccountsPanelMsg |> Maybe.map List.singleton |> Maybe.withDefault []
+                    in
+                    case List.head response.posts of
+                        Just post ->
+                            if wantsEvent post then
+                                ( model, fetchEventCmd accounts target post, accountsMsgs )
+
+                            else
+                                ( receive (RellmLinks.key target) (Just post) model, Cmd.none, accountsMsgs )
+
+                        Nothing ->
+                            ( receive (RellmLinks.key target) Nothing model, Cmd.none, accountsMsgs )
+
+                Err _ ->
+                    ( receive (RellmLinks.key target) Nothing model, Cmd.none, [] )
+
+        GotEvent target post result ->
+            case result of
+                Ok ( maybeAccountsPanelMsg, response ) ->
+                    ( receiveEvent (RellmLinks.key target) post (List.head response.events) model
                     , Cmd.none
                     , maybeAccountsPanelMsg |> Maybe.map List.singleton |> Maybe.withDefault []
                     )
 
                 Err _ ->
-                    ( receive entryKey Nothing model, Cmd.none, [] )
+                    ( receiveEvent (RellmLinks.key target) post Nothing model, Cmd.none, [] )
 
 
 {-| `settle`, with the fetches started -- run by `Shared.update` after every message, like its other "try again
@@ -324,7 +411,13 @@ dedupe targets =
 fetchCmd : AccountsPanel.Model -> Target -> Cmd Msg
 fetchCmd accounts target =
     fetchTask accounts target
-        |> Task.attempt (GotPost (RellmLinks.key target))
+        |> Task.attempt (GotPost target)
+
+
+fetchEventCmd : AccountsPanel.Model -> Target -> Post -> Cmd Msg
+fetchEventCmd accounts target post =
+    fetchEventTask accounts target post.id
+        |> Task.attempt (GotEvent target post)
 
 
 {-| A server the user added is read like any other (authenticated as its enabled account, if any, with the
@@ -343,6 +436,30 @@ fetchTask accounts target =
             case Dict.get target.host accounts.recommendedServerConnections |> Maybe.andThen (\server -> Maybe.map (\_ -> server) server.connected) of
                 Just previewServer ->
                     Grpc.new Rellm.getPosts { defaultGetPostsRequest | postId = Just target.id }
+                        |> Grpc.setHost (RellmServers.rellmServerUrl previewServer)
+                        |> Grpc.setTimeout 10000
+                        |> Grpc.toTask
+                        |> Task.map (\response -> ( Nothing, response ))
+
+                Nothing ->
+                    Task.fail Grpc.NetworkError
+
+
+{-| `fetchTask`, for `GetEvents` -- the event (all its occasions) behind a fetched event/occasion post.
+-}
+fetchEventTask : AccountsPanel.Model -> Target -> String -> Task Grpc.Error ( Maybe AccountsPanel.Msg, GetEventsResponse )
+fetchEventTask accounts target postId =
+    case RellmServers.knownConnectedRellmServer accounts.servers target.host of
+        Just _ ->
+            Events.fetchEvent accounts
+                ( RellmAccounts.enabledRellmAccountForServer accounts.accounts target.host |> Maybe.map .userId, target.host )
+                Nothing
+                postId
+
+        Nothing ->
+            case Dict.get target.host accounts.recommendedServerConnections |> Maybe.andThen (\server -> Maybe.map (\_ -> server) server.connected) of
+                Just previewServer ->
+                    Grpc.new Rellm.getEvents { defaultGetEventsRequest | postId = Just postId }
                         |> Grpc.setHost (RellmServers.rellmServerUrl previewServer)
                         |> Grpc.setTimeout 10000
                         |> Grpc.toTask

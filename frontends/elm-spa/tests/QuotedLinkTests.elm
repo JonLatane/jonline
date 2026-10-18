@@ -11,7 +11,7 @@ import Dict
 import Expect
 import Html exposing (div)
 import Html.Attributes
-import Proto.Rellm exposing (Post, defaultAuthor, wrapPost)
+import Proto.Rellm exposing (Post, defaultAuthor, defaultEvent, defaultOccasion, wrapPost)
 import Proto.Rellm.PostContext exposing (PostContext(..))
 import Set
 import Shared.Federation.RellmLinks as RellmLinks
@@ -29,6 +29,7 @@ type Msg
     = AddServer String
     | EnableServer String
     | PlayMedia
+    | NoOp
 
 
 {-| The server a button's message is about -- `Nothing` for `PlayMedia`.
@@ -43,6 +44,9 @@ serverOf msg =
             Just host
 
         PlayMedia ->
+            Nothing
+
+        NoOp ->
             Nothing
 
 
@@ -101,12 +105,28 @@ config quotes =
     , onMediaPlayClicked = \_ -> PlayMedia
     , onAddServerClicked = AddServer
     , onEnableServerClicked = EnableServer
+    , noOp = NoOp
     }
 
 
 loaded : String -> String -> QuoteLinks.Model
 loaded host id =
     { entries = Dict.singleton (RellmLinks.key { host = host, id = id }) (QuoteLinks.Loaded quoted) }
+
+
+eventCardSelector : Selector.Selector
+eventCardSelector =
+    Selector.class "event-card"
+
+
+withEvent : String -> String -> QuoteLinks.Model
+withEvent host id =
+    let
+        eventPost : Post
+        eventPost =
+            (PostFactory.post { id = id, createdAtMillis = 1000 }) |> (\post -> { post | title = Just "Block party", context = EVENT })
+    in
+    with host id (QuoteLinks.LoadedEvent { defaultEvent | post = Just eventPost } { defaultOccasion | post = Just { eventPost | context = OCCASION } })
 
 
 with : String -> String -> QuoteLinks.Entry -> QuoteLinks.Model
@@ -208,6 +228,28 @@ suite =
                 \_ ->
                     rendered (loaded "rellm.org" "abc") "rellm.org" (quoting "https://example.com/article")
                         |> lacks [ card ]
+            ]
+        , describe "a quote of an event"
+            [ test "shows an event card instead of a post card" <|
+                \_ ->
+                    rendered (withEvent "rellm.org" "ev") "rellm.org" (quoting "/event/ev")
+                        |> Query.has [ eventCardSelector, Selector.text "Block party" ]
+            , test "and not the plain post card" <|
+                \_ ->
+                    rendered (withEvent "rellm.org" "ev") "rellm.org" (quoting "/~ev")
+                        |> lacks [ card ]
+            , test "the event card has no RSVP/calendar controls to act on" <|
+                \_ ->
+                    rendered (withEvent "rellm.org" "ev") "rellm.org" (quoting "/event/ev")
+                        |> lacks [ Selector.tag "button" ]
+            , test "from a server the user hasn't added, it's followed by the Add button" <|
+                \_ ->
+                    rendered (withEvent "bullcity.social" "ev") "rellm.org" (quoting "https://bullcity.social/event/ev")
+                        |> Query.has [ eventCardSelector, addButton ]
+            , test "an event card from a host known not to be Rellm isn't shown" <|
+                \_ ->
+                    rendered (withEvent "some-blog.example" "ev") "rellm.org" (quoting "https://some-blog.example/event/ev")
+                        |> lacks [ eventCardSelector ]
             ]
         , describe "a quote from a server the user disabled"
             [ test "is Enable prompt, not the post -- a switched-off server isn't read from" <|

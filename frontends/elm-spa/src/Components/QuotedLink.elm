@@ -22,6 +22,7 @@ prompts on a post page) wherever the two overlap:
 
 -}
 
+import Components.Events as Events
 import Components.MediaRenderer as MediaRenderer
 import Components.Posts as Posts
 import Components.ServerDependentView as ServerDependentView
@@ -29,11 +30,11 @@ import Dict exposing (Dict)
 import Html exposing (Html, button, div, text)
 import Html.Attributes exposing (class, title)
 import Html.Events exposing (onClick)
-import Proto.Rellm exposing (Post)
+import Proto.Rellm exposing (Event, Occasion, Post)
 import Proto.Rellm.PostContext exposing (PostContext(..))
 import Set exposing (Set)
 import Shared.AccountsPanel as AccountsPanel
-import Shared.AccountsPanel.RellmAccounts exposing (RellmAccount)
+import Shared.AccountsPanel.RellmAccounts as RellmAccounts exposing (RellmAccount)
 import Shared.AccountsPanel.RellmServers as RellmServers exposing (RellmServer)
 import Shared.Federation.RellmLinks as RellmLinks exposing (Target)
 import Shared.QuoteLinks as QuoteLinks
@@ -52,6 +53,9 @@ type alias Config msg =
     -- of one they've disabled -- each gets the server's `frontendHost`.
     , onAddServerClicked : String -> msg
     , onEnableServerClicked : String -> msg
+
+    -- For the event card's own (unused here) click handlers, which a quote doesn't offer.
+    , noOp : msg
     }
 
 
@@ -140,6 +144,9 @@ viewTarget config target =
                     Just (QuoteLinks.Loaded quoted) ->
                         div [ class "quoted-post" ] [ card config target quoted, addServerRow config target ]
 
+                    Just (QuoteLinks.LoadedEvent event occasion) ->
+                        div [ class "quoted-post" ] [ eventCard config target event occasion, addServerRow config target ]
+
                     _ ->
                         -- Not (yet) a post we can show -- but if the host did turn out to be a Rellm server, the
                         -- button is still worth having (the post may just need an account there).
@@ -155,6 +162,9 @@ entryView config target =
     case QuoteLinks.entryFor config.quotes target of
         Just (QuoteLinks.Loaded quoted) ->
             card config target quoted
+
+        Just (QuoteLinks.LoadedEvent event occasion) ->
+            eventCard config target event occasion
 
         Just (QuoteLinks.Awaiting _) ->
             div [ class "quoted-post-loading" ] [ text "Loading quoted post…" ]
@@ -177,6 +187,37 @@ card config target quoted =
         config.onMediaPlayClicked
         Nothing
         quoted
+
+
+{-| A quoted event as `Components.Events.eventCard` -- the card an events listing shows, read-only: no RSVP,
+calendar-export or sync controls (`Events.noCardSlots`), which need the page's own state.
+-}
+eventCard : Config msg -> Target -> Event -> Occasion -> Html msg
+eventCard config target event occasion =
+    Events.eventCard
+        config.time
+        config.basePath
+        config.accounts.mainFrontendHost
+        target.host
+        (RellmServers.rellmServerForHost config.accounts.servers target.host)
+        (RellmAccounts.enabledRellmAccountForServer config.accounts.accounts target.host)
+        (\_ -> config.noOp)
+        config.mediaPlayState
+        config.onMediaPlayClicked
+        MediaRenderer.ExtraSmall
+        False
+        Nothing
+        False
+        False
+        False
+        Nothing
+        (\_ -> False)
+        (\_ -> Nothing)
+        (\_ -> config.noOp)
+        (\_ _ -> config.noOp)
+        Events.noCardSlots
+        event
+        occasion
 
 
 {-| "Add <logo> <name>" -- `ServerDependentView`'s own button, label and wording, for a quote's server the
