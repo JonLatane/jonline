@@ -37,6 +37,9 @@ ones:
   - A server the user added but disabled isn't contacted at all (see `Components.ServerDependentView`, which
     `Components.QuotedLink` shows the usual "Enable" prompt through).
 
+A fetched post whose `PostContext` is `EVENT` or `OCCASION` gets a `GetEvents` follow-up (`wantsEvent`), and
+is shown as an event card (`LoadedEvent`) rather than a plain post card -- whichever link shape named it.
+
 Hosts that merely _appear in a link_ are only probed when they look like a public domain name
 (`RellmLinks.isProbeableHost`) -- see that function for why.
 

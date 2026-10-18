@@ -9,8 +9,9 @@ which servers the user has and what we know about the rest.
 What shows up depends on the link's server, mirroring `Components.ServerDependentView` (the Add/Enable
 prompts on a post page) wherever the two overlap:
 
-  - one of the user's servers, enabled: the quoted post as a card (`Components.Posts.quotedPostCard`), or a
-    "Loading…" line until it arrives, or nothing if it can't be seen;
+  - one of the user's servers, enabled: the quoted post as a card (`Components.Posts.quotedPostCard`) -- or,
+    when it's an event's or occasion's (by `PostContext`, see `Shared.QuoteLinks.wantsEvent`), a read-only
+    `Components.Events.eventCard` -- or a "Loading…" line until it arrives, or nothing if it can't be seen;
   - one of the user's servers, disabled: `ServerDependentView`'s own "Enable" prompt -- we don't read from a
     server the user switched off;
   - one the user hasn't added, that turned out to be a Rellm server: the card too (fetched anonymously, see
