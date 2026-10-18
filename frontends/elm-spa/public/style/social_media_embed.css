@@ -1,0 +1,68 @@
+/* `SocialMediaEmbed` -- an Elm take on react-social-media-embed's look: a bordered, rounded, clipped box holding the
+   network's own embed page, with a "View post on ..." link and spinner underneath that shows until it loads. */
+
+.rsme-embed {
+  /* `position: relative` lifts the embed above a post card's full-card `.post-card-link-overlay` (both are
+     positioned, so the later one in the DOM wins), keeping the iframe clickable and scrollable. */
+  position: relative;
+  width: 100%;
+  margin: 0.6rem auto;
+  overflow: hidden;
+  border: 1px solid rgba(128, 128, 128, 0.35);
+  border-radius: 8px;
+  box-sizing: border-box;
+}
+
+.rsme-youtube-embed { border-radius: 0; }
+.rsme-facebook-embed,
+.rsme-instagram-embed { border-radius: 3px; }
+.rsme-x-embed { border-radius: 12px; }
+
+.rsme-frame {
+  position: relative;
+  display: block;
+  width: 100%;
+  border: 0;
+}
+
+/* A video keeps its aspect ratio (set inline), so its frame fills the box. */
+.rsme-youtube-embed .rsme-frame {
+  position: absolute;
+  inset: 0;
+  height: 100%;
+}
+
+/* Behind the frame: visible only until the embed paints over it (or for good, as a plain link, if it never does). */
+.rsme-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  color: inherit;
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.rsme-placeholder:hover .rsme-placeholder-text {
+  text-decoration: underline;
+}
+
+.rsme-spinner {
+  width: 1.4rem;
+  height: 1.4rem;
+  border: 2px solid rgba(128, 128, 128, 0.35);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: rsme-spin 0.9s linear infinite;
+}
+
+@keyframes rsme-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rsme-spinner { animation: none; }
+}

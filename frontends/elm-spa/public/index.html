@@ -60,6 +60,7 @@
     document.write('<link rel="stylesheet" href="' + rellmBasePath + '/style/media.css">');
     document.write('<link rel="stylesheet" href="' + rellmBasePath + '/style/profiles.css">');
     document.write('<link rel="stylesheet" href="' + rellmBasePath + '/style/posts.css">');
+    document.write('<link rel="stylesheet" href="' + rellmBasePath + '/style/social_media_embed.css">');
     document.write('<link rel="stylesheet" href="' + rellmBasePath + '/style/events.css">');
     document.write('<link rel="stylesheet" href="' + rellmBasePath + '/style/users.css">');
     document.write('<link rel="stylesheet" href="' + rellmBasePath + '/style/servers.css">');
@@ -202,6 +203,34 @@
          `onerror`) covers that case as well as a genuine 404. -->
     <img src="/favicon.png" alt="" onload="this.classList.add('loaded');">
   </div>
+  <script>
+    // `SocialMediaEmbed`'s iframes start at a fixed height; the embeds that report their real one (Instagram's
+    // `{"type":"MEASURE","details":{"height":n}}`, X's `twttr.private.resize`) are resized to it here -- plain DOM,
+    // no Elm round trip, standing in for react-social-media-embed's own handling of those messages. Only
+    // `iframe.rsme-frame`s are touched, and only the one the message came from.
+    window.addEventListener('message', function (event) {
+      var data = event.data;
+      if (typeof data === 'string') {
+        try { data = JSON.parse(data); } catch (e) { return; }
+      }
+      if (!data || typeof data !== 'object') return;
+      var height = null;
+      if (data.type === 'MEASURE' && data.details) {
+        height = data.details.height;
+      } else if (data['twttr.embed'] && data['twttr.embed'].method === 'twttr.private.resize') {
+        var params = data['twttr.embed'].params;
+        height = params && params[0] && params[0].height;
+      }
+      if (typeof height !== 'number' || !isFinite(height) || height <= 0) return;
+      var frames = document.querySelectorAll('iframe.rsme-frame');
+      for (var i = 0; i < frames.length; i++) {
+        if (frames[i].contentWindow === event.source) {
+          frames[i].style.height = Math.ceil(height) + 'px';
+          return;
+        }
+      }
+    });
+  </script>
   <script>
     document.write('<script src="' + rellmBasePath + '/dist/elm.js"><\/script>');
   </script>

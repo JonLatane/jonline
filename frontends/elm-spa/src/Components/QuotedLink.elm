@@ -42,6 +42,7 @@ import Shared.AccountsPanel.RellmServers as RellmServers exposing (RellmServer)
 import Shared.Federation.FederatedLinks as FederatedLinks
 import Shared.Federation.RellmLinks exposing (Target)
 import Shared.QuoteLinks as QuoteLinks
+import SocialMediaEmbed
 import Shared.Time as SharedTime
 
 
@@ -108,7 +109,23 @@ view config postServerHost post =
             viewLinked config linked
 
         Nothing ->
-            text ""
+            socialEmbedView postServerHost post
+
+
+{-| A `POST` whose `link` isn't a post on Rellm/Bluesky/Mastodon but one on Facebook, Instagram, LinkedIn, Pinterest,
+TikTok, X or YouTube gets that post embedded (`SocialMediaEmbed`) -- always, wherever a post card or page shows
+the quote slot. Same gate as `targetOf`: only a top-level `POST` on a Rellm server.
+-}
+socialEmbedView : String -> Post -> Html msg
+socialEmbedView postServerHost post =
+    if post.context == POST && not (Posts.isFederatedHost postServerHost) && post.quotedPost == Nothing then
+        post.link
+            |> Maybe.andThen SocialMediaEmbed.fromLink
+            |> Maybe.map SocialMediaEmbed.view
+            |> Maybe.withDefault (text "")
+
+    else
+        text ""
 
 
 {-| The embed for a bare `link` (what `Shared.CreateNewPanel` previews) -- `postServerHost` is what a relative

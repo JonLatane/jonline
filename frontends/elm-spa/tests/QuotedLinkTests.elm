@@ -309,6 +309,51 @@ suite =
                     ]
                         |> Expect.equalLists [ Just True, Nothing, Nothing ]
             ]
+        , describe "a link to a post on a social media site"
+            [ test "a POST linking a YouTube video embeds it" <|
+                \_ ->
+                    rendered QuoteLinks.init "rellm.org" (quoting "https://www.youtube.com/watch?v=dQw4w9WgXcQ")
+                        |> Query.has [ Selector.class "rsme-embed", Selector.class "rsme-youtube-embed" ]
+            , test "each supported network" <|
+                \_ ->
+                    [ ( "https://x.com/jack/status/20", "rsme-x-embed" )
+                    , ( "https://www.instagram.com/p/CsY_NinvWDW/", "rsme-instagram-embed" )
+                    , ( "https://www.facebook.com/zuck/posts/1", "rsme-facebook-embed" )
+                    , ( "https://www.tiktok.com/@a/video/1", "rsme-tiktok-embed" )
+                    , ( "https://www.pinterest.com/pin/1/", "rsme-pinterest-embed" )
+                    , ( "https://www.linkedin.com/feed/update/urn:li:activity:1", "rsme-linkedin-embed" )
+                    ]
+                        |> List.map (\( link, networkClass ) -> \_ -> rendered QuoteLinks.init "rellm.org" (quoting link) |> Query.has [ Selector.class networkClass ])
+                        |> (\checks -> Expect.all checks ())
+            , test "it needs no fetch -- no quote cache entry involved" <|
+                \_ ->
+                    rendered QuoteLinks.init "rellm.org" (quoting "https://youtu.be/dQw4w9WgXcQ")
+                        |> lacks [ card, addButton, Selector.class "quoted-post-loading" ]
+            , test "not on a reply, or a federated post" <|
+                \_ ->
+                    let
+                        post : Post
+                        post =
+                            quoting "https://youtu.be/dQw4w9WgXcQ"
+                    in
+                    [ rendered QuoteLinks.init "rellm.org" { post | context = REPLY }
+                    , rendered QuoteLinks.init "bluesky:" post
+                    , rendered QuoteLinks.init "rellm.org" { post | quotedPost = Just (wrapPost quoted) }
+                    ]
+                        |> List.map (lacks [ Selector.class "rsme-embed" ])
+                        |> Expect.equalLists (List.repeat 3 Expect.pass)
+            , test "an ordinary website link, or no link, embeds nothing" <|
+                \_ ->
+                    [ rendered QuoteLinks.init "rellm.org" (quoting "https://example.com/article")
+                    , rendered QuoteLinks.init "rellm.org" (quoting "https://www.youtube.com/@somechannel")
+                    ]
+                        |> List.map (lacks [ Selector.class "rsme-embed" ])
+                        |> Expect.equalLists (List.repeat 2 Expect.pass)
+            , test "a Rellm post link is still a quote, not an embed" <|
+                \_ ->
+                    rendered (loaded "rellm.org" "abc") "rellm.org" (quoting "/post/abc")
+                        |> Expect.all [ Query.has [ card ], lacks [ Selector.class "rsme-embed" ] ]
+            ]
         , describe "a quote of an event"
             [ test "shows an event card instead of a post card" <|
                 \_ ->
