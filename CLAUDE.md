@@ -32,7 +32,7 @@ Root `Makefile` delegates to per-project Makefiles (`make run_backend|run_elm|ru
 - `make test` = `elm-review` then `npx elm-test-rs`; single file: `npx elm-test-rs tests/MarketTests.elm`. `make review_fix` autofixes lint.
 - Prefer hand edits + `elm make`/`make build` over running `elm-format` on a file (it can reformat unrelated content).
 
-**Tamagui** (`cd frontends/tamagui`): `make run` (`yarn web`), `make build` (tsc + build + next prod build; slow), `yarn test` (vitest). For a quick sanity check, prefer the backend's `rebuild_tamagui_and_run`.
+**Tamagui** (`cd frontends/tamagui`): `make run` (`yarn web`), `make build` (tsc + build + next prod build; slow), `yarn test` (vitest). To type-check without the slow build: `make install_deps` (`yarn install --mode=skip-build`, once) then `make typecheck` (`yarn tsc --noEmit`, ~15s; or `make typecheck_tamagui` from the root). For a quick sanity check, prefer the backend's `rebuild_tamagui_and_run`.
 
 ## Backend architecture
 
