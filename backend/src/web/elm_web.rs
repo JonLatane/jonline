@@ -11,6 +11,7 @@ use crate::protos::*;
 use crate::rpcs::get_server_configuration_proto;
 use crate::web::RocketState;
 
+use super::spa_path::SpaPath;
 use super::{index_summary, spa_web_path, RellmResponder, SpaApp};
 
 lazy_static! {
@@ -39,7 +40,9 @@ lazy_static! {
 // to beat `spa_file_or_username_or_custom_tab`'s rank (see that route's own doc comment),
 // which is also explicit for the same reason.
 #[rocket::get("/elm/<file..>", rank = 1)]
-async fn elm_file(file: PathBuf) -> CacheResponse<Result<NamedFile, Status>> {
+async fn elm_file(file: SpaPath) -> CacheResponse<Result<NamedFile, Status>> {
+    // `SpaPath`, not `PathBuf`: `/elm/~did:plc:…~rkey@bluesky:` is a client-side route ending in `:`.
+    let file = file.0;
     log::info!("elm_file: {:?}", file);
     let result = match elm_asset(&file).await {
         Ok(file) => Ok(file),
