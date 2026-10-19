@@ -57,26 +57,23 @@ pub fn strip_spa_prefix(path: &str) -> String {
     }
 }
 
-// Clean up text for tags like <meta property="og:title" content="$text" />
-// so page rendering doesn't break.
-macro_rules! sanitize_user_text {
-    ($text:expr) => {
-        $text.replace("\"", "\\\"").split('\n').next().unwrap_or("")
-    };
-}
-
-macro_rules! html_sanitize_user_text {
-    ($text:expr) => {
-        $text
-            .replace("&", "&amp;")
-            .replace("<", "&lt;")
-            .replace(">", "&gt;")
-            .replace("\"", "&quot;")
-            .replace("\\", "&apos;")
-            .split('\n')
-            .next()
-            .unwrap_or("")
-    };
+/// The first line of `text`, escaped for use as a double- or single-quoted HTML attribute value (`<meta
+/// property="og:title" content="…" />`) or as element text (`<title>…</title>`).
+///
+/// Everything that ends up in a page's `<head>` from a `RellmSummary` goes through this, and most of it is
+/// user-controlled (post titles and content, usernames, bios, and text from other networks). It has to escape
+/// `&`, `<`, `>`, `"` and `'`: HTML has no backslash escape, so a `"` turned into `\"` still ends the attribute,
+/// and the rest of the text then parses as markup -- `" /><script>…</script>` in a post title was a script that ran
+/// for every visitor of that post's URL.
+pub fn meta_text(text: &str) -> String {
+    text.split('\n')
+        .next()
+        .unwrap_or("")
+        .replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+        .replace('"', "&quot;")
+        .replace('\'', "&#39;")
 }
 
 /// The link-preview summary shown for each SPA's home page. Shared so both
@@ -153,12 +150,12 @@ pub async fn spa_web_path(
                         .inner
                         .replacen(
                             "Rellm Social Link",
-                            sanitize_user_text!(title), //.replace("\"", "\\\"").split('\n').next().unwrap_or(""),
+                            &meta_text(&title),
                             1,
                         )
                         .replacen(
                             "<title>Rellm</title>",
-                            &format!("<title>{}</title>", html_sanitize_user_text!(title)),
+                            &format!("<title>{}</title>", meta_text(&title)),
                             1,
                         );
                     template.inner = updated_body;
@@ -168,13 +165,14 @@ pub async fn spa_web_path(
 
             template.inner = template.inner.replacen(
                 "A link from a fediverse community with events, posts, and realtime chat",
-                sanitize_user_text!(summary.description.unwrap_or("".to_string())),
+                &meta_text(&summary.description.unwrap_or_default()),
                 1,
             );
 
-            let og_image_tag = summary.image.map(|i| {
-                String::leak(format!("<meta property=\"og:image\" content=\"{}\"/>", i)) as &str
-            });
+            let og_image_tag: String = summary
+                .image
+                .map(|i| format!("<meta property=\"og:image\" content=\"{}\"/>", meta_text(&i)))
+                .unwrap_or_default();
             // The Tamagui static export minifies its HTML (no space before
             // "/>"), while the Elm SPA's index.html is hand-formatted (space
             // before "/>") -- both variants must be matched here, or the
@@ -183,12 +181,12 @@ pub async fn spa_web_path(
                 .inner
                 .replacen(
                     "<meta property=\"og:image\" content=\"/favicon.png\"/>",
-                    og_image_tag.unwrap_or(""),
+                    &og_image_tag,
                     1,
                 )
                 .replacen(
                     "<meta property=\"og:image\" content=\"/favicon.png\" />",
-                    og_image_tag.unwrap_or(""),
+                    &og_image_tag,
                     1,
                 );
         }
