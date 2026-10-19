@@ -164,6 +164,8 @@ viewFederated config target =
                     config.basePath
                     config.accounts.mainFrontendHost
                     (federatedHost target)
+                    Nothing
+                    Nothing
                     config.mediaPlayState
                     config.onMediaPlayClicked
                     Nothing
@@ -253,6 +255,16 @@ card config target quoted =
         config.basePath
         config.accounts.mainFrontendHost
         target.host
+        -- What the quote's media needs to be addressed: the server's own record when the user has added it, else
+        -- the preview connection the quote was fetched over; and, for a server they're signed in to, that account.
+        (case RellmServers.rellmServerForHost config.accounts.servers target.host of
+            Just server ->
+                Just server
+
+            Nothing ->
+                Dict.get target.host config.accounts.previews
+        )
+        (RellmAccounts.enabledRellmAccountForServer config.accounts.accounts target.host)
         config.mediaPlayState
         config.onMediaPlayClicked
         Nothing
