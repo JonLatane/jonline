@@ -2,6 +2,7 @@ use lazy_static::lazy_static;
 
 use crate::protos::ServerConfiguration;
 use super::ServerSummaryInfo;
+use super::federated_preview::{federated_summary, parse_federated_id};
 
 use rocket::{
     Route, State,
@@ -291,30 +292,52 @@ webui!(
         })
     }
 );
-webui!(
-    post,
-    "/post/<_..>",
-    "post/[postId].html",
-    |mut connection: PgPooledConnection, configuration: &ServerConfiguration, path: &str| {
-        let post = match federated_path_component(path, 2) {
-            Some(FederatedId::Local(post_id)) => get_post(post_id, &mut connection),
-            Some(FederatedId::Federated(_, _domain)) => {
-                // let _domain =
-                None
-            }
-            None => return None,
-        };
+/// `/post/{id}` is written out by hand rather than with `webui!`: a Bluesky post's summary
+/// (`/post/{did}~{rkey}@bluesky:`) comes from a network lookup, which the macro's synchronous summary closure can't do.
+#[rocket::get("/post/<_..>")]
+pub async fn post(
+    state: &State<RocketState>,
+    origin: &Origin<'_>,
+) -> CacheResponse<Result<RellmResponder, Status>> {
+    let mut connection = state.pool.get().unwrap();
+    let configuration = rpcs::get_server_configuration_proto(&mut connection).unwrap();
+    let server_info = configuration.server_info.clone().unwrap_or_default();
+    let raw_path = origin.path();
+    let raw_path = raw_path.as_str();
+    let app = spa_prefix(raw_path).unwrap_or_else(|| root_app(&server_info));
+    let is_tamagui_prefixed = spa_prefix(raw_path) == Some(SpaApp::Tamagui);
+    let path = strip_spa_prefix(raw_path);
+    let summary = post_page_summary(&path, &configuration, &mut connection).await;
+    spa_web_path(app, "post/[postId].html", summary, is_tamagui_prefixed).await
+}
 
-        post_summary(
-            "Post".to_string(),
-            post,
-            configuration.display_name(),
-            configuration.logo_url(),
-            None,
-            &mut connection,
-        )
+async fn post_page_summary(
+    path: &str,
+    configuration: &ServerConfiguration,
+    connection: &mut PgPooledConnection,
+) -> Option<RellmSummary> {
+    if let Some(federated) = path_component(path, 2).and_then(|id| parse_federated_id(&id)) {
+        return Some(
+            federated_summary(&federated, &configuration.display_name(), configuration.logo_url())
+                .await,
+        );
     }
-);
+    let post = match federated_path_component(path, 2) {
+        Some(FederatedId::Local(post_id)) => get_post(post_id, connection),
+        // A post on some other Rellm server: not one this server can look up.
+        Some(FederatedId::Federated(_, _domain)) => None,
+        None => return None,
+    };
+
+    post_summary(
+        "Post".to_string(),
+        post,
+        configuration.display_name(),
+        configuration.logo_url(),
+        None,
+        connection,
+    )
+}
 webui!(
     event,
     "/event/<_>",
@@ -716,7 +739,7 @@ fn group_name(path: &str, connection: &mut PgPooledConnection) -> String {
     }
 }
 
-fn post_summary(
+pub(crate) fn post_summary(
     entity_type: String,
     post: Option<Post>,
     server_name: String,
@@ -795,7 +818,7 @@ fn post_summary(
     })
 }
 
-fn get_post(post_id: String, connection: &mut PgPooledConnection) -> Option<Post> {
+pub(crate) fn get_post(post_id: String, connection: &mut PgPooledConnection) -> Option<Post> {
     let post = rpcs::get_posts(
         GetPostsRequest {
             post_id: Some(post_id),
@@ -825,7 +848,7 @@ fn get_event(occasion_id: String, connection: &mut PgPooledConnection) -> Option
     event
 }
 
-fn get_event_from_post(post_id: &str, connection: &mut PgPooledConnection) -> Option<Event> {
+pub(crate) fn get_event_from_post(post_id: &str, connection: &mut PgPooledConnection) -> Option<Event> {
     let event = rpcs::get_events(
         GetEventsRequest {
             post_id: Some(post_id.to_string()),
