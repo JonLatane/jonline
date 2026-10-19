@@ -67,8 +67,9 @@ the others) without each tab polling localStorage.
 port accountsAndServersUpdated : (Encode.Value -> msg) -> Sub msg
 
 
-{-| Persists `Shared.AccountsPanel.Model.blueskyAccounts` to its own localStorage key -- decode with
-`Shared.AccountsPanel.BlueskyAccounts.decoder` at `init`. Kept independent of `persistAccountsAndServers`
+{-| Persists `Shared.AccountsPanel.Model.blueskyAccounts` and `blueskyAppViews` to their own localStorage key -- decode with
+`Shared.AccountsPanel.BlueskyAppViews.stateDecoder` at `init` (its `{ accounts, appViews }` shape; a bare list of
+accounts, from before AppViews existed, also decodes). Kept independent of `persistAccountsAndServers`
 for the same reason `persistStarredPosts` is: these aren't real Rellm `Server`/`Account`s, just a
 translated feed source (see `Shared.Federation.Bluesky`). Also broadcasts it (see `public/index.html`'s
 `BroadcastChannel`) to any other tab open on the same origin, which applies it via
@@ -81,7 +82,7 @@ port persistBlueskyAccounts : Encode.Value -> Cmd msg
 
 {-| Fires in _other_ tabs (never the tab that called `persistBlueskyAccounts` itself) whenever one
 tab's Bluesky accounts change, carrying the same value `persistBlueskyAccounts` was given -- decode
-with `Shared.AccountsPanel.BlueskyAccounts.decoder`.
+with `Shared.AccountsPanel.BlueskyAppViews.stateDecoder`.
 -}
 port blueskyAccountsUpdated : (Encode.Value -> msg) -> Sub msg
 

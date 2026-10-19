@@ -36,6 +36,7 @@ module Shared.AccountsPanel exposing
     , mastodonServerFor
     , performWithAccountServer
     , performWithOptionalAccountServer
+    , activeBlueskyAccount
     , browsedBlueskyAuth
     , recommendedBlueskyServers
     , recommendedFederatedServers
@@ -1440,45 +1441,9 @@ mastodonAccountsAndServersDecoder =
         (Decode.field "browsedInstances" (Decode.list MastodonServers.browsedMastodonInstanceDecoder))
 
 
-{-| `Ports.persistBlueskyAccounts`'s wire format -- the connected `BlueskyAccount`s and the
-anonymously-browsed `BlueskyAppView`s bundled into one value (they're two `Model` fields rendered in
-different places -- `UI.accountsList` and `UI.combinedServerFeedItemsStrip` -- but one "which Bluesky
-source is on" decision, so persisted and broadcast to other tabs together). Written as
-`{ accounts, appViews }`; `blueskyStateDecoder` also still reads what this port used to persist, a bare
-list of accounts.
--}
-type alias BlueskyState =
-    { accounts : List BlueskyAccount
-    , appViews : List BlueskyAppView
-    }
-
-
-emptyBlueskyState : BlueskyState
-emptyBlueskyState =
-    { accounts = [], appViews = [] }
-
-
-blueskyStateDecoder : Decoder BlueskyState
-blueskyStateDecoder =
-    Decode.oneOf
-        [ Decode.map2 BlueskyState
-            (Decode.field "accounts" BlueskyAccounts.decoder)
-            (Decode.field "appViews" (Decode.list BlueskyAppViews.decoder))
-        , BlueskyAccounts.decoder |> Decode.map (\accounts -> { accounts = accounts, appViews = [] })
-        ]
-
-
-encodeBlueskyState : Model -> Encode.Value
-encodeBlueskyState model =
-    Encode.object
-        [ ( "accounts", BlueskyAccounts.encodeList model.blueskyAccounts )
-        , ( "appViews", Encode.list BlueskyAppViews.encode model.blueskyAppViews )
-        ]
-
-
 persistBluesky : Model -> Cmd Msg
 persistBluesky model =
-    Ports.persistBlueskyAccounts (encodeBlueskyState model)
+    Ports.persistBlueskyAccounts (BlueskyAppViews.encodeState { accounts = model.blueskyAccounts, appViews = model.blueskyAppViews })
 
 
 init : Request -> Flags -> Flags -> Flags -> ( Model, Cmd Msg )
@@ -1489,10 +1454,10 @@ init req flags blueskyAccountsFlags mastodonAccountsAndServersFlags =
             Decode.decodeValue persistedStateDecoder flags
                 |> Result.withDefault emptyPersistedState
 
-        rawBluesky : BlueskyState
+        rawBluesky : BlueskyAppViews.BlueskyState
         rawBluesky =
-            Decode.decodeValue blueskyStateDecoder blueskyAccountsFlags
-                |> Result.withDefault emptyBlueskyState
+            Decode.decodeValue BlueskyAppViews.stateDecoder blueskyAccountsFlags
+                |> Result.withDefault BlueskyAppViews.emptyState
 
         rawBlueskyAccounts : List BlueskyAccount
         rawBlueskyAccounts =
@@ -1691,7 +1656,7 @@ init req flags blueskyAccountsFlags mastodonAccountsAndServersFlags =
       , browsedMastodonInstances = persistedMastodon.browsedInstances
       , browseMastodonInstanceInput = ""
       , blueskyAccounts = persistedBlueskyAccounts
-      , blueskyAppViews = persistedBlueskyAppViews
+      , blueskyAppViews = BlueskyAppViews.normalize persistedBlueskyAccounts persistedBlueskyAppViews
       , blueskyConnectForm = emptyBlueskyConnectForm
       }
     , Cmd.batch
@@ -2455,6 +2420,9 @@ sendUpdate req msg model =
                                         }
                                     )
 
+                        -- (Like the Mastodon defaults above, one the user later removes comes back on the
+                        -- next first-visit sweep -- there's no "dismissed" memory for either.)
+                        --
                         -- Same idea for `FederationInfo.blueskyServers`: an AppView needs no negotiation
                         -- either (it's anonymous reads from a public host). Only one Bluesky source is
                         -- ever enabled at once, so just the first `pinnedByDefault` one starts on --
@@ -2645,9 +2613,9 @@ sendUpdate req msg model =
             -- separate "connected this session" state to preserve -- the broadcast value is already
             -- the other tab's complete, authoritative state (same shape `persistBlueskyAccounts` itself
             -- persists), so this can just replace `blueskyAccounts`/`blueskyAppViews` outright.
-            case Decode.decodeValue blueskyStateDecoder value of
+            case Decode.decodeValue BlueskyAppViews.stateDecoder value of
                 Ok bluesky ->
-                    ( { model | blueskyAccounts = bluesky.accounts, blueskyAppViews = bluesky.appViews }, Cmd.none )
+                    ( { model | blueskyAccounts = bluesky.accounts, blueskyAppViews = BlueskyAppViews.normalize bluesky.accounts bluesky.appViews }, Cmd.none )
 
                 Err _ ->
                     ( model, Cmd.none )
@@ -4374,12 +4342,14 @@ sendUpdate req msg model =
             -- `blueskyAccounts` would otherwise force every subsequent request through a refresh of
             -- its own, and eventually fail outright once the old `refreshToken` itself gets rejected.
             let
+                -- Only the session fields -- see `BlueskyAccounts.applyRefresh` on why not the whole
+                -- (possibly stale) account, which could re-enable it behind an enabled AppView's back.
                 newAccounts : List BlueskyAccount
                 newAccounts =
                     List.map
                         (\a ->
                             if a.handle == refreshedAccount.handle then
-                                refreshedAccount
+                                BlueskyAccounts.applyRefresh refreshedAccount a
 
                             else
                                 a
@@ -4715,6 +4685,19 @@ recommendedMastodonServers : Model -> List MastodonServer
 recommendedMastodonServers model =
     allMastodonServers model
         |> List.filter (\ms -> not (List.any (\i -> i.host == ms.domain) model.browsedMastodonInstances))
+
+
+{-| The connected Bluesky account to act as for one-off reads (a profile, a post and its thread, followers,
+actor search, a starred post): the first one that's enabled and doesn't need re-authenticating. A
+disabled account must not keep serving reads (its PDS and bearer token would be used even after the user
+switched to an AppView), and one that needs re-auth would just fail -- both fall through to an anonymous
+read via `browsedBlueskyAuth` instead.
+-}
+activeBlueskyAccount : Model -> Maybe BlueskyAccount
+activeBlueskyAccount model =
+    model.blueskyAccounts
+        |> List.filter (\a -> a.enabled && not a.needsReauth)
+        |> List.head
 
 
 {-| How to read public Bluesky data with no connected account: from the enabled browsed AppView if

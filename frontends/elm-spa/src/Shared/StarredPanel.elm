@@ -1544,12 +1544,10 @@ fetchGroup accountsPanelModel ( host, postIds ) ( posts, cmds ) =
 {-| `fetchGroup`'s branch for a Mastodon/Bluesky `host` -- there's no
 "connected server" to check (`ServerDependentView.availableServer` is
 Jonline-only), so this just fetches directly: `Mastodon.fetchStatus` for a
-`"mastodon:"` host (no auth needed), or `Bluesky.fetchPost` using whichever
-connected Bluesky account comes first for a `"bluesky:"` host (same
-"any connected token works" reasoning as `Components.Bluesky.BlueskyPostPage.init`
--- reading a public post doesn't need to be that account's own). With no
-Bluesky account connected at all, AT Protocol has no anonymous read, so those
-posts are marked `ServerUnavailable` same as an unreachable Jonline server.
+`"mastodon:"` host (no auth needed), or `Bluesky.fetchPost` for a `"bluesky:"` host, as the active
+connected Bluesky account (`AccountsPanel.activeBlueskyAccount` -- same "any connected token works"
+reasoning as `Components.Bluesky.BlueskyPostPage.init`: reading a public post doesn't need to be that
+account's own) or, with none, anonymously from an AppView (`AccountsPanel.browsedBlueskyAuth`).
 -}
 fetchFederatedGroup :
     AccountsPanel.Model
@@ -1578,8 +1576,8 @@ fetchFederatedGroup accountsPanelModel ( host, postIds ) ( posts, cmds ) =
         )
 
     else
-        case accountsPanelModel.blueskyAccounts of
-            account :: _ ->
+        case AccountsPanel.activeBlueskyAccount accountsPanelModel of
+            Just account ->
                 let
                     fetchCmds : List (Cmd Msg)
                     fetchCmds =
@@ -1597,7 +1595,7 @@ fetchFederatedGroup accountsPanelModel ( host, postIds ) ( posts, cmds ) =
 
             -- No connected account -- public posts still read fine anonymously, from the browsed
             -- AppView (see `AccountsPanel.browsedBlueskyAuth`).
-            [] ->
+            Nothing ->
                 ( List.foldl (\postId -> Dict.insert (rawKey postId host) FetchingPost) posts postIds
                 , cmds
                     ++ List.map

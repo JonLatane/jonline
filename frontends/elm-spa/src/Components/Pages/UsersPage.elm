@@ -566,7 +566,7 @@ candidateSources shared model =
 
                             else
                                 List.map (\instanceHost -> MastodonSearchSource { instanceHost = instanceHost }) (mastodonHostsToSearch shared)
-                                    ++ (if List.isEmpty shared.accounts.blueskyAccounts && not (List.any .enabled shared.accounts.blueskyAppViews) then
+                                    ++ (if AccountsPanel.activeBlueskyAccount shared.accounts == Nothing && not (List.any .enabled shared.accounts.blueskyAppViews) then
                                             []
 
                                         else
@@ -632,8 +632,8 @@ fetchSourceEffect shared model source =
                 |> Effect.fromCmd
 
         BlueskyListingSource ref listingType ->
-            case shared.accounts.blueskyAccounts of
-                viewerAccount :: _ ->
+            case AccountsPanel.activeBlueskyAccount shared.accounts of
+                Just viewerAccount ->
                     BlueskyAccounts.performWithBlueskyAccount viewerAccount
                         (\accessToken ->
                             case listingType of
@@ -647,7 +647,7 @@ fetchSourceEffect shared model source =
                         |> Task.attempt (fromBlueskyResult viewerAccount >> GotUsers key)
                         |> Effect.fromCmd
 
-                [] ->
+                Nothing ->
                     -- No connected Bluesky account: followers/follows are public, so read them
                     -- anonymously from the browsed AppView (`AccountsPanel.browsedBlueskyAuth`).
                     (case listingType of
@@ -662,14 +662,14 @@ fetchSourceEffect shared model source =
                         |> Effect.fromCmd
 
         BlueskySearchSource ->
-            case shared.accounts.blueskyAccounts of
-                viewerAccount :: _ ->
+            case AccountsPanel.activeBlueskyAccount shared.accounts of
+                Just viewerAccount ->
                     BlueskyAccounts.performWithBlueskyAccount viewerAccount (\accessToken -> Bluesky.searchActors accessToken model.searchText)
                         |> Task.map (Tuple.mapSecond (List.map BlueskyListedUser))
                         |> Task.attempt (fromBlueskyResult viewerAccount >> GotUsers key)
                         |> Effect.fromCmd
 
-                [] ->
+                Nothing ->
                     Bluesky.searchActors (AccountsPanel.browsedBlueskyAuth shared.accounts) model.searchText
                         |> Task.map (List.map BlueskyListedUser)
                         |> Task.attempt (fromFederatedResult >> GotUsers key)

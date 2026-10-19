@@ -1356,8 +1356,12 @@ normalizeBlueskyServerHost raw =
     if host == "bsky.app" then
         publicBlueskyAppViewHost
 
-    else
+    else if String.all (\c -> Char.isLower c || Char.isDigit c || c == '.' || c == '-') host then
         host
+
+    else
+        -- Anything else (a port, a query string, `user@host`, ...) isn't a bare hostname.
+        ""
 
 
 {-| `MastodonServersSaveClicked`'s per-item projection from a `MastodonServerEdit` to the plain

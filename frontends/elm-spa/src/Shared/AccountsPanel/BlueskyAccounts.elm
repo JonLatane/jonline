@@ -1,7 +1,9 @@
 module Shared.AccountsPanel.BlueskyAccounts exposing
     ( BlueskyAccount
     , BlueskyProfile
+    , applyRefresh
     , authFor
+    , cleanIdentifier
     , connectTask
     , decoder
     , disableOtherBlueskyAccounts
@@ -16,7 +18,7 @@ module Shared.AccountsPanel.BlueskyAccounts exposing
 
 {-| Everything about a connected Bluesky account that doesn't need `Shared.AccountsPanel.Model`
 itself to make sense: the persisted-list element type (`BlueskyAccount`), its encode/decode
-(`Ports.persistBlueskyAccounts`'s wire format), and the plain HTTP tasks/decoders
+(carried in `Ports.persistBlueskyAccounts`'s wire format, see `Shared.AccountsPanel.BlueskyAppViews.BlueskyState`), and the plain HTTP tasks/decoders
 `Shared.AccountsPanel.update` drives to build/refresh it (resolving the handle's PDS, then
 `com.atproto.server.createSession` there, `com.atproto.server.refreshSession`, `app.bsky.actor.getProfile`).
 
@@ -88,6 +90,21 @@ defaultPdsHost =
     "bsky.social"
 
 
+{-| Folds a `refreshed` account (rotated tokens, from `performWithBlueskyAccount`) into the `stored` one it
+came from. Only the session fields change: `refreshed` is a snapshot from when its request _started_, so
+its `enabled`/`sortOrder`/`avatarUrl`/`displayName` can be stale by the time it lands -- e.g. the user
+toggled the account off, or enabled an AppView (which must keep the account disabled), while the request
+was in flight -- and must not clobber what's stored now.
+-}
+applyRefresh : BlueskyAccount -> BlueskyAccount -> BlueskyAccount
+applyRefresh refreshed stored =
+    { stored
+        | accessToken = refreshed.accessToken
+        , refreshToken = refreshed.refreshToken
+        , needsReauth = refreshed.needsReauth
+    }
+
+
 {-| How requests made as `account` are sent -- to its own PDS, with its access token.
 -}
 authFor : BlueskyAccount -> BlueskyAuth
@@ -123,7 +140,7 @@ tied to a server entry the way Rellm accounts are, and all of them read the same
 whenever an account becomes enabled, whether by toggling it on (`ToggleBlueskyAccountEnabled`) or by
 a fresh connect (`GotBlueskyConnectResult`, whose `BlueskyAccounts.connectTask` result always
 starts `enabled = True`). The same exclusivity extends to the anonymously-browsed AppView
-(`Shared.AccountsPanel.BlueskyAppViews`) -- see `Shared.AccountsPanel.disableBlueskyAppViews`.
+(`Shared.AccountsPanel.BlueskyAppViews`) -- see its `disableAll`/`enableOnly`/`normalize`.
 -}
 disableOtherBlueskyAccounts : String -> List BlueskyAccount -> List BlueskyAccount
 disableOtherBlueskyAccounts keepEnabledHandle accounts =
@@ -227,8 +244,13 @@ needsReauthDecoder =
 -}
 connectTask : String -> String -> Task Http.Error BlueskyAccount
 connectTask handle appPassword =
-    resolvePdsHost handle
-        |> Task.andThen (\pdsHost -> createSessionTask pdsHost handle appPassword)
+    let
+        identifier : String
+        identifier =
+            cleanIdentifier handle
+    in
+    resolvePdsHost identifier
+        |> Task.andThen (\pdsHost -> createSessionTask pdsHost identifier appPassword)
 
 
 {-| `com.atproto.server.createSession` on `pdsHost` -- Bluesky's own login RPC, taking a handle and App
@@ -255,35 +277,87 @@ createSessionTask pdsHost handle appPassword =
         }
 
 
-{-| Where `identifier` (what the user typed in the handle field) logs in. A DID (`did:plc:...`) is used
-as-is, a handle is resolved to one (`Shared.Federation.Bluesky.resolveHandle`, public AppView), and then
-that DID's document (`plc.directory` for `did:plc:`, `/.well-known/did.json` for `did:web:`) names the
-PDS -- see `pdsHostFromDidDocument`. Anything that can't be resolved (an email address, which
-`bsky.social` also accepts as an identifier; a typo; a network blip) falls back to `defaultPdsHost`
-rather than failing here, so the login attempt itself reports the real problem.
+{-| What the user typed into the handle field, trimmed and without a leading `@`.
+-}
+cleanIdentifier : String -> String
+cleanIdentifier raw =
+    let
+        trimmed : String
+        trimmed =
+            String.trim raw
+    in
+    if String.startsWith "@" trimmed then
+        String.dropLeft 1 trimmed
+
+    else
+        trimmed
+
+
+{-| Where `identifier` (see `cleanIdentifier`) logs in. A DID (`did:plc:...`) is used as-is, a handle is
+resolved to one (`Shared.Federation.Bluesky.resolveHandle`, public AppView), and then that DID's document
+(`plc.directory` for `did:plc:`, `/.well-known/did.json` for `did:web:`) names the PDS -- see
+`pdsHostFromDidDocument`.
+
+The App Password is sent to whatever host that resolves to, so a lookup that merely _fails_ (network
+blip, CORS, a DID/endpoint we refuse) must not quietly fall back to `bsky.social` -- that would hand an
+Eurosky/self-hosted account's password to a different operator. It fails with `pdsLookupFailedError`
+instead. The only fallbacks to `defaultPdsHost` are the two cases where that really is the right
+server: an email address (which only `bsky.social` accepts as an identifier), and a handle the AppView
+definitively says it doesn't know (HTTP 400 -- `bsky.social` can still authenticate some custom-domain
+handles it hosts).
 -}
 resolvePdsHost : String -> Task Http.Error String
 resolvePdsHost identifier =
-    let
-        cleaned : String
-        cleaned =
-            identifier |> String.trim |> (\h -> if String.startsWith "@" h then String.dropLeft 1 h else h)
+    if String.contains "@" identifier then
+        Task.succeed defaultPdsHost
 
-        did : Task Http.Error String
-        did =
-            if String.startsWith "did:" cleaned then
-                Task.succeed cleaned
+    else
+        resolveDid identifier
+            |> Task.andThen
+                (\maybeDid ->
+                    case maybeDid of
+                        Nothing ->
+                            Task.succeed defaultPdsHost
 
-            else if String.contains "@" cleaned then
-                Task.fail (Http.BadBody "email identifiers log in at the default server")
+                        Just resolvedDid ->
+                            fetchDidDocument resolvedDid
+                                |> Task.andThen
+                                    (\document ->
+                                        case pdsHostFromDidDocument document of
+                                            Just host ->
+                                                Task.succeed host
 
-            else
-                Bluesky.resolveHandle cleaned
-    in
-    did
-        |> Task.andThen fetchDidDocument
-        |> Task.map (pdsHostFromDidDocument >> Maybe.withDefault defaultPdsHost)
-        |> Task.onError (\_ -> Task.succeed defaultPdsHost)
+                                            Nothing ->
+                                                Task.fail pdsLookupFailedError
+                                    )
+                )
+            |> Task.mapError (\_ -> pdsLookupFailedError)
+
+
+{-| The DID for `identifier` (itself, if it already is one); `Nothing` only for a handle the AppView
+definitively doesn't know (HTTP 400), and a failed task for anything else.
+-}
+resolveDid : String -> Task Http.Error (Maybe String)
+resolveDid identifier =
+    if String.startsWith "did:" identifier then
+        Task.succeed (Just identifier)
+
+    else
+        Bluesky.resolveHandle identifier
+            |> Task.map Just
+            |> Task.onError
+                (\err ->
+                    if err == Http.BadStatus 400 then
+                        Task.succeed Nothing
+
+                    else
+                        Task.fail err
+                )
+
+
+pdsLookupFailedError : Http.Error
+pdsLookupFailedError =
+    Http.BadBody "Couldn't find this account's server. Check the handle, or try again in a moment."
 
 
 {-| `did:plc:...` -> `https://plc.directory/did:plc:...`; `did:web:host` -> `https://host/.well-known/did.json`
@@ -360,6 +434,9 @@ pdsHostFromEndpoint endpoint =
             else if String.endsWith ".host.bsky.network" url.host then
                 Just defaultPdsHost
 
+            else if not (isPublicHostname url.host) then
+                Nothing
+
             else
                 Just
                     (url.host
@@ -368,6 +445,33 @@ pdsHostFromEndpoint endpoint =
 
         Nothing ->
             Nothing
+
+
+{-| Whether `host` looks like a real internet hostname: not `localhost`/`*.local`/`*.internal`, not an IP
+literal. The App Password is sent to whatever PDS a DID document names, so a DID pointing at an internal
+address isn't worth honouring from a browser (a purely defensive filter -- the user is only ever
+resolving the identity they typed).
+-}
+isPublicHostname : String -> Bool
+isPublicHostname host =
+    let
+        lower : String
+        lower =
+            String.toLower host
+
+        isIpv4 : Bool
+        isIpv4 =
+            String.all (\c -> Char.isDigit c || c == '.') lower
+    in
+    String.contains "." lower
+        && not isIpv4
+        && not (String.contains ":" lower)
+        && not (String.contains "[" lower)
+        && lower
+        /= "localhost"
+        && not (String.endsWith ".localhost" lower)
+        && not (String.endsWith ".local" lower)
+        && not (String.endsWith ".internal" lower)
 
 
 sessionDecoder : String -> Decode.Decoder BlueskyAccount

@@ -34,6 +34,20 @@ didDocument endpoint =
         ]
 
 
+aliceAccount : Bool -> BlueskyAccounts.BlueskyAccount
+aliceAccount enabled =
+    { handle = "alice.bsky.social"
+    , accessToken = "a"
+    , refreshToken = "r"
+    , enabled = enabled
+    , avatarUrl = Nothing
+    , displayName = Nothing
+    , sortOrder = 0
+    , needsReauth = False
+    , pdsHost = "bsky.social"
+    }
+
+
 suite : Test
 suite =
     describe "Bluesky multi-PDS support"
@@ -58,6 +72,11 @@ suite =
                 \_ ->
                     BlueskyAccounts.pdsHostFromEndpoint "http://pds.example.com"
                         |> Expect.equal Nothing
+            , test "localhost, local names and IP literals are refused" <|
+                \_ ->
+                    [ "https://localhost", "https://pds.local", "https://box.internal", "https://127.0.0.1", "https://192.168.1.5:2583", "https://[::1]" ]
+                        |> List.map BlueskyAccounts.pdsHostFromEndpoint
+                        |> Expect.equal (List.repeat 6 Nothing)
             , test "garbage is refused" <|
                 \_ ->
                     BlueskyAccounts.pdsHostFromEndpoint "not a url"
@@ -132,6 +151,36 @@ suite =
                         }
                         |> Expect.equal { host = "eurosky.social", accessToken = "tok" }
             ]
+        , describe "cleanIdentifier"
+            [ test "trims and drops a leading @" <|
+                \_ ->
+                    BlueskyAccounts.cleanIdentifier "  @alice.eurosky.social "
+                        |> Expect.equal "alice.eurosky.social"
+            ]
+        , describe "applyRefresh"
+            [ test "takes only the session fields from the refreshed copy" <|
+                \_ ->
+                    let
+                        stored : BlueskyAccounts.BlueskyAccount
+                        stored =
+                            { handle = "alice.bsky.social"
+                            , accessToken = "old"
+                            , refreshToken = "oldr"
+                            , enabled = False
+                            , avatarUrl = Just "new-avatar"
+                            , displayName = Just "Alice"
+                            , sortOrder = 7
+                            , needsReauth = True
+                            , pdsHost = "bsky.social"
+                            }
+
+                        refreshed : BlueskyAccounts.BlueskyAccount
+                        refreshed =
+                            { stored | accessToken = "new", refreshToken = "newr", needsReauth = False, enabled = True, avatarUrl = Nothing, displayName = Nothing, sortOrder = 0 }
+                    in
+                    BlueskyAccounts.applyRefresh refreshed stored
+                        |> Expect.equal { stored | accessToken = "new", refreshToken = "newr", needsReauth = False }
+            ]
         , describe "BlueskyAppViews"
             [ test "the public AppView is shown as bsky.app" <|
                 \_ ->
@@ -157,6 +206,40 @@ suite =
                         ]
                         |> List.map .enabled
                         |> Expect.equal [ False, False ]
+            , test "an enabled account turns every AppView off when normalizing" <|
+                \_ ->
+                    BlueskyAppViews.normalize [ aliceAccount True ]
+                        [ { host = "a", enabled = True, sortOrder = 0 }, { host = "b", enabled = True, sortOrder = 1 } ]
+                        |> List.map .enabled
+                        |> Expect.equal [ False, False ]
+            , test "with no enabled account, normalizing keeps only the first enabled AppView" <|
+                \_ ->
+                    BlueskyAppViews.normalize [ aliceAccount False ]
+                        [ { host = "a", enabled = False, sortOrder = 0 }
+                        , { host = "b", enabled = True, sortOrder = 1 }
+                        , { host = "c", enabled = True, sortOrder = 2 }
+                        ]
+                        |> List.map .enabled
+                        |> Expect.equal [ False, True, False ]
+            , test "a disabled account and a single enabled AppView are left alone" <|
+                \_ ->
+                    BlueskyAppViews.normalize [ aliceAccount False ] [ { host = "a", enabled = True, sortOrder = 0 } ]
+                        |> List.map .enabled
+                        |> Expect.equal [ True ]
+            , test "persisted state still reads the legacy bare list of accounts" <|
+                \_ ->
+                    Decode.decodeValue BlueskyAppViews.stateDecoder (BlueskyAccounts.encodeList [ aliceAccount True ])
+                        |> Result.map (\state -> ( List.length state.accounts, state.appViews ))
+                        |> Expect.equal (Ok ( 1, [] ))
+            , test "persisted state round-trips accounts and AppViews" <|
+                \_ ->
+                    let
+                        state : BlueskyAppViews.BlueskyState
+                        state =
+                            { accounts = [ aliceAccount False ], appViews = [ { host = "public.api.bsky.app", enabled = True, sortOrder = 2 } ] }
+                    in
+                    Decode.decodeValue BlueskyAppViews.stateDecoder (BlueskyAppViews.encodeState state)
+                        |> Expect.equal (Ok state)
             , test "round-trips through its persisted form" <|
                 \_ ->
                     let

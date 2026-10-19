@@ -1,10 +1,15 @@
 module Shared.AccountsPanel.BlueskyAppViews exposing
     ( BlueskyAppView
+    , BlueskyState
     , decoder
     , disableAll
     , displayName
-    , encode
+    , emptyState
     , enableOnly
+    , encode
+    , encodeState
+    , normalize
+    , stateDecoder
     )
 
 {-| Everything about an anonymously-browsed Bluesky AppView that doesn't need
@@ -25,6 +30,7 @@ here, plus `BlueskyAccounts.disableOtherBlueskyAccounts` for the account side.
 
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode
+import Shared.AccountsPanel.BlueskyAccounts as BlueskyAccounts exposing (BlueskyAccount)
 import Shared.AccountsPanel.SortOrder exposing (sortOrderDecoder)
 import Shared.Federation.Common exposing (publicBlueskyAppViewHost)
 
@@ -76,8 +82,66 @@ disableAll appViews =
     List.map (\a -> { a | enabled = False }) appViews
 
 
+{-| Restores the "one Bluesky source at a time" invariant for state that didn't come from one of the
+transitions that maintain it (persisted state, another tab's broadcast): any enabled account wins, so
+every AppView is disabled; otherwise only the first enabled AppView stays on.
+-}
+normalize : List BlueskyAccount -> List BlueskyAppView -> List BlueskyAppView
+normalize accounts appViews =
+    if List.any .enabled accounts then
+        disableAll appViews
+
+    else
+        case List.filter .enabled appViews of
+            first :: _ :: _ ->
+                enableOnly first.host appViews
+
+            _ ->
+                appViews
+
+
 {-| Enables `host` and disables every other AppView -- only one Bluesky source is shown at a time.
 -}
 enableOnly : String -> List BlueskyAppView -> List BlueskyAppView
 enableOnly host appViews =
     List.map (\a -> { a | enabled = a.host == host }) appViews
+
+
+{-| `Ports.persistBlueskyAccounts`'s wire format -- the connected `BlueskyAccount`s and the
+anonymously-browsed `BlueskyAppView`s bundled into one value (they're two `Model` fields rendered in
+different places -- `UI.accountsList` and `UI.combinedServerFeedItemsStrip` -- but one "which Bluesky
+source is on" decision, so persisted and broadcast to other tabs together). Written as
+`{ accounts, appViews }`; `stateDecoder` also still reads what this port used to persist, a bare list of
+accounts.
+
+(A build from before AppViews existed can't read the object form -- it decodes it as no accounts -- so
+rolling back to one drops the saved Bluesky accounts the next time it persists. Accounts can simply be
+reconnected, but it's why this isn't a no-op to roll back.)
+-}
+type alias BlueskyState =
+    { accounts : List BlueskyAccount
+    , appViews : List BlueskyAppView
+    }
+
+
+emptyState : BlueskyState
+emptyState =
+    { accounts = [], appViews = [] }
+
+
+stateDecoder : Decoder BlueskyState
+stateDecoder =
+    Decode.oneOf
+        [ Decode.map2 BlueskyState
+            (Decode.field "accounts" BlueskyAccounts.decoder)
+            (Decode.field "appViews" (Decode.list decoder))
+        , BlueskyAccounts.decoder |> Decode.map (\accounts -> { accounts = accounts, appViews = [] })
+        ]
+
+
+encodeState : BlueskyState -> Encode.Value
+encodeState state =
+    Encode.object
+        [ ( "accounts", BlueskyAccounts.encodeList state.accounts )
+        , ( "appViews", Encode.list encode state.appViews )
+        ]

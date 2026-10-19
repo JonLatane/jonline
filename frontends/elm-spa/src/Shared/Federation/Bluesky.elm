@@ -559,7 +559,7 @@ readHeaders auth =
 
 
 {-| `GET /xrpc/app.bsky.feed.getPosts` for a single `uri` -- a real single-post lookup by AT URI,
-authenticated the same way `searchPosts` is (any connected account's token works; this reads public
+reads through whichever `BlueskyAuth` it's given (a connected account's, or anonymous from an AppView -- this reads public
 data regardless of whose token it is). A batch API in general (`uris` takes a comma-separated list),
 but always called here with exactly one, so `Decode.field "posts"` is expected to come back with
 either one element or none (deleted/never-existed) -- the latter fails the whole decode, surfacing as

@@ -13,9 +13,9 @@ function's own doc, and `Components.Mastodon.MastodonUserProfilePage` for the Ac
 Followers/following lists live at their own routes (`/:handle@bluesky:.../followers`/`/following`),
 backed by `Components.Pages.BlueskyUsersPage` -- see `Components.Users.followersHref`/`followingHref`.
 
-Fails outright (mirrors `Components.Bluesky.BlueskyPostPage.init`) if no Bluesky account is connected at
-all -- AT Protocol has no anonymous access to anything, so there's no way to view _any_ profile
-without at least one connected account to authenticate the request with.
+Reads as the active connected account (`AccountsPanel.activeBlueskyAccount`) if there is one, and
+anonymously otherwise (`AccountsPanel.browsedBlueskyAuth` -- a profile is public data an AppView serves
+with no login), mirroring `Components.Bluesky.BlueskyPostPage.init`.
 
 -}
 
@@ -71,18 +71,18 @@ init shared handle navKey path query =
         -- Handle + refresh token this fetch starts with, for `MarkBlueskyAccountNeedsReauth`.
         actingAccount : ( String, String )
         actingAccount =
-            List.head shared.accounts.blueskyAccounts
+            AccountsPanel.activeBlueskyAccount shared.accounts
                 |> Maybe.map (\a -> ( a.handle, a.refreshToken ))
                 |> Maybe.withDefault ( "", "" )
 
         fetchTask : Task.Task Http.Error ( Maybe BlueskyAccount, Bluesky.ActorProfile )
         fetchTask =
-            case shared.accounts.blueskyAccounts of
-                account :: _ ->
+            case AccountsPanel.activeBlueskyAccount shared.accounts of
+                Just account ->
                     BlueskyAccounts.performWithBlueskyAccount account (\auth -> Bluesky.fetchActorProfile auth handle)
                         |> Task.map (Tuple.mapFirst Just)
 
-                [] ->
+                Nothing ->
                     -- No connected account: a profile is public, so read it anonymously from the
                     -- browsed AppView.
                     Bluesky.fetchActorProfile (AccountsPanel.browsedBlueskyAuth shared.accounts) handle

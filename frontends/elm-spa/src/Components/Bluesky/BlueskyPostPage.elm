@@ -93,14 +93,14 @@ init shared uri =
         -- `AccountsPanel.MarkBlueskyAccountNeedsReauth` on why the token is needed.
         actingAccount : ( String, String )
         actingAccount =
-            List.head shared.accounts.blueskyAccounts
+            AccountsPanel.activeBlueskyAccount shared.accounts
                 |> Maybe.map (\a -> ( a.handle, a.refreshToken ))
                 |> Maybe.withDefault ( "", "" )
 
         fetchTask : Task.Task Http.Error ( Maybe BlueskyAccount, ( Post, Bool ), Thread )
         fetchTask =
-            case shared.accounts.blueskyAccounts of
-                account :: _ ->
+            case AccountsPanel.activeBlueskyAccount shared.accounts of
+                Just account ->
                     -- The thread is fetched with the (possibly just-refreshed) token the post fetch
                     -- ended up with, strictly after it rather than alongside -- AT Proto refresh
                     -- tokens are single-use (see `BlueskyAccount`'s own doc), so two concurrent
@@ -125,7 +125,7 @@ init shared uri =
 
                 -- No connected account -- read anonymously from the browsed AppView (see
                 -- `AccountsPanel.browsedBlueskyAuth`), nothing to refresh/persist.
-                [] ->
+                Nothing ->
                     Bluesky.fetchPostWithQuotes (AccountsPanel.browsedBlueskyAuth shared.accounts) uri
                         |> Task.andThen
                             (\( post, sensitive ) ->

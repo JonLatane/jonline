@@ -1133,8 +1133,8 @@ customNavPostIds shared frontendHost =
 
 
 {-| Every `FeedSource` this page should ever fetch from -- `relevantServers`' real Rellm servers
-(unconditionally), plus every Mastodon instance being browsed/connected and every connected Bluesky
-account, but only while the feed isn't scoped to one particular author (`model.author == Nothing`),
+(unconditionally), plus every Mastodon instance being browsed/connected, every enabled Bluesky account
+(`BlueskyFeed`) and every enabled browsed Bluesky AppView (`BlueskyAppViewFeed`, anonymous), but only while the feed isn't scoped to one particular author (`model.author == Nothing`),
 since neither Mastodon nor Bluesky supports the author-scoping a real `GetPosts` request does
 (`fetchFeedSource` doesn't even attempt to send that for a `MastodonInstance`/`BlueskyFeed`), so
 showing them on someone's profile page would be misleading -- they'd read as that person's own posts.
@@ -1311,13 +1311,13 @@ fetchFeedSource shared model source =
                 |> Effect.fromCmd
 
         BlueskyAuthorFeed ref ->
-            case shared.accounts.blueskyAccounts of
-                viewerAccount :: _ ->
+            case AccountsPanel.activeBlueskyAccount shared.accounts of
+                Just viewerAccount ->
                     BlueskyAccounts.performWithBlueskyAccount viewerAccount (\accessToken -> Bluesky.fetchAuthorFeed accessToken ref.handle)
                         |> Task.attempt (fromBlueskyResult viewerAccount >> GotFeedPosts (feedSourceKey source))
                         |> Effect.fromCmd
 
-                [] ->
+                Nothing ->
                     -- No connected Bluesky account: an author's public posts read fine anonymously
                     -- (from whichever AppView is browsed, else Bluesky's public one) -- nothing to
                     -- refresh/persist.
