@@ -61,6 +61,7 @@ import Shared.Breadcrumbs as Breadcrumbs
 import Shared.Conversions as Conversions
 import Shared.CreateNewPanel as CreateNewPanel
 import Shared.Federation.Bluesky as Bluesky
+import Shared.Federation.Common exposing (BlueskyAuth, blueskyAuthFor)
 import Shared.Federation.Mastodon as Mastodon
 import Shared.MediaViewerPanel as MediaViewerPanel
 import Shared.QuoteLinks as QuoteLinks
@@ -285,6 +286,7 @@ type FeedSource
     | RellmFederatedAuthor RellmServer String
     | MastodonInstance String
     | BlueskyFeed BlueskyAccount
+    | BlueskyAppViewFeed String
     | MastodonAccountFeed { instanceHost : String, accountId : String, username : String }
     | BlueskyAuthorFeed { handle : String }
 
@@ -314,6 +316,9 @@ feedSourceKey source =
 
         BlueskyFeed account ->
             "bluesky:" ++ account.handle
+
+        BlueskyAppViewFeed host ->
+            "bluesky:" ++ host
 
         MastodonAccountFeed ref ->
             "mastodon:" ++ ref.instanceHost
@@ -347,6 +352,9 @@ feedSourceAccountId shared source =
             Nothing
 
         BlueskyFeed _ ->
+            Nothing
+
+        BlueskyAppViewFeed _ ->
             Nothing
 
         MastodonAccountFeed _ ->
@@ -1164,6 +1172,7 @@ relevantFeedSources shared model =
                     else
                         List.map MastodonInstance (mastodonHostsToFetch shared)
                             ++ List.map BlueskyFeed (List.filter .enabled shared.accounts.blueskyAccounts)
+                            ++ List.map (.host >> BlueskyAppViewFeed) (List.filter .enabled shared.accounts.blueskyAppViews)
                    )
 
 
@@ -1276,16 +1285,24 @@ fetchFeedSource shared model source =
                 trimmedSearch =
                     String.trim model.searchText
 
-                request : String -> Task.Task Http.Error (List Post)
-                request accessToken =
+                request : BlueskyAuth -> Task.Task Http.Error (List Post)
+                request auth =
                     if String.isEmpty trimmedSearch then
-                        Bluesky.fetchPosts accessToken
+                        Bluesky.fetchPosts auth
 
                     else
-                        Bluesky.searchPosts accessToken trimmedSearch
+                        Bluesky.searchPosts auth trimmedSearch
             in
             BlueskyAccounts.performWithBlueskyAccount account request
                 |> Task.attempt (fromBlueskyResult account >> GotFeedPosts (feedSourceKey source))
+                |> Effect.fromCmd
+
+        BlueskyAppViewFeed host ->
+            -- Anonymous: straight from the AppView, no account, nothing to refresh/persist. No
+            -- search (the public AppView rejects `searchPosts`), so a changed `model.searchText`
+            -- doesn't touch it -- same as a `MastodonInstance`.
+            Bluesky.fetchPublicFeed (blueskyAuthFor host)
+                |> Task.attempt (fromFederatedResult >> GotFeedPosts (feedSourceKey source))
                 |> Effect.fromCmd
 
         MastodonAccountFeed ref ->
@@ -1301,13 +1318,12 @@ fetchFeedSource shared model source =
                         |> Effect.fromCmd
 
                 [] ->
-                    -- No connected Bluesky account to authenticate this request with at all (AT
-                    -- Proto has no anonymous access -- see `Shared.Federation.Bluesky`'s own doc) --
-                    -- `Components.Bluesky.BlueskyUserProfilePage.init` already refuses to even mount
-                    -- this `FeedSource` in that case (see its own doc), so this is unreachable in
-                    -- practice; `Effect.none` rather than a synthetic failure since there's no
-                    -- `BlueskyAccount` on hand for `fromBlueskyResult` to attribute one to.
-                    Effect.none
+                    -- No connected Bluesky account: an author's public posts read fine anonymously
+                    -- (from whichever AppView is browsed, else Bluesky's public one) -- nothing to
+                    -- refresh/persist.
+                    Bluesky.fetchAuthorFeed (AccountsPanel.browsedBlueskyAuth shared.accounts) ref.handle
+                        |> Task.attempt (fromFederatedResult >> GotFeedPosts (feedSourceKey source))
+                        |> Effect.fromCmd
 
 
 {-| Fetches `sourcesToFetch` using the current `model.searchText`/`model.context` (for a `RellmServer`,

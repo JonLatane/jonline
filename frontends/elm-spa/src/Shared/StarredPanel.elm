@@ -1595,14 +1595,14 @@ fetchFederatedGroup accountsPanelModel ( host, postIds ) ( posts, cmds ) =
                 , cmds ++ fetchCmds
                 )
 
-            -- No connected account -- public posts still read fine anonymously (an empty token,
-            -- see `Bluesky.fetchPost`).
+            -- No connected account -- public posts still read fine anonymously, from the browsed
+            -- AppView (see `AccountsPanel.browsedBlueskyAuth`).
             [] ->
                 ( List.foldl (\postId -> Dict.insert (rawKey postId host) FetchingPost) posts postIds
                 , cmds
                     ++ List.map
                         (\postId ->
-                            Bluesky.fetchPost "" postId
+                            Bluesky.fetchPost (AccountsPanel.browsedBlueskyAuth accountsPanelModel) postId
                                 |> Task.map Tuple.first
                                 |> Task.attempt (GotStarredFederatedPost (rawKey postId host))
                         )

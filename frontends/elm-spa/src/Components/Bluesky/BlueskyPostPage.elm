@@ -108,7 +108,7 @@ init shared uri =
                     BlueskyAccounts.performWithBlueskyAccount account (\accessToken -> Bluesky.fetchPostWithQuotes accessToken uri)
                         |> Task.andThen
                             (\( refreshedAccount, ( post, sensitive ) ) ->
-                                Bluesky.fetchThread refreshedAccount.accessToken uri
+                                Bluesky.fetchThread (BlueskyAccounts.authFor refreshedAccount) uri
                                     |> Task.onError (\_ -> Task.succeed Common.emptyThread)
                                     |> Task.map
                                         (\thread ->
@@ -123,13 +123,13 @@ init shared uri =
                                         )
                             )
 
-                -- No connected account -- read anonymously from the public AppView (an empty
-                -- token, see `Bluesky.fetchPost`), nothing to refresh/persist.
+                -- No connected account -- read anonymously from the browsed AppView (see
+                -- `AccountsPanel.browsedBlueskyAuth`), nothing to refresh/persist.
                 [] ->
-                    Bluesky.fetchPostWithQuotes "" uri
+                    Bluesky.fetchPostWithQuotes (AccountsPanel.browsedBlueskyAuth shared.accounts) uri
                         |> Task.andThen
                             (\( post, sensitive ) ->
-                                Bluesky.fetchThread "" uri
+                                Bluesky.fetchThread (AccountsPanel.browsedBlueskyAuth shared.accounts) uri
                                     |> Task.onError (\_ -> Task.succeed Common.emptyThread)
                                     |> Task.map (\thread -> ( Nothing, ( post, sensitive ), thread ))
                             )
