@@ -4944,6 +4944,10 @@ grpcErrorToString err =
                 "facebook_token_expired" ->
                     "This destination's Facebook connection has expired. Reconnect it from your Sync Destinations settings, then try again."
 
+                -- `upsert_rsvp`'s `EventInfo`/`OccasionRsvpInfo.max_attendees` enforcement.
+                "attendee_limit_reached" ->
+                    "There aren't enough spots left for that many attendees."
+
                 _ ->
                     errMessage
 

@@ -2691,7 +2691,7 @@ rsvpSettingsView model event occasion =
                     occasionLimit
                     (Maybe.withDefault 20 eventLimit)
                     SetOccasionMaxAttendees
-                , p [ class "event-rsvp-setting-note" ] [ text "Attendee limits aren't enforced yet." ]
+                , p [ class "event-rsvp-setting-note" ] [ text "Counts approved \"Going\" RSVPs, including guests." ]
                 , flagRow "Hide location until RSVP approved" info.hideLocationUntilRsvpApproved SetHideLocationUntilApproved
                 , settingRow "Default RSVP moderation"
                     (select
