@@ -17,6 +17,7 @@ mod delete_follow_tests;
 mod delete_group_tests;
 mod delete_media_sizes_tests;
 mod delete_media_tests;
+mod link_preview_tests;
 mod media_metadata_tests;
 mod migration_lock_tests;
 mod delete_post_tests;

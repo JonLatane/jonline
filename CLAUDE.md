@@ -43,6 +43,7 @@ Root `Makefile` delegates to per-project Makefiles (`make run_backend|run_elm|ru
 - `src/bin/*.rs` are standalone periodic/maintenance jobs (delete_expired_tokens, sync_sources, renew_market_subscriptions, …) with no central registry; new ones must be wired by hand into several files (see `add-background-job` skill, `background_jobs.sh`, deploys).
 - Tests (`src/tests/*_tests.rs`) are DB-backed; build data with `tests/factories.rs` and wrap each body in `conn.test_transaction(...)`. Diesel "optimistic insert" patterns need their own inner `conn.transaction()` (savepoint) to work inside `test_transaction`.
 - SPA catch-all routes (`spa_file_or_username_or_custom_tab`, `elm_file`) take `web::spa_path::SpaPath`, not `PathBuf`: Rocket's `PathBuf` guard rejects a final segment ending in `:`, which every short Bluesky post URL (`/~did:plc:…~rkey@bluesky:`) does.
+- Link-preview metadata (`RellmSummary` → `<title>`/`og:*` in `web/spa_web_path.rs`) is user-controlled text: it always goes through `meta_text` (escapes `&<>"'`). Short URLs (`/~id`) are previewed by `web/short_url_preview.rs`; Bluesky posts get a cached lookup on Bluesky's fixed public API host, Mastodon posts a generic summary (never fetch a host taken from the request path).
 - Gotcha: enum/list additions in protos (e.g. permissions) often need hand-maintained lists updated (`ALL_PERMISSIONS`, etc.) — grep for existing variants before calling a proto addition done.
 
 ## Elm frontend architecture

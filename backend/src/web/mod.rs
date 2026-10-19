@@ -27,6 +27,8 @@ pub mod spa_pages;
 pub use spa_pages::*;
 pub mod spa_file_or_username_or_custom_tab;
 pub mod spa_path;
+pub mod federated_preview;
+pub mod short_url_preview;
 pub mod tamagui_web;
 pub use tamagui_web::*;
 
