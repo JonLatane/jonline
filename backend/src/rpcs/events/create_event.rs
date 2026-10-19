@@ -10,6 +10,8 @@ use crate::schema::{occasions, events, posts};
 
 use crate::rpcs::validations::*;
 
+use super::event_permissions::occasion_info_json;
+
 pub fn create_event(
     request: Event,
     user: &models::User,
@@ -185,7 +187,7 @@ pub fn create_event(
                         .location
                         .as_ref()
                         .map(|c| serde_json::to_value(c).unwrap()),
-                    info: json!({}),
+                    info: occasion_info_json(&occasion.info),
                     timezone: occasion.timezone.clone(),
                 })
                 .returning(models::OCCASION_COLUMNS)

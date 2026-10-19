@@ -363,6 +363,82 @@ mod update_occasions_specs {
     }
 
     #[test]
+    fn persists_and_returns_rsvp_overrides_in_occasion_info() {
+        let mut conn = test_conn();
+        conn.test_transaction::<_, Status, _>(|conn| {
+            let author = create_user(conn, "uei_info_author");
+            let author = grant_permissions(conn, &author, vec![Permission::PublishEventsLocally]);
+            let (event, _event_post) = create_event(
+                conn,
+                &author,
+                EventOpts {
+                    default_occasion: None,
+                    ..Default::default()
+                },
+            );
+            let (occasion, _) = create_occasion(
+                conn,
+                &event,
+                Some(&author),
+                OccasionOpts {
+                    starts_at: whole_second_instant(3600),
+                    ends_at: whole_second_instant(7200),
+                    ..Default::default()
+                },
+            );
+
+            let request = |info: Option<OccasionInfo>| Event {
+                post: Some(Post {
+                    id: event.post_id.to_proto_id(),
+                    ..Default::default()
+                }),
+                occasions: vec![Occasion {
+                    starts_at: Some(whole_second_instant(3600).to_proto()),
+                    ends_at: Some(whole_second_instant(7200).to_proto()),
+                    post: Some(Post {
+                        id: occasion.post_id.to_proto_id(),
+                        visibility: Visibility::ServerPublic as i32,
+                        ..Default::default()
+                    }),
+                    info,
+                    ..Default::default()
+                }],
+                ..Default::default()
+            };
+
+            let updated = update_occasions(
+                request(Some(OccasionInfo {
+                    rsvp_info: Some(OccasionRsvpInfo {
+                        max_attendees: Some(7),
+                        // Counts are never stored.
+                        going_rsvps: Some(99),
+                        ..Default::default()
+                    }),
+                })),
+                &author,
+                conn,
+            )
+            .expect("update_occasions should succeed");
+            let rsvp_info = updated.occasions[0]
+                .info
+                .clone()
+                .and_then(|info| info.rsvp_info)
+                .expect("rsvp_info should be returned");
+            assert_eq!(rsvp_info.max_attendees, Some(7));
+            assert_eq!(rsvp_info.going_rsvps, None);
+
+            // A request without `info` leaves the stored overrides alone.
+            update_occasions(request(None), &author, conn)
+                .expect("update_occasions should succeed");
+            let row = occasion_row(conn, occasion.post_id).unwrap();
+            let stored: OccasionInfo = serde_json::from_value(row.info).unwrap();
+            assert_eq!(stored.rsvp_info.unwrap().max_attendees, Some(7));
+
+            Ok(())
+        });
+    }
+
+    #[test]
     fn a_non_owner_without_moderation_permissions_cannot_update_occasions() {
         let mut conn = test_conn();
         conn.test_transaction::<_, Status, _>(|conn| {

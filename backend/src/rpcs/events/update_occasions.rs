@@ -9,7 +9,9 @@ use crate::models;
 use crate::protos::*;
 use crate::schema::posts;
 
-use super::event_permissions::{event_post_id, find_existing_occasion, validate_event_edit_permission};
+use super::event_permissions::{
+    event_post_id, find_existing_occasion, occasion_info_json, validate_event_edit_permission,
+};
 
 /// Updates, in place, every `Occasion` in `occasions` that's already on the event (i.e.
 /// whose `post.id` matches an existing occasion belonging to this event). Any other occasions are
@@ -53,6 +55,15 @@ pub(super) fn update_occasions_impl(
         }
 
         let timezone = request_occasion.timezone.clone();
+        // Only touched when the request carries `info` -- a client that omits it leaves the
+        // stored RSVP overrides alone.
+        if request_occasion.info.is_some() {
+            let info = occasion_info_json(&request_occasion.info);
+            if info != updated_occasion.info {
+                updated_occasion.info = info;
+                updated_occasion.updated_at = SystemTime::now().into();
+            }
+        }
 
         if starts_at != updated_occasion.starts_at
             || ends_at != updated_occasion.ends_at

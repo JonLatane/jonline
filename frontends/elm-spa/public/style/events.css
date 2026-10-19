@@ -1801,3 +1801,82 @@
   background: var(--chip-bg);
   color: var(--fg);
 }
+
+/* Owner-only RSVP settings above the RSVP area (`Components.Pages.EventPage.rsvpAreaView`).
+   `.event-rsvp-collapsible` animates RSVPs being switched on/off with the same
+   `grid-template-rows` 0fr/1fr trick as `.rsvp-cards-wrap` (and `visibility` flipping after the
+   collapse, so a closed area is out of the tab order). */
+.event-rsvp-setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding: 0.3rem 0;
+}
+
+.event-rsvp-setting-label {
+  color: var(--muted);
+}
+
+.event-rsvp-setting-note {
+  margin: 0;
+  padding: 0 0 0.3rem 0;
+  font-size: 0.8em;
+  opacity: 0.6;
+}
+
+.event-rsvp-settings-error {
+  margin: 0;
+  color: var(--error, #c0392b);
+  font-size: 0.85em;
+}
+
+.event-rsvp-settings-title {
+  font-size: 0.9rem;
+  margin: 0.2rem 0;
+}
+
+.event-rsvp-settings select,
+.event-rsvp-max-attendees {
+  padding: 0.15rem 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--fg);
+  font-size: 0.85rem;
+}
+
+.event-rsvp-max-attendees {
+  width: 6rem;
+  text-align: right;
+}
+
+.event-rsvp-collapsible {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.25s ease, visibility 0s 0.25s;
+  visibility: hidden;
+}
+
+.event-rsvp-collapsible.is-open {
+  grid-template-rows: 1fr;
+  visibility: visible;
+  transition: grid-template-rows 0.25s ease, visibility 0s 0s;
+}
+
+.event-rsvp-collapsible.is-closed {
+  pointer-events: none;
+}
+
+.event-rsvp-collapsible > .event-rsvp-collapsible-inner {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.event-rsvp-setting-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--muted);
+  cursor: pointer;
+}

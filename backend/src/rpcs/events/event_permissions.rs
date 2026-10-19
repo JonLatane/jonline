@@ -74,3 +74,19 @@ pub(super) fn find_existing_occasion(
         .first::<models::Occasion>(conn)
         .ok()
 }
+
+/// The JSON stored in `occasions.info` for a request `Occasion`: only the persisted RSVP overrides
+/// (`allows_rsvps`, `allows_anonymous_rsvps`, `max_attendees`) -- the `OccasionRsvpInfo` count
+/// fields are never stored or returned (see `events.proto`).
+pub(super) fn occasion_info_json(info: &Option<OccasionInfo>) -> serde_json::Value {
+    let rsvp_info = info
+        .as_ref()
+        .and_then(|info| info.rsvp_info.as_ref())
+        .map(|rsvp_info| OccasionRsvpInfo {
+            allows_rsvps: rsvp_info.allows_rsvps,
+            allows_anonymous_rsvps: rsvp_info.allows_anonymous_rsvps,
+            max_attendees: rsvp_info.max_attendees,
+            ..Default::default()
+        });
+    serde_json::to_value(OccasionInfo { rsvp_info }).unwrap_or_else(|_| serde_json::json!({}))
+}

@@ -67,15 +67,16 @@ import Dict exposing (Dict)
 import Effect exposing (Effect)
 import Gen.Route
 import Grpc
-import Html exposing (Html, a, button, div, h1, h2, h3, hr, option, p, select, span, text)
-import Html.Attributes exposing (attribute, class, disabled, href, id, placeholder, rel, selected, target, title, type_, value)
-import Html.Events exposing (onClick, onInput)
+import Html exposing (Html, a, button, div, h1, h2, h3, hr, input, label, option, p, select, span, text)
+import Html.Attributes exposing (attribute, checked, class, disabled, href, id, placeholder, rel, selected, target, title, type_, value)
+import Html.Events exposing (on, onClick, onInput)
 import Html.Keyed
+import Json.Decode as Decode
 import Json.Encode as Encode
 import Ports
 import Process
-import Proto.Rellm exposing (Event, GetSyncDestinationsResponse, Location, Occasion, Post, SyncDestination, defaultLocation, defaultOccasion)
-import Proto.Rellm.Moderation exposing (Moderation)
+import Proto.Rellm exposing (Event, EventInfo, GetSyncDestinationsResponse, Location, Occasion, OccasionInfo, Post, SyncDestination, defaultEventInfo, defaultLocation, defaultOccasion, defaultOccasionInfo, defaultOccasionRsvpInfo)
+import Proto.Rellm.Moderation exposing (Moderation(..))
 import Proto.Rellm.Permission exposing (Permission(..))
 import Proto.Rellm.Visibility exposing (Visibility)
 import Shared
@@ -191,6 +192,15 @@ type alias Model =
     -- Whether the "Add to Calendar" popdown (`Components.EventExport`) is open.
     , exportOpen : Bool
 
+    -- The owner-only RSVP settings above the RSVP area (see `rsvpSettingsView`): whether the
+    -- expandable "more settings" section is open, the max-attendees text while it's being typed
+    -- (committed on `change`, `Nothing` = show the saved value), the last failed save's error, and
+    -- how many saves (see `RsvpSettingEdited`) are still in flight.
+    , rsvpSettingsOpen : Bool
+    , maxAttendeesInput : Maybe ( MaxAttendeesTarget, String )
+    , rsvpSettingsError : Maybe String
+    , rsvpSavesInFlight : Int
+
     -- Captured once at `init` -- see the module doc.
     , pageIsSecure : Bool
     , navKey : Browser.Navigation.Key
@@ -201,6 +211,18 @@ type Msg
     = GotEvent (Result Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Rellm.GetEventsResponse ))
       -- One occasion's RSVP form/list (see `Components.Rsvps`), keyed by occasion id.
     | RsvpsMsg String Rsvps.Msg
+      -- The owner-only RSVP settings (see `rsvpSettingsView`). Each edit is applied to the loaded
+      -- `Event` optimistically (so the RSVP area animates immediately), then -- like other
+      -- save-on-change flows in the app -- a fresh copy of the `Event` is fetched
+      -- (`GotFreshEventForRsvpEdit`), the one field patched onto it, and that saved via
+      -- `UpdateEventDetails` / `UpdateOccasions` (`GotRsvpSettingSaveResult`); a failure restores
+      -- the `RsvpSettingsSnapshot` taken before the edit.
+    | RsvpSettingEdited RsvpSettingEdit
+    | GotFreshEventForRsvpEdit RsvpSettingEdit RsvpSettingsSnapshot (Result Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Rellm.GetEventsResponse ))
+    | GotRsvpSettingSaveResult RsvpSettingsSnapshot (Result Grpc.Error ( Maybe AccountsPanel.Msg, Event ))
+    | RsvpSettingsToggled
+    | MaxAttendeesInput MaxAttendeesTarget String
+    | MaxAttendeesCommitted MaxAttendeesTarget
     | ExportToggled
     | ExportClosed
     | MediaClicked Post String
@@ -404,6 +426,33 @@ type alias OccasionAnimation =
     }
 
 
+{-| One change to the owner-only RSVP settings. The `SetEvent*`-style ones patch `Event.info`; only
+`SetOccasionMaxAttendees` patches the viewed `Occasion`'s `info.rsvp_info`.
+-}
+type RsvpSettingEdit
+    = SetAllowsRsvps Bool
+    | SetAllowsAnonymousRsvps Bool
+    | SetEventMaxAttendees (Maybe Int)
+    | SetHideLocationUntilApproved Bool
+    | SetDefaultRsvpModeration Moderation
+    | SetOccasionMaxAttendees (Maybe Int)
+
+
+{-| Which of the two max-attendees inputs a `MaxAttendeesInput`/`MaxAttendeesCommitted` is for.
+-}
+type MaxAttendeesTarget
+    = EventLimit
+    | OccasionLimit
+
+
+{-| What an optimistic `RsvpSettingEdit` replaced, to put back if saving it fails.
+-}
+type alias RsvpSettingsSnapshot =
+    { eventInfo : Maybe EventInfo
+    , occasionInfo : Maybe OccasionInfo
+    }
+
+
 {-| Mirrors `Components.Pages.PostPage.SubmitStatus` exactly.
 -}
 type SubmitStatus
@@ -548,6 +597,10 @@ init shared pageIsSecure query rawPostId navKey =
                 , rsvpTokenParam = Dict.get "anonymousAuthToken" query
                 , rsvpSectionRequested = Dict.get "section" query == Just "rsvp"
                 , exportOpen = False
+                , rsvpSettingsOpen = False
+                , maxAttendeesInput = Nothing
+                , rsvpSettingsError = Nothing
+                , rsvpSavesInFlight = 0
                 , pageIsSecure = pageIsSecure
                 , navKey = navKey
                 }
@@ -1200,6 +1253,154 @@ update shared msg model =
             , Effect.none
             )
 
+        RsvpSettingEdited edit ->
+            case ( model.eventStatus, serverAndAccount shared model ) of
+                ( EventLoaded event occasion, Just ( server, account ) ) ->
+                    let
+                        snapshot : RsvpSettingsSnapshot
+                        snapshot =
+                            { eventInfo = event.info, occasionInfo = occasion.info }
+
+                        optimisticEvent : Event
+                        optimisticEvent =
+                            applyRsvpEditLocally model.occasionId edit event
+                    in
+                    ( { model
+                        | eventStatus =
+                            EventLoaded optimisticEvent
+                                (Events.occasionFor model.occasionId optimisticEvent |> Maybe.withDefault occasion)
+                        , rsvpSettingsError = Nothing
+                        , rsvpSavesInFlight = model.rsvpSavesInFlight + 1
+                      }
+                    , Events.fetchEvent
+                        shared.accounts
+                        ( Just account.userId, server.frontendHost )
+                        model.rsvpTokenParam
+                        model.occasionId
+                        |> Task.attempt (GotFreshEventForRsvpEdit edit snapshot)
+                        |> Effect.fromCmd
+                    )
+
+                _ ->
+                    ( model, Effect.none )
+
+        GotFreshEventForRsvpEdit edit snapshot (Ok ( maybeAccountsPanelMsg, response )) ->
+            case ( response.events |> List.head, serverAndAccount shared model ) of
+                ( Just fresh, Just ( server, account ) ) ->
+                    let
+                        accountServer : AccountsPanel.MaybeAccountServer
+                        accountServer =
+                            ( Just account.userId, server.frontendHost )
+                    in
+                    case edit of
+                        SetOccasionMaxAttendees _ ->
+                            case Events.occasionFor model.occasionId fresh of
+                                Just freshOccasion ->
+                                    ( model
+                                    , Effect.batch
+                                        [ accountsPanelEffect maybeAccountsPanelMsg
+                                        , Events.updateOccasions
+                                            shared.accounts
+                                            accountServer
+                                            { fresh | occasions = [ { freshOccasion | info = applyRsvpEditToOccasionInfo edit freshOccasion.info } ] }
+                                            |> Task.attempt (GotRsvpSettingSaveResult snapshot)
+                                            |> Effect.fromCmd
+                                        ]
+                                    )
+
+                                Nothing ->
+                                    ( failRsvpSettingEdit snapshot "This occasion no longer exists." model, Effect.none )
+
+                        _ ->
+                            ( model
+                            , Effect.batch
+                                [ accountsPanelEffect maybeAccountsPanelMsg
+                                , Events.updateEventDetails
+                                    shared.accounts
+                                    accountServer
+                                    { fresh | info = Just (applyRsvpEditToEventInfo edit (Maybe.withDefault defaultEventInfo fresh.info)) }
+                                    |> Task.attempt (GotRsvpSettingSaveResult snapshot)
+                                    |> Effect.fromCmd
+                                ]
+                            )
+
+                _ ->
+                    ( failRsvpSettingEdit snapshot "Couldn't reload this event." model, Effect.none )
+
+        GotFreshEventForRsvpEdit _ snapshot (Err err) ->
+            ( failRsvpSettingEdit snapshot (AccountsPanel.grpcErrorToString err) model, Effect.none )
+
+        GotRsvpSettingSaveResult _ (Ok ( maybeAccountsPanelMsg, savedEvent )) ->
+            let
+                remaining : Int
+                remaining =
+                    model.rsvpSavesInFlight - 1
+
+                updatedModel : Model
+                updatedModel =
+                    -- Only adopt the server's copy once nothing newer is still in flight, so a
+                    -- second quick edit's optimistic state isn't flickered back.
+                    if remaining <= 0 then
+                        applyUpdatedEvent shared.time.now model savedEvent
+
+                    else
+                        model
+            in
+            ( { updatedModel | rsvpSavesInFlight = max 0 remaining }
+            , accountsPanelEffect maybeAccountsPanelMsg
+            )
+
+        GotRsvpSettingSaveResult snapshot (Err err) ->
+            ( failRsvpSettingEdit snapshot (AccountsPanel.grpcErrorToString err) model, Effect.none )
+
+        RsvpSettingsToggled ->
+            ( { model | rsvpSettingsOpen = not model.rsvpSettingsOpen }, Effect.none )
+
+        MaxAttendeesInput target raw ->
+            ( { model | maxAttendeesInput = Just ( target, raw ) }, Effect.none )
+
+        MaxAttendeesCommitted target ->
+            case ( model.maxAttendeesInput, model.eventStatus ) of
+                ( Just ( inputTarget, raw ), EventLoaded event occasion ) ->
+                    let
+                        parsed : Maybe Int
+                        parsed =
+                            String.toInt (String.trim raw) |> Maybe.map (max 0)
+
+                        current : Maybe Int
+                        current =
+                            case target of
+                                EventLimit ->
+                                    event.info |> Maybe.andThen .maxAttendees
+
+                                OccasionLimit ->
+                                    occasion.info |> Maybe.andThen .rsvpInfo |> Maybe.andThen .maxAttendees
+
+                        cleared : Model
+                        cleared =
+                            { model | maxAttendeesInput = Nothing }
+                    in
+                    -- A blank/invalid entry just snaps back to the saved value (unchecking the
+                    -- checkbox is how the limit is removed).
+                    if inputTarget /= target || parsed == Nothing || parsed == current then
+                        ( cleared, Effect.none )
+
+                    else
+                        update shared
+                            (RsvpSettingEdited
+                                (case target of
+                                    EventLimit ->
+                                        SetEventMaxAttendees parsed
+
+                                    OccasionLimit ->
+                                        SetOccasionMaxAttendees parsed
+                                )
+                            )
+                            cleared
+
+                _ ->
+                    ( model, Effect.none )
+
         AddMoreClicked ->
             ( { model | addMoreMenu = Just { step = ChoosingCount, status = Idle } }, Effect.none )
 
@@ -1693,6 +1894,111 @@ serverAndAccount shared model =
     Maybe.map2 Tuple.pair
         (RellmServers.rellmServerForHost shared.accounts.servers model.targetHost)
         (RellmAccounts.enabledRellmAccountForServer shared.accounts.accounts model.targetHost)
+
+
+{-| Restores `snapshot` (what an optimistic `RsvpSettingEdit` replaced) after its save failed, and
+records `message`.
+-}
+failRsvpSettingEdit : RsvpSettingsSnapshot -> String -> Model -> Model
+failRsvpSettingEdit snapshot message model =
+    let
+        revert : Event -> Event
+        revert event =
+            setOccasionInfo model.occasionId snapshot.occasionInfo { event | info = snapshot.eventInfo }
+    in
+    { model
+        | eventStatus =
+            case model.eventStatus of
+                EventLoaded event occasion ->
+                    let
+                        reverted : Event
+                        reverted =
+                            revert event
+                    in
+                    EventLoaded reverted (Events.occasionFor model.occasionId reverted |> Maybe.withDefault occasion)
+
+                other ->
+                    other
+        , rsvpSettingsError = Just message
+        , rsvpSavesInFlight = max 0 (model.rsvpSavesInFlight - 1)
+    }
+
+
+{-| Sets the `info` of the `Occasion` whose own `Post` id is `occasionId`.
+-}
+setOccasionInfo : String -> Maybe OccasionInfo -> Event -> Event
+setOccasionInfo occasionId info event =
+    { event
+        | occasions =
+            event.occasions
+                |> List.map
+                    (\o ->
+                        if Rsvps.occasionIdOf o == occasionId then
+                            { o | info = info }
+
+                        else
+                            o
+                    )
+    }
+
+
+{-| Applies `edit` to a loaded `Event` (and its viewed `Occasion`, for `SetOccasionMaxAttendees`)
+without waiting for the server.
+-}
+applyRsvpEditLocally : String -> RsvpSettingEdit -> Event -> Event
+applyRsvpEditLocally occasionId edit event =
+    case edit of
+        SetOccasionMaxAttendees _ ->
+            case Events.findOccasion occasionId event of
+                Just occasion ->
+                    setOccasionInfo occasionId (applyRsvpEditToOccasionInfo edit occasion.info) event
+
+                Nothing ->
+                    event
+
+        _ ->
+            { event | info = Just (applyRsvpEditToEventInfo edit (Maybe.withDefault defaultEventInfo event.info)) }
+
+
+applyRsvpEditToEventInfo : RsvpSettingEdit -> EventInfo -> EventInfo
+applyRsvpEditToEventInfo edit info =
+    case edit of
+        SetAllowsRsvps value ->
+            { info | allowsRsvps = Just value }
+
+        SetAllowsAnonymousRsvps value ->
+            { info | allowsAnonymousRsvps = Just value }
+
+        SetEventMaxAttendees value ->
+            { info | maxAttendees = value }
+
+        SetHideLocationUntilApproved value ->
+            { info | hideLocationUntilRsvpApproved = Just value }
+
+        SetDefaultRsvpModeration value ->
+            { info | defaultRsvpModeration = Just value }
+
+        SetOccasionMaxAttendees _ ->
+            info
+
+
+applyRsvpEditToOccasionInfo : RsvpSettingEdit -> Maybe OccasionInfo -> Maybe OccasionInfo
+applyRsvpEditToOccasionInfo edit maybeInfo =
+    case edit of
+        SetOccasionMaxAttendees value ->
+            let
+                info : OccasionInfo
+                info =
+                    Maybe.withDefault defaultOccasionInfo maybeInfo
+
+                rsvpInfo : Proto.Rellm.OccasionRsvpInfo
+                rsvpInfo =
+                    Maybe.withDefault defaultOccasionRsvpInfo info.rsvpInfo
+            in
+            Just { info | rsvpInfo = Just { rsvpInfo | maxAttendees = value } }
+
+        _ ->
+            maybeInfo
 
 
 {-| Applies a just-saved `updatedPost` to the currently-loaded `Event`'s own
@@ -2203,6 +2509,227 @@ titleFor model =
             "Event " ++ model.occasionId
 
 
+{-| The RSVP area. For the `Event`'s author or an Admin it's preceded by the "Allow RSVPs"
+toggle and an expandable section of the rest of the `EventInfo` RSVP settings, and both stay mounted
+inside a `.event-rsvp-collapsible` that animates open/closed as RSVPs are switched on/off (using
+`Rsvps.viewAlways`, since `Rsvps.view` renders nothing the moment RSVPs are off and so couldn't
+animate out). Everyone else just gets `Rsvps.view`.
+-}
+rsvpAreaView : Shared.Model -> Model -> Maybe RellmServer -> Maybe RellmAccount -> Event -> Post -> Occasion -> Html Msg
+rsvpAreaView shared model maybeServer maybeAccount event eventPost occasion =
+    let
+        occasionId : String
+        occasionId =
+            Rsvps.occasionIdOf occasion
+
+        rsvpsConfig : Rsvps.ViewConfig
+        rsvpsConfig =
+            { basePath = shared.basePath
+            , viewingServerHost = shared.accounts.mainFrontendHost
+            , eventServerHost = model.targetHost
+            , maybeServer = maybeServer
+            , maybeAccount = maybeAccount
+            , now = shared.time.now
+            , compact = False
+            , event = event
+            , occasion = occasion
+            }
+
+        canEdit : Bool
+        canEdit =
+            maybeAccount
+                |> Maybe.map (\account -> Posts.isAuthor account eventPost || List.member ADMIN account.permissions)
+                |> Maybe.withDefault False
+    in
+    if not canEdit then
+        Rsvps.view (RsvpsMsg occasionId) rsvpsConfig (rsvpModelFor model occasionId)
+
+    else
+        let
+            allowsRsvps : Bool
+            allowsRsvps =
+                Tuple.first (Rsvps.rsvpsAllowed event occasion)
+        in
+        div [ class "event-rsvp-area" ]
+            [ div [ class "event-rsvp-setting-row" ]
+                [ span [ class "event-rsvp-setting-label" ] [ text "Allow RSVPs" ]
+                , rsvpSettingSwitch allowsRsvps (RsvpSettingEdited (SetAllowsRsvps (not allowsRsvps)))
+                ]
+            , case model.rsvpSettingsError of
+                Just err ->
+                    p [ class "event-rsvp-settings-error" ] [ text err ]
+
+                Nothing ->
+                    text ""
+            , div [ classes [ "event-rsvp-collapsible", openClosedClass allowsRsvps ] ]
+                [ div [ class "event-rsvp-collapsible-inner" ]
+                    [ rsvpSettingsView model event occasion
+                    , Rsvps.viewAlways (RsvpsMsg occasionId) rsvpsConfig (rsvpModelFor model occasionId)
+                    ]
+                ]
+            ]
+
+
+{-| The author-only RSVP settings beyond "Allow RSVPs" (see `rsvpAreaView`) -- anonymous RSVPs, the
+`Event`-wide attendee limit, a per-`Occasion` override of it, hiding the location until an RSVP is
+approved, and the default moderation of RSVPs from logged-in users -- in a section
+expanded/collapsed (`RsvpSettingsToggled`) the same way
+`Components.Pages.ServerInformationPage.SettingsTab`'s are. Every control saves immediately
+(`RsvpSettingEdited`).
+-}
+rsvpSettingsView : Model -> Event -> Occasion -> Html Msg
+rsvpSettingsView model event occasion =
+    let
+        info : EventInfo
+        info =
+            Maybe.withDefault defaultEventInfo event.info
+
+        isOpen : Bool
+        isOpen =
+            model.rsvpSettingsOpen
+
+        settingRow : String -> Html Msg -> Html Msg
+        settingRow label_ control =
+            div [ class "event-rsvp-setting-row" ]
+                [ span [ class "event-rsvp-setting-label" ] [ text label_ ], control ]
+
+        flagRow : String -> Maybe Bool -> (Bool -> RsvpSettingEdit) -> Html Msg
+        flagRow label_ current toEdit =
+            let
+                on_ : Bool
+                on_ =
+                    Maybe.withDefault False current
+            in
+            settingRow label_ (rsvpSettingSwitch on_ (RsvpSettingEdited (toEdit (not on_))))
+
+        -- A checkbox that turns a limit on (to `onValue`) or off, with the number input for it.
+        limitRow : MaxAttendeesTarget -> String -> Maybe Int -> Int -> (Maybe Int -> RsvpSettingEdit) -> Html Msg
+        limitRow target label_ current onValue toEdit =
+            let
+                limited : Bool
+                limited =
+                    current /= Nothing
+
+                shownText : String
+                shownText =
+                    case model.maxAttendeesInput of
+                        Just ( inputTarget, raw ) ->
+                            if inputTarget == target then
+                                raw
+
+                            else
+                                current |> Maybe.map String.fromInt |> Maybe.withDefault ""
+
+                        Nothing ->
+                            current |> Maybe.map String.fromInt |> Maybe.withDefault ""
+            in
+            div [ class "event-rsvp-setting-row" ]
+                [ label [ class "event-rsvp-setting-checkbox" ]
+                    [ input
+                        [ type_ "checkbox"
+                        , checked limited
+                        , onClick
+                            (RsvpSettingEdited
+                                (toEdit
+                                    (if limited then
+                                        Nothing
+
+                                     else
+                                        Just onValue
+                                    )
+                                )
+                            )
+                        ]
+                        []
+                    , text label_
+                    ]
+                , input
+                    [ type_ "number"
+                    , Html.Attributes.min "0"
+                    , Html.Attributes.step "1"
+                    , class "event-rsvp-max-attendees"
+                    , disabled (not limited)
+                    , value shownText
+                    , onInput (MaxAttendeesInput target)
+                    , on "change" (Decode.succeed (MaxAttendeesCommitted target))
+                    ]
+                    []
+                ]
+
+        eventLimit : Maybe Int
+        eventLimit =
+            info.maxAttendees
+
+        occasionLimit : Maybe Int
+        occasionLimit =
+            occasion.info |> Maybe.andThen .rsvpInfo |> Maybe.andThen .maxAttendees
+
+        -- Unset (and `UNMODERATED`) behave as approved today: see `upsert_rsvp.rs`.
+        moderation : Moderation
+        moderation =
+            case info.defaultRsvpModeration of
+                Just PENDING ->
+                    PENDING
+
+                _ ->
+                    APPROVED
+    in
+    div [ class "event-rsvp-settings" ]
+        [ div
+            [ classes [ "expandable-section-title", "event-rsvp-settings-title" ]
+            , onClick RsvpSettingsToggled
+            ]
+            [ span [ classes [ "expandable-section-arrow", openClosedClass isOpen ] ] [ text "▼" ]
+            , text "RSVP Settings"
+            ]
+        , div [ classes [ "expandable-section-content", openClosedClass isOpen, "border-color-primary-anchor-50" ] ]
+            [ div [ class "expandable-section-content-inner" ]
+                [ flagRow "Allow anonymous RSVPs" info.allowsAnonymousRsvps SetAllowsAnonymousRsvps
+                , limitRow EventLimit "Limit number of attendees" eventLimit 20 SetEventMaxAttendees
+                , limitRow OccasionLimit
+                    "Override attendee limit for this occasion"
+                    occasionLimit
+                    (Maybe.withDefault 20 eventLimit)
+                    SetOccasionMaxAttendees
+                , p [ class "event-rsvp-setting-note" ] [ text "Attendee limits aren't enforced yet." ]
+                , flagRow "Hide location until RSVP approved" info.hideLocationUntilRsvpApproved SetHideLocationUntilApproved
+                , settingRow "Default RSVP moderation"
+                    (select
+                        [ onInput
+                            (\raw ->
+                                RsvpSettingEdited
+                                    (SetDefaultRsvpModeration
+                                        (Posts.moderationFromText raw |> Maybe.withDefault moderation)
+                                    )
+                            )
+                        ]
+                        ([ PENDING, APPROVED ]
+                            |> List.map
+                                (\m ->
+                                    option
+                                        [ value (Users.moderationText m)
+                                        , selected (m == moderation)
+                                        ]
+                                        [ text (Users.moderationText m) ]
+                                )
+                        )
+                    )
+                , p [ class "event-rsvp-setting-note" ] [ text "Anonymous RSVPs are always moderated." ]
+                ]
+            ]
+        ]
+
+
+{-| A `.switch` toggle (same look as `UI.switchInput`, which is hard-coded to `Shared.Msg`).
+-}
+rsvpSettingSwitch : Bool -> Msg -> Html Msg
+rsvpSettingSwitch isChecked toggleMsg =
+    label [ class "switch" ]
+        [ input [ type_ "checkbox", checked isChecked, onClick toggleMsg ] []
+        , span [ class "slider" ] []
+        ]
+
+
 eventDetailView : Shared.Model -> Model -> Event -> Occasion -> Html Msg
 eventDetailView shared model event occasion =
     let
@@ -2302,18 +2829,7 @@ eventDetailView shared model event occasion =
                             , moderationView maybeAccount model.moderationEdit event eventPost
                             ]
                         , occasionDetailAndStrip
-                        , Rsvps.view (RsvpsMsg (Rsvps.occasionIdOf occasion))
-                            { basePath = shared.basePath
-                            , viewingServerHost = shared.accounts.mainFrontendHost
-                            , eventServerHost = model.targetHost
-                            , maybeServer = maybeServer
-                            , maybeAccount = maybeAccount
-                            , now = shared.time.now
-                            , compact = False
-                            , event = event
-                            , occasion = occasion
-                            }
-                            (rsvpModelFor model (Rsvps.occasionIdOf occasion))
+                        , rsvpAreaView shared model maybeServer maybeAccount event eventPost occasion
                         , case maybeServer of
                             Just server ->
                                 let

@@ -11,6 +11,7 @@ module Components.Rsvps exposing
     , setAnonymousAuthToken
     , update
     , view
+    , viewAlways
     )
 
 {-| The RSVP UI for a single `Occasion` -- the Elm counterpart of the Tamagui app's
@@ -319,25 +320,31 @@ occasionIdOf occasion =
 rsvpsAllowed : Event -> Occasion -> ( Bool, Bool )
 rsvpsAllowed event occasion =
     let
+        ( allows, allowsAnonymous ) =
+            rawRsvpSettings event occasion
+    in
+    ( allows, allows && allowsAnonymous )
+
+
+{-| `rsvpsAllowed`, minus the "anonymous needs RSVPs on at all" folding -- what `viewAlways`
+needs to keep an RSVP block looking the same while it animates closed.
+-}
+rawRsvpSettings : Event -> Occasion -> ( Bool, Bool )
+rawRsvpSettings event occasion =
+    let
         override : Maybe Proto.Rellm.OccasionRsvpInfo
         override =
             occasion.info |> Maybe.andThen .rsvpInfo
-
-        allows : Bool
-        allows =
-            override
-                |> Maybe.andThen .allowsRsvps
-                |> orElse (event.info |> Maybe.andThen .allowsRsvps)
-                |> Maybe.withDefault False
-
-        allowsAnonymous : Bool
-        allowsAnonymous =
-            override
-                |> Maybe.andThen .allowsAnonymousRsvps
-                |> orElse (event.info |> Maybe.andThen .allowsAnonymousRsvps)
-                |> Maybe.withDefault False
     in
-    ( allows, allows && allowsAnonymous )
+    ( override
+        |> Maybe.andThen .allowsRsvps
+        |> orElse (event.info |> Maybe.andThen .allowsRsvps)
+        |> Maybe.withDefault False
+    , override
+        |> Maybe.andThen .allowsAnonymousRsvps
+        |> orElse (event.info |> Maybe.andThen .allowsAnonymousRsvps)
+        |> Maybe.withDefault False
+    )
 
 
 orElse : Maybe a -> Maybe a -> Maybe a
@@ -916,6 +923,15 @@ view toMsg cfg model =
 
     else
         text ""
+
+
+{-| `view`, but renders the RSVP block even while RSVPs are off -- for a caller that animates the
+block in/out itself (`Components.Pages.EventPage`'s settings toggle) and so needs the content to
+stay mounted while it collapses.
+-}
+viewAlways : (Msg -> msg) -> ViewConfig -> Model -> Html msg
+viewAlways toMsg cfg model =
+    Html.map toMsg (blockView cfg (Tuple.second (rawRsvpSettings cfg.event cfg.occasion)) model)
 
 
 blockView : ViewConfig -> Bool -> Model -> Html Msg
