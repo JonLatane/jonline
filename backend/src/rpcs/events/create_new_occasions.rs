@@ -1,5 +1,4 @@
 use diesel::*;
-use serde_json::json;
 use tonic::{Code, Status};
 
 use crate::db_connection::PgPooledConnection;
@@ -8,7 +7,9 @@ use crate::models;
 use crate::protos::*;
 use crate::schema::{occasions, posts};
 
-use super::event_permissions::{event_post_id, find_existing_occasion, validate_event_edit_permission};
+use super::event_permissions::{
+    event_post_id, find_existing_occasion, occasion_info_json, validate_event_edit_permission,
+};
 
 /// Creates an `Occasion` for every entry in `occasions` that isn't already on `event` (i.e.
 /// whose `post.id` doesn't parse, or doesn't belong to this event); entries that do match are left
@@ -130,7 +131,7 @@ pub fn create_occasion(
                 .location
                 .as_ref()
                 .map(|c| serde_json::to_value(c).unwrap()),
-            info: json!({}),
+            info: occasion_info_json(&occasion.info),
             timezone: occasion.timezone.clone(),
         })
         .returning(models::OCCASION_COLUMNS)

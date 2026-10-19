@@ -2812,11 +2812,11 @@ Stored as JSON in the database.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| allows_rsvps | [bool](#bool) | optional | Whether to allow RSVPs for the event. |
-| allows_anonymous_rsvps | [bool](#bool) | optional | Whether to allow anonymous RSVPs for the event. |
-| max_attendees | [uint32](#uint32) | optional | Limit the max number of attendees. No effect unless `allows_rsvps` is true. Not yet supported. |
+| allows_rsvps | [bool](#bool) | optional | Whether to allow RSVPs for the event. New RSVPs are refused (`PERMISSION_DENIED`, `rsvps_not_allowed`) unless this is true (or an Occasion overrides it); existing RSVPs can still be updated. |
+| allows_anonymous_rsvps | [bool](#bool) | optional | Whether to allow anonymous RSVPs for the event. No effect unless `allows_rsvps` is true. New anonymous RSVPs are otherwise refused (`PERMISSION_DENIED`, `anonymous_rsvps_not_allowed`). |
+| max_attendees | [uint32](#uint32) | optional | Limit the max number of attendees. No effect unless `allows_rsvps` is true. Enforced by `UpsertRsvp`: only `GOING` RSVPs with passing moderation (`UNMODERATED`/`APPROVED`) count, by `Rsvp.number_of_guests`. An RSVP that would exceed the limit - whether new, grown, or being approved by the event owner - fails with `FAILED_PRECONDITION` (`attendee_limit_reached`). An Occasion&#39;s `OccasionRsvpInfo.max_attendees` overrides this. |
 | hide_location_until_rsvp_approved | [bool](#bool) | optional | Hide the location until the user RSVPs (and it&#39;s accepted). From a system perspective, when this is set, Events will not include the [`Location`](#rellm-Location) until the user has RSVP&#39;d. Location will always be returned in `Rsvps` if the request for the `Rsvps` came from a (logged in or anonymous) user whose RSVP is approved (or the event owner). |
-| default_rsvp_moderation | [Moderation](#rellm-Moderation) | optional | Default moderation for RSVPs from logged-in users (either `PENDING` or `APPROVED`). Anonymous RSVPs are always moderated (default to `PENDING`). |
+| default_rsvp_moderation | [Moderation](#rellm-Moderation) | optional | Default moderation for new RSVPs from logged-in users other than the event owner (either `PENDING` or `APPROVED`). Anonymous RSVPs are always moderated (default to `PENDING`). |
 
 
 
@@ -2954,7 +2954,7 @@ Curently, the `optional` counts below are *never* returned by the API.
 | ----- | ---- | ----- | ----------- |
 | allows_rsvps | [bool](#bool) | optional | Overrides `EventInfo.allows_rsvps`, if set, for this Occasion. |
 | allows_anonymous_rsvps | [bool](#bool) | optional | Overrides `EventInfo.allows_anonymous_rsvps`, if set, for this Occasion. |
-| max_attendees | [uint32](#uint32) | optional | Overrides `EventInfo.max_attendees`, if set, for this Occasion. Not yet supported. |
+| max_attendees | [uint32](#uint32) | optional | Overrides `EventInfo.max_attendees`, if set, for this Occasion. Enforced the same way - see there. |
 | going_rsvps | [uint32](#uint32) | optional | The number of users who have RSVP&#39;d to the event. |
 | going_attendees | [uint32](#uint32) | optional | The number of attendees who have RSVP&#39;d to the event. (RSVPs may have multiple attendees, i.e. guests.) |
 | interested_rsvps | [uint32](#uint32) | optional | The number of users who have signaled interest in the event. |

@@ -1,3 +1,5 @@
+use diesel::dsl::sum;
+use diesel::result::Error::RollbackTransaction;
 use diesel::*;
 
 use ring::rand::*;
@@ -8,9 +10,125 @@ use crate::generate_token;
 use crate::marshaling::*;
 use crate::models::{self, get_author, get_rsvp, NewRsvp};
 use crate::protos::*;
+use crate::rpcs::validations::PASSING_MODERATIONS;
 use crate::schema::{rsvps, occasions, events, posts, users};
 
+/// Creates or updates an RSVP. Runs in a transaction holding a row lock on the `Occasion`, so
+/// the attendee-limit check in `upsert_rsvp_impl` can't be raced by concurrent RSVPs to the same
+/// `Occasion`.
 pub fn upsert_rsvp(
+    request: Rsvp,
+    user: &Option<&models::User>,
+    conn: &mut PgPooledConnection,
+) -> Result<Rsvp, Status> {
+    let occasion_id = request.occasion_id.to_db_id_or_err("occasion_id")?;
+    let mut result: Option<Result<Rsvp, Status>> = None;
+    let transaction_result = conn.transaction::<(), diesel::result::Error, _>(|conn| {
+        occasions::table
+            .filter(occasions::post_id.eq(occasion_id))
+            .select(occasions::post_id)
+            .for_update()
+            .first::<i64>(conn)
+            .optional()?;
+        let upserted = upsert_rsvp_impl(request, user, conn);
+        let succeeded = upserted.is_ok();
+        result = Some(upserted);
+        if succeeded {
+            Ok(())
+        } else {
+            Err(RollbackTransaction)
+        }
+    });
+    match (result, transaction_result) {
+        (Some(Ok(rsvp)), Ok(())) => Ok(rsvp),
+        (Some(Err(status)), _) => Err(status),
+        _ => Err(Status::new(Code::Internal, "failed_to_upsert_rsvp")),
+    }
+}
+
+/// The parent `Event`'s RSVP settings (`EventInfo`); unreadable stored `info` reads as all-unset.
+fn event_info(event: &models::Event) -> EventInfo {
+    serde_json::from_value(event.info.clone()).unwrap_or_else(|e| {
+        log::warn!("Unreadable info on event {}: {:?}", event.post_id, e);
+        EventInfo::default()
+    })
+}
+
+/// The `Occasion`'s own RSVP overrides (`OccasionRsvpInfo`), if any.
+fn occasion_rsvp_info(occasion: &models::Occasion) -> Option<OccasionRsvpInfo> {
+    serde_json::from_value::<OccasionInfo>(occasion.info.clone())
+        .map_err(|e| log::warn!("Unreadable info on occasion {}: {:?}", occasion.post_id, e))
+        .ok()
+        .and_then(|info| info.rsvp_info)
+}
+
+/// Whether RSVPs, and anonymous RSVPs, are on for the `Occasion`: its own override if set, else the
+/// `Event`'s setting, else off -- the same resolution as the Elm client's `Rsvps.rsvpsAllowed`.
+fn rsvps_allowed(event: &EventInfo, occasion: &Option<OccasionRsvpInfo>) -> (bool, bool) {
+    let allows = occasion
+        .as_ref()
+        .and_then(|o| o.allows_rsvps)
+        .or(event.allows_rsvps)
+        .unwrap_or(false);
+    let allows_anonymous = occasion
+        .as_ref()
+        .and_then(|o| o.allows_anonymous_rsvps)
+        .or(event.allows_anonymous_rsvps)
+        .unwrap_or(false);
+    (allows, allows && allows_anonymous)
+}
+
+/// The attendee limit that applies to an `Occasion`: its own `OccasionRsvpInfo.max_attendees`
+/// override if set, else the parent `Event`'s `EventInfo.max_attendees`. `None` means unlimited.
+fn max_attendees(event: &EventInfo, occasion: &Option<OccasionRsvpInfo>) -> Option<u32> {
+    occasion
+        .as_ref()
+        .and_then(|o| o.max_attendees)
+        .or(event.max_attendees)
+}
+
+/// Whether an RSVP with this stored `status`/`moderation` counts against the attendee limit:
+/// `GOING` and passing moderation (so pending/rejected RSVPs never use up capacity).
+fn counts_toward_limit(status: &str, moderation: &str) -> bool {
+    status == RsvpStatus::Going.to_string_rsvp_status()
+        && PASSING_MODERATIONS.iter().any(|&m| m == moderation)
+}
+
+/// Fails with `attendee_limit_reached` if adding an RSVP of `guests` to the `Occasion` would put
+/// its counted attendees over the limit. `excluding_rsvp_id` leaves out the RSVP being updated.
+fn check_attendee_limit(
+    limit: Option<u32>,
+    occasion_id: i64,
+    excluding_rsvp_id: Option<i64>,
+    guests: i64,
+    conn: &mut PgPooledConnection,
+) -> Result<(), Status> {
+    let Some(limit) = limit else {
+        return Ok(());
+    };
+    let mut query = rsvps::table
+        .filter(rsvps::occasion_id.eq(occasion_id))
+        .filter(rsvps::status.eq(RsvpStatus::Going.to_string_rsvp_status()))
+        .filter(rsvps::moderation.eq_any(PASSING_MODERATIONS))
+        .into_boxed();
+    if let Some(id) = excluding_rsvp_id {
+        query = query.filter(rsvps::id.ne(id));
+    }
+    let taken: i64 = query
+        .select(sum(rsvps::number_of_guests))
+        .first::<Option<i64>>(conn)
+        .map_err(|_e| Status::new(Code::Internal, "failed_to_count_attendees"))?
+        .unwrap_or(0);
+    if taken + guests > i64::from(limit) {
+        return Err(Status::new(
+            Code::FailedPrecondition,
+            "attendee_limit_reached",
+        ));
+    }
+    Ok(())
+}
+
+fn upsert_rsvp_impl(
     request: Rsvp,
     user: &Option<&models::User>,
     conn: &mut PgPooledConnection,
@@ -26,7 +144,7 @@ pub fn upsert_rsvp(
         .occasion_id
         .to_db_id_or_err("occasion_id")?;
 
-    let (_event, event_post, _occasion): (
+    let (event, event_post, occasion): (
         models::Event,
         models::Post,
         models::Occasion,
@@ -43,6 +161,8 @@ pub fn upsert_rsvp(
         // .execute(conn)
         .map_err(|_e| Status::new(Code::Internal, "invalid_occasion_id"))?;
 
+    let event_info = event_info(&event);
+    let occasion_rsvp_info = occasion_rsvp_info(&occasion);
     let is_event_owner = user.is_some() && event_post.user_id == user.map(|u| u.id);
     let is_own_rsvp = match &request.attendee {
         Some(rsvp::Attendee::UserAttendee(attendee)) => {
@@ -130,6 +250,7 @@ pub fn upsert_rsvp(
 
     match existing_rsvp {
         Some((mut rsvp, author)) => {
+            let before = rsvp.clone();
             if !is_own_rsvp && !is_event_owner && !is_anonymous {
                 return Err(Status::new(
                     Code::PermissionDenied,
@@ -183,6 +304,21 @@ pub fn upsert_rsvp(
                 rsvp.status = request.status.to_string_rsvp_status();
             }
 
+            // Only an RSVP that newly counts (or grows) is checked, so an unrelated edit (a note)
+            // to an RSVP that's already in doesn't start failing after the limit is lowered.
+            if counts_toward_limit(&rsvp.status, &rsvp.moderation)
+                && (!counts_toward_limit(&before.status, &before.moderation)
+                    || rsvp.number_of_guests > before.number_of_guests)
+            {
+                check_attendee_limit(
+                    max_attendees(&event_info, &occasion_rsvp_info),
+                    occasion_id,
+                    Some(rsvp.id),
+                    i64::from(rsvp.number_of_guests),
+                    conn,
+                )?;
+            }
+
             diesel::update(rsvps::table)
                 .filter(rsvps::id.eq(rsvp.id))
                 .set(rsvp.clone())
@@ -192,6 +328,19 @@ pub fn upsert_rsvp(
             Ok((rsvp, author).to_proto(true, true, lookup.as_ref()))
         }
         None => {
+            // Existing RSVPs can still be changed (e.g. to "not going") after RSVPs are switched
+            // off; only new ones are refused.
+            let (allows_rsvps, allows_anonymous_rsvps) =
+                rsvps_allowed(&event_info, &occasion_rsvp_info);
+            if !allows_rsvps {
+                return Err(Status::new(Code::PermissionDenied, "rsvps_not_allowed"));
+            }
+            if is_anonymous && !allows_anonymous_rsvps {
+                return Err(Status::new(
+                    Code::PermissionDenied,
+                    "anonymous_rsvps_not_allowed",
+                ));
+            }
             let authenticated_user_id = &user.map(|u| u.id);
             let inviting_user_id = match (authenticated_user_id, &attendee_user_id) {
                 (Some(a), Some(b)) if b == a => user.map(|u| u.id),
@@ -212,6 +361,26 @@ pub fn upsert_rsvp(
                 }
                 _ => RsvpStatus::Interested.to_string_rsvp_status(),
             };
+            // Anonymous RSVPs are always moderated; logged-in users' follow the event's default
+            // (`EventInfo.default_rsvp_moderation`), except the event owner's own.
+            let moderation = (if is_anonymous
+                || (!is_event_owner
+                    && event_info.default_rsvp_moderation == Some(Moderation::Pending as i32))
+            {
+                Moderation::Pending
+            } else {
+                Moderation::Unmoderated
+            })
+            .to_string_moderation();
+            if counts_toward_limit(&status, &moderation) {
+                check_attendee_limit(
+                    max_attendees(&event_info, &occasion_rsvp_info),
+                    occasion_id,
+                    None,
+                    i64::from(request.number_of_guests),
+                    conn,
+                )?;
+            }
             let rsvp = diesel::insert_into(rsvps::table)
                 .values(NewRsvp {
                     occasion_id,
@@ -225,12 +394,7 @@ pub fn upsert_rsvp(
                     })?,
                     public_note: request.public_note,
                     private_note: request.private_note,
-                    moderation: (if is_anonymous {
-                        Moderation::Pending
-                    } else {
-                        Moderation::Unmoderated
-                    })
-                    .to_string_moderation(),
+                    moderation,
                 })
                 .get_result::<models::Rsvp>(conn)
                 .map_err(|_e| Status::new(Code::Internal, "failed_to_create_rsvp"))?;

@@ -25,6 +25,7 @@ module Components.Events exposing
     , siblingOccasionWhenText
     , syncOccasion
     , syncSourceView
+    , updateEventDetails
     , updateOccasions
     )
 
@@ -195,6 +196,28 @@ updateOccasions accountsPanelModel maybeAccountServer event =
         maybeAccountServer
         (\server token ->
             Grpc.new Rellm.updateOccasions event
+                |> Grpc.setHost (RellmServers.rellmServerUrl server)
+                |> withAccessToken (Just token)
+                |> Grpc.toTask
+        )
+
+
+{-| Updates only the `Event`'s own top-level details -- `event.info` (RSVP settings, ...) -- and
+those of its `Post` (`UpdateEventDetails`; never touches any `Occasion`). The whole `Event` is
+sent, and its `info` replaces the stored one outright, so callers pass the currently-loaded `Event`
+with just the desired field(s) changed. Owner-or-moderator gated server-side.
+-}
+updateEventDetails :
+    AccountsPanel.Model
+    -> AccountsPanel.MaybeAccountServer
+    -> Event
+    -> Task Grpc.Error ( Maybe AccountsPanel.Msg, Event )
+updateEventDetails accountsPanelModel maybeAccountServer event =
+    AccountsPanel.performWithAccountServer
+        accountsPanelModel
+        maybeAccountServer
+        (\server token ->
+            Grpc.new Rellm.updateEventDetails event
                 |> Grpc.setHost (RellmServers.rellmServerUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask

@@ -5735,19 +5735,19 @@ directory</a> is (<code>{name}</code> denotes a
           <td>allows_rsvps</td>
           <td><a href="#bool">bool</a></td>
           <td>optional</td>
-          <td>Whether to allow RSVPs for the event.</td>
+          <td>Whether to allow RSVPs for the event. New RSVPs are refused (<code>PERMISSION_DENIED</code>, <code>rsvps_not_allowed</code>) unless this is true (or an Occasion overrides it); existing RSVPs can still be updated.</td>
         </tr>
         <tr>
           <td>allows_anonymous_rsvps</td>
           <td><a href="#bool">bool</a></td>
           <td>optional</td>
-          <td>Whether to allow anonymous RSVPs for the event.</td>
+          <td>Whether to allow anonymous RSVPs for the event. No effect unless <code>allows_rsvps</code> is true. New anonymous RSVPs are otherwise refused (<code>PERMISSION_DENIED</code>, <code>anonymous_rsvps_not_allowed</code>).</td>
         </tr>
         <tr>
           <td>max_attendees</td>
           <td><a href="#uint32">uint32</a></td>
           <td>optional</td>
-          <td>Limit the max number of attendees. No effect unless <code>allows_rsvps</code> is true. Not yet supported.</td>
+          <td>Limit the max number of attendees. No effect unless <code>allows_rsvps</code> is true. Enforced by <code>UpsertRsvp</code>: only <code>GOING</code> RSVPs with passing moderation (<code>UNMODERATED</code>/<code>APPROVED</code>) count, by <code>Rsvp.number_of_guests</code>. An RSVP that would exceed the limit - whether new, grown, or being approved by the event owner - fails with <code>FAILED_PRECONDITION</code> (<code>attendee_limit_reached</code>). An Occasion's <code>OccasionRsvpInfo.max_attendees</code> overrides this.</td>
         </tr>
         <tr>
           <td>hide_location_until_rsvp_approved</td>
@@ -5759,7 +5759,7 @@ directory</a> is (<code>{name}</code> denotes a
           <td>default_rsvp_moderation</td>
           <td><a href="#rellm-Moderation">Moderation</a></td>
           <td>optional</td>
-          <td>Default moderation for RSVPs from logged-in users (either <code>PENDING</code> or <code>APPROVED</code>). Anonymous RSVPs are always moderated (default to <code>PENDING</code>).</td>
+          <td>Default moderation for new RSVPs from logged-in users other than the event owner (either <code>PENDING</code> or <code>APPROVED</code>). Anonymous RSVPs are always moderated (default to <code>PENDING</code>).</td>
         </tr>
       </tbody>
     </table>
@@ -6055,7 +6055,7 @@ directory</a> is (<code>{name}</code> denotes a
           <td>max_attendees</td>
           <td><a href="#uint32">uint32</a></td>
           <td>optional</td>
-          <td>Overrides <code>EventInfo.max_attendees</code>, if set, for this Occasion. Not yet supported.</td>
+          <td>Overrides <code>EventInfo.max_attendees</code>, if set, for this Occasion. Enforced the same way - see there.</td>
         </tr>
         <tr>
           <td>going_rsvps</td>

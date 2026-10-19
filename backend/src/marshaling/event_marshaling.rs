@@ -179,9 +179,10 @@ impl ToProtoMarshalableOccasion for MarshalableOccasion {
             post: Some(marshalable_post.to_proto(media_lookup, None, sync_source_lookup)),
             starts_at: Some(occasion.starts_at.to_proto()),
             ends_at: Some(occasion.ends_at.to_proto()),
-            info: Some(OccasionInfo {
-                ..Default::default()
-            }),
+            info: Some(serde_json::from_value(occasion.info).unwrap_or_else(|e| {
+                log::warn!("Unreadable info on occasion {}: {:?}", occasion.post_id, e);
+                OccasionInfo::default()
+            })),
             location,
             timezone: occasion.timezone,
             sync_destinations,
