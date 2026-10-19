@@ -41,6 +41,11 @@ fn facebook_auth_request(
             .as_ref()
             .map(|f| f.mastodon_servers.clone())
             .unwrap_or_default(),
+        bluesky_servers: config
+            .federation_info
+            .as_ref()
+            .map(|f| f.bluesky_servers.clone())
+            .unwrap_or_default(),
         unsecure_localhost_federated_auth_enabled: config
             .federation_info
             .as_ref()
@@ -124,6 +129,7 @@ fn setting_facebook_auth_config_to_none_clears_the_stored_secret() {
             servers: f.servers,
             facebook_auth_config: None,
             mastodon_servers: f.mastodon_servers,
+            bluesky_servers: f.bluesky_servers,
             unsecure_localhost_federated_auth_enabled: f.unsecure_localhost_federated_auth_enabled,
             x_twitter_auth_config: f.x_twitter_auth_config,
         });
@@ -154,6 +160,11 @@ fn x_twitter_auth_request(
             .federation_info
             .as_ref()
             .map(|f| f.mastodon_servers.clone())
+            .unwrap_or_default(),
+        bluesky_servers: config
+            .federation_info
+            .as_ref()
+            .map(|f| f.bluesky_servers.clone())
             .unwrap_or_default(),
         unsecure_localhost_federated_auth_enabled: config
             .federation_info
@@ -241,6 +252,7 @@ fn setting_x_twitter_auth_config_to_none_clears_the_stored_secret() {
             servers: f.servers,
             facebook_auth_config: f.facebook_auth_config,
             mastodon_servers: f.mastodon_servers,
+            bluesky_servers: f.bluesky_servers,
             unsecure_localhost_federated_auth_enabled: f.unsecure_localhost_federated_auth_enabled,
             x_twitter_auth_config: None,
         });

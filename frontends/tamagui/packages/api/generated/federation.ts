@@ -62,6 +62,14 @@ export interface FederationInfo {
    * across every client on this server rather than each one self-registering its own.)
    */
   mastodonServers: MastodonServer[];
+  /**
+   * Bluesky/AT Protocol AppViews clients may read public posts from without any account - see
+   * [`BlueskyServer`](#rellm-BlueskyServer). Unlike `mastodon_servers`, there are no secrets here: AT
+   * Protocol has no per-client app registration, so this list is purely a "which AppViews should
+   * clients browse by default" recommendation, mirroring `servers`' `configured_by_default`/
+   * `pinned_by_default`.
+   */
+  blueskyServers: BlueskyServer[];
 }
 
 /** A server that this server will federate with. */
@@ -148,6 +156,34 @@ export interface MastodonServer {
   pinnedByDefault?: boolean | undefined;
 }
 
+/**
+ * A Bluesky/AT Protocol AppView clients may read public posts from anonymously. See `FederationInfo.bluesky_servers`.
+ *
+ * AT Protocol splits "a server" into several roles: a Personal Data Server (PDS) stores an account's
+ * data and handles its login, while an AppView serves the read side (feeds, threads, profiles). Every
+ * AppView indexes the same global network, so an anonymous "Bluesky server" in Rellm's UI is really an
+ * AppView - the public one run by Bluesky PBC is `public.api.bsky.app`, which allows unauthenticated
+ * reads (with CORS) of public data. A connected *account* is separate: it logs in at its own PDS
+ * (not necessarily `bsky.social`), which proxies reads to an AppView on the account's behalf.
+ */
+export interface BlueskyServer {
+  /** The AppView's API hostname, e.g. "public.api.bsky.app" (shown to users as "bsky.app"). */
+  host: string;
+  /**
+   * Indicates to UI clients that they should add the indicated AppView to the user's browsed Bluesky
+   * sources by default (switched off unless also `pinned_by_default`).
+   */
+  configuredByDefault?:
+    | boolean
+    | undefined;
+  /**
+   * Indicates to UI clients that they should add *and enable* the indicated AppView by default
+   * (showing its public feed alongside the "main" server). Only one Bluesky source (an AppView or
+   * a connected account) is shown at a time, so clients should ignore all but the first of these.
+   */
+  pinnedByDefault?: boolean | undefined;
+}
+
 function createBaseGetServiceVersionResponse(): GetServiceVersionResponse {
   return { version: "" };
 }
@@ -213,6 +249,7 @@ function createBaseFederationInfo(): FederationInfo {
     facebookAuthConfig: undefined,
     xTwitterAuthConfig: undefined,
     mastodonServers: [],
+    blueskyServers: [],
   };
 }
 
@@ -232,6 +269,9 @@ export const FederationInfo: MessageFns<FederationInfo> = {
     }
     for (const v of message.mastodonServers) {
       MastodonServer.encode(v!, writer.uint32(34).fork()).join();
+    }
+    for (const v of message.blueskyServers) {
+      BlueskyServer.encode(v!, writer.uint32(50).fork()).join();
     }
     return writer;
   },
@@ -283,6 +323,14 @@ export const FederationInfo: MessageFns<FederationInfo> = {
           message.mastodonServers.push(MastodonServer.decode(reader, reader.uint32()));
           continue;
         }
+        case 6: {
+          if (tag !== 50) {
+            break;
+          }
+
+          message.blueskyServers.push(BlueskyServer.decode(reader, reader.uint32()));
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -309,6 +357,9 @@ export const FederationInfo: MessageFns<FederationInfo> = {
       mastodonServers: globalThis.Array.isArray(object?.mastodonServers)
         ? object.mastodonServers.map((e: any) => MastodonServer.fromJSON(e))
         : [],
+      blueskyServers: globalThis.Array.isArray(object?.blueskyServers)
+        ? object.blueskyServers.map((e: any) => BlueskyServer.fromJSON(e))
+        : [],
     };
   },
 
@@ -329,6 +380,9 @@ export const FederationInfo: MessageFns<FederationInfo> = {
     if (message.mastodonServers?.length) {
       obj.mastodonServers = message.mastodonServers.map((e) => MastodonServer.toJSON(e));
     }
+    if (message.blueskyServers?.length) {
+      obj.blueskyServers = message.blueskyServers.map((e) => BlueskyServer.toJSON(e));
+    }
     return obj;
   },
 
@@ -346,6 +400,7 @@ export const FederationInfo: MessageFns<FederationInfo> = {
       ? XTwitterAuthConfig.fromPartial(object.xTwitterAuthConfig)
       : undefined;
     message.mastodonServers = object.mastodonServers?.map((e) => MastodonServer.fromPartial(e)) || [];
+    message.blueskyServers = object.blueskyServers?.map((e) => BlueskyServer.fromPartial(e)) || [];
     return message;
   },
 };
@@ -792,6 +847,100 @@ export const MastodonServer: MessageFns<MastodonServer> = {
     message.domain = object.domain ?? "";
     message.appId = object.appId ?? "";
     message.appSecret = object.appSecret ?? "";
+    message.configuredByDefault = object.configuredByDefault ?? undefined;
+    message.pinnedByDefault = object.pinnedByDefault ?? undefined;
+    return message;
+  },
+};
+
+function createBaseBlueskyServer(): BlueskyServer {
+  return { host: "", configuredByDefault: undefined, pinnedByDefault: undefined };
+}
+
+export const BlueskyServer: MessageFns<BlueskyServer> = {
+  encode(message: BlueskyServer, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.host !== "") {
+      writer.uint32(10).string(message.host);
+    }
+    if (message.configuredByDefault !== undefined) {
+      writer.uint32(16).bool(message.configuredByDefault);
+    }
+    if (message.pinnedByDefault !== undefined) {
+      writer.uint32(24).bool(message.pinnedByDefault);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): BlueskyServer {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseBlueskyServer();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.host = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.configuredByDefault = reader.bool();
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.pinnedByDefault = reader.bool();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): BlueskyServer {
+    return {
+      host: isSet(object.host) ? globalThis.String(object.host) : "",
+      configuredByDefault: isSet(object.configuredByDefault)
+        ? globalThis.Boolean(object.configuredByDefault)
+        : undefined,
+      pinnedByDefault: isSet(object.pinnedByDefault) ? globalThis.Boolean(object.pinnedByDefault) : undefined,
+    };
+  },
+
+  toJSON(message: BlueskyServer): unknown {
+    const obj: any = {};
+    if (message.host !== "") {
+      obj.host = message.host;
+    }
+    if (message.configuredByDefault !== undefined) {
+      obj.configuredByDefault = message.configuredByDefault;
+    }
+    if (message.pinnedByDefault !== undefined) {
+      obj.pinnedByDefault = message.pinnedByDefault;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<BlueskyServer>, I>>(base?: I): BlueskyServer {
+    return BlueskyServer.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<BlueskyServer>, I>>(object: I): BlueskyServer {
+    const message = createBaseBlueskyServer();
+    message.host = object.host ?? "";
     message.configuredByDefault = object.configuredByDefault ?? undefined;
     message.pinnedByDefault = object.pinnedByDefault ?? undefined;
     return message;

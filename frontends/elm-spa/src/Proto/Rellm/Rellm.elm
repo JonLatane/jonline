@@ -62,15 +62,22 @@ To run it, add a dependency via `elm install` on [`elm-protocol-buffers`](https:
  two.
 
  ##### BlueSky/AT Protocol
- Unlike Mastodon, AT Protocol has no "local instance timeline" concept at all - every Personal
- Data Server (PDS) only ever serves its own users' own repos, so there is nothing equivalent to
- browse anonymously. Cross-protocol federation with Bluesky therefore always requires a connected
- account: a handle and an [App Password](https://bsky.app/settings/app-passwords) (not OAuth --
- AT Protocol has no per-client app-registration step the way Mastodon/Facebook/X require), used to
- call `com.atproto.server.createSession` and then the account's own
- `app.bsky.feed.getTimeline`. Because there's no server-side app to register, there is no
- `BlueskyServer` config type mirroring [`MastodonServer`](#rellm-MastodonServer) - nothing about
- connecting a Bluesky account is admin-configurable the way a Mastodon OAuth app is.
+ AT Protocol splits "a server" into roles: a Personal Data Server (PDS) hosts an account's data and
+ handles its login, while an AppView serves the read side (feeds, threads, profiles) for the whole
+ network. Like Mastodon's public timelines, a client can browse public Bluesky data with no account
+ at all by reading from an AppView such as `public.api.bsky.app` (unauthenticated, CORS-enabled) - an
+ admin can recommend one via [`BlueskyServer`](#rellm-BlueskyServer) (`FederationInfo.bluesky_servers`).
+ What an anonymous reader can't get is anything personalized, like a home timeline.
+
+ Connecting a Bluesky *account* additionally unlocks that: a handle and an
+ [App Password](https://bsky.app/settings/app-passwords) (not OAuth -- AT Protocol has no per-client
+ app-registration step the way Mastodon/Facebook/X require), used to call
+ `com.atproto.server.createSession` on the account's *own* PDS (found by resolving the handle to a DID
+ and reading the DID document's `#atproto_pds` service - it isn't necessarily `bsky.social`) and then
+ the account's own `app.bsky.feed.getTimeline`. Because there's no server-side app to register,
+ nothing about connecting an account is admin-configurable the way a Mastodon OAuth app is. Clients
+ show at most one Bluesky source at a time (an AppView *or* an account), since both read the same
+ global network.
 
  ### API Design Notes
  #### Moderation and Visibility

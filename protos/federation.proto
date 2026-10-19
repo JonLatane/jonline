@@ -45,6 +45,13 @@ message FederationInfo {
   // covers the admin-pre-registered path, which is what lets an app ID be shown/reused consistently
   // across every client on this server rather than each one self-registering its own.)
   repeated MastodonServer mastodon_servers = 4;
+
+  // Bluesky/AT Protocol AppViews clients may read public posts from without any account - see
+  // [`BlueskyServer`](#rellm-BlueskyServer). Unlike `mastodon_servers`, there are no secrets here: AT
+  // Protocol has no per-client app registration, so this list is purely a "which AppViews should
+  // clients browse by default" recommendation, mirroring `servers`' `configured_by_default`/
+  // `pinned_by_default`.
+  repeated BlueskyServer bluesky_servers = 6;
 }
 
 // A server that this server will federate with.
@@ -109,4 +116,24 @@ message MastodonServer {
   // to mean *in addition to* `configured_by_default`. Kept as its own field for symmetry with
   // `FederatedServer`, and in case that changes.
   optional bool pinned_by_default = 5;
+}
+
+// A Bluesky/AT Protocol AppView clients may read public posts from anonymously. See `FederationInfo.bluesky_servers`.
+//
+// AT Protocol splits "a server" into several roles: a Personal Data Server (PDS) stores an account's
+// data and handles its login, while an AppView serves the read side (feeds, threads, profiles). Every
+// AppView indexes the same global network, so an anonymous "Bluesky server" in Rellm's UI is really an
+// AppView - the public one run by Bluesky PBC is `public.api.bsky.app`, which allows unauthenticated
+// reads (with CORS) of public data. A connected *account* is separate: it logs in at its own PDS
+// (not necessarily `bsky.social`), which proxies reads to an AppView on the account's behalf.
+message BlueskyServer {
+  // The AppView's API hostname, e.g. "public.api.bsky.app" (shown to users as "bsky.app").
+  string host = 1;
+  // Indicates to UI clients that they should add the indicated AppView to the user's browsed Bluesky
+  // sources by default (switched off unless also `pinned_by_default`).
+  optional bool configured_by_default = 2;
+  // Indicates to UI clients that they should add *and enable* the indicated AppView by default
+  // (showing its public feed alongside the "main" server). Only one Bluesky source (an AppView or
+  // a connected account) is shown at a time, so clients should ignore all but the first of these.
+  optional bool pinned_by_default = 3;
 }

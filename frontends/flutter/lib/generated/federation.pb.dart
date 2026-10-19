@@ -74,6 +74,7 @@ class FederationInfo extends $pb.GeneratedMessage {
     XTwitterAuthConfig? xTwitterAuthConfig,
     $core.Iterable<MastodonServer>? mastodonServers,
     $core.bool? unsecureLocalhostFederatedAuthEnabled,
+    $core.Iterable<BlueskyServer>? blueskyServers,
   }) {
     final $result = create();
     if (servers != null) {
@@ -91,6 +92,9 @@ class FederationInfo extends $pb.GeneratedMessage {
     if (unsecureLocalhostFederatedAuthEnabled != null) {
       $result.unsecureLocalhostFederatedAuthEnabled = unsecureLocalhostFederatedAuthEnabled;
     }
+    if (blueskyServers != null) {
+      $result.blueskyServers.addAll(blueskyServers);
+    }
     return $result;
   }
   FederationInfo._() : super();
@@ -103,6 +107,7 @@ class FederationInfo extends $pb.GeneratedMessage {
     ..aOM<XTwitterAuthConfig>(3, _omitFieldNames ? '' : 'xTwitterAuthConfig', subBuilder: XTwitterAuthConfig.create)
     ..pc<MastodonServer>(4, _omitFieldNames ? '' : 'mastodonServers', $pb.PbFieldType.PM, subBuilder: MastodonServer.create)
     ..aOB(5, _omitFieldNames ? '' : 'unsecureLocalhostFederatedAuthEnabled')
+    ..pc<BlueskyServer>(6, _omitFieldNames ? '' : 'blueskyServers', $pb.PbFieldType.PM, subBuilder: BlueskyServer.create)
     ..hasRequiredFields = false
   ;
 
@@ -188,6 +193,14 @@ class FederationInfo extends $pb.GeneratedMessage {
   $core.bool hasUnsecureLocalhostFederatedAuthEnabled() => $_has(4);
   @$pb.TagNumber(5)
   void clearUnsecureLocalhostFederatedAuthEnabled() => clearField(5);
+
+  /// Bluesky/AT Protocol AppViews clients may read public posts from without any account - see
+  /// [`BlueskyServer`](#rellm-BlueskyServer). Unlike `mastodon_servers`, there are no secrets here: AT
+  /// Protocol has no per-client app registration, so this list is purely a "which AppViews should
+  /// clients browse by default" recommendation, mirroring `servers`' `configured_by_default`/
+  /// `pinned_by_default`.
+  @$pb.TagNumber(6)
+  $core.List<BlueskyServer> get blueskyServers => $_getList(5);
 }
 
 /// A server that this server will federate with.
@@ -599,6 +612,98 @@ class MastodonServer extends $pb.GeneratedMessage {
   $core.bool hasPinnedByDefault() => $_has(4);
   @$pb.TagNumber(5)
   void clearPinnedByDefault() => clearField(5);
+}
+
+///  A Bluesky/AT Protocol AppView clients may read public posts from anonymously. See `FederationInfo.bluesky_servers`.
+///
+///  AT Protocol splits "a server" into several roles: a Personal Data Server (PDS) stores an account's
+///  data and handles its login, while an AppView serves the read side (feeds, threads, profiles). Every
+///  AppView indexes the same global network, so an anonymous "Bluesky server" in Rellm's UI is really an
+///  AppView - the public one run by Bluesky PBC is `public.api.bsky.app`, which allows unauthenticated
+///  reads (with CORS) of public data. A connected *account* is separate: it logs in at its own PDS
+///  (not necessarily `bsky.social`), which proxies reads to an AppView on the account's behalf.
+class BlueskyServer extends $pb.GeneratedMessage {
+  factory BlueskyServer({
+    $core.String? host,
+    $core.bool? configuredByDefault,
+    $core.bool? pinnedByDefault,
+  }) {
+    final $result = create();
+    if (host != null) {
+      $result.host = host;
+    }
+    if (configuredByDefault != null) {
+      $result.configuredByDefault = configuredByDefault;
+    }
+    if (pinnedByDefault != null) {
+      $result.pinnedByDefault = pinnedByDefault;
+    }
+    return $result;
+  }
+  BlueskyServer._() : super();
+  factory BlueskyServer.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory BlueskyServer.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'BlueskyServer', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'host')
+    ..aOB(2, _omitFieldNames ? '' : 'configuredByDefault')
+    ..aOB(3, _omitFieldNames ? '' : 'pinnedByDefault')
+    ..hasRequiredFields = false
+  ;
+
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  BlueskyServer clone() => BlueskyServer()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  BlueskyServer copyWith(void Function(BlueskyServer) updates) => super.copyWith((message) => updates(message as BlueskyServer)) as BlueskyServer;
+
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static BlueskyServer create() => BlueskyServer._();
+  BlueskyServer createEmptyInstance() => create();
+  static $pb.PbList<BlueskyServer> createRepeated() => $pb.PbList<BlueskyServer>();
+  @$core.pragma('dart2js:noInline')
+  static BlueskyServer getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<BlueskyServer>(create);
+  static BlueskyServer? _defaultInstance;
+
+  /// The AppView's API hostname, e.g. "public.api.bsky.app" (shown to users as "bsky.app").
+  @$pb.TagNumber(1)
+  $core.String get host => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set host($core.String v) { $_setString(0, v); }
+  @$pb.TagNumber(1)
+  $core.bool hasHost() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearHost() => clearField(1);
+
+  /// Indicates to UI clients that they should add the indicated AppView to the user's browsed Bluesky
+  /// sources by default (switched off unless also `pinned_by_default`).
+  @$pb.TagNumber(2)
+  $core.bool get configuredByDefault => $_getBF(1);
+  @$pb.TagNumber(2)
+  set configuredByDefault($core.bool v) { $_setBool(1, v); }
+  @$pb.TagNumber(2)
+  $core.bool hasConfiguredByDefault() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearConfiguredByDefault() => clearField(2);
+
+  /// Indicates to UI clients that they should add *and enable* the indicated AppView by default
+  /// (showing its public feed alongside the "main" server). Only one Bluesky source (an AppView or
+  /// a connected account) is shown at a time, so clients should ignore all but the first of these.
+  @$pb.TagNumber(3)
+  $core.bool get pinnedByDefault => $_getBF(2);
+  @$pb.TagNumber(3)
+  set pinnedByDefault($core.bool v) { $_setBool(2, v); }
+  @$pb.TagNumber(3)
+  $core.bool hasPinnedByDefault() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearPinnedByDefault() => clearField(3);
 }
 
 
