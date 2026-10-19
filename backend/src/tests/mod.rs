@@ -23,6 +23,7 @@ mod delete_post_tests;
 mod delete_user_tests;
 mod occasion_rpc_tests;
 mod rsvp_attendee_limit_tests;
+mod spa_path_tests;
 mod sync_source_rpc_tests;
 mod event_sync_tests;
 mod facebook_sync_tests;
