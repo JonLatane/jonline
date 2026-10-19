@@ -237,7 +237,7 @@ federatedPostView shared instanceHost sensitiveMediaRevealed sensitive post =
 
             , case post.quotedPost of
                 Just quoted ->
-                    Posts.quotedPostCard shared.time shared.basePath shared.accounts.mainFrontendHost host shared.mediaRenderer MediaPlayClicked (Just ThreadMediaClicked) (unwrapPost quoted)
+                    Posts.quotedPostCard shared.time shared.basePath shared.accounts.mainFrontendHost host Nothing Nothing shared.mediaRenderer MediaPlayClicked (Just ThreadMediaClicked) (unwrapPost quoted)
 
                 Nothing ->
                     text ""

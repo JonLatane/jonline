@@ -17,6 +17,7 @@ use crate::{
     web::RocketState,
 };
 
+use super::short_url_preview::{is_short_url_segment, short_url_summary};
 use super::spa_path::SpaPath;
 use super::{
     rellm_path, root_app, spa_prefix, spa_web_path, strip_spa_prefix, RellmResponder,
@@ -118,6 +119,15 @@ pub async fn spa_file_or_username_or_custom_tab(
                             .custom_tabs
                             .as_ref()
                             .and_then(|set| set.tabs.iter().find(|t| t.path == path_segment));
+
+                        // A short Post/Event URL (`/~id`) isn't a username or a custom tab: preview what it
+                        // points at (see `short_url_preview`), not a "Profile".
+                        if matched_tab.is_none() && is_short_url_segment(&path_segment) {
+                            let summary =
+                                short_url_summary(&path_segment, &configuration, &mut connection)
+                                    .await;
+                            return spa_web_path(app, "[username].html", summary, is_tamagui).await;
+                        }
 
                         let (page_title, description, avatar) = match matched_tab
                             .and_then(|ct| ct.target.as_ref())

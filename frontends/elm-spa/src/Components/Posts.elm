@@ -814,7 +814,7 @@ postCardView time basePath viewingServerHost postServerHost maybeServer maybeAcc
         , quoteView
         , case post.quotedPost of
             Just quoted ->
-                quotedPostCard time basePath viewingServerHost postServerHost mediaPlayState onMediaPlayClicked Nothing (unwrapPost quoted)
+                quotedPostCard time basePath viewingServerHost postServerHost Nothing Nothing mediaPlayState onMediaPlayClicked Nothing (unwrapPost quoted)
 
             Nothing ->
                 text ""
@@ -869,8 +869,8 @@ media (a post's own page), rendering small media previews like a card does. Ever
 whose own `onMediaClicked` is for the quoting post's media, not this one's) it's `Nothing`, and attached
 media is just noted -- the whole quote is one link to the page that shows it.
 -}
-quotedPostCard : SharedTime.Model -> String -> String -> String -> MediaRenderer.Model -> (String -> msg) -> Maybe (Post -> String -> msg) -> Post -> Html msg
-quotedPostCard time basePath viewingServerHost postServerHost mediaPlayState onMediaPlayClicked maybeOnMediaClicked quoted =
+quotedPostCard : SharedTime.Model -> String -> String -> String -> Maybe RellmServer -> Maybe RellmAccount -> MediaRenderer.Model -> (String -> msg) -> Maybe (Post -> String -> msg) -> Post -> Html msg
+quotedPostCard time basePath viewingServerHost postServerHost maybeServer maybeAccount mediaPlayState onMediaPlayClicked maybeOnMediaClicked quoted =
     div [ classes [ "post-card-quote", "border-color-primary-anchor-50" ] ]
         [ a
             [ href (quotedHref basePath viewingServerHost postServerHost quoted)
@@ -893,9 +893,21 @@ quotedPostCard time basePath viewingServerHost postServerHost mediaPlayState onM
             div [ class "post-card-sensitive-media-notice" ] [ text "This post contains sensitive media. Click to view." ]
 
           else
-            case ( maybeOnMediaClicked, mediaServer Nothing postServerHost ) of
+            case ( maybeOnMediaClicked, mediaServer maybeServer postServerHost ) of
                 ( Just onMediaClicked, Just server ) ->
-                    MultiMediaRenderer.previewExtraSmall server Nothing mediaPlayState onMediaPlayClicked (onMediaClicked quoted) quoted.media
+                    MultiMediaRenderer.previewExtraSmall server maybeAccount mediaPlayState onMediaPlayClicked (onMediaClicked quoted) quoted.media
+
+                ( Nothing, Just server ) ->
+                    -- A card: the media shows, but the whole quote is one link to the quoted post's page (which is
+                    -- where it can be opened full-size), so a tap on it must land on that link -- `.post-card-quote-media`
+                    -- makes the previews inert. (`onMediaPlayClicked` stands in for the image-tap message, which
+                    -- therefore can't fire.)
+                    if List.isEmpty quoted.media then
+                        text ""
+
+                    else
+                        div [ class "post-card-quote-media" ]
+                            [ MultiMediaRenderer.previewExtraSmall server maybeAccount mediaPlayState onMediaPlayClicked onMediaPlayClicked quoted.media ]
 
                 _ ->
                     if List.isEmpty quoted.media then
@@ -921,7 +933,7 @@ quotedPostCard time basePath viewingServerHost postServerHost mediaPlayState onM
                 text ""
         , case quoted.quotedPost of
             Just nested ->
-                quotedPostCard time basePath viewingServerHost postServerHost mediaPlayState onMediaPlayClicked maybeOnMediaClicked (unwrapPost nested)
+                quotedPostCard time basePath viewingServerHost postServerHost maybeServer maybeAccount mediaPlayState onMediaPlayClicked maybeOnMediaClicked (unwrapPost nested)
 
             Nothing ->
                 text ""
@@ -1261,7 +1273,7 @@ postDetail time basePath viewingServerHost postServerHost maybeServer maybeAccou
         , quoteView
         , case post.quotedPost of
             Just quoted ->
-                quotedPostCard time basePath viewingServerHost postServerHost mediaPlayState onMediaPlayClicked Nothing (unwrapPost quoted)
+                quotedPostCard time basePath viewingServerHost postServerHost Nothing Nothing mediaPlayState onMediaPlayClicked Nothing (unwrapPost quoted)
 
             Nothing ->
                 text ""
