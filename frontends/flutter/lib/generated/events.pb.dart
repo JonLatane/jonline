@@ -685,7 +685,8 @@ class EventInfo extends $pb.GeneratedMessage {
   static EventInfo getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<EventInfo>(create);
   static EventInfo? _defaultInstance;
 
-  /// Whether to allow RSVPs for the event.
+  /// Whether to allow RSVPs for the event. New RSVPs are refused (`PERMISSION_DENIED`, `rsvps_not_allowed`) unless this is true
+  /// (or an Occasion overrides it); existing RSVPs can still be updated.
   @$pb.TagNumber(1)
   $core.bool get allowsRsvps => $_getBF(0);
   @$pb.TagNumber(1)
@@ -695,7 +696,8 @@ class EventInfo extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   void clearAllowsRsvps() => clearField(1);
 
-  /// Whether to allow anonymous RSVPs for the event.
+  /// Whether to allow anonymous RSVPs for the event. No effect unless `allows_rsvps` is true.
+  /// New anonymous RSVPs are otherwise refused (`PERMISSION_DENIED`, `anonymous_rsvps_not_allowed`).
   @$pb.TagNumber(2)
   $core.bool get allowsAnonymousRsvps => $_getBF(1);
   @$pb.TagNumber(2)
@@ -705,7 +707,10 @@ class EventInfo extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   void clearAllowsAnonymousRsvps() => clearField(2);
 
-  /// Limit the max number of attendees. No effect unless `allows_rsvps` is true. Not yet supported.
+  /// Limit the max number of attendees. No effect unless `allows_rsvps` is true. Enforced by `UpsertRsvp`: only `GOING` RSVPs
+  /// with passing moderation (`UNMODERATED`/`APPROVED`) count, by `Rsvp.number_of_guests`. An RSVP that would exceed the limit -
+  /// whether new, grown, or being approved by the event owner - fails with `FAILED_PRECONDITION` (`attendee_limit_reached`).
+  /// An Occasion's `OccasionRsvpInfo.max_attendees` overrides this.
   @$pb.TagNumber(3)
   $core.int get maxAttendees => $_getIZ(2);
   @$pb.TagNumber(3)
@@ -728,7 +733,7 @@ class EventInfo extends $pb.GeneratedMessage {
   @$pb.TagNumber(4)
   void clearHideLocationUntilRsvpApproved() => clearField(4);
 
-  /// Default moderation for RSVPs from logged-in users (either `PENDING` or `APPROVED`).
+  /// Default moderation for new RSVPs from logged-in users other than the event owner (either `PENDING` or `APPROVED`).
   /// Anonymous RSVPs are always moderated (default to `PENDING`).
   @$pb.TagNumber(5)
   $14.Moderation get defaultRsvpModeration => $_getN(4);
@@ -1114,7 +1119,7 @@ class OccasionRsvpInfo extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   void clearAllowsAnonymousRsvps() => clearField(2);
 
-  /// Overrides `EventInfo.max_attendees`, if set, for this Occasion. Not yet supported.
+  /// Overrides `EventInfo.max_attendees`, if set, for this Occasion. Enforced the same way - see there.
   @$pb.TagNumber(3)
   $core.int get maxAttendees => $_getIZ(2);
   @$pb.TagNumber(3)

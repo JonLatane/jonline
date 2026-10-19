@@ -46,18 +46,45 @@ pub fn upsert_rsvp(
     }
 }
 
-/// The attendee limit that applies to an `Occasion`: its own `OccasionRsvpInfo.max_attendees`
-/// override if set, else the parent `Event`'s `EventInfo.max_attendees`. `None` means unlimited.
-fn max_attendees(event: &models::Event, occasion: &models::Occasion) -> Option<u32> {
+/// The parent `Event`'s RSVP settings (`EventInfo`); unreadable stored `info` reads as all-unset.
+fn event_info(event: &models::Event) -> EventInfo {
+    serde_json::from_value(event.info.clone()).unwrap_or_else(|e| {
+        log::warn!("Unreadable info on event {}: {:?}", event.post_id, e);
+        EventInfo::default()
+    })
+}
+
+/// The `Occasion`'s own RSVP overrides (`OccasionRsvpInfo`), if any.
+fn occasion_rsvp_info(occasion: &models::Occasion) -> Option<OccasionRsvpInfo> {
     serde_json::from_value::<OccasionInfo>(occasion.info.clone())
+        .map_err(|e| log::warn!("Unreadable info on occasion {}: {:?}", occasion.post_id, e))
         .ok()
         .and_then(|info| info.rsvp_info)
-        .and_then(|rsvp_info| rsvp_info.max_attendees)
-        .or_else(|| {
-            serde_json::from_value::<EventInfo>(event.info.clone())
-                .ok()
-                .and_then(|info| info.max_attendees)
-        })
+}
+
+/// Whether RSVPs, and anonymous RSVPs, are on for the `Occasion`: its own override if set, else the
+/// `Event`'s setting, else off -- the same resolution as the Elm client's `Rsvps.rsvpsAllowed`.
+fn rsvps_allowed(event: &EventInfo, occasion: &Option<OccasionRsvpInfo>) -> (bool, bool) {
+    let allows = occasion
+        .as_ref()
+        .and_then(|o| o.allows_rsvps)
+        .or(event.allows_rsvps)
+        .unwrap_or(false);
+    let allows_anonymous = occasion
+        .as_ref()
+        .and_then(|o| o.allows_anonymous_rsvps)
+        .or(event.allows_anonymous_rsvps)
+        .unwrap_or(false);
+    (allows, allows && allows_anonymous)
+}
+
+/// The attendee limit that applies to an `Occasion`: its own `OccasionRsvpInfo.max_attendees`
+/// override if set, else the parent `Event`'s `EventInfo.max_attendees`. `None` means unlimited.
+fn max_attendees(event: &EventInfo, occasion: &Option<OccasionRsvpInfo>) -> Option<u32> {
+    occasion
+        .as_ref()
+        .and_then(|o| o.max_attendees)
+        .or(event.max_attendees)
 }
 
 /// Whether an RSVP with this stored `status`/`moderation` counts against the attendee limit:
@@ -134,6 +161,8 @@ fn upsert_rsvp_impl(
         // .execute(conn)
         .map_err(|_e| Status::new(Code::Internal, "invalid_occasion_id"))?;
 
+    let event_info = event_info(&event);
+    let occasion_rsvp_info = occasion_rsvp_info(&occasion);
     let is_event_owner = user.is_some() && event_post.user_id == user.map(|u| u.id);
     let is_own_rsvp = match &request.attendee {
         Some(rsvp::Attendee::UserAttendee(attendee)) => {
@@ -282,7 +311,7 @@ fn upsert_rsvp_impl(
                     || rsvp.number_of_guests > before.number_of_guests)
             {
                 check_attendee_limit(
-                    max_attendees(&event, &occasion),
+                    max_attendees(&event_info, &occasion_rsvp_info),
                     occasion_id,
                     Some(rsvp.id),
                     i64::from(rsvp.number_of_guests),
@@ -299,6 +328,19 @@ fn upsert_rsvp_impl(
             Ok((rsvp, author).to_proto(true, true, lookup.as_ref()))
         }
         None => {
+            // Existing RSVPs can still be changed (e.g. to "not going") after RSVPs are switched
+            // off; only new ones are refused.
+            let (allows_rsvps, allows_anonymous_rsvps) =
+                rsvps_allowed(&event_info, &occasion_rsvp_info);
+            if !allows_rsvps {
+                return Err(Status::new(Code::PermissionDenied, "rsvps_not_allowed"));
+            }
+            if is_anonymous && !allows_anonymous_rsvps {
+                return Err(Status::new(
+                    Code::PermissionDenied,
+                    "anonymous_rsvps_not_allowed",
+                ));
+            }
             let authenticated_user_id = &user.map(|u| u.id);
             let inviting_user_id = match (authenticated_user_id, &attendee_user_id) {
                 (Some(a), Some(b)) if b == a => user.map(|u| u.id),
@@ -319,7 +361,12 @@ fn upsert_rsvp_impl(
                 }
                 _ => RsvpStatus::Interested.to_string_rsvp_status(),
             };
-            let moderation = (if is_anonymous {
+            // Anonymous RSVPs are always moderated; logged-in users' follow the event's default
+            // (`EventInfo.default_rsvp_moderation`), except the event owner's own.
+            let moderation = (if is_anonymous
+                || (!is_event_owner
+                    && event_info.default_rsvp_moderation == Some(Moderation::Pending as i32))
+            {
                 Moderation::Pending
             } else {
                 Moderation::Unmoderated
@@ -327,7 +374,7 @@ fn upsert_rsvp_impl(
             .to_string_moderation();
             if counts_toward_limit(&status, &moderation) {
                 check_attendee_limit(
-                    max_attendees(&event, &occasion),
+                    max_attendees(&event_info, &occasion_rsvp_info),
                     occasion_id,
                     None,
                     i64::from(request.number_of_guests),

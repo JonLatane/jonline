@@ -331,15 +331,26 @@ export interface DeleteOccasionSyncDestinationRequest {
  * Stored as JSON in the database.
  */
 export interface EventInfo {
-  /** Whether to allow RSVPs for the event. */
+  /**
+   * Whether to allow RSVPs for the event. New RSVPs are refused (`PERMISSION_DENIED`, `rsvps_not_allowed`) unless this is true
+   * (or an Occasion overrides it); existing RSVPs can still be updated.
+   */
   allowsRsvps?:
     | boolean
     | undefined;
-  /** Whether to allow anonymous RSVPs for the event. */
+  /**
+   * Whether to allow anonymous RSVPs for the event. No effect unless `allows_rsvps` is true.
+   * New anonymous RSVPs are otherwise refused (`PERMISSION_DENIED`, `anonymous_rsvps_not_allowed`).
+   */
   allowsAnonymousRsvps?:
     | boolean
     | undefined;
-  /** Limit the max number of attendees. No effect unless `allows_rsvps` is true. Not yet supported. */
+  /**
+   * Limit the max number of attendees. No effect unless `allows_rsvps` is true. Enforced by `UpsertRsvp`: only `GOING` RSVPs
+   * with passing moderation (`UNMODERATED`/`APPROVED`) count, by `Rsvp.number_of_guests`. An RSVP that would exceed the limit -
+   * whether new, grown, or being approved by the event owner - fails with `FAILED_PRECONDITION` (`attendee_limit_reached`).
+   * An Occasion's `OccasionRsvpInfo.max_attendees` overrides this.
+   */
   maxAttendees?:
     | number
     | undefined;
@@ -353,7 +364,7 @@ export interface EventInfo {
     | boolean
     | undefined;
   /**
-   * Default moderation for RSVPs from logged-in users (either `PENDING` or `APPROVED`).
+   * Default moderation for new RSVPs from logged-in users other than the event owner (either `PENDING` or `APPROVED`).
    * Anonymous RSVPs are always moderated (default to `PENDING`).
    */
   defaultRsvpModeration?: Moderation | undefined;
@@ -436,7 +447,7 @@ export interface OccasionRsvpInfo {
   allowsAnonymousRsvps?:
     | boolean
     | undefined;
-  /** Overrides `EventInfo.max_attendees`, if set, for this Occasion. Not yet supported. */
+  /** Overrides `EventInfo.max_attendees`, if set, for this Occasion. Enforced the same way - see there. */
   maxAttendees?:
     | number
     | undefined;
