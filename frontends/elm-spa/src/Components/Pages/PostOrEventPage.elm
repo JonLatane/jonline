@@ -1,6 +1,7 @@
 module Components.Pages.PostOrEventPage exposing
     ( Model
     , Msg
+    , federatedPostOf
     , fromShared
     , init
     , subscriptions
@@ -10,7 +11,10 @@ module Components.Pages.PostOrEventPage exposing
     )
 
 {-| A short Post/Event URL's own page: given a raw id (with no way to know up front whether it's a
-plain `Post`'s own id or an `Event`/`Occasion`'s), resolves which one it is, then embeds the
+plain `Post`'s own id or an `Event`/`Occasion`'s), resolves which one it is -- or, for a Bluesky/Mastodon id
+(`/~did:plc:…~rkey@bluesky:`, `/~123@mastodon:host`, the short forms of `/post/…@bluesky:`/`…@mastodon:host`), hands
+straight off to `Components.Bluesky.BlueskyPostPage`/`Components.Mastodon.MastodonPostPage`, same as
+`Pages.Post.PostId_` does -- then embeds the
 same `Components.Pages.PostPage`/`Components.Pages.EventPage` either `Pages.Post.PostId_`/
 `Pages.Event.PostId_` themselves mount -- so `/{postId}` (see `Pages.UsernameOrCustomTab_`'s own
 doc for when this gets used instead of a plain username/custom-tab lookup) renders exactly the
@@ -30,8 +34,11 @@ teaching them to would be a much bigger change for a rarely-hit path (most links
 
 import Browser.Navigation
 import Components.Events as Events
+import Components.Bluesky.BlueskyPostPage as BlueskyPostPage
+import Components.Mastodon.MastodonPostPage as MastodonPostPage
 import Components.Pages.EventPage as EventPage
 import Components.Pages.PostPage as PostPage
+import Components.Posts as Posts
 import Dict exposing (Dict)
 import Effect exposing (Effect)
 import Grpc
@@ -48,6 +55,8 @@ type Model
     = Resolving ResolvingModel
     | Post PostPage.Model
     | Event EventPage.Model
+    | BlueskyPost BlueskyPostPage.Model
+    | MastodonPost MastodonPostPage.Model
 
 
 {-| Mirrors `Components.Pages.PostPage.Model`'s own `targetHost`/`pageIsSecure`/`navKey` capture --
@@ -68,6 +77,8 @@ type Msg
     = GotResolveResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, GetEventsResponse ))
     | PostMsg PostPage.Msg
     | EventMsg EventPage.Msg
+    | BlueskyMsg BlueskyPostPage.Msg
+    | MastodonMsg MastodonPostPage.Msg
     | SharedMsg Shared.Msg
 
 
@@ -80,6 +91,37 @@ been visited directly.
 -}
 init : Shared.Model -> Bool -> Dict String String -> String -> Browser.Navigation.Key -> ( Model, Effect Msg )
 init shared pageIsSecure query rawSegment navKey =
+    case federatedPostOf shared.accounts.mainFrontendHost rawSegment of
+        Just (Posts.BlueskyPostId { uri }) ->
+            BlueskyPostPage.init shared uri
+                |> Tuple.mapFirst BlueskyPost
+                |> Tuple.mapSecond (Effect.map BlueskyMsg)
+
+        Just (Posts.MastodonPostId { instanceHost, statusId }) ->
+            MastodonPostPage.init instanceHost statusId
+                |> Tuple.mapFirst MastodonPost
+                |> Tuple.mapSecond (Effect.map MastodonMsg)
+
+        Nothing ->
+            initRellm shared pageIsSecure query rawSegment navKey
+
+
+{-| Whether the short-URL segment (leading reserved character and all) is a Bluesky/Mastodon post's id rather than
+a Rellm one -- `Components.Posts.parseFederatedPostId`'s same recognition `Pages.Post.PostId_` applies to its route
+segment, here after dropping the leading character. `mainFrontendHost` is only what an id with no `@host` means,
+which is never federated.
+-}
+federatedPostOf : String -> String -> Maybe Posts.FederatedPostId
+federatedPostOf mainFrontendHost rawSegment =
+    let
+        ( id, host ) =
+            Posts.parsePostRouteId mainFrontendHost (String.dropLeft 1 rawSegment)
+    in
+    Posts.parseFederatedPostId id host
+
+
+initRellm : Shared.Model -> Bool -> Dict String String -> String -> Browser.Navigation.Key -> ( Model, Effect Msg )
+initRellm shared pageIsSecure query rawSegment navKey =
     let
         rawId : String
         rawId =
@@ -149,6 +191,12 @@ subscriptions model =
         Event subModel ->
             Sub.map EventMsg (EventPage.subscriptions subModel)
 
+        BlueskyPost subModel ->
+            Sub.map BlueskyMsg (BlueskyPostPage.subscriptions subModel)
+
+        MastodonPost subModel ->
+            Sub.map MastodonMsg (MastodonPostPage.subscriptions subModel)
+
 
 update : Shared.Model -> Msg -> Model -> ( Model, Effect Msg )
 update shared msg model =
@@ -173,6 +221,24 @@ update shared msg model =
             EventPage.update shared subMsg subModel
                 |> Tuple.mapFirst Event
                 |> Tuple.mapSecond (Effect.map EventMsg)
+
+        ( BlueskyMsg subMsg, BlueskyPost subModel ) ->
+            BlueskyPostPage.update subMsg subModel
+                |> Tuple.mapFirst BlueskyPost
+                |> Tuple.mapSecond (Effect.map BlueskyMsg)
+
+        ( MastodonMsg subMsg, MastodonPost subModel ) ->
+            MastodonPostPage.update subMsg subModel
+                |> Tuple.mapFirst MastodonPost
+                |> Tuple.mapSecond (Effect.map MastodonMsg)
+
+        ( SharedMsg subMsg, BlueskyPost _ ) ->
+            -- Neither federated page has a `Shared.Msg` of its own to react to, but it still has to reach
+            -- `Shared.update` (see `Pages.Post.PostId_.Msg`'s `SharedMsgReceived`).
+            ( model, Effect.fromShared subMsg )
+
+        ( SharedMsg subMsg, MastodonPost _ ) ->
+            ( model, Effect.fromShared subMsg )
 
         ( SharedMsg _, Resolving resolving ) ->
             fetchIfReady shared resolving
@@ -218,6 +284,12 @@ view shared model =
         Event subModel ->
             Html.map EventMsg (EventPage.view shared subModel)
 
+        BlueskyPost subModel ->
+            Html.map BlueskyMsg (BlueskyPostPage.view shared subModel)
+
+        MastodonPost subModel ->
+            Html.map MastodonMsg (MastodonPostPage.view shared subModel)
+
 
 titleFor : Model -> String
 titleFor model =
@@ -230,6 +302,12 @@ titleFor model =
 
         Event subModel ->
             EventPage.titleFor subModel
+
+        BlueskyPost subModel ->
+            BlueskyPostPage.title subModel
+
+        MastodonPost subModel ->
+            MastodonPostPage.title subModel
 
 
 {-| Lets `Main` forward a `Shared.Msg` that didn't originate from this page -- see `Msg`'s own doc

@@ -26,6 +26,7 @@ pub use spa_web_path::*;
 pub mod spa_pages;
 pub use spa_pages::*;
 pub mod spa_file_or_username_or_custom_tab;
+pub mod spa_path;
 pub mod tamagui_web;
 pub use tamagui_web::*;
 

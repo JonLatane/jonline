@@ -17,6 +17,7 @@ use crate::{
     web::RocketState,
 };
 
+use super::spa_path::SpaPath;
 use super::{
     rellm_path, root_app, spa_prefix, spa_web_path, strip_spa_prefix, RellmResponder,
     RellmSummary, ServerSummaryInfo, SpaApp,
@@ -40,10 +41,12 @@ use super::{
 /// literally any path), so it should always lose ties.
 #[rocket::get("/<file..>", rank = 20)]
 pub async fn spa_file_or_username_or_custom_tab(
-    file: PathBuf,
+    file: SpaPath,
     state: &State<RocketState>,
     origin: &Origin<'_>,
 ) -> CacheResponse<Result<RellmResponder, Status>> {
+    // `SpaPath`, not `PathBuf`: a short Bluesky post URL (`/~did:plc:…~rkey@bluesky:`) ends in `:`.
+    let file = file.0;
     log::info!("file_or_username_or_custom_tab: {:?}", &file);
     // See spa_web_path.rs: Next bakes a single fixed basePath into a build, so
     // "/" and "/tamagui" are served from two separate exports on disk. This
