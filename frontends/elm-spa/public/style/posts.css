@@ -996,6 +996,20 @@
   pointer-events: none;
 }
 
+.post-card-quote-media {
+  position: relative;
+  margin: 0.3rem 0;
+}
+
+/* The previews inside a quote in a card are display-only: the whole quote is one link (`.post-card-link-overlay`) to
+   the quoted post's page, so a tap anywhere on it -- the media included -- has to reach that link rather than open the
+   image or play the video here. (`.multi-media-preview` is otherwise `pointer-events: auto` so a post's own video
+   controls work; this overrides it for quotes only.) */
+.post-card-quote-media,
+.post-card-quote-media * {
+  pointer-events: none !important;
+}
+
 /* `Components.Posts.quoteButton` -- an icon-only button in `postDetail`'s meta row, sized and spaced
    like the `.post-star` beside it. */
 .post-quote-button {

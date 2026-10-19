@@ -6,17 +6,21 @@ out to be a Rellm server, one that doesn't, or one we know nothing about yet.
 -}
 
 import Components.MediaRenderer as MediaRenderer
+import Components.Posts as Posts
 import Components.QuotedLink as QuotedLink
 import Dict
 import Expect
 import Html exposing (div)
 import Html.Attributes
-import Proto.Rellm exposing (Post, defaultAuthor, defaultEvent, defaultOccasion, wrapPost)
+import Proto.Rellm exposing (MediaReference, Post, defaultAuthor, defaultEvent, defaultMediaReference, defaultMediaSize, defaultOccasion, wrapPost)
+import Proto.Rellm.MediaConversion exposing (MediaConversion(..))
 import Proto.Rellm.PostContext exposing (PostContext(..))
 import Set
 import Shared.Federation.FederatedLinks as FederatedLinks
 import Shared.Federation.RellmLinks as RellmLinks
+import Shared.AccountsPanel.RellmServers exposing (RellmServer)
 import Shared.QuoteLinks as QuoteLinks
+import Shared.Time as SharedTime
 import Support.PostFactory as PostFactory
 import Support.RellmServerFactory as RellmServerFactory
 import Test exposing (Test, describe, test)
@@ -168,6 +172,43 @@ withEvent host id =
 with : String -> String -> QuoteLinks.Entry -> QuoteLinks.Model
 with host id entry =
     { entries = Dict.singleton (RellmLinks.key { host = host, id = id }) entry }
+
+
+timeModel : SharedTime.Model
+timeModel =
+    { browserTimeZone = { zone = Time.utc, name = "UTC", abbreviation = "UTC", uses24Hour = True }, now = Time.millisToPosix 0 }
+
+
+{-| A federated post's picture, as `Shared.Federation.Bluesky`/`Mastodon` translate one: addressed by `url`.
+-}
+federatedImage : MediaReference
+federatedImage =
+    { defaultMediaReference
+        | id = "img1"
+        , url = Just "https://cdn.example/a.jpg"
+        , sizes = [ { defaultMediaSize | conversion = MEDIACONVERSIONORIGINAL, contentType = "image/*" } ]
+    }
+
+
+{-| A Rellm post's picture: addressed by `id` on its server.
+-}
+rellmImage : MediaReference
+rellmImage =
+    { defaultMediaReference
+        | id = "m1"
+        , sizes = [ { defaultMediaSize | conversion = MEDIACONVERSIONORIGINAL, contentType = "image/jpeg" } ]
+    }
+
+
+quotedWithMedia : Post
+quotedWithMedia =
+    { quoted | id = "at://did:plc:abc/app.bsky.feed.post/3k", media = [ federatedImage ] }
+
+
+quoteCard : Maybe (Post -> String -> Msg) -> Maybe RellmServer -> String -> Post -> Query.Single Msg
+quoteCard maybeOnMediaClicked maybeServer postServerHost post =
+    Query.fromHtml (div [] [ Posts.quotedPostCard timeModel "" "rellm.org" postServerHost maybeServer Nothing MediaRenderer.init (\_ -> PlayMedia) maybeOnMediaClicked post ])
+
 
 
 {-| Rendered inside a `div`, since `Test.Html.Query` needs an element root and `view` is allowed to be empty.
@@ -353,6 +394,73 @@ suite =
                 \_ ->
                     rendered (loaded "rellm.org" "abc") "rellm.org" (quoting "/post/abc")
                         |> Expect.all [ Query.has [ card ], lacks [ Selector.class "rsme-embed" ] ]
+            ]
+        , describe "media in a quote"
+            [ test "a card shows the quoted post's media, not just a count of attachments" <|
+                \_ ->
+                    quoteCard Nothing (Just (RellmServerFactory.connected "rellm.org")) "bluesky:" { quotedWithMedia | quotedPost = Nothing }
+                        |> Expect.all
+                            [ Query.has [ Selector.class "post-card-quote-media" ]
+                            , Query.find [ Selector.class "post-card-quote-media" ] >> Query.has [ Selector.tag "img" ]
+                            , lacks [ Selector.class "post-card-quote-media-note" ]
+                            ]
+            , test "the media sits inside the quote's own card, so the quote stays one link to the quoted post" <|
+                \_ ->
+                    quoteCard Nothing (Just (RellmServerFactory.connected "rellm.org")) "bluesky:" quotedWithMedia
+                        |> Query.find [ Selector.class "post-card-quote" ]
+                        |> Query.has [ Selector.class "post-card-link-overlay", Selector.class "post-card-quote-media" ]
+            , test "a federated post's media needs no server of its own to show" <|
+                \_ ->
+                    quoteCard Nothing Nothing "bluesky:" quotedWithMedia
+                        |> Query.has [ Selector.class "post-card-quote-media" ]
+            , test "on a post's own page (a click handler is given) the media is the usual clickable preview" <|
+                \_ ->
+                    Query.fromHtml
+                        (div [] [ Posts.quotedPostCard timeModel "" "rellm.org" "bluesky:" Nothing Nothing MediaRenderer.init (\_ -> PlayMedia) (Just (\_ _ -> NoOp)) quotedWithMedia ])
+                        |> lacks [ Selector.class "post-card-quote-media", Selector.class "post-card-quote-media-note" ]
+            , test "a quote with no media shows neither" <|
+                \_ ->
+                    quoteCard Nothing Nothing "bluesky:" { quotedWithMedia | media = [] }
+                        |> lacks [ Selector.class "post-card-quote-media", Selector.class "post-card-quote-media-note" ]
+            , test "hidden sensitive media stays hidden behind its notice" <|
+                \_ ->
+                    quoteCard Nothing Nothing "bluesky:" { quotedWithMedia | media = [ { defaultMediaReference | id = "sensitive-media-hidden" } ] }
+                        |> Expect.all
+                            [ Query.has [ Selector.class "post-card-sensitive-media-notice" ]
+                            , lacks [ Selector.class "post-card-quote-media" ]
+                            ]
+            , test "a Rellm post's media, with no server to address it by, is counted rather than shown" <|
+                \_ ->
+                    quoteCard Nothing Nothing "rellm.org" { quotedWithMedia | media = [ rellmImage ] }
+                        |> Expect.all
+                            [ Query.has [ Selector.class "post-card-quote-media-note", Selector.text "1 attachment" ]
+                            , lacks [ Selector.class "post-card-quote-media" ]
+                            ]
+            , test "a Rellm post's media, on a server we know, is shown" <|
+                \_ ->
+                    quoteCard Nothing (Just (RellmServerFactory.connected "rellm.org")) "rellm.org" { quotedWithMedia | media = [ rellmImage ] }
+                        |> Expect.all
+                            [ Query.has [ Selector.class "post-card-quote-media" ]
+                            , Query.find [ Selector.tag "img" ] >> Query.has [ Selector.attribute (Html.Attributes.src "https://rellm.org/media/m1") ]
+                            ]
+            , test "QuotedLink gives a quoted Rellm post its server, so its media shows in the card" <|
+                \_ ->
+                    rendered
+                        (with "rellm.org" "abc" (QuoteLinks.Loaded { quoted | media = [ rellmImage ] }))
+                        "rellm.org"
+                        (quoting "/post/abc")
+                        |> Query.has [ Selector.class "post-card-quote-media" ]
+            , test "and a server only previewed (not added) works the same" <|
+                \_ ->
+                    rendered
+                        (with "bullcity.social" "abc" (QuoteLinks.Loaded { quoted | media = [ rellmImage ] }))
+                        "rellm.org"
+                        (quoting "https://bullcity.social/post/abc")
+                        |> Query.has [ Selector.class "post-card-quote-media" ]
+            , test "a nested quote's media shows too" <|
+                \_ ->
+                    quoteCard Nothing Nothing "bluesky:" { quoted | quotedPost = Just (wrapPost quotedWithMedia) }
+                        |> Query.has [ Selector.class "post-card-quote-media" ]
             ]
         , describe "a quote of an event"
             [ test "shows an event card instead of a post card" <|
