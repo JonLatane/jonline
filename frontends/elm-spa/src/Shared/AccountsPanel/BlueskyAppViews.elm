@@ -85,9 +85,10 @@ orElse fallback primary =
             fallback
 
 
-{-| A logo URL as an admin may enter it: trimmed, and only `http(s)://` ones count (anything else --
-including a blank box -- is "no logo"). It's only ever used as an `<img src>`, so a stray scheme couldn't
-run anything, but there's nothing useful to show for one either.
+{-| A logo URL as an admin may enter it: trimmed, and only `https://` ones count (anything else --
+including a blank box -- is "no logo"), matching `BlueskyServer.logo_url`'s own doc. HTTPS-only because a
+plain `http://` image on an HTTPS page is blocked as mixed content anyway, and it's only ever used as an
+`<img src>`, so a stray scheme couldn't run anything.
 -}
 normalizeLogoUrl : String -> Maybe String
 normalizeLogoUrl raw =
@@ -96,7 +97,7 @@ normalizeLogoUrl raw =
         trimmed =
             String.trim raw
     in
-    if String.startsWith "https://" trimmed || String.startsWith "http://" trimmed then
+    if String.startsWith "https://" trimmed then
         Just trimmed
 
     else

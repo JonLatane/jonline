@@ -1352,7 +1352,7 @@ applyBlueskyServers blueskyServers config =
 
 
 {-| The servers `BlueskyServersSaveClicked` sends: `edit.pending`, each with its `logoUrl` taken from what's
-in its logo box (`BlueskyAppViews.normalizeLogoUrl` -- blank or non-http(s) means no logo).
+in its logo box (`BlueskyAppViews.normalizeLogoUrl` -- blank or non-https means no logo).
 -}
 withLogoInputs : BlueskyServersEdit -> List BlueskyServer
 withLogoInputs edit =

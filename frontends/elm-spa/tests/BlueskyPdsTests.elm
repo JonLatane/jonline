@@ -185,17 +185,17 @@ suite =
                         [ { defaultBlueskyServer | host = "other.example.com", logoUrl = Just "https://example.com/logo.png" } ]
                         "appview.example.com"
                         |> Expect.equal Nothing
-            , test "a configured logo_url that isn't http(s) is ignored (falling back to the built-in one)" <|
+            , test "a configured logo_url that isn't https is ignored (falling back to the built-in one)" <|
                 \_ ->
                     BlueskyAppViews.logoUrlFor
                         [ { defaultBlueskyServer | host = Common.publicBlueskyAppViewHost, logoUrl = Just "javascript:alert(1)" } ]
                         Common.publicBlueskyAppViewHost
                         |> Expect.equal (BlueskyAppViews.builtInLogoUrl Common.publicBlueskyAppViewHost)
-            , test "normalizeLogoUrl trims and accepts only http(s)" <|
+            , test "normalizeLogoUrl trims and accepts only https" <|
                 \_ ->
                     [ "  https://example.com/a.png ", "http://example.com/a.png", "ftp://example.com/a.png", "", "   ", "example.com/a.png" ]
                         |> List.map BlueskyAppViews.normalizeLogoUrl
-                        |> Expect.equal [ Just "https://example.com/a.png", Just "http://example.com/a.png", Nothing, Nothing, Nothing, Nothing ]
+                        |> Expect.equal [ Just "https://example.com/a.png", Nothing, Nothing, Nothing, Nothing, Nothing ]
             ]
         , describe "cleanIdentifier"
             [ test "trims and drops a leading @" <|
