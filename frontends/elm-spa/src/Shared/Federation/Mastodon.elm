@@ -7,6 +7,7 @@ module Shared.Federation.Mastodon exposing
     , fetchFollowers
     , fetchFollowing
     , fetchPosts
+    , fetchTrendingPosts
     , fetchFavourites
     , fetchEmbeddedStatus
     , fetchStatus
@@ -348,6 +349,24 @@ fetchPosts instanceHost =
         { method = "GET"
         , headers = []
         , url = "https://" ++ instanceHost ++ "/api/v1/timelines/public?local=true&limit=20"
+        , body = Http.emptyBody
+        , resolver = jsonResolver (Decode.list decoder) (\metadata _ -> Http.BadStatus metadata.statusCode)
+        , timeout = Just 10000
+        }
+        |> Task.map (List.map (toPost instanceHost))
+
+
+{-| `GET /api/v1/trends/statuses?limit=20` -- the instance's trending statuses (Mastodon's own "what's
+popular lately" ranking, hours-to-days of engagement), unauthenticated like `fetchPosts` and already
+translated via `toPost`. Instances can switch trends off, in which case this is just an empty list.
+`Components.Pages.PostsPage`'s "Recently Popular Posts" sort uses it in place of `fetchPosts`.
+-}
+fetchTrendingPosts : String -> Task Http.Error (List Post)
+fetchTrendingPosts instanceHost =
+    Http.task
+        { method = "GET"
+        , headers = []
+        , url = "https://" ++ instanceHost ++ "/api/v1/trends/statuses?limit=20"
         , body = Http.emptyBody
         , resolver = jsonResolver (Decode.list decoder) (\metadata _ -> Http.BadStatus metadata.statusCode)
         , timeout = Just 10000

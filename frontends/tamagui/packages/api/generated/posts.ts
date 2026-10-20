@@ -40,6 +40,19 @@ export enum PostListingType {
    * ALL_ACCESSIBLE_POSTS is (plus author_user_id, if provided). Requires search_text parameter.
    */
   TEXT_SEARCH = 5,
+  /**
+   * RECENTLY_POPULAR_POSTS - Returns posts published recently (within the last 14 days, or, if `published_or_created_before`
+   * is given, the 14 days before that time), scoped the same way ALL_ACCESSIBLE_POSTS is (plus
+   * author_user_id, if provided), ranked by popularity rather than strictly by recency. A post's score
+   * is `(unauthenticated_star_count + 2 * response_count + 1) / (age_in_hours + 2) ^ 1.5` - engagement
+   * (stars, and responses to the post, which count double) decayed by how long ago it was published
+   * (`published_at`, falling back to `created_at`), like Hacker News' ranking. The `+ 1` means a post
+   * with no engagement still scores, just lower, and ties fall to recency - so on a quiet server this
+   * degrades gracefully to roughly ALL_ACCESSIBLE_POSTS. Like every listing, returns at most one
+   * page of results; there is no further paging (the ranking drifts as time passes, so offsets
+   * aren't stable) - narrow by `published_or_created_before` instead.
+   */
+  RECENTLY_POPULAR_POSTS = 6,
   /** GROUP_POSTS - Returns posts from a specific group. Requires group_id parameter. */
   GROUP_POSTS = 10,
   /**
@@ -70,6 +83,9 @@ export function postListingTypeFromJSON(object: any): PostListingType {
     case 5:
     case "TEXT_SEARCH":
       return PostListingType.TEXT_SEARCH;
+    case 6:
+    case "RECENTLY_POPULAR_POSTS":
+      return PostListingType.RECENTLY_POPULAR_POSTS;
     case 10:
     case "GROUP_POSTS":
       return PostListingType.GROUP_POSTS;
@@ -97,6 +113,8 @@ export function postListingTypeToJSON(object: PostListingType): string {
       return "POSTS_PENDING_MODERATION";
     case PostListingType.TEXT_SEARCH:
       return "TEXT_SEARCH";
+    case PostListingType.RECENTLY_POPULAR_POSTS:
+      return "RECENTLY_POPULAR_POSTS";
     case PostListingType.GROUP_POSTS:
       return "GROUP_POSTS";
     case PostListingType.GROUP_POSTS_PENDING_MODERATION:

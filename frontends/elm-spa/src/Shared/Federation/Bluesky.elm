@@ -13,6 +13,7 @@ module Shared.Federation.Bluesky exposing
     , fetchPostWithQuotes
     , fetchPosts
     , fetchLatestPosts
+    , fetchWhatsHot
     , fetchThread
     , fromRouteId
     , resolveHandle
@@ -462,6 +463,32 @@ should send it to `Shared.Federation.Common.anonymousSearchHost`, since the publ
 fetchLatestPosts : BlueskyAuth -> Task Http.Error (List Post)
 fetchLatestPosts auth =
     searchPosts auth "*"
+
+
+{-| `GET /xrpc/app.bsky.feed.getFeed` for Bluesky's "What's Hot" feed generator -- its own "what's popular
+lately" ranking (an algorithmic feed, so hours behind the live firehose). Works anonymously against an
+AppView or as a connected account (via its PDS); `Components.Pages.PostsPage`'s "Recently Popular Posts"
+sort uses it in place of `fetchLatestPosts`/`fetchPosts`. Same `{ feed : [ { post, reply? } ] }` shape
+as `getTimeline`, so it shares `decoder`.
+-}
+fetchWhatsHot : BlueskyAuth -> Task Http.Error (List Post)
+fetchWhatsHot auth =
+    Http.task
+        { method = "GET"
+        , headers = readHeaders auth
+        , url = readHost auth ++ "/xrpc/app.bsky.feed.getFeed?limit=20&feed=" ++ Url.percentEncode whatsHotFeedUri
+        , body = Http.emptyBody
+        , resolver = jsonResolver (Decode.field "feed" (Decode.list decoder)) (\metadata _ -> Http.BadStatus metadata.statusCode)
+        , timeout = Just 10000
+        }
+        |> Task.map (List.map toPost)
+
+
+{-| The AT URI of Bluesky's "What's Hot" feed generator.
+-}
+whatsHotFeedUri : String
+whatsHotFeedUri =
+    "at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.generator/whats-hot"
 
 
 {-| `GET /xrpc/app.bsky.feed.searchPosts` -- Bluesky's real search endpoint, searching the whole

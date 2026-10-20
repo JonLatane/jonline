@@ -63,6 +63,36 @@
   font-weight: 700;
 }
 
+/* `PostsPage.sortSelectView` -- the "Recent Posts"/"Recently Popular Posts" `<select>` standing in for
+   the old static label, inside the first `.filter-tab-primary` pill and inside `Pages.Home_`/
+   `UserProfilePage`'s embedded `<h3>`. Inherits the label's size/weight so it reads as that label, with
+   just a chevron and a hover/focus outline to show it's a control. */
+.posts-sort-select {
+  font: inherit;
+  color: inherit;
+  background-color: transparent;
+  border: 1px solid transparent;
+  border-radius: 0.5rem;
+  /* Own chevron (two gradient triangles, so it follows `color`) -- the native arrow disappears into
+     the pill/heading it sits in, and nothing else says this label is a control. */
+  -webkit-appearance: none;
+  appearance: none;
+  padding: 0 1.1rem 0 0.2rem;
+  margin: 0;
+  cursor: pointer;
+  max-width: 100%;
+  background-image: linear-gradient(45deg, transparent 50%, currentColor 50%),
+    linear-gradient(135deg, currentColor 50%, transparent 50%);
+  background-position: calc(100% - 0.55rem) 55%, calc(100% - 0.3rem) 55%;
+  background-size: 0.3rem 0.3rem, 0.3rem 0.3rem;
+  background-repeat: no-repeat;
+}
+
+.posts-sort-select:hover,
+.posts-sort-select:focus-visible {
+  border-color: var(--border);
+}
+
 /* Sized/inset to sit comfortably inline with its own tab's label text rather
    than at the browser's own default `<input>` size. */
 .filter-tab-date-input {
