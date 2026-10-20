@@ -454,6 +454,14 @@ type alias PostAnimation =
     { host : String
     , post : Post
     , flip : UI.Flip.State Msg
+
+    -- Where `post` sat in its own source's response, as a fraction (0 = first, approaching 1 = last).
+    -- Sources can be ranked rather than chronological (`SortPopular`: a real server's
+    -- `RECENTLY_POPULAR_POSTS`, Mastodon's trends, Bluesky's What's Hot), and `postsByServer` is a
+    -- `Dict`, so the order a response arrived in would otherwise be lost. A fraction (not the raw index)
+    -- so sources of different lengths interleave fairly: every source's top post comes first, and so on
+    -- -- see `postsListView`.
+    , rank : Float
     }
 
 
@@ -1317,7 +1325,7 @@ fetchRellmPosts shared model requestId source server authorId =
         authorId
         model.searchText
         model.context
-        (model.sort == SortPopular && model.tab == RecentPosts)
+        (isPopularListing model)
         cutoff
         |> Task.attempt (fromServerResult >> GotFeedPosts (feedSourceKey source) requestId)
         |> Effect.fromCmd
@@ -1832,7 +1840,7 @@ filter it by hand.
 syncAnimations : Model -> Model
 syncAnimations model =
     let
-        currentPosts : Dict String ( String, Post )
+        currentPosts : Dict String ( String, Post, Float )
         currentPosts =
             model.postsByServer
                 |> Dict.toList
@@ -1840,9 +1848,20 @@ syncAnimations model =
                     (\( _, feed ) ->
                         case feed.status of
                             Loaded posts ->
-                                posts
-                                    |> List.filter (\post -> post.context == model.context)
-                                    |> List.map (\post -> ( postAnimationKey feed.host post, ( feed.host, post ) ))
+                                let
+                                    inContext : List Post
+                                    inContext =
+                                        List.filter (\post -> post.context == model.context) posts
+
+                                    total : Float
+                                    total =
+                                        toFloat (List.length inContext)
+                                in
+                                inContext
+                                    |> List.indexedMap
+                                        (\index post ->
+                                            ( postAnimationKey feed.host post, ( feed.host, post, toFloat index / total ) )
+                                        )
 
                             _ ->
                                 []
@@ -1853,8 +1872,8 @@ syncAnimations model =
         | postAnimations =
             UI.Flip.syncAnimations
                 RemovePost
-                (\( host, post ) -> { host = host, post = post, flip = UI.Flip.enter })
-                (\( host, post ) anim -> { anim | host = host, post = post })
+                (\( host, post, rank ) -> { host = host, post = post, flip = UI.Flip.enter, rank = rank })
+                (\( host, post, rank ) anim -> { anim | host = host, post = post, rank = rank })
                 currentPosts
                 model.postAnimations
     }
@@ -2282,12 +2301,27 @@ authorHeadingView shared maybeAuthor context =
                 ]
 
 
+{-| Whether the feed is currently showing "Recently Popular Posts" (see `PostsSort`) -- the sort is
+chosen, and it's the `RecentPosts` tab (the "Posts Before <date>" tab is chronological).
+-}
+isPopularListing : Model -> Bool
+isPopularListing model =
+    model.sort == SortPopular && model.tab == RecentPosts
+
+
 {-| `model.postAnimations`, sorted most-recent-first by `Posts.postTimestamp`'s
 own "published\_at || created\_at" logic -- but only while `model.searchText`
 is blank: an active text search's results come back relevance-ranked (see
 `backend/src/rpcs/posts/get_posts.rs`'s `get_search_posts`), and re-sorting by
 recency here would throw that ranking away. Mirrors
 `Components.Pages.EventsPage.visibleAnimations`'s own identical search gate.
+
+The "Recently Popular Posts" sort (`SortPopular`, on the `RecentPosts` tab, no search text) is ranked
+too, so recency is the wrong order there as well: a heavily-starred older post must stay above a newer
+quiet one. That mode sorts by each post's `rank` instead -- its position within its own source's
+response -- so sources interleave (every source's top post, then every source's second, ...), with
+recency only breaking ties between equal ranks. (The "Posts Before" tab and a text search keep the
+behavior above.)
 -}
 postsListView : Shared.Model -> Model -> Html Msg
 postsListView shared model =
@@ -2310,11 +2344,14 @@ postsListView shared model =
             sortedAnimations =
                 model.postAnimations
                     |> Dict.toList
-                    |> (if String.isEmpty (String.trim model.searchText) then
-                            List.sortBy (\( _, anim ) -> -(Time.posixToMillis (Posts.postTimestamp anim.post)))
+                    |> (if not (String.isEmpty (String.trim model.searchText)) then
+                            identity
+
+                        else if isPopularListing model then
+                            List.sortBy (\( _, anim ) -> ( anim.rank, -(Time.posixToMillis (Posts.postTimestamp anim.post)) ))
 
                         else
-                            identity
+                            List.sortBy (\( _, anim ) -> -(Time.posixToMillis (Posts.postTimestamp anim.post)))
                        )
         in
         if List.isEmpty sortedAnimations then
