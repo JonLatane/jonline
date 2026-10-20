@@ -12,7 +12,7 @@ module Shared.Federation.Bluesky exposing
     , fetchPost
     , fetchPostWithQuotes
     , fetchPosts
-    , fetchPublicFeed
+    , fetchLatestPosts
     , fetchThread
     , fromRouteId
     , resolveHandle
@@ -31,7 +31,7 @@ for the whole network), so there are two ways to read, both expressed as a `Blue
 _account_ (its own PDS host + token -- the PDS proxies reads to an AppView, and adds personalization),
 or _anonymously_ straight from an AppView (`public.api.bsky.app` by default), which serves public data
 with no login. What only an account gets: `fetchPosts` (its personalized home timeline), and anything that writes (`setLike`) or reads the account's own state
-(`fetchLikes`). What anyone gets: `fetchPublicFeed` (a curated feed generator, the closest thing to a
+(`fetchLikes`). What anyone gets: `fetchLatestPosts` (the newest posts on the network, the closest thing to a
 "public timeline"), `searchPosts` (via `anonymousSearchHost`), `fetchPost`/`fetchThread`, and every `ActorProfile`/`fetchAuthorFeed`-style actor read.
 See `Components.Pages.PostsPage.fetchFeedSource`'s `BlueskyFeed`/`BlueskyAppViewFeed` cases and
 `Components.Pages.PostPage.init` (`fetchPost`, when a route's post id parses as
@@ -443,7 +443,7 @@ fetchPosts auth =
     Http.task
         { method = "GET"
         , headers = readHeaders auth
-        , url = readHost auth ++ "/xrpc/app.bsky.feed.getTimeline?limit=20"
+        , url = readHost auth ++ "/xrpc/app.bsky.feed.getTimeline?limit=20&algorithm=reverse-chronological"
         , body = Http.emptyBody
         , resolver = jsonResolver (Decode.field "feed" (Decode.list decoder)) (\metadata _ -> Http.BadStatus metadata.statusCode)
         , timeout = Just 10000
@@ -451,30 +451,17 @@ fetchPosts auth =
         |> Task.map (List.map toPost)
 
 
-{-| `GET /xrpc/app.bsky.feed.getFeed` for `publicFeedUri` against an AppView, anonymously -- Bluesky's
-"What's Hot" feed generator, translated via `toPost`. Anonymous readers have no home timeline (that's
-personalized by who an account follows), so this is the closest thing to Mastodon's public timeline for
-a `BlueskyAppViewFeed` source. Same `{ feed : [ { post, reply? } ] }` shape as `getTimeline`, so it
-shares `decoder`.
+{-| The newest posts on the whole network, anonymously -- what a browsed AppView (`BlueskyAppViewFeed`)
+shows when there's no search text, so it reads newest-first like a Mastodon instance's public timeline
+and a connected account's home timeline (`fetchPosts`). AT Protocol has no anonymous global timeline, but
+`searchPosts` with `sort=latest` and the match-everything query `*` is one: its results trail the live
+firehose by seconds. (The curated "What's Hot" feed generator this replaced was hours behind.) Callers
+should send it to `Shared.Federation.Common.anonymousSearchHost`, since the public AppView's other host
+403s search.
 -}
-fetchPublicFeed : BlueskyAuth -> Task Http.Error (List Post)
-fetchPublicFeed auth =
-    Http.task
-        { method = "GET"
-        , headers = readHeaders auth
-        , url = readHost auth ++ "/xrpc/app.bsky.feed.getFeed?limit=20&feed=" ++ Url.percentEncode publicFeedUri
-        , body = Http.emptyBody
-        , resolver = jsonResolver (Decode.field "feed" (Decode.list decoder)) (\metadata _ -> Http.BadStatus metadata.statusCode)
-        , timeout = Just 10000
-        }
-        |> Task.map (List.map toPost)
-
-
-{-| The AT URI of Bluesky's "What's Hot" feed generator.
--}
-publicFeedUri : String
-publicFeedUri =
-    "at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.generator/whats-hot"
+fetchLatestPosts : BlueskyAuth -> Task Http.Error (List Post)
+fetchLatestPosts auth =
+    searchPosts auth "*"
 
 
 {-| `GET /xrpc/app.bsky.feed.searchPosts` -- Bluesky's real search endpoint, searching the whole
@@ -482,7 +469,7 @@ public network (not just the connected account's own timeline/follows) -- see
 <https://docs.bsky.app/docs/api/app-bsky-feed-search-posts>. Works as a connected account (its PDS
 proxies it) or anonymously -- but not against `public.api.bsky.app`, which 403s it; anonymous callers
 use `Shared.Federation.Common.anonymousSearchHost`. See `Components.Pages.PostsPage.fetchFeedSource`'s
-`BlueskyFeed`/`BlueskyAppViewFeed` cases, which switch to this instead of `fetchPosts`/`fetchPublicFeed`
+`BlueskyFeed`/`BlueskyAppViewFeed` cases, which switch to this instead of `fetchPosts`/`fetchLatestPosts`
 whenever `model.searchText` isn't blank, mirroring how a real `GetPosts` request switches to
 `TEXTSEARCH`. Unlike `getTimeline`'s `feed` array (each entry wrapping a `post` alongside separate
 `reply` context), each entry here is a bare `app.bsky.feed.defs#postView` directly, so `searchDecoder`
@@ -495,7 +482,7 @@ searchPosts auth query =
     Http.task
         { method = "GET"
         , headers = readHeaders auth
-        , url = readHost auth ++ "/xrpc/app.bsky.feed.searchPosts?q=" ++ Url.percentEncode query ++ "&limit=20"
+        , url = readHost auth ++ "/xrpc/app.bsky.feed.searchPosts?q=" ++ Url.percentEncode query ++ "&sort=latest&limit=20"
         , body = Http.emptyBody
         , resolver = jsonResolver (Decode.field "posts" (Decode.list searchDecoder)) (\metadata _ -> Http.BadStatus metadata.statusCode)
         , timeout = Just 10000
