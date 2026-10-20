@@ -10,6 +10,7 @@ import Json.Decode as Decode
 import Json.Encode as Encode
 import Shared.AccountsPanel.BlueskyAccounts as BlueskyAccounts
 import Shared.AccountsPanel.BlueskyAppViews as BlueskyAppViews
+import Shared.Federation.Common as Common
 import Test exposing (Test, describe, test)
 
 
@@ -150,6 +151,16 @@ suite =
                         , pdsHost = "eurosky.social"
                         }
                         |> Expect.equal { host = "eurosky.social", accessToken = "tok" }
+            ]
+        , describe "anonymousSearchHost"
+            [ test "the public AppView searches on api.bsky.app, which allows it anonymously" <|
+                \_ ->
+                    Common.anonymousSearchHost Common.publicBlueskyAppViewHost
+                        |> Expect.equal "api.bsky.app"
+            , test "another AppView searches at its own host" <|
+                \_ ->
+                    Common.anonymousSearchHost "appview.example.com"
+                        |> Expect.equal "appview.example.com"
             ]
         , describe "cleanIdentifier"
             [ test "trims and drops a leading @" <|

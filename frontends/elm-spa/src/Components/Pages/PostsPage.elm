@@ -61,7 +61,7 @@ import Shared.Breadcrumbs as Breadcrumbs
 import Shared.Conversions as Conversions
 import Shared.CreateNewPanel as CreateNewPanel
 import Shared.Federation.Bluesky as Bluesky
-import Shared.Federation.Common exposing (BlueskyAuth, blueskyAuthFor)
+import Shared.Federation.Common exposing (BlueskyAuth, anonymousSearchHost, blueskyAuthFor)
 import Shared.Federation.Mastodon as Mastodon
 import Shared.MediaViewerPanel as MediaViewerPanel
 import Shared.QuoteLinks as QuoteLinks
@@ -1298,10 +1298,16 @@ fetchFeedSource shared model source =
                 |> Effect.fromCmd
 
         BlueskyAppViewFeed host ->
-            -- Anonymous: straight from the AppView, no account, nothing to refresh/persist. No
-            -- search (the public AppView rejects `searchPosts`), so a changed `model.searchText`
-            -- doesn't touch it -- same as a `MastodonInstance`.
-            Bluesky.fetchPublicFeed (blueskyAuthFor host)
+            -- Anonymous: straight from the AppView, no account, nothing to refresh/persist. A blank
+            -- `model.searchText` shows its public feed; otherwise it's a network-wide post search,
+            -- which the public AppView only answers on its `api.bsky.app` front door (see
+            -- `anonymousSearchHost`).
+            (if String.isEmpty (String.trim model.searchText) then
+                Bluesky.fetchPublicFeed (blueskyAuthFor host)
+
+             else
+                Bluesky.searchPosts (blueskyAuthFor (anonymousSearchHost host)) (String.trim model.searchText)
+            )
                 |> Task.attempt (fromFederatedResult >> GotFeedPosts (feedSourceKey source))
                 |> Effect.fromCmd
 
@@ -1447,10 +1453,11 @@ fetchNewFeeds shared model =
 {-| Re-fetches every relevant server, plus every enabled Bluesky account (unconditionally -- unlike
 `fetchNewFeeds`, a changed search has to override every already-Loaded feed, not just sources whose
 acting account changed) and persists the new `search_text`/`context` to the URL -- the single path
-`SearchDebounceElapsed`, `ContextChanged`, and `ClearSearchClicked` all funnel through. Bluesky is
-included here (unlike `MastodonInstance`, which has no search of its own -- see `refetchFeeds`'s own
-doc) since `fetchFeedSource` actually does something different with a changed `model.searchText` for
-it (`Bluesky.searchPosts` instead of `Bluesky.fetchPosts`), gated the same way
+`SearchDebounceElapsed`, `ContextChanged`, and `ClearSearchClicked` all funnel through. Bluesky --
+both connected accounts and browsed AppViews -- is included here (unlike `MastodonInstance`, which has
+no search of its own -- see `refetchFeeds`'s own doc) since `fetchFeedSource` actually does something
+different with a changed `model.searchText` for them (`Bluesky.searchPosts` instead of `Bluesky.fetchPosts`/
+`fetchPublicFeed`), gated the same way
 `relevantFeedSources` gates it off entirely: only while `model.author == Nothing`, since a Bluesky
 network-wide search has no way to scope itself to one profile's own posts the way a real `GetPosts`
 request can.
@@ -1464,6 +1471,7 @@ applySearchChange shared model =
                 ++ federatedAuthorSources shared model
                 ++ (if model.author == Nothing then
                         List.map BlueskyFeed (List.filter .enabled shared.accounts.blueskyAccounts)
+                            ++ List.map (.host >> BlueskyAppViewFeed) (List.filter .enabled shared.accounts.blueskyAppViews)
 
                     else
                         []

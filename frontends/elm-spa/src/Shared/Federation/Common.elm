@@ -1,4 +1,4 @@
-module Shared.Federation.Common exposing (BlueskyAuth, Thread, anonymousBlueskyAuth, blueskyAuthFor, emptyThread, jsonResolver, nonEmpty, publicBlueskyAppViewHost, sensitiveMediaHiddenId)
+module Shared.Federation.Common exposing (BlueskyAuth, Thread, anonymousBlueskyAuth, anonymousSearchHost, blueskyAuthFor, emptyThread, jsonResolver, nonEmpty, publicBlueskyAppViewHost, sensitiveMediaHiddenId)
 
 {-| Small helpers shared across Rellm's federation-protocol integrations -- currently
 `Shared.Federation.Mastodon`/`Bluesky`'s own post-fetching, and `Shared.AccountsPanel`'s Mastodon/
@@ -30,6 +30,20 @@ with CORS enabled for browsers. Shown to users as just "bsky.app".
 publicBlueskyAppViewHost : String
 publicBlueskyAppViewHost =
     "public.api.bsky.app"
+
+
+{-| The host to send an anonymous `app.bsky.feed.searchPosts` to for the AppView at `host`. Bluesky PBC's
+public AppView (`public.api.bsky.app`) answers everything else anonymously but rejects search with a
+403; the same AppView's other front door, `api.bsky.app`, serves search with no login (and CORS enabled),
+so search goes there. Any other AppView is assumed to search at its own host.
+-}
+anonymousSearchHost : String -> String
+anonymousSearchHost host =
+    if host == publicBlueskyAppViewHost then
+        "api.bsky.app"
+
+    else
+        host
 
 
 {-| Reads anonymously from `publicBlueskyAppViewHost`.

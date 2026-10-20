@@ -30,10 +30,9 @@ splits "a server" into a PDS (hosts an account, handles its login) and an AppVie
 for the whole network), so there are two ways to read, both expressed as a `BlueskyAuth`: as a connected
 _account_ (its own PDS host + token -- the PDS proxies reads to an AppView, and adds personalization),
 or _anonymously_ straight from an AppView (`public.api.bsky.app` by default), which serves public data
-with no login. What only an account gets: `fetchPosts` (its personalized home timeline), `searchPosts`
-(the public AppView rejects it), and anything that writes (`setLike`) or reads the account's own state
+with no login. What only an account gets: `fetchPosts` (its personalized home timeline), and anything that writes (`setLike`) or reads the account's own state
 (`fetchLikes`). What anyone gets: `fetchPublicFeed` (a curated feed generator, the closest thing to a
-"public timeline"), `fetchPost`/`fetchThread`, and every `ActorProfile`/`fetchAuthorFeed`-style actor read.
+"public timeline"), `searchPosts` (via `anonymousSearchHost`), `fetchPost`/`fetchThread`, and every `ActorProfile`/`fetchAuthorFeed`-style actor read.
 See `Components.Pages.PostsPage.fetchFeedSource`'s `BlueskyFeed`/`BlueskyAppViewFeed` cases and
 `Components.Pages.PostPage.init` (`fetchPost`, when a route's post id parses as
 `Components.Posts.BlueskyPostId`) for how each gets wired into a real page.
@@ -480,12 +479,12 @@ publicFeedUri =
 
 {-| `GET /xrpc/app.bsky.feed.searchPosts` -- Bluesky's real search endpoint, searching the whole
 public network (not just the connected account's own timeline/follows) -- see
-<https://docs.bsky.app/docs/api/app-bsky-feed-search-posts>. Requires auth despite that broad scope
-(confirmed empirically: an unauthenticated request gets a clean `AuthMissing` JSON error, not a
-network/CORS failure), so this is only ever called for an already-connected `BlueskyAccount` -- see
-`Components.Pages.PostsPage.fetchFeedSource`'s `BlueskyFeed` case, which switches to this instead of
-`fetchPosts` whenever `model.searchText` isn't blank, mirroring how a real `GetPosts` request switches
-to `TEXTSEARCH`. Unlike `getTimeline`'s `feed` array (each entry wrapping a `post` alongside separate
+<https://docs.bsky.app/docs/api/app-bsky-feed-search-posts>. Works as a connected account (its PDS
+proxies it) or anonymously -- but not against `public.api.bsky.app`, which 403s it; anonymous callers
+use `Shared.Federation.Common.anonymousSearchHost`. See `Components.Pages.PostsPage.fetchFeedSource`'s
+`BlueskyFeed`/`BlueskyAppViewFeed` cases, which switch to this instead of `fetchPosts`/`fetchPublicFeed`
+whenever `model.searchText` isn't blank, mirroring how a real `GetPosts` request switches to
+`TEXTSEARCH`. Unlike `getTimeline`'s `feed` array (each entry wrapping a `post` alongside separate
 `reply` context), each entry here is a bare `app.bsky.feed.defs#postView` directly, so `searchDecoder`
 reads its fields one level shallower than `decoder` does, and detects a reply via the post's own
 `record.reply` field being present (the same information `getTimeline`'s sibling `reply` field
