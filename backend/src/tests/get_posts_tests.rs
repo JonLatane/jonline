@@ -1636,3 +1636,267 @@ mod default_listing {
         });
     }
 }
+
+/// `RECENTLY_POPULAR_POSTS`: `(stars + 2 * responses + 1) / (age_hours + 2) ^ 1.5` over the last 14
+/// days. See that listing type's doc comment in `posts.proto`.
+mod recently_popular_posts {
+    use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
+
+    use super::*;
+    use crate::schema::posts;
+
+    const HOUR: u64 = 60 * 60;
+    const DAY: u64 = 24 * HOUR;
+
+    fn popular_request() -> GetPostsRequest {
+        GetPostsRequest {
+            listing_type: PostListingType::RecentlyPopularPosts as i32,
+            ..Default::default()
+        }
+    }
+
+    /// A global-public post by `author` published `age_secs` ago, with `stars` stars and
+    /// `responses` responses (set directly -- the columns `star_post`/`create_post` maintain).
+    fn post_with(
+        conn: &mut crate::db_connection::PgPooledConnection,
+        author: &crate::models::User,
+        age_secs: u64,
+        stars: i64,
+        responses: i32,
+    ) -> crate::models::Post {
+        let post = create_post(
+            conn,
+            Some(author),
+            PostOpts {
+                visibility: Visibility::GlobalPublic,
+                created_at: Some(ago(age_secs)),
+                published_at: Some(ago(age_secs)),
+                ..Default::default()
+            },
+        );
+        diesel::update(posts::table.filter(posts::id.eq(post.id)))
+            .set((
+                posts::unauthenticated_star_count.eq(stars),
+                posts::response_count.eq(responses),
+            ))
+            .execute(conn)
+            .expect("failed to set engagement");
+        post
+    }
+
+    #[test]
+    fn ranks_engaged_posts_above_newer_unengaged_ones() {
+        let mut conn = test_conn();
+        conn.test_transaction::<_, Status, _>(|conn| {
+            let author = create_user(conn, "popular_author1");
+            let newest_quiet = post_with(conn, &author, 60, 0, 0);
+            let older_liked = post_with(conn, &author, 3 * HOUR, 20, 0);
+
+            let response = get_posts(popular_request(), &None, conn)?;
+
+            assert_eq!(
+                ids(&response),
+                vec![older_liked.id.to_proto_id(), newest_quiet.id.to_proto_id()]
+            );
+            Ok(())
+        });
+    }
+
+    /// The decay matters: a week-old post with 100 stars scores ~0.05, a one-hour-old post with 5
+    /// stars ~1.15.
+    #[test]
+    fn newer_moderately_engaged_beats_old_heavily_engaged() {
+        let mut conn = test_conn();
+        conn.test_transaction::<_, Status, _>(|conn| {
+            let author = create_user(conn, "popular_author2");
+            let old_hit = post_with(conn, &author, 7 * DAY, 100, 0);
+            let fresh = post_with(conn, &author, HOUR, 5, 0);
+
+            let response = get_posts(popular_request(), &None, conn)?;
+
+            assert_eq!(
+                ids(&response),
+                vec![fresh.id.to_proto_id(), old_hit.id.to_proto_id()]
+            );
+            Ok(())
+        });
+    }
+
+    /// Each response counts as two stars: 10 responses (score numerator 21) outranks 15 stars (16)
+    /// at the same age.
+    #[test]
+    fn a_response_counts_double() {
+        let mut conn = test_conn();
+        conn.test_transaction::<_, Status, _>(|conn| {
+            let author = create_user(conn, "popular_author3");
+            let starred = post_with(conn, &author, 2 * HOUR, 15, 0);
+            let discussed = post_with(conn, &author, 2 * HOUR, 0, 10);
+
+            let response = get_posts(popular_request(), &None, conn)?;
+
+            assert_eq!(
+                ids(&response),
+                vec![discussed.id.to_proto_id(), starred.id.to_proto_id()]
+            );
+            Ok(())
+        });
+    }
+
+    /// With no engagement anywhere the `+ 1` still scores every post, so the listing degrades to
+    /// newest-first rather than coming back empty.
+    #[test]
+    fn with_no_engagement_it_is_newest_first() {
+        let mut conn = test_conn();
+        conn.test_transaction::<_, Status, _>(|conn| {
+            let author = create_user(conn, "popular_author4");
+            let oldest = post_with(conn, &author, 5 * HOUR, 0, 0);
+            let middle = post_with(conn, &author, 3 * HOUR, 0, 0);
+            let newest = post_with(conn, &author, HOUR, 0, 0);
+
+            let response = get_posts(popular_request(), &None, conn)?;
+
+            assert_eq!(
+                ids(&response),
+                vec![
+                    newest.id.to_proto_id(),
+                    middle.id.to_proto_id(),
+                    oldest.id.to_proto_id()
+                ]
+            );
+            Ok(())
+        });
+    }
+
+    #[test]
+    fn excludes_posts_older_than_the_14_day_window() {
+        let mut conn = test_conn();
+        conn.test_transaction::<_, Status, _>(|conn| {
+            let author = create_user(conn, "popular_author5");
+            let inside = post_with(conn, &author, 13 * DAY, 0, 0);
+            let _outside = post_with(conn, &author, 15 * DAY, 1000, 100);
+
+            let response = get_posts(popular_request(), &None, conn)?;
+
+            assert_eq!(ids(&response), vec![inside.id.to_proto_id()]);
+            Ok(())
+        });
+    }
+
+    /// `published_or_created_before` moves the window (and the "now" ages are measured from) back in
+    /// time: "what was popular as of then".
+    #[test]
+    fn published_or_created_before_scopes_the_window() {
+        let mut conn = test_conn();
+        conn.test_transaction::<_, Status, _>(|conn| {
+            let author = create_user(conn, "popular_author6");
+            let recent = post_with(conn, &author, HOUR, 50, 0);
+            let earlier = post_with(conn, &author, 20 * DAY, 1, 0);
+            let earlier_but_in_window_of_cutoff = post_with(conn, &author, 18 * DAY, 3, 0);
+
+            let response = get_posts(
+                GetPostsRequest {
+                    published_or_created_before: Some(ago(15 * DAY).to_proto()),
+                    ..popular_request()
+                },
+                &None,
+                conn,
+            )?;
+
+            let mut actual = ids(&response);
+            actual.sort();
+            let mut expected = vec![
+                earlier.id.to_proto_id(),
+                earlier_but_in_window_of_cutoff.id.to_proto_id(),
+            ];
+            expected.sort();
+            assert_eq!(actual, expected);
+            assert!(!ids(&response).contains(&recent.id.to_proto_id()));
+            Ok(())
+        });
+    }
+
+    #[test]
+    fn author_user_id_narrows_to_that_authors_posts() {
+        let mut conn = test_conn();
+        conn.test_transaction::<_, Status, _>(|conn| {
+            let author = create_user(conn, "popular_author7");
+            let other = create_user(conn, "popular_author8");
+            let mine = post_with(conn, &author, HOUR, 1, 0);
+            let _theirs = post_with(conn, &other, HOUR, 500, 0);
+
+            let response = get_posts(
+                GetPostsRequest {
+                    author_user_id: Some(author.id.to_proto_id()),
+                    ..popular_request()
+                },
+                &None,
+                conn,
+            )?;
+
+            assert_eq!(ids(&response), vec![mine.id.to_proto_id()]);
+            Ok(())
+        });
+    }
+
+    /// Same visibility rules as every other listing: an anonymous viewer only gets global-public
+    /// posts, however popular a server-public one is.
+    #[test]
+    fn respects_visibility() {
+        let mut conn = test_conn();
+        conn.test_transaction::<_, Status, _>(|conn| {
+            let author = create_user(conn, "popular_author9");
+            let public = post_with(conn, &author, HOUR, 1, 0);
+            let server_only = create_post(
+                conn,
+                Some(&author),
+                PostOpts {
+                    visibility: Visibility::ServerPublic,
+                    created_at: Some(ago(HOUR)),
+                    published_at: Some(ago(HOUR)),
+                    ..Default::default()
+                },
+            );
+            diesel::update(posts::table.filter(posts::id.eq(server_only.id)))
+                .set(posts::unauthenticated_star_count.eq(1000_i64))
+                .execute(conn)
+                .expect("failed to set engagement");
+
+            let response = get_posts(popular_request(), &None, conn)?;
+
+            assert_eq!(ids(&response), vec![public.id.to_proto_id()]);
+            Ok(())
+        });
+    }
+
+    /// Replies aren't listed (the default `POST` context keeps this a feed of top-level posts), even
+    /// popular ones.
+    #[test]
+    fn excludes_replies() {
+        let mut conn = test_conn();
+        conn.test_transaction::<_, Status, _>(|conn| {
+            let author = create_user(conn, "popular_author10");
+            let top_level = post_with(conn, &author, 2 * HOUR, 0, 0);
+            let reply = create_post(
+                conn,
+                Some(&author),
+                PostOpts {
+                    visibility: Visibility::GlobalPublic,
+                    context: PostContext::Reply,
+                    parent_post_id: Some(top_level.id),
+                    created_at: Some(ago(HOUR)),
+                    published_at: Some(ago(HOUR)),
+                    ..Default::default()
+                },
+            );
+            diesel::update(posts::table.filter(posts::id.eq(reply.id)))
+                .set(posts::unauthenticated_star_count.eq(1000_i64))
+                .execute(conn)
+                .expect("failed to set engagement");
+
+            let response = get_posts(popular_request(), &None, conn)?;
+
+            assert_eq!(ids(&response), vec![top_level.id.to_proto_id()]);
+            Ok(())
+        });
+    }
+}

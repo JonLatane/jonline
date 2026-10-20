@@ -9,12 +9,28 @@ import Shared.Conversions exposing (int64ToInt)
 import Shared.Federation.Mastodon as Mastodon
 import Support.MastodonFactory as Factory exposing (defaultOverrides)
 import Test exposing (Test, describe, test)
+import Time
 
 
 suite : Test
 suite =
     describe "Shared.Federation.Mastodon"
-        [ describe "decoder"
+        [ describe "maxIdBefore"
+            [ test "is the snowflake id for the moment: milliseconds shifted left 16 bits" <|
+                \_ ->
+                    Mastodon.maxIdBefore (Time.millisToPosix 1000)
+                        |> Expect.equal "65536000"
+            , test "a later cutoff gives a larger id (so older-than-it means posted-before)" <|
+                \_ ->
+                    let
+                        asInt : Int -> Float
+                        asInt millis =
+                            Mastodon.maxIdBefore (Time.millisToPosix millis) |> String.toFloat |> Maybe.withDefault 0
+                    in
+                    asInt 1760000000000
+                        |> Expect.lessThan (asInt 1760000001000)
+            ]
+        , describe "decoder"
             [ test "decodes a real-shaped Status into the same value `toPost` would get directly" <|
                 \_ ->
                     Factory.statusJson Factory.defaultOverrides

@@ -126,6 +126,11 @@ read it -- see `backend/src/rpcs/posts/get_posts.rs`), so
 `Components.Pages.PostsPage`'s POST/REPLY chooser works whether or not
 there's search text entered.
 
+`popular` switches the (search-less) request to `RECENTLY_POPULAR_POSTS` -- the server ranks the last
+two weeks' posts by stars/responses decayed by age (see that listing type's doc comment) instead of
+returning them strictly newest-first. Search text takes priority over it (`TEXT_SEARCH` is
+relevance-ranked), as `Components.Pages.PostsPage` documents for its own sort selector.
+
 `publishedOrCreatedBefore`, if given, is sent as `GetPostsRequest`'s own
 field of the same name -- `Components.Pages.PostsPage`'s "Posts Before
 <date>" tab's cutoff (see that module's `PostsBeforeDate` tab), restricting
@@ -140,9 +145,10 @@ fetchPosts :
     -> Maybe String
     -> String
     -> PostContext
+    -> Bool
     -> Maybe Time.Posix
     -> Task Grpc.Error ( Maybe AccountsPanel.Msg, GetPostsResponse )
-fetchPosts accountsPanelModel maybeAccountServer authorUserId searchText context publishedOrCreatedBefore =
+fetchPosts accountsPanelModel maybeAccountServer authorUserId searchText context popular publishedOrCreatedBefore =
     let
         trimmedSearchText : String
         trimmedSearchText =
@@ -151,7 +157,16 @@ fetchPosts accountsPanelModel maybeAccountServer authorUserId searchText context
         baseRequest : Proto.Rellm.GetPostsRequest
         baseRequest =
             if String.isEmpty trimmedSearchText then
-                { defaultGetPostsRequest | authorUserId = authorUserId, context = Just context }
+                { defaultGetPostsRequest
+                    | authorUserId = authorUserId
+                    , context = Just context
+                    , listingType =
+                        if popular then
+                            RECENTLYPOPULARPOSTS
+
+                        else
+                            ALLACCESSIBLEPOSTS
+                }
 
             else
                 { defaultGetPostsRequest

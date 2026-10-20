@@ -1,5 +1,8 @@
 use std::collections::HashMap;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
+use diesel::dsl::sql;
+use diesel::sql_types::Double;
 use diesel::*;
 use diesel_full_text_search::{
     configuration::TsConfigurationByName, to_tsquery_with_search_config, ts_rank_cd,
@@ -52,6 +55,9 @@ pub fn get_posts(
             Some(reply_depth) => get_replies_to_post_id(&user, &post_id, reply_depth, conn)?,
         },
         (PostListingType::TextSearch, _, _) => get_search_posts(&request, &user.clone(), conn)?,
+        (PostListingType::RecentlyPopularPosts, _, _) => {
+            get_recently_popular_posts(&request, &user.clone(), conn)?
+        }
         (_, _, Some(_author_user_id)) => get_user_posts(request, &user.clone(), conn)?,
         (PostListingType::MyGroupsPosts, _, _) => get_my_group_posts(
             user.ok_or(Status::new(Code::Unauthenticated, "must_be_logged_in"))?,
@@ -201,6 +207,101 @@ fn get_public_and_following_posts(
         .iter()
         .map(|(post, author, _)| MarshalablePost(post.clone(), author.clone(), None, None, vec![]))
         .collect()
+}
+
+// How far back `RECENTLY_POPULAR_POSTS` looks -- see that listing type's proto doc comment. Wide enough
+// that a small server's handful of posts still fills a page, narrow enough that the candidate set
+// (everything published in the window, scored in the database) stays cheap: it's a range scan over
+// `idx_posts_recently_popular` (see `2026-10-20-000000_add_recently_popular_posts_index`).
+const RECENTLY_POPULAR_WINDOW: Duration = Duration::from_secs(14 * 24 * 60 * 60);
+
+// `RECENTLY_POPULAR_POSTS`' score, as a SQL expression -- see that listing type's proto doc comment
+// for the formula: `(stars + 2 * responses + 1) / (age_hours + 2) ^ 1.5`, where age is measured from
+// `reference_epoch_secs` (a literal -- `None` means "now"), clamped at 0 so a post scheduled into the
+// future doesn't score above its own engagement.
+//
+// It's built as a literal (no bind parameters) on purpose: `query_visible_posts!`'s joins make the
+// query `SELECT DISTINCT`, and Postgres then requires every `ORDER BY` expression to also appear in the
+// select list -- which it only recognizes for structurally identical expressions, and two bind
+// placeholders never are (see `get_search_posts`' own comment on `ts_rank_cd`). The only interpolated
+// value is a number we formatted ourselves, so there's nothing to inject.
+fn popularity_score_sql(reference_epoch_secs: Option<f64>) -> String {
+    let reference = match reference_epoch_secs {
+        Some(secs) => format!("{secs:.3}"),
+        None => "extract(epoch from now())::float8".to_string(),
+    };
+    format!(
+        "((posts.unauthenticated_star_count + 2 * posts.response_count + 1)::float8 \
+         / power(greatest(({reference} - extract(epoch from posts.sort_published_at)::float8) / 3600.0, 0.0) + 2.0, 1.5))"
+    )
+}
+
+// `RECENTLY_POPULAR_POSTS`: the same visibility/context/author scoping as
+// `get_public_and_following_posts`/`get_user_posts` (whichever applies -- `author_user_id` narrows it
+// to one user's posts), restricted to the last `RECENTLY_POPULAR_WINDOW` (before
+// `published_or_created_before`, if given -- which then also becomes the "now" the score's age is
+// measured from, so the list reads as "what was popular as of that time"), ordered by
+// `popularity_score_sql` and then recency.
+fn get_recently_popular_posts(
+    request: &GetPostsRequest,
+    user: &Option<&models::User>,
+    conn: &mut PgPooledConnection,
+) -> Result<Vec<MarshalablePost>, Status> {
+    let context = request.context();
+    let author_user_id = request
+        .author_user_id
+        .as_ref()
+        .map(|author_user_id| author_user_id.to_db_id_or_err("author_user_id"))
+        .transpose()?;
+    let cutoff = published_or_created_before(request);
+    let reference_time = cutoff.unwrap_or_else(SystemTime::now);
+    let reference_epoch_secs = cutoff.map(|cutoff| {
+        cutoff
+            .duration_since(UNIX_EPOCH)
+            .map(|d| d.as_secs_f64())
+            .unwrap_or(0.0)
+    });
+    let score = popularity_score_sql(reference_epoch_secs);
+
+    // `posts::sort_published_at` is selected (though unused below) for the same `SELECT DISTINCT` /
+    // `ORDER BY` reason `get_public_and_following_posts` documents.
+    let mut query = query_visible_posts!(user)
+        .select((
+            models::POST_COLUMNS,
+            models::AUTHOR_COLUMNS.nullable(),
+            sql::<Double>(&score),
+            posts::sort_published_at,
+        ))
+        .filter(posts::context.eq(context.as_str_name()))
+        .filter(posts::user_id.is_not_null())
+        .filter(posts::sort_published_at.ge(reference_time - RECENTLY_POPULAR_WINDOW))
+        .order((
+            sql::<Double>(&score).desc(),
+            posts::sort_published_at.desc(),
+        ))
+        .limit(PAGE_SIZE)
+        .into_boxed();
+
+    if context == PostContext::Post {
+        query = query.filter(posts::parent_post_id.is_null());
+    }
+    if let Some(author_user_id) = author_user_id {
+        query = query.filter(posts::user_id.eq(author_user_id));
+    }
+    if cutoff.is_some() {
+        query = query.filter(posts::sort_published_at.lt(reference_time));
+    }
+
+    let result: Vec<MarshalablePost> = query
+        .load::<(models::Post, Option<models::Author>, f64, SystemTime)>(conn)
+        .map_err(|_| Status::new(Code::Internal, "error_loading_posts"))?
+        .iter()
+        .map(|(post, author, _, _)| {
+            MarshalablePost(post.clone(), author.clone(), None, None, vec![])
+        })
+        .collect();
+
+    Ok(result)
 }
 
 // Full-text search across accessible posts' author username/real name, title, link, and content.

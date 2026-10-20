@@ -7,6 +7,8 @@ module Shared.Federation.Mastodon exposing
     , fetchFollowers
     , fetchFollowing
     , fetchPosts
+    , fetchTrendingPosts
+    , maxIdBefore
     , fetchFavourites
     , fetchEmbeddedStatus
     , fetchStatus
@@ -337,17 +339,54 @@ toMediaReference attachment =
 
 
 {-| `GET /api/v1/timelines/public?local=true&limit=20` -- the local (this-instance-only) public
-timeline, unauthenticated, already translated via `toPost`. `local=true` rather than the federated
+timeline, unauthenticated, already translated via `toPost`. `before`, if given, restricts it to statuses
+posted before that time (`Components.Pages.PostsPage`'s "Posts Before" tab) -- see `maxIdBefore`.
+`local=true` rather than the federated
 (whole-known-network) timeline, since connecting one instance shouldn't implicitly pull in every
 server it happens to federate with too -- mirrors Rellm's own `ALL_ACCESSIBLE_POSTS` being scoped
 to _this_ server's own posts, not every server it's federated with either.
 -}
-fetchPosts : String -> Task Http.Error (List Post)
-fetchPosts instanceHost =
+fetchPosts : String -> Maybe Time.Posix -> Task Http.Error (List Post)
+fetchPosts instanceHost before =
     Http.task
         { method = "GET"
         , headers = []
-        , url = "https://" ++ instanceHost ++ "/api/v1/timelines/public?local=true&limit=20"
+        , url =
+            "https://"
+                ++ instanceHost
+                ++ "/api/v1/timelines/public?local=true&limit=20"
+                ++ (before |> Maybe.map (\cutoff -> "&max_id=" ++ maxIdBefore cutoff) |> Maybe.withDefault "")
+        , body = Http.emptyBody
+        , resolver = jsonResolver (Decode.list decoder) (\metadata _ -> Http.BadStatus metadata.statusCode)
+        , timeout = Just 10000
+        }
+        |> Task.map (List.map (toPost instanceHost))
+
+
+{-| The `max_id` that makes a Mastodon timeline start just before `cutoff`. Mastodon status ids are
+"snowflakes": the millisecond Unix timestamp shifted left 16 bits, with a sequence in the low bits, so
+the id for a moment is just `millis * 65536` and "older than this id" means "posted before that moment".
+(A cutoff in the 2020s makes that a 57-bit number -- `millis` is exact, and a power-of-two multiple of it
+is too, though `String.fromInt` may print the last digit or two rounded, which is far below the 65536-wide
+sequence space of one millisecond.) Not every Mastodon-API server uses snowflakes (Pleroma, GoToSocial
+don't); on one of those the cutoff just won't narrow the timeline.
+-}
+maxIdBefore : Time.Posix -> String
+maxIdBefore cutoff =
+    String.fromInt (Time.posixToMillis cutoff * 65536)
+
+
+{-| `GET /api/v1/trends/statuses?limit=20` -- the instance's trending statuses (Mastodon's own "what's
+popular lately" ranking, hours-to-days of engagement), unauthenticated like `fetchPosts` and already
+translated via `toPost`. Instances can switch trends off, in which case this is just an empty list.
+`Components.Pages.PostsPage`'s "Recently Popular Posts" sort uses it in place of `fetchPosts`.
+-}
+fetchTrendingPosts : String -> Task Http.Error (List Post)
+fetchTrendingPosts instanceHost =
+    Http.task
+        { method = "GET"
+        , headers = []
+        , url = "https://" ++ instanceHost ++ "/api/v1/trends/statuses?limit=20"
         , body = Http.emptyBody
         , resolver = jsonResolver (Decode.list decoder) (\metadata _ -> Http.BadStatus metadata.statusCode)
         , timeout = Just 10000

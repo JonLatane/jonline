@@ -13,12 +13,14 @@ module Shared.Federation.Bluesky exposing
     , fetchPostWithQuotes
     , fetchPosts
     , fetchLatestPosts
+    , fetchWhatsHot
     , fetchThread
     , fromRouteId
     , resolveHandle
     , searchActors
     , routeId
     , searchPosts
+    , SearchSort(..)
     , setLike
     , toPost
     , toPostIncludingSensitiveMedia
@@ -435,15 +437,80 @@ toMediaReference image =
 
 {-| `GET /xrpc/app.bsky.feed.getTimeline` against the account's own PDS (see `BlueskyAuth`), authenticated
 with its token, already translated via `toPost` -- the
-connected account's own algorithmic home timeline (reverse-chronological-following, by default), the
-AT Protocol equivalent of `ALL_ACCESSIBLE_POSTS`.
+connected account's own home timeline (reverse-chronological, following), the AT Protocol equivalent of
+`ALL_ACCESSIBLE_POSTS`. `before`, if given, keeps only posts older than it (`Components.Pages.PostsPage`'s
+"Posts Before" tab) -- see the filtering note below.
 -}
-fetchPosts : BlueskyAuth -> Task Http.Error (List Post)
-fetchPosts auth =
+fetchPosts : Maybe Time.Posix -> BlueskyAuth -> Task Http.Error (List Post)
+fetchPosts before auth =
     Http.task
         { method = "GET"
         , headers = readHeaders auth
-        , url = readHost auth ++ "/xrpc/app.bsky.feed.getTimeline?limit=20&algorithm=reverse-chronological"
+        , url =
+            readHost auth
+                ++ "/xrpc/app.bsky.feed.getTimeline?algorithm=reverse-chronological&limit="
+                ++ (if before == Nothing then
+                        "20"
+
+                    else
+                        "100"
+                   )
+        , body = Http.emptyBody
+        , resolver = jsonResolver (Decode.field "feed" (Decode.list decoder)) (\metadata _ -> Http.BadStatus metadata.statusCode)
+        , timeout = Just 10000
+        }
+        |> Task.map
+            (\feed ->
+                case before of
+                    Nothing ->
+                        List.map toPost feed
+
+                    Just cutoff ->
+                        -- `getTimeline` has no "before" parameter, so ask for a bigger page and drop everything
+                        -- posted after `cutoff`: a cutoff much further back than the page reaches (the last
+                        -- 100 posts of the account's following) shows little or nothing.
+                        feed
+                            |> List.filter (\feedPost -> Time.posixToMillis feedPost.createdAt < Time.posixToMillis cutoff)
+                            |> List.take 20
+                            |> List.map toPost
+            )
+
+
+{-| The newest posts on the whole network, anonymously -- what a browsed AppView (`BlueskyAppViewFeed`)
+shows when there's no search text, so it reads newest-first like a Mastodon instance's public timeline
+and a connected account's home timeline (`fetchPosts`). AT Protocol has no anonymous global timeline, but
+`searchPosts` with `sort=latest` and the match-everything query `*` is one: its results trail the live
+firehose by seconds. With a `before` cutoff (the "Posts Before" tab) it searches the common word `a`
+instead, with `until`, since `*` can't be combined with that. (The curated "What's Hot" feed generator this replaced was hours behind.) Callers
+should send it to `Shared.Federation.Common.anonymousSearchHost`, since the public AppView's other host
+403s search.
+-}
+fetchLatestPosts : Maybe Time.Posix -> BlueskyAuth -> Task Http.Error (List Post)
+fetchLatestPosts before auth =
+    case before of
+        Nothing ->
+            searchPosts SearchLatest Nothing auth "*"
+
+        Just cutoff ->
+            -- Bluesky rejects `q=*` together with `until` (HTTP 400), so a "before" listing needs a real
+            -- term. `a` is a common word in several of the network's biggest languages (a sample of its
+            -- results was about half English, with Spanish, French and Portuguese) -- an approximation
+            -- of "every post", and the best anonymous one there is.
+            searchPosts SearchLatest (Just cutoff) auth "a"
+
+
+{-| `GET /xrpc/app.bsky.feed.getFeed` for Bluesky's "What's Hot" feed generator -- its own "what's popular
+lately" ranking (an algorithmic feed, so hours behind the live firehose). Works anonymously against an
+AppView or as a connected account (via its PDS); `Components.Pages.PostsPage`'s "Recently Popular Posts"
+sort uses it in place of `fetchLatestPosts`/`fetchPosts`. Same `{ feed : [ { post, reply? } ] }` shape
+as `getTimeline`, so it shares `decoder`.
+-}
+fetchWhatsHot : BlueskyAuth -> Task Http.Error (List Post)
+fetchWhatsHot auth =
+    Http.task
+        { method = "GET"
+        , headers = readHeaders auth
+        , url = readHost auth ++ "/xrpc/app.bsky.feed.getFeed?limit=20&feed=" ++ Url.percentEncode whatsHotFeedUri
         , body = Http.emptyBody
         , resolver = jsonResolver (Decode.field "feed" (Decode.list decoder)) (\metadata _ -> Http.BadStatus metadata.statusCode)
         , timeout = Just 10000
@@ -451,17 +518,19 @@ fetchPosts auth =
         |> Task.map (List.map toPost)
 
 
-{-| The newest posts on the whole network, anonymously -- what a browsed AppView (`BlueskyAppViewFeed`)
-shows when there's no search text, so it reads newest-first like a Mastodon instance's public timeline
-and a connected account's home timeline (`fetchPosts`). AT Protocol has no anonymous global timeline, but
-`searchPosts` with `sort=latest` and the match-everything query `*` is one: its results trail the live
-firehose by seconds. (The curated "What's Hot" feed generator this replaced was hours behind.) Callers
-should send it to `Shared.Federation.Common.anonymousSearchHost`, since the public AppView's other host
-403s search.
+{-| The AT URI of Bluesky's "What's Hot" feed generator.
 -}
-fetchLatestPosts : BlueskyAuth -> Task Http.Error (List Post)
-fetchLatestPosts auth =
-    searchPosts auth "*"
+whatsHotFeedUri : String
+whatsHotFeedUri =
+    "at://did:plc:z72i7hdynmk6r22z27h6tvur/app.bsky.feed.generator/whats-hot"
+
+
+{-| How `searchPosts` orders its matches: Bluesky's own relevance/engagement ranking (`SearchTop`, what a
+text search wants), or newest first (`SearchLatest`, what `fetchLatestPosts` wants).
+-}
+type SearchSort
+    = SearchTop
+    | SearchLatest
 
 
 {-| `GET /xrpc/app.bsky.feed.searchPosts` -- Bluesky's real search endpoint, searching the whole
@@ -471,18 +540,28 @@ proxies it) or anonymously -- but not against `public.api.bsky.app`, which 403s 
 use `Shared.Federation.Common.anonymousSearchHost`. See `Components.Pages.PostsPage.fetchFeedSource`'s
 `BlueskyFeed`/`BlueskyAppViewFeed` cases, which switch to this instead of `fetchPosts`/`fetchLatestPosts`
 whenever `model.searchText` isn't blank, mirroring how a real `GetPosts` request switches to
-`TEXTSEARCH`. Unlike `getTimeline`'s `feed` array (each entry wrapping a `post` alongside separate
+`TEXTSEARCH`. `until`, if given, keeps only posts before it (the "Posts Before" tab's cutoff). Unlike `getTimeline`'s `feed` array (each entry wrapping a `post` alongside separate
 `reply` context), each entry here is a bare `app.bsky.feed.defs#postView` directly, so `searchDecoder`
 reads its fields one level shallower than `decoder` does, and detects a reply via the post's own
 `record.reply` field being present (the same information `getTimeline`'s sibling `reply` field
 carries, just nested differently here) rather than a sibling key.
 -}
-searchPosts : BlueskyAuth -> String -> Task Http.Error (List Post)
-searchPosts auth query =
+searchPosts : SearchSort -> Maybe Time.Posix -> BlueskyAuth -> String -> Task Http.Error (List Post)
+searchPosts sort until auth query =
     Http.task
         { method = "GET"
         , headers = readHeaders auth
-        , url = readHost auth ++ "/xrpc/app.bsky.feed.searchPosts?q=" ++ Url.percentEncode query ++ "&sort=latest&limit=20"
+        , url = readHost auth ++ "/xrpc/app.bsky.feed.searchPosts?q=" ++ Url.percentEncode query
+                ++ "&sort="
+                ++ (case sort of
+                        SearchTop ->
+                            "top"
+
+                        SearchLatest ->
+                            "latest"
+                   )
+                ++ (until |> Maybe.map (\cutoff -> "&until=" ++ Url.percentEncode (Iso8601.fromTime cutoff)) |> Maybe.withDefault "")
+                ++ "&limit=20"
         , body = Http.emptyBody
         , resolver = jsonResolver (Decode.field "posts" (Decode.list searchDecoder)) (\metadata _ -> Http.BadStatus metadata.statusCode)
         , timeout = Just 10000

@@ -62,7 +62,6 @@ import Proto.Rellm.AIProvider.Provider as AIProviderProvider
 import Proto.Rellm.ContactConsentState exposing (ContactConsentState(..))
 import Proto.Rellm.Moderation exposing (Moderation(..))
 import Proto.Rellm.Permission exposing (Permission(..))
-import Proto.Rellm.PostContext exposing (PostContext(..))
 import Proto.Rellm.SyncDestination.Configuration as DestinationConfiguration
 import Proto.Rellm.SyncSource.Configuration as Configuration
 import Proto.Rellm.Visibility exposing (Visibility(..))
@@ -4971,12 +4970,13 @@ profileDetail shared model server maybeAccount user =
         , case model.posts of
             Just postsModel ->
                 div [ class "posts-embedded-heading-row" ]
-                    [ h3 [] [ text (postsHeading model.posts) ]
+                    [ h3 [] [ Html.map PostsMsg (PostsPage.sortSelectView postsModel) ]
                     , Html.map PostsMsg (PostsPage.exportButtonView shared postsModel)
                     ]
 
             Nothing ->
-                h3 [] [ text (postsHeading model.posts) ]
+                -- Not `init`ed yet (see `Model.posts`' own doc) -- a static label until the select can render.
+                h3 [] [ text "Recent Posts" ]
         , case model.posts of
             Just postsModel ->
                 Html.map PostsMsg (PostsPage.view shared False False postsModel)
@@ -4990,22 +4990,6 @@ profileDetail shared model server maybeAccount user =
         , permissionsSection isAdmin model.permissionsExpanded model.permissionsEdit user
         , accountActionsSection canEdit model.passwordResetEdit user
         ]
-
-
-{-| "Recent Posts"/"Recent Replies", matching `model.posts`' own `PostContext` --
-mirrors `Pages.Home_.heading` exactly, just over a `Maybe PostsPage.Model` (not yet
-`init`ed for the brief moment before `resolver` first resolves, see `Model.posts`'
-own doc) -- defaults to "Recent Posts" both then and for the ordinary `POST` case,
-same as `Pages.Home_.heading` does.
--}
-postsHeading : Maybe PostsPage.Model -> String
-postsHeading maybePosts =
-    case maybePosts |> Maybe.map .context of
-        Just REPLY ->
-            "Recent Replies"
-
-        _ ->
-            "Recent Posts"
 
 
 {-| Whether the currently signed-in account on `user`'s own server (`maybeAccount`,

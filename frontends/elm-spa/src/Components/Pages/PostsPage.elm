@@ -9,6 +9,7 @@ module Components.Pages.PostsPage exposing
     , init
     , searchTextChanged
     , showSyncDestinationsChanged
+    , sortSelectView
     , subscriptions
     , update
     , view
@@ -120,6 +121,10 @@ type alias Model =
     -- Which of `recentPostsTabsView`'s two tabs is active -- see `PostsTab`'s own doc.
     , tab : PostsTab
 
+    -- Whether the feed is "Recent Posts" (newest first, the default) or "Recently Popular Posts" --
+    -- see `PostsSort`'s own doc. Persisted in the URL (`sort=popular`) like `tab`/`searchText`.
+    , sort : PostsSort
+
     -- The cutoff actually sent as `Components.Posts.fetchPosts`' own
     -- `publishedOrCreatedBefore` whenever `tab == PostsBeforeDate` (ignored
     -- entirely on `RecentPosts` -- see `refetchServers`'s own `fetchEffect`).
@@ -216,6 +221,7 @@ type Msg
       -- `model.publishedBefore` yet) instead seeds one via `GotNow` first.
       -- See `recentPostsTabsView`.
     | TabChanged PostsTab
+    | SortChanged PostsSort
       -- `Task.perform GotNow Time.now`'s result, fired only when
       -- `PostsBeforeDate` is selected with no `model.publishedBefore` yet
       -- (see `TabChanged`) -- seeds it with the current time (a sensible
@@ -448,6 +454,14 @@ type alias PostAnimation =
     { host : String
     , post : Post
     , flip : UI.Flip.State Msg
+
+    -- Where `post` sat in its own source's response, as a fraction (0 = first, approaching 1 = last).
+    -- Sources can be ranked rather than chronological (`SortPopular`: a real server's
+    -- `RECENTLY_POPULAR_POSTS`, Mastodon's trends, Bluesky's What's Hot), and `postsByServer` is a
+    -- `Dict`, so the order a response arrived in would otherwise be lost. A fraction (not the raw index)
+    -- so sources of different lengths interleave fairly: every source's top post comes first, and so on
+    -- -- see `postsListView`.
+    , rank : Float
     }
 
 
@@ -467,6 +481,32 @@ doc for why.
 type PostsTab
     = RecentPosts
     | PostsBeforeDate
+
+
+{-| How the feed is ordered, chosen with `sortSelectView` (the "Recent Posts"/"Recently Popular Posts"
+`<select>` that stands in for the old static "Recent Posts" heading, on the standalone page's first tab
+and on `Pages.Home_`/`Components.Pages.UserProfilePage`'s embedded copies):
+
+  - `SortRecent` (the default) -- newest first: a real server's `ALL_ACCESSIBLE_POSTS`, Mastodon's local
+    public timeline, a Bluesky account's home timeline / the network's latest posts.
+  - `SortPopular` -- "what's popular lately": a real server's `RECENTLY_POPULAR_POSTS` (stars and
+    responses, decayed by age -- see that listing type's doc comment), Mastodon's `trends/statuses`,
+    Bluesky's "What's Hot" feed.
+
+It only applies on the `RecentPosts` tab and while there's no search text, on every platform:
+
+  - "Posts Before <date>" with no search text is newest-first before the date.
+  - With search text (either tab) it's the most relevant matches -- on "Posts Before", only those posted
+    before the date. A Mastodon instance's public timeline can't be searched anonymously, so Mastodon
+    contributes nothing while searching.
+
+Real servers take the cutoff natively (`published_or_created_before`), Mastodon via a snowflake `max_id`
+(`Mastodon.maxIdBefore`), Bluesky's search via `until`, and a connected Bluesky account's home timeline by
+filtering a larger page (it has no "before" parameter, so a cutoff far in the past shows little).
+-}
+type PostsSort
+    = SortRecent
+    | SortPopular
 
 
 {-| `author`, if given, restricts the feed to that user's own posts (see
@@ -529,6 +569,7 @@ init shared author navKey path query embeddedPage availableSyncDestinations prof
                 , context = Dict.get "context" query |> Maybe.andThen postContextFromParam |> Maybe.withDefault POST
                 , searchGeneration = 0
                 , tab = tab
+                , sort = Dict.get "sort" query |> Maybe.andThen postsSortFromParam |> Maybe.withDefault SortRecent
                 , publishedBefore = publishedBefore
                 , publishedBeforeInputGeneration = 0
                 , showSyncDestinations = False
@@ -875,7 +916,24 @@ updateInner shared msg model =
             else
                 let
                     ( refetchedModel, refetchEffect ) =
-                        refetchFeeds shared { model | tab = RecentPosts } (List.map RellmServer (relevantServers shared model))
+                        refetchFeeds shared { model | tab = RecentPosts } (tabSensitiveSources shared { model | tab = RecentPosts })
+                in
+                ( refetchedModel, Effect.batch [ refetchEffect, pushUrl refetchedModel ] )
+
+        SortChanged sort ->
+            if sort == model.sort && model.tab == RecentPosts then
+                ( model, Effect.none )
+
+            else
+                -- Every source, not just the real servers `TabChanged` refetches: Mastodon and Bluesky
+                -- feeds change with the sort too (trending/What's Hot vs. newest).
+                let
+                    newModel : Model
+                    newModel =
+                        { model | sort = sort, tab = RecentPosts }
+
+                    ( refetchedModel, refetchEffect ) =
+                        refetchFeeds shared newModel (relevantFeedSources shared newModel)
                 in
                 ( refetchedModel, Effect.batch [ refetchEffect, pushUrl refetchedModel ] )
 
@@ -888,7 +946,7 @@ updateInner shared msg model =
                     Just _ ->
                         let
                             ( refetchedModel, refetchEffect ) =
-                                refetchFeeds shared { model | tab = PostsBeforeDate } (List.map RellmServer (relevantServers shared model))
+                                refetchFeeds shared { model | tab = PostsBeforeDate } (tabSensitiveSources shared { model | tab = PostsBeforeDate })
                         in
                         ( refetchedModel, Effect.batch [ refetchEffect, pushUrl refetchedModel ] )
 
@@ -911,7 +969,7 @@ updateInner shared msg model =
                     if newModel.tab == PostsBeforeDate then
                         let
                             ( refetchedModel, refetchEffect ) =
-                                refetchFeeds shared newModel (List.map RellmServer (relevantServers shared newModel))
+                                refetchFeeds shared newModel (tabSensitiveSources shared newModel)
                         in
                         ( refetchedModel, Effect.batch [ refetchEffect, pushUrl refetchedModel ] )
 
@@ -943,7 +1001,7 @@ updateInner shared msg model =
             if generation == model.publishedBeforeInputGeneration then
                 let
                     ( refetchedModel, refetchEffect ) =
-                        refetchFeeds shared model (List.map RellmServer (relevantServers shared model))
+                        refetchFeeds shared model (tabSensitiveSources shared model)
                 in
                 ( refetchedModel
                 , Effect.batch
@@ -1194,7 +1252,16 @@ relevantFeedSources shared model =
                         []
 
                     else
-                        List.map MastodonInstance (mastodonHostsToFetch shared)
+                        -- A Mastodon instance's public timeline can't be searched anonymously, so while
+                        -- there's search text it has nothing matching to contribute -- showing its
+                        -- unfiltered posts under a search would break "every result matches".
+                        List.map MastodonInstance
+                            (if String.isEmpty (String.trim model.searchText) then
+                                mastodonHostsToFetch shared
+
+                             else
+                                []
+                            )
                             ++ List.map BlueskyFeed (List.filter .enabled shared.accounts.blueskyAccounts)
                             ++ List.map (.host >> BlueskyAppViewFeed) (List.filter .enabled shared.accounts.blueskyAppViews)
                    )
@@ -1254,17 +1321,24 @@ mastodonHostsToFetch shared =
         |> Set.toList
 
 
+{-| The "Posts Before <date>" cutoff every source's fetch should honor -- `Just` only on that tab.
+-}
+beforeCutoff : Model -> Maybe Time.Posix
+beforeCutoff model =
+    if model.tab == PostsBeforeDate then
+        model.publishedBefore
+
+    else
+        Nothing
+
+
 {-| One real `GetPosts` fetch of `server`, scoped to `authorId` (the page's own `author`, or one `RellmFederatedAuthor`'s profile) and settling as `source`'s own `GotFeedPosts`. -}
 fetchRellmPosts : Shared.Model -> Model -> Int -> FeedSource -> RellmServer -> Maybe String -> Effect Msg
 fetchRellmPosts shared model requestId source server authorId =
     let
         cutoff : Maybe Time.Posix
         cutoff =
-            if model.tab == PostsBeforeDate then
-                model.publishedBefore
-
-            else
-                Nothing
+            beforeCutoff model
     in
     Posts.fetchPosts
         shared.accounts
@@ -1274,6 +1348,7 @@ fetchRellmPosts shared model requestId source server authorId =
         authorId
         model.searchText
         model.context
+        (isPopularListing model)
         cutoff
         |> Task.attempt (fromServerResult >> GotFeedPosts (feedSourceKey source) requestId)
         |> Effect.fromCmd
@@ -1299,7 +1374,12 @@ fetchFeedSource shared model requestId source =
             fetchRellmPosts shared model requestId source server (Just userId)
 
         MastodonInstance host ->
-            Mastodon.fetchPosts host
+            (if isPopularListing model then
+                Mastodon.fetchTrendingPosts host
+
+             else
+                Mastodon.fetchPosts host (beforeCutoff model)
+            )
                 |> Task.attempt (fromFederatedResult >> GotFeedPosts (feedSourceKey source) requestId)
                 |> Effect.fromCmd
 
@@ -1311,11 +1391,14 @@ fetchFeedSource shared model requestId source =
 
                 request : BlueskyAuth -> Task.Task Http.Error (List Post)
                 request auth =
-                    if String.isEmpty trimmedSearch then
-                        Bluesky.fetchPosts auth
+                    if not (String.isEmpty trimmedSearch) then
+                        Bluesky.searchPosts Bluesky.SearchTop (beforeCutoff model) auth trimmedSearch
+
+                    else if isPopularListing model then
+                        Bluesky.fetchWhatsHot auth
 
                     else
-                        Bluesky.searchPosts auth trimmedSearch
+                        Bluesky.fetchPosts (beforeCutoff model) auth
             in
             BlueskyAccounts.performWithBlueskyAccount account request
                 |> Task.attempt (fromBlueskyResult account >> GotFeedPosts (feedSourceKey source) requestId)
@@ -1326,11 +1409,14 @@ fetchFeedSource shared model requestId source =
             -- `model.searchText` shows the newest posts on the network (`Bluesky.fetchLatestPosts`);
             -- otherwise it's a network-wide post search. Either way it's `searchPosts`, which the
             -- public AppView only answers on its `api.bsky.app` front door (see `anonymousSearchHost`).
-            (if String.isEmpty (String.trim model.searchText) then
-                Bluesky.fetchLatestPosts (blueskyAuthFor (anonymousSearchHost host))
+            (if not (String.isEmpty (String.trim model.searchText)) then
+                Bluesky.searchPosts Bluesky.SearchTop (beforeCutoff model) (blueskyAuthFor (anonymousSearchHost host)) (String.trim model.searchText)
+
+             else if isPopularListing model then
+                Bluesky.fetchWhatsHot (blueskyAuthFor host)
 
              else
-                Bluesky.searchPosts (blueskyAuthFor (anonymousSearchHost host)) (String.trim model.searchText)
+                Bluesky.fetchLatestPosts (beforeCutoff model) (blueskyAuthFor (anonymousSearchHost host))
             )
                 |> Task.attempt (fromFederatedResult >> GotFeedPosts (feedSourceKey source) requestId)
                 |> Effect.fromCmd
@@ -1509,13 +1595,7 @@ applySearchChange shared model =
         sourcesToRefetch =
             List.map RellmServer (relevantServers shared model)
                 ++ federatedAuthorSources shared model
-                ++ (if model.author == Nothing then
-                        List.map BlueskyFeed (List.filter .enabled shared.accounts.blueskyAccounts)
-                            ++ List.map (.host >> BlueskyAppViewFeed) (List.filter .enabled shared.accounts.blueskyAppViews)
-
-                    else
-                        []
-                   )
+                ++ federatedSimpleSources shared model
 
         ( refetchedModel, refetchEffect ) =
             refetchFeeds shared model sourcesToRefetch
@@ -1651,6 +1731,14 @@ pushUrl model =
             else
                 [ Url.Builder.string "context" (postContextParam model.context) ]
 
+        sortParam : List Url.Builder.QueryParameter
+        sortParam =
+            if model.sort == SortPopular then
+                [ Url.Builder.string "sort" (postsSortParam SortPopular) ]
+
+            else
+                []
+
         publishedBeforeParam : List Url.Builder.QueryParameter
         publishedBeforeParam =
             case ( model.tab, model.publishedBefore ) of
@@ -1660,8 +1748,34 @@ pushUrl model =
                 _ ->
                     []
     in
-    Browser.Navigation.replaceUrl model.navKey (model.path ++ Url.Builder.toQuery (searchTextParam ++ contextParam ++ publishedBeforeParam))
+    Browser.Navigation.replaceUrl model.navKey (model.path ++ Url.Builder.toQuery (searchTextParam ++ contextParam ++ sortParam ++ publishedBeforeParam))
         |> Effect.fromCmd
+
+
+{-| `recent`/`popular` as sent via `sort`'s URL query param and `sortSelectView`'s `<select>`
+`value`/`onInput`; `postsSortFromParam` reads it back case-insensitively.
+-}
+postsSortParam : PostsSort -> String
+postsSortParam sort =
+    case sort of
+        SortRecent ->
+            "recent"
+
+        SortPopular ->
+            "popular"
+
+
+postsSortFromParam : String -> Maybe PostsSort
+postsSortFromParam param =
+    case String.toLower param of
+        "recent" ->
+            Just SortRecent
+
+        "popular" ->
+            Just SortPopular
+
+        _ ->
+            Nothing
 
 
 {-| `post`/`reply` as sent via `search_text`/`context`'s URL query param and
@@ -1743,7 +1857,7 @@ filter it by hand.
 syncAnimations : Model -> Model
 syncAnimations model =
     let
-        currentPosts : Dict String ( String, Post )
+        currentPosts : Dict String ( String, Post, Float )
         currentPosts =
             model.postsByServer
                 |> Dict.toList
@@ -1751,9 +1865,20 @@ syncAnimations model =
                     (\( _, feed ) ->
                         case feed.status of
                             Loaded posts ->
-                                posts
-                                    |> List.filter (\post -> post.context == model.context)
-                                    |> List.map (\post -> ( postAnimationKey feed.host post, ( feed.host, post ) ))
+                                let
+                                    inContext : List Post
+                                    inContext =
+                                        List.filter (\post -> post.context == model.context) posts
+
+                                    total : Float
+                                    total =
+                                        toFloat (List.length inContext)
+                                in
+                                inContext
+                                    |> List.indexedMap
+                                        (\index post ->
+                                            ( postAnimationKey feed.host post, ( feed.host, post, toFloat index / total ) )
+                                        )
 
                             _ ->
                                 []
@@ -1764,8 +1889,8 @@ syncAnimations model =
         | postAnimations =
             UI.Flip.syncAnimations
                 RemovePost
-                (\( host, post ) -> { host = host, post = post, flip = UI.Flip.enter })
-                (\( host, post ) anim -> { anim | host = host, post = post })
+                (\( host, post, rank ) -> { host = host, post = post, flip = UI.Flip.enter, rank = rank })
+                (\( host, post, rank ) anim -> { anim | host = host, post = post, rank = rank })
                 currentPosts
                 model.postAnimations
     }
@@ -1839,7 +1964,9 @@ recentPostsTabsView shared model =
 
     else
         div [ class "filter-tabs-bar" ]
-            [ button
+            [ -- A `div`, not a `button`, for the same reason as the date tab below: it nests a real
+              -- interactive control (the sort `<select>`).
+              div
                 [ classes
                     ("filter-tab"
                         :: "filter-tab-primary"
@@ -1852,7 +1979,7 @@ recentPostsTabsView shared model =
                     )
                 , onClick (TabChanged RecentPosts)
                 ]
-                [ text (recentPostsLabel model.context) ]
+                [ sortSelectView model ]
             , div
                 [ classes
                     ("filter-tab"
@@ -1881,18 +2008,42 @@ recentPostsTabsView shared model =
             ]
 
 
-{-| "Recent Posts"/"Recent Replies", matching `context` -- mirrors
-`Pages.Posts.heading`'s old label exactly (this view replaces that page's own
-static heading, see `recentPostsTabsView`'s own doc).
+{-| The "Recent Posts"/"Recently Popular Posts" `<select>` (or "Replies", matching `model.context`) --
+`PostsSort`'s own chooser. It replaces what used to be a static "Recent Posts" heading: it is the first
+tab on the standalone page (`recentPostsTabsView`), and `Pages.Home_`/`Components.Pages.UserProfilePage`
+put it in their embedded heading's place. Styled (`.posts-sort-select`) to read as the heading/tab
+label it replaces rather than as a form control.
 -}
-recentPostsLabel : PostContext -> String
-recentPostsLabel context =
-    case context of
-        REPLY ->
+sortSelectView : Model -> Html Msg
+sortSelectView model =
+    select
+        [ class "posts-sort-select"
+        , value (postsSortParam model.sort)
+        , onInput (postsSortFromParam >> Maybe.withDefault SortRecent >> SortChanged)
+        , title "Choose how posts are ordered"
+        ]
+        [ option [ value (postsSortParam SortRecent), selected (model.sort == SortRecent) ] [ text (sortLabel model.context SortRecent) ]
+        , option [ value (postsSortParam SortPopular), selected (model.sort == SortPopular) ] [ text (sortLabel model.context SortPopular) ]
+        ]
+
+
+{-| `sortSelectView`'s option labels: "Recent Posts"/"Recently Popular Posts", or "Replies" for the
+`REPLY` context.
+-}
+sortLabel : PostContext -> PostsSort -> String
+sortLabel context sort =
+    case ( context, sort ) of
+        ( REPLY, SortRecent ) ->
             "Recent Replies"
 
-        _ ->
+        ( REPLY, SortPopular ) ->
+            "Recently Popular Replies"
+
+        ( _, SortRecent ) ->
             "Recent Posts"
+
+        ( _, SortPopular ) ->
+            "Recently Popular Posts"
 
 
 {-| "Posts Before"/"Replies Before", matching `context` -- `recentPostsTabsView`'s
@@ -2167,12 +2318,58 @@ authorHeadingView shared maybeAuthor context =
                 ]
 
 
-{-| `model.postAnimations`, sorted most-recent-first by `Posts.postTimestamp`'s
-own "published\_at || created\_at" logic -- but only while `model.searchText`
-is blank: an active text search's results come back relevance-ranked (see
-`backend/src/rpcs/posts/get_posts.rs`'s `get_search_posts`), and re-sorting by
-recency here would throw that ranking away. Mirrors
-`Components.Pages.EventsPage.visibleAnimations`'s own identical search gate.
+{-| The sources a switch between the `RecentPosts` and `PostsBeforeDate` tabs (or a change to the date) has to
+refetch: every real server (the date is its cutoff) and every Mastodon/Bluesky source
+(`federatedSimpleSources` -- they honor the same cutoff, and flip between trending/What's Hot and newest
+with the tab, see `isPopularListing`).
+-}
+tabSensitiveSources : Shared.Model -> Model -> List FeedSource
+tabSensitiveSources shared model =
+    List.map RellmServer (relevantServers shared model) ++ federatedSimpleSources shared model
+
+
+{-| The Mastodon-instance/Bluesky-account/Bluesky-AppView sources among `relevantFeedSources` -- the ones
+translated client-side with no author scoping, as opposed to real servers (and their federated authors).
+-}
+federatedSimpleSources : Shared.Model -> Model -> List FeedSource
+federatedSimpleSources shared model =
+    relevantFeedSources shared model
+        |> List.filter
+            (\source ->
+                case source of
+                    MastodonInstance _ ->
+                        True
+
+                    BlueskyFeed _ ->
+                        True
+
+                    BlueskyAppViewFeed _ ->
+                        True
+
+                    _ ->
+                        False
+            )
+
+
+{-| Whether the feed is currently showing "Recently Popular Posts" (see `PostsSort`) -- the sort is
+chosen, and it's the `RecentPosts` tab (the "Posts Before <date>" tab is chronological).
+-}
+isPopularListing : Model -> Bool
+isPopularListing model =
+    model.sort == SortPopular && model.tab == RecentPosts
+
+
+{-| `model.postAnimations`, in display order:
+
+  - **Most recent first** (`Posts.postTimestamp`'s "published\_at || created\_at") by default, including on
+    the "Posts Before <date>" tab -- on every platform.
+  - **By `rank`** -- each post's position within its own source's response -- when the response order is
+    the point: the "Recently Popular Posts" sort (`isPopularListing`), and any text search (a real server's
+    `TEXT_SEARCH` is relevance-ranked, see `backend/src/rpcs/posts/get_posts.rs`'s `get_search_posts`, and
+    Bluesky's `searchPosts` is asked for `sort=top`). Sorting those by recency would throw the ranking
+    away. Sources interleave (every source's top result, then every source's second, ...), with recency
+    only breaking ties. On "Posts Before" a search is still relevance-ranked, restricted to what was
+    posted before the date.
 -}
 postsListView : Shared.Model -> Model -> Html Msg
 postsListView shared model =
@@ -2195,11 +2392,11 @@ postsListView shared model =
             sortedAnimations =
                 model.postAnimations
                     |> Dict.toList
-                    |> (if String.isEmpty (String.trim model.searchText) then
-                            List.sortBy (\( _, anim ) -> -(Time.posixToMillis (Posts.postTimestamp anim.post)))
+                    |> (if not (String.isEmpty (String.trim model.searchText)) || isPopularListing model then
+                            List.sortBy (\( _, anim ) -> ( anim.rank, -(Time.posixToMillis (Posts.postTimestamp anim.post)) ))
 
                         else
-                            identity
+                            List.sortBy (\( _, anim ) -> -(Time.posixToMillis (Posts.postTimestamp anim.post)))
                        )
         in
         if List.isEmpty sortedAnimations then

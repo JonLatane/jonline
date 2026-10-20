@@ -21,6 +21,7 @@ class PostListingType extends $pb.ProtobufEnum {
   static const PostListingType DIRECT_POSTS = PostListingType._(3, _omitEnumNames ? '' : 'DIRECT_POSTS');
   static const PostListingType POSTS_PENDING_MODERATION = PostListingType._(4, _omitEnumNames ? '' : 'POSTS_PENDING_MODERATION');
   static const PostListingType TEXT_SEARCH = PostListingType._(5, _omitEnumNames ? '' : 'TEXT_SEARCH');
+  static const PostListingType RECENTLY_POPULAR_POSTS = PostListingType._(6, _omitEnumNames ? '' : 'RECENTLY_POPULAR_POSTS');
   static const PostListingType GROUP_POSTS = PostListingType._(10, _omitEnumNames ? '' : 'GROUP_POSTS');
   static const PostListingType GROUP_POSTS_PENDING_MODERATION = PostListingType._(11, _omitEnumNames ? '' : 'GROUP_POSTS_PENDING_MODERATION');
 
@@ -31,6 +32,7 @@ class PostListingType extends $pb.ProtobufEnum {
     DIRECT_POSTS,
     POSTS_PENDING_MODERATION,
     TEXT_SEARCH,
+    RECENTLY_POPULAR_POSTS,
     GROUP_POSTS,
     GROUP_POSTS_PENDING_MODERATION,
   ];

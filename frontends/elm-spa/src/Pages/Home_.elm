@@ -84,12 +84,11 @@ import Components.PinnedPosts as PinnedPosts
 import Dict exposing (Dict)
 import Effect exposing (Effect)
 import Gen.Params.Home_ exposing (Params)
-import Html exposing (Html, div, h3, text)
+import Html exposing (Html, div, h3)
 import Html.Attributes exposing (class)
 import Page
 import Proto.Rellm.CalendarDisplayMode exposing (CalendarDisplayMode)
 import Proto.Rellm.NavigationTab exposing (NavigationTab(..))
-import Proto.Rellm.PostContext exposing (PostContext(..))
 import Request
 import Shared
 import Shared.AccountsPanel.RellmAccounts as RellmAccounts
@@ -615,7 +614,7 @@ contentView shared content =
         Feed feed ->
             [ Html.map EventsMsg (EventsPage.view shared True feed.events)
             , div [ class "posts-embedded-heading-row" ]
-                [ h3 [] [ text (heading feed.posts.context) ]
+                [ h3 [] [ Html.map PostsMsg (PostsPage.sortSelectView feed.posts) ]
                 , Html.map PostsMsg (PostsPage.exportButtonView shared feed.posts)
                 ]
             , Html.map PostsMsg (PostsPage.view shared False True feed.posts)
@@ -694,21 +693,6 @@ titleFor content =
 
         HomePostWithEvents subModel ->
             [ PostPage.titleFor subModel.post ]
-
-
-{-| "Recent Posts"/"Recent Replies", matching `model.context` -- always "Recent Posts" in
-practice here, since `PostsPage.view`'s `showSearchRow = False` above hides the only control
-(`PostsPage.searchRowView`'s POST/REPLY chooser) that could ever change `model.posts.context`
-away from its `POST` default.
--}
-heading : PostContext -> String
-heading context =
-    case context of
-        REPLY ->
-            "Recent Replies"
-
-        _ ->
-            "Recent Posts"
 
 
 {-| Lets `Main` forward a `Shared.Msg` that didn't originate from this page --

@@ -42,6 +42,9 @@ fieldNumbersPostListingType n_ =
         TEXTSEARCH ->
             5
 
+        RECENTLYPOPULARPOSTS ->
+            6
+
         GROUPPOSTS ->
             10
 
@@ -85,6 +88,9 @@ encodePostListingType value =
             TEXTSEARCH ->
                 5
 
+            RECENTLYPOPULARPOSTS ->
+                6
+
             GROUPPOSTS ->
                 10
 
@@ -122,6 +128,9 @@ decodePostListingType =
                     5 ->
                         TEXTSEARCH
 
+                    6 ->
+                        RECENTLYPOPULARPOSTS
+
                     10 ->
                         GROUPPOSTS
 
@@ -143,6 +152,7 @@ type PostListingType
     | DIRECTPOSTS
     | POSTSPENDINGMODERATION
     | TEXTSEARCH
+    | RECENTLYPOPULARPOSTS
     | GROUPPOSTS
     | GROUPPOSTSPENDINGMODERATION
     | PostListingTypeUnrecognized_ Int
