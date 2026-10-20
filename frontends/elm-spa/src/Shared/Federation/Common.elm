@@ -1,4 +1,4 @@
-module Shared.Federation.Common exposing (Thread, emptyThread, jsonResolver, nonEmpty, sensitiveMediaHiddenId)
+module Shared.Federation.Common exposing (BlueskyAuth, Thread, anonymousBlueskyAuth, blueskyAuthFor, emptyThread, jsonResolver, nonEmpty, publicBlueskyAppViewHost, sensitiveMediaHiddenId)
 
 {-| Small helpers shared across Rellm's federation-protocol integrations -- currently
 `Shared.Federation.Mastodon`/`Bluesky`'s own post-fetching, and `Shared.AccountsPanel`'s Mastodon/
@@ -9,6 +9,41 @@ for the bits those would otherwise each duplicate.
 import Http
 import Json.Decode as Decode
 import Proto.Rellm exposing (Post)
+
+
+{-| Where (and as whom) a Bluesky/AT Protocol XRPC read or write is sent -- `host` is the bare hostname
+of whichever server speaks `app.bsky.*` to this caller, and `accessToken` the bearer token to send it
+(`""` for none). For a connected account that is the account's own PDS (see
+`Shared.AccountsPanel.BlueskyAccounts.BlueskyAccount.pdsHost` -- the PDS logs the account in and proxies
+`app.bsky.*` reads on to an AppView on its behalf); for anonymous browsing it is an AppView directly
+(`publicBlueskyAppViewHost`, or whichever other `BlueskyServer` host), with no token.
+-}
+type alias BlueskyAuth =
+    { host : String
+    , accessToken : String
+    }
+
+
+{-| Bluesky PBC's public AppView -- serves public posts/threads/profiles/feeds with no auth at all, and
+with CORS enabled for browsers. Shown to users as just "bsky.app".
+-}
+publicBlueskyAppViewHost : String
+publicBlueskyAppViewHost =
+    "public.api.bsky.app"
+
+
+{-| Reads anonymously from `publicBlueskyAppViewHost`.
+-}
+anonymousBlueskyAuth : BlueskyAuth
+anonymousBlueskyAuth =
+    { host = publicBlueskyAppViewHost, accessToken = "" }
+
+
+{-| Reads anonymously from the given AppView `host` (a `BlueskyServer.host`).
+-}
+blueskyAuthFor : String -> BlueskyAuth
+blueskyAuthFor host =
+    { host = host, accessToken = "" }
 
 
 {-| A reserved `MediaReference.id` (never a real Rellm media id, which is always a UUID) that

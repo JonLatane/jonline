@@ -34,6 +34,7 @@ const FederationInfo$json = {
     {'1': 'facebook_auth_config', '3': 2, '4': 1, '5': 11, '6': '.rellm.FacebookAuthConfig', '9': 1, '10': 'facebookAuthConfig', '17': true},
     {'1': 'x_twitter_auth_config', '3': 3, '4': 1, '5': 11, '6': '.rellm.XTwitterAuthConfig', '9': 2, '10': 'xTwitterAuthConfig', '17': true},
     {'1': 'mastodon_servers', '3': 4, '4': 3, '5': 11, '6': '.rellm.MastodonServer', '10': 'mastodonServers'},
+    {'1': 'bluesky_servers', '3': 6, '4': 3, '5': 11, '6': '.rellm.BlueskyServer', '10': 'blueskyServers'},
   ],
   '8': [
     {'1': '_unsecure_localhost_federated_auth_enabled'},
@@ -51,8 +52,9 @@ final $typed_data.Uint8List federationInfoDescriptor = $convert.base64Decode(
     'ZmFjZWJvb2tBdXRoQ29uZmlniAEBElEKFXhfdHdpdHRlcl9hdXRoX2NvbmZpZxgDIAEoCzIZLn'
     'JlbGxtLlhUd2l0dGVyQXV0aENvbmZpZ0gCUhJ4VHdpdHRlckF1dGhDb25maWeIAQESQAoQbWFz'
     'dG9kb25fc2VydmVycxgEIAMoCzIVLnJlbGxtLk1hc3RvZG9uU2VydmVyUg9tYXN0b2RvblNlcn'
-    'ZlcnNCLAoqX3Vuc2VjdXJlX2xvY2FsaG9zdF9mZWRlcmF0ZWRfYXV0aF9lbmFibGVkQhcKFV9m'
-    'YWNlYm9va19hdXRoX2NvbmZpZ0IYChZfeF90d2l0dGVyX2F1dGhfY29uZmln');
+    'ZlcnMSPQoPYmx1ZXNreV9zZXJ2ZXJzGAYgAygLMhQucmVsbG0uQmx1ZXNreVNlcnZlclIOYmx1'
+    'ZXNreVNlcnZlcnNCLAoqX3Vuc2VjdXJlX2xvY2FsaG9zdF9mZWRlcmF0ZWRfYXV0aF9lbmFibG'
+    'VkQhcKFV9mYWNlYm9va19hdXRoX2NvbmZpZ0IYChZfeF90d2l0dGVyX2F1dGhfY29uZmln');
 
 @$core.Deprecated('Use federatedServerDescriptor instead')
 const FederatedServer$json = {
@@ -140,4 +142,25 @@ final $typed_data.Uint8List mastodonServerDescriptor = $convert.base64Decode(
     'X2RlZmF1bHQYBCABKAhIAFITY29uZmlndXJlZEJ5RGVmYXVsdIgBARIvChFwaW5uZWRfYnlfZG'
     'VmYXVsdBgFIAEoCEgBUg9waW5uZWRCeURlZmF1bHSIAQFCGAoWX2NvbmZpZ3VyZWRfYnlfZGVm'
     'YXVsdEIUChJfcGlubmVkX2J5X2RlZmF1bHQ=');
+
+@$core.Deprecated('Use blueskyServerDescriptor instead')
+const BlueskyServer$json = {
+  '1': 'BlueskyServer',
+  '2': [
+    {'1': 'host', '3': 1, '4': 1, '5': 9, '10': 'host'},
+    {'1': 'configured_by_default', '3': 2, '4': 1, '5': 8, '9': 0, '10': 'configuredByDefault', '17': true},
+    {'1': 'pinned_by_default', '3': 3, '4': 1, '5': 8, '9': 1, '10': 'pinnedByDefault', '17': true},
+  ],
+  '8': [
+    {'1': '_configured_by_default'},
+    {'1': '_pinned_by_default'},
+  ],
+};
+
+/// Descriptor for `BlueskyServer`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List blueskyServerDescriptor = $convert.base64Decode(
+    'Cg1CbHVlc2t5U2VydmVyEhIKBGhvc3QYASABKAlSBGhvc3QSNwoVY29uZmlndXJlZF9ieV9kZW'
+    'ZhdWx0GAIgASgISABSE2NvbmZpZ3VyZWRCeURlZmF1bHSIAQESLwoRcGlubmVkX2J5X2RlZmF1'
+    'bHQYAyABKAhIAVIPcGlubmVkQnlEZWZhdWx0iAEBQhgKFl9jb25maWd1cmVkX2J5X2RlZmF1bH'
+    'RCFAoSX3Bpbm5lZF9ieV9kZWZhdWx0');
 

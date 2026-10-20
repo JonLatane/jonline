@@ -29,6 +29,8 @@ fn main() {
         // field (`Vec<MastodonServer>`), not an `optional` one -- serde already tolerates a
         // missing `Option` field for free, but a missing `Vec` field is a hard error without this.
         .field_attribute("FederationInfo.mastodon_servers", "#[serde(default)]")
+        // Same again, for `FederationInfo.bluesky_servers` (another `repeated` field added later).
+        .field_attribute("FederationInfo.bluesky_servers", "#[serde(default)]")
         // Same idea, for `MediaSettings.disable_link_preview_images` -- lets `media_settings` JSON
         // stored before this field existed deserialize instead of erroring (which
         // `normalized_media_settings` would otherwise swallow, resetting the whole blob), defaulting

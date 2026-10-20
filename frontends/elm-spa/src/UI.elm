@@ -13,7 +13,7 @@ import Html.Attributes exposing (alt, attribute, checked, class, classList, disa
 import Html.Events exposing (on, onClick, onInput, onSubmit, preventDefaultOn, stopPropagationOn)
 import Html.Keyed
 import Json.Decode as Decode
-import Proto.Rellm exposing (ContactConsentChange, ContactMethod, FederatedServer, MastodonServer)
+import Proto.Rellm exposing (BlueskyServer, ContactConsentChange, ContactMethod, FederatedServer, MastodonServer)
 import Proto.Rellm.ContactConsentState exposing (ContactConsentState(..))
 import Proto.Rellm.NavigationTabStyle exposing (NavigationTabStyle)
 import Proto.Rellm.SyncSource.Configuration as Configuration
@@ -24,11 +24,13 @@ import Shared
 import Shared.AccountsPanel as AccountsPanel
 import Shared.AccountsPanel.AdminTab as AdminTab
 import Shared.AccountsPanel.BlueskyAccounts exposing (BlueskyAccount)
+import Shared.AccountsPanel.BlueskyAppViews as BlueskyAppViews exposing (BlueskyAppView)
 import Shared.AccountsPanel.DebugTab as DebugTab
 import Shared.AccountsPanel.MastodonAccounts exposing (MastodonAccount)
 import Shared.AccountsPanel.MastodonServers exposing (BrowsedMastodonInstance)
 import Shared.AccountsPanel.RellmAccounts as RellmAccounts exposing (RellmAccount)
 import Shared.AccountsPanel.RellmServers as RellmServers exposing (Branding, RellmServer)
+import Shared.Federation.Common exposing (publicBlueskyAppViewHost)
 import Shared.AudioPlayerPanel as AudioPlayerPanel
 import Shared.Breadcrumbs as Breadcrumbs
 import Shared.BrowserInfo as BrowserInfo
@@ -958,9 +960,13 @@ accountsMenuServerSummary accountsPanelModel =
         enabledBlueskyAccounts =
             accountsPanelModel.blueskyAccounts |> List.filter .enabled
 
+        enabledBlueskyAppViews : List BlueskyAppView
+        enabledBlueskyAppViews =
+            accountsPanelModel.blueskyAppViews |> List.filter .enabled
+
         count : Int
         count =
-            List.length servers + List.length mastodonHosts + List.length enabledBlueskyAccounts
+            List.length servers + List.length mastodonHosts + List.length enabledBlueskyAccounts + List.length enabledBlueskyAppViews
 
         hasUnreachableServers : Bool
         hasUnreachableServers =
@@ -1323,7 +1329,7 @@ combinedServerFeedItemsStrip shared =
         )
 
 
-{-| Wraps one `CombinedServerFeedItem`'s chip (`serverChip`/`mastodonServerFeedChip`)
+{-| Wraps one `CombinedServerFeedItem`'s chip (`serverChip`/`mastodonServerFeedChip`/`blueskyAppViewFeedChip`)
 in a fading/scaling/collapsing animated outer `div` (entering when freshly added, removing when
 deleted -- see `AccountsPanel.serverAnimations`/`UI.Flip`) -- the `UI.Flip.Horizontal` counterpart of
 `accountRowFlip`, whose doc covers the two-layer reasoning (fade/collapse here vs. each chip's own,
@@ -1363,6 +1369,9 @@ combinedServerFeedItemChipFlip shared count index item =
 
                 AccountsPanel.CombinedMastodonInstance instance ->
                     mastodonServerFeedChip shared count index instance
+
+                AccountsPanel.CombinedBlueskyAppView appView ->
+                    blueskyAppViewFeedChip shared count index appView
     in
     div (UI.Flip.itemAttributes UI.Flip.Horizontal flipState isMoving)
         [ div pointerEventsAttr [ chip ] ]
@@ -1647,9 +1656,13 @@ recommendedServersStrip shared =
         recommendedMastodonServers =
             AccountsPanel.recommendedMastodonServers shared.accounts
 
+        recommendedBlueskyServers : List BlueskyServer
+        recommendedBlueskyServers =
+            AccountsPanel.recommendedBlueskyServers shared.accounts
+
         totalCount : Int
         totalCount =
-            List.length recommendedRellmServers + List.length recommendedMastodonServers
+            List.length recommendedRellmServers + List.length recommendedMastodonServers + List.length recommendedBlueskyServers
     in
     if totalCount == 0 then
         text ""
@@ -1669,6 +1682,7 @@ recommendedServersStrip shared =
                 div [ class "recommended-servers-strip" ]
                     (List.map (recommendedServerChip shared) recommendedRellmServers
                         ++ List.map recommendedMastodonServerChip recommendedMastodonServers
+                        ++ List.map recommendedBlueskyServerChip recommendedBlueskyServers
                     )
             ]
 
@@ -1743,6 +1757,41 @@ recommendedMastodonServerChip mastodonServer =
             , div [ class "server-chip-host-row" ] [ div [ class "server-chip-host" ] [ text domain ] ]
             ]
         , div [ classes [ "server-chip-bottom", "recommended-server-add-row", hostnameToCSSClass domain, "background-color-nav" ] ]
+            [ text "+ Add" ]
+        ]
+
+
+{-| A recommended-server chip for one of `mainFrontendHost`'s `BlueskyServer`s
+(`AccountsPanel.recommendedBlueskyServers`) -- `recommendedMastodonServerChip`'s Bluesky counterpart:
+clicking it adds a no-account browsed AppView (`AccountsPanel.AddBlueskyAppViewClicked`).
+-}
+recommendedBlueskyServerChip : BlueskyServer -> Html Shared.Msg
+recommendedBlueskyServerChip blueskyServer =
+    let
+        host : String
+        host =
+            blueskyServer.host
+
+        name : String
+        name =
+            BlueskyAppViews.displayName host
+    in
+    button
+        [ classList [ ( "server-chip", True ), ( "recommended-server-chip", True ), ( hostnameToCSSClass host, True ) ]
+        , onClick (Shared.AccountsPanelMsg (AccountsPanel.AddBlueskyAppViewClicked host))
+        , title ("Add " ++ name)
+        ]
+        [ div [ classes [ "server-chip-top", hostnameToCSSClass host, "background-color-primary" ] ]
+            [ div [ class "server-chip-logo-row" ]
+                [ div [ class "server-name-and-logo regular" ]
+                    [ div [ class "server-logo-placeholder" ] [ text (RellmServers.initialLetter name) ]
+                    , div [ class "server-name-breakdown" ]
+                        [ div [ class "server-name-primary" ] [ text "Bluesky" ] ]
+                    ]
+                ]
+            , div [ class "server-chip-host-row" ] [ div [ class "server-chip-host" ] [ text name ] ]
+            ]
+        , div [ classes [ "server-chip-bottom", "recommended-server-add-row", hostnameToCSSClass host, "background-color-nav" ] ]
             [ text "+ Add" ]
         ]
 
@@ -1953,6 +2002,99 @@ mastodonServerFeedChip shared count index instance =
                 [ text "╳" ]
             ]
         ]
+
+
+{-| One anonymously-browsed Bluesky AppView (`bsky.app` by default) -- `mastodonServerFeedChip`'s
+Bluesky counterpart, styled the same way (inverted two-tone, `border-color-accent`, reorder arrows
+flanking the top row, host below, one action strip at the bottom). It is a _server_ because it needs no
+account: reads go straight to the AppView. Enabling it turns off any connected Bluesky account (and
+vice versa) since both read the same network -- see `AccountsPanel.blueskyAppViews`.
+-}
+blueskyAppViewFeedChip : Shared.Model -> Int -> Int -> BlueskyAppView -> Html Shared.Msg
+blueskyAppViewFeedChip shared count index appView =
+    let
+        mainHostClass : String
+        mainHostClass =
+            hostnameToCSSClass shared.accounts.mainFrontendHost
+
+        key : String
+        key =
+            "bluesky-appview:" ++ appView.host
+
+        reorderInfo :
+            { moveAttrs : List (Html.Attribute Shared.Msg)
+            , reorderPair : { backward : Html Shared.Msg, forward : Html Shared.Msg }
+            , showBackward : Bool
+            , showForward : Bool
+            }
+        reorderInfo =
+            feedItemReorderInfo shared count index key
+
+        name : String
+        name =
+            BlueskyAppViews.displayName appView.host
+    in
+    div
+        (id (AccountsPanel.serverFeedItemChipDomId key)
+            :: classes [ "server-chip", mainHostClass, "border-color-accent" ]
+            :: reorderInfo.moveAttrs
+        )
+        [ div
+            [ classes [ "server-chip-top", mainHostClass, "background-color-nav" ] ]
+            [ div [ class "server-chip-logo-row" ]
+                [ div [ classList [ ( "reorder-arrow", True ), ( "reorder-arrow-hidden", not reorderInfo.showBackward ) ] ] [ reorderInfo.reorderPair.backward ]
+                , div [ class "server-logo-placeholder" ] [ text (RellmServers.initialLetter name) ]
+                , div [ classList [ ( "reorder-arrow", True ), ( "reorder-arrow-hidden", not reorderInfo.showForward ) ] ] [ reorderInfo.reorderPair.forward ]
+                ]
+            , div [ class "server-chip-host-row" ] [ div [ class "federated-feed-service-label" ] [ text "⇄ Bluesky" ] ]
+            , div [ class "server-chip-host-row" ] [ div [ class "server-chip-host" ] [ text name ] ]
+            ]
+        , div [ classes [ "server-chip-bottom", mainHostClass, "background-color-primary" ] ]
+            [ switchInput appView.enabled False (Shared.AccountsPanelMsg (AccountsPanel.ToggleBlueskyAppViewEnabled appView.host))
+            , a
+                [ class "external-link-btn"
+                , href ("https://" ++ name)
+                , target "_blank"
+                , attribute "rel" "noopener noreferrer"
+                , title ("Open " ++ name ++ " in a new tab")
+                ]
+                [ text Glyph.externalLink ]
+            , button
+                [ class "remove-btn"
+                , onClick (Shared.AccountsPanelMsg (AccountsPanel.RemoveBlueskyAppViewClicked appView.host))
+                , title ("Stop browsing " ++ name)
+                ]
+                [ text "╳" ]
+            ]
+        ]
+
+
+{-| The Bluesky tab's "or browse without an account" line -- one button adding Bluesky PBC's public
+AppView (bsky.app) to the server strip (`AccountsPanel.AddBlueskyAppViewClicked`), the Bluesky
+counterpart of typing a host into `mastodonServerFormView`. Hidden once it's there (it's then a chip).
+Other AppViews come from the server's own recommendations (`recommendedServersStrip`).
+-}
+blueskyBrowseSection : Shared.Model -> Html Shared.Msg
+blueskyBrowseSection shared =
+    let
+        host : String
+        host =
+            publicBlueskyAppViewHost
+    in
+    if List.any (\a -> a.host == host) shared.accounts.blueskyAppViews then
+        text ""
+
+    else
+        div [ class "server-details-federation-add" ]
+            [ button
+                [ type_ "button"
+                , class "background-color-primary"
+                , style "flex" "1 1 100%"
+                , onClick (Shared.AccountsPanelMsg (AccountsPanel.AddBlueskyAppViewClicked host))
+                , title "Read public Bluesky posts from bsky.app, with no account"
+                ]
+                [ text "Or browse bsky.app without an account" ]
+            ]
 
 
 {-| Always-mounted wrapper that animates its single child (a button or field) in/out (height, padding, border and
@@ -3366,7 +3508,12 @@ addAccountServerFormBody shared currentRoute =
                     , mastodonConnectSection shared
                     ]
                 )
-            , pane AccountsPanel.BlueskyAccountFormType (blueskyConnectFormView shared.accounts.blueskyConnectForm)
+            , pane AccountsPanel.BlueskyAccountFormType
+                (div [ class "account-form" ]
+                    [ blueskyConnectFormView shared.accounts.blueskyConnectForm
+                    , blueskyBrowseSection shared
+                    ]
+                )
             ]
         ]
 

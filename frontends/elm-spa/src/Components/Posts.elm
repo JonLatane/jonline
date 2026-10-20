@@ -76,7 +76,7 @@ import Shared.AccountsPanel.RellmAccounts exposing (RellmAccount)
 import Shared.AccountsPanel.RellmServers as RellmServers exposing (RellmServer, withAccessToken)
 import Shared.Conversions exposing (int64ToInt, posixToTimestamp, timestampToPosix)
 import Shared.Federation.Bluesky as Bluesky
-import Shared.Federation.Common exposing (sensitiveMediaHiddenId)
+import Shared.Federation.Common exposing (publicBlueskyAppViewHost, sensitiveMediaHiddenId)
 import Shared.Time as SharedTime
 import Task exposing (Task)
 import Time
@@ -1912,7 +1912,18 @@ displayHost host =
         String.dropLeft 9 host
 
     else if String.startsWith "bluesky:" host then
-        String.dropLeft 8 host
+        let
+            untagged : String
+            untagged =
+                String.dropLeft 8 host
+        in
+        -- Bluesky PBC's public AppView (an anonymously-browsed `BlueskyAppViewFeed`'s key) is just
+        -- "bsky.app" to a reader, not its API hostname.
+        if untagged == publicBlueskyAppViewHost then
+            "bsky.app"
+
+        else
+            untagged
 
     else
         host

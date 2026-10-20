@@ -249,6 +249,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
       ...serverConfiguration?.federationInfo,
       servers: federatedServers ?? [],
       mastodonServers: serverConfiguration?.federationInfo?.mastodonServers ?? [],
+      blueskyServers: serverConfiguration?.federationInfo?.blueskyServers ?? [],
     },
     defaultUserPermissions: defaultPermissions,
     anonymousUserPermissions: anonymousPermissions,

@@ -22,10 +22,11 @@ import Html.Attributes exposing (alt, class, disabled, id, placeholder, src, tit
 import Html.Events exposing (onClick, onInput)
 import Html.Keyed
 import Http
-import Proto.Rellm exposing (FederatedServer, MastodonServer, ServerConfiguration)
+import Proto.Rellm exposing (BlueskyServer, FederatedServer, MastodonServer, ServerConfiguration)
 import Set exposing (Set)
 import Shared
 import Shared.AccountsPanel as AccountsPanel
+import Shared.Federation.Common exposing (publicBlueskyAppViewHost)
 import Shared.AccountsPanel.MastodonServers as MastodonServers exposing (MastodonInstanceInfo)
 import Shared.AccountsPanel.RellmAccounts exposing (RellmAccount)
 import Shared.AccountsPanel.RellmServers as RellmServers exposing (RellmServer)
@@ -43,6 +44,7 @@ import UI.Flip
 type alias Model =
     { federationEdit : Maybe FederationEdit
     , mastodonServersEdit : Maybe MastodonServersEdit
+    , blueskyServersEdit : Maybe BlueskyServersEdit
     , facebookAppIdEdit : Maybe TextFieldEdit
     , facebookAppSecretEdit : Maybe TextFieldEdit
     , xTwitterClientIdEdit : Maybe TextFieldEdit
@@ -123,6 +125,15 @@ type Msg
     | AnimateMastodonServerMove Animation.Msg
     | FederatedServerDragMsg UI.Drag.Msg
     | MastodonServerDragMsg UI.Drag.Msg
+    | BlueskyServersEditClicked
+    | BlueskyServersCancelClicked
+    | BlueskyServersSaveClicked
+    | GotBlueskyServersSaveResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, ServerConfiguration ))
+    | BlueskyServerHostInputChanged String
+    | BlueskyServerAddClicked String
+    | BlueskyServerRemoveClicked String
+    | BlueskyServerConfiguredByDefaultToggled String
+    | BlueskyServerPinnedByDefaultToggled String
     | MastodonAppIdChanged String String
     | MastodonAppSecretEditClicked String
     | MastodonAppSecretChanged String String
@@ -200,6 +211,18 @@ type alias MastodonServersEdit =
     }
 
 
+{-| Live only while the Federation tab's `BlueskyServer` list is being edited by an admin -- a much
+simpler cousin of `MastodonServersEdit`: there are no secrets or per-item sub-forms here, just a host
+and two flags, and in practice only a handful of entries (AppViews are few; see `BlueskyServer`'s own
+doc), so there's no reordering/drag/FLIP machinery either -- add, remove and toggle are enough.
+-}
+type alias BlueskyServersEdit =
+    { pending : List BlueskyServer
+    , hostInput : String
+    , status : AccountsPanel.FormStatus
+    }
+
+
 {-| One in-progress `MastodonServer` edit -- `server.appSecret` is always blank here (the server
 never sends the real secret back, same as `FacebookAuthConfig.appSecret`/`TextFieldEdit`'s own doc),
 and is only overwritten on save if `pendingAppSecret` is non-blank (see `toSavedMastodonServer`) --
@@ -235,6 +258,7 @@ init : Model
 init =
     { federationEdit = Nothing
     , mastodonServersEdit = Nothing
+    , blueskyServersEdit = Nothing
     , facebookAppIdEdit = Nothing
     , facebookAppSecretEdit = Nothing
     , xTwitterClientIdEdit = Nothing
@@ -613,6 +637,105 @@ updateMsg shared targetHost isSecure maybeServer msg model =
 
                 Nothing ->
                     ( model, Effect.none )
+
+        BlueskyServersEditClicked ->
+            case maybeServer of
+                Just server ->
+                    ( { model
+                        | blueskyServersEdit =
+                            Just
+                                { pending = (RellmServers.configurationOf server).federationInfo |> Maybe.map .blueskyServers |> Maybe.withDefault []
+                                , hostInput = ""
+                                , status = AccountsPanel.Idle
+                                }
+                      }
+                    , Effect.none
+                    )
+
+                Nothing ->
+                    ( model, Effect.none )
+
+        BlueskyServersCancelClicked ->
+            ( { model | blueskyServersEdit = Nothing }, Effect.none )
+
+        BlueskyServersSaveClicked ->
+            case ( model.blueskyServersEdit, Common.adminAccountFor shared targetHost ) of
+                ( Just edit, Just account ) ->
+                    ( { model | blueskyServersEdit = Just { edit | status = AccountsPanel.Submitting } }
+                    , AccountsPanel.updateServerConfig shared.accounts ( Just account.userId, targetHost ) (applyBlueskyServers edit.pending)
+                        |> Task.attempt GotBlueskyServersSaveResult
+                        |> Effect.fromCmd
+                    )
+
+                _ ->
+                    ( model, Effect.none )
+
+        GotBlueskyServersSaveResult (Ok ( maybeAccountsPanelMsg, newConfig )) ->
+            ( { model | blueskyServersEdit = Nothing }
+            , Effect.batch
+                [ Common.accountsPanelEffect maybeAccountsPanelMsg
+                , Effect.fromShared (Shared.AccountsPanelMsg (AccountsPanel.GotServerConfigSaveResult targetHost newConfig))
+                ]
+            )
+
+        GotBlueskyServersSaveResult (Err err) ->
+            ( { model | blueskyServersEdit = model.blueskyServersEdit |> Maybe.map (\edit -> { edit | status = AccountsPanel.Errored (AccountsPanel.grpcErrorToString err) }) }
+            , Effect.none
+            )
+
+        BlueskyServerHostInputChanged text ->
+            ( { model | blueskyServersEdit = model.blueskyServersEdit |> Maybe.map (\edit -> { edit | hostInput = text }) }, Effect.none )
+
+        -- Like `MastodonServerAddClicked`, synchronous -- an AppView isn't a Rellm server, so there's
+        -- nothing to probe. A scheme or path pasted along with the host is stripped.
+        BlueskyServerAddClicked rawHost ->
+            case model.blueskyServersEdit of
+                Just edit ->
+                    let
+                        host : String
+                        host =
+                            normalizeBlueskyServerHost rawHost
+                    in
+                    if String.isEmpty host || List.any (\bs -> bs.host == host) edit.pending then
+                        ( model, Effect.none )
+
+                    else
+                        ( { model
+                            | blueskyServersEdit =
+                                Just
+                                    { edit
+                                        | pending = edit.pending ++ [ { host = host, configuredByDefault = Just False, pinnedByDefault = Just False } ]
+                                        , hostInput = ""
+                                    }
+                          }
+                        , Effect.none
+                        )
+
+                Nothing ->
+                    ( model, Effect.none )
+
+        BlueskyServerRemoveClicked host ->
+            ( { model | blueskyServersEdit = model.blueskyServersEdit |> Maybe.map (\edit -> { edit | pending = List.filter (\bs -> bs.host /= host) edit.pending }) }
+            , Effect.none
+            )
+
+        BlueskyServerConfiguredByDefaultToggled host ->
+            ( { model
+                | blueskyServersEdit =
+                    model.blueskyServersEdit
+                        |> Maybe.map (mapPendingBlueskyHost host (\bs -> { bs | configuredByDefault = Just (not (Maybe.withDefault False bs.configuredByDefault)) }))
+              }
+            , Effect.none
+            )
+
+        BlueskyServerPinnedByDefaultToggled host ->
+            ( { model
+                | blueskyServersEdit =
+                    model.blueskyServersEdit
+                        |> Maybe.map (mapPendingBlueskyHost host (\bs -> { bs | pinnedByDefault = Just (not (Maybe.withDefault False bs.pinnedByDefault)) }))
+              }
+            , Effect.none
+            )
 
         MastodonServerDragMsg dragMsg ->
             case model.mastodonServersEdit of
@@ -1171,6 +1294,7 @@ applyFederatedServers servers config =
                 , facebookAuthConfig = config.federationInfo |> Maybe.andThen .facebookAuthConfig
                 , xTwitterAuthConfig = config.federationInfo |> Maybe.andThen .xTwitterAuthConfig
                 , mastodonServers = config.federationInfo |> Maybe.map .mastodonServers |> Maybe.withDefault []
+                , blueskyServers = config.federationInfo |> Maybe.map .blueskyServers |> Maybe.withDefault []
                 }
     }
 
@@ -1189,8 +1313,55 @@ applyMastodonServers mastodonServers config =
                 , facebookAuthConfig = config.federationInfo |> Maybe.andThen .facebookAuthConfig
                 , xTwitterAuthConfig = config.federationInfo |> Maybe.andThen .xTwitterAuthConfig
                 , mastodonServers = mastodonServers
+                , blueskyServers = config.federationInfo |> Maybe.map .blueskyServers |> Maybe.withDefault []
                 }
     }
+
+
+{-| `BlueskyServersSaveClicked`'s transform -- `applyMastodonServers`, for `federationInfo.blueskyServers`.
+-}
+applyBlueskyServers : List BlueskyServer -> ServerConfiguration -> ServerConfiguration
+applyBlueskyServers blueskyServers config =
+    let
+        federationInfo : Proto.Rellm.FederationInfo
+        federationInfo =
+            Maybe.withDefault Proto.Rellm.defaultFederationInfo config.federationInfo
+    in
+    { config | federationInfo = Just { federationInfo | blueskyServers = blueskyServers } }
+
+
+mapPendingBlueskyHost : String -> (BlueskyServer -> BlueskyServer) -> BlueskyServersEdit -> BlueskyServersEdit
+mapPendingBlueskyHost host f edit =
+    { edit | pending = List.map (\bs -> if bs.host == host then f bs else bs) edit.pending }
+
+
+{-| What gets saved for text typed into the Bluesky host box: lower-cased, with any `https://`/`http://`
+scheme, path and trailing slash a user pasted along with it dropped, leaving just the hostname. The
+well-known public AppView is `public.api.bsky.app`; `bsky.app` (what users know it as) is accepted as
+shorthand for it.
+-}
+normalizeBlueskyServerHost : String -> String
+normalizeBlueskyServerHost raw =
+    let
+        host : String
+        host =
+            raw
+                |> String.trim
+                |> String.toLower
+                |> (\h -> if String.startsWith "https://" h then String.dropLeft 8 h else if String.startsWith "http://" h then String.dropLeft 7 h else h)
+                |> String.split "/"
+                |> List.head
+                |> Maybe.withDefault ""
+    in
+    if host == "bsky.app" then
+        publicBlueskyAppViewHost
+
+    else if String.all (\c -> Char.isLower c || Char.isDigit c || c == '.' || c == '-') host then
+        host
+
+    else
+        -- Anything else (a port, a query string, `user@host`, ...) isn't a bare hostname.
+        ""
 
 
 {-| `MastodonServersSaveClicked`'s per-item projection from a `MastodonServerEdit` to the plain
@@ -1216,7 +1387,7 @@ applyUnsecureLocalhost enabled config =
     let
         federationInfo : Proto.Rellm.FederationInfo
         federationInfo =
-            Maybe.withDefault { servers = [], unsecureLocalhostFederatedAuthEnabled = Nothing, facebookAuthConfig = Nothing, xTwitterAuthConfig = Nothing, mastodonServers = [] } config.federationInfo
+            Maybe.withDefault Proto.Rellm.defaultFederationInfo config.federationInfo
     in
     { config
         | federationInfo =
@@ -1236,7 +1407,7 @@ applyFacebookAppId appId config =
     let
         federationInfo : Proto.Rellm.FederationInfo
         federationInfo =
-            Maybe.withDefault { servers = [], unsecureLocalhostFederatedAuthEnabled = Nothing, facebookAuthConfig = Nothing, xTwitterAuthConfig = Nothing, mastodonServers = [] } config.federationInfo
+            Maybe.withDefault Proto.Rellm.defaultFederationInfo config.federationInfo
     in
     { config
         | federationInfo =
@@ -1253,7 +1424,7 @@ applyFacebookAppSecret appSecret config =
     let
         federationInfo : Proto.Rellm.FederationInfo
         federationInfo =
-            Maybe.withDefault { servers = [], unsecureLocalhostFederatedAuthEnabled = Nothing, facebookAuthConfig = Nothing, xTwitterAuthConfig = Nothing, mastodonServers = [] } config.federationInfo
+            Maybe.withDefault Proto.Rellm.defaultFederationInfo config.federationInfo
 
         existingAppId : String
         existingAppId =
@@ -1274,7 +1445,7 @@ applyXTwitterClientId clientId config =
     let
         federationInfo : Proto.Rellm.FederationInfo
         federationInfo =
-            Maybe.withDefault { servers = [], unsecureLocalhostFederatedAuthEnabled = Nothing, facebookAuthConfig = Nothing, xTwitterAuthConfig = Nothing, mastodonServers = [] } config.federationInfo
+            Maybe.withDefault Proto.Rellm.defaultFederationInfo config.federationInfo
     in
     { config
         | federationInfo =
@@ -1290,7 +1461,7 @@ applyXTwitterClientSecret clientSecret config =
     let
         federationInfo : Proto.Rellm.FederationInfo
         federationInfo =
-            Maybe.withDefault { servers = [], unsecureLocalhostFederatedAuthEnabled = Nothing, facebookAuthConfig = Nothing, xTwitterAuthConfig = Nothing, mastodonServers = [] } config.federationInfo
+            Maybe.withDefault Proto.Rellm.defaultFederationInfo config.federationInfo
 
         existingClientId : String
         existingClientId =
@@ -1461,6 +1632,7 @@ view shared server maybeAdminAccount model =
                 text ""
         , unsecureLocalhostAuthSection server model maybeAdminAccount
         , mastodonServersSection server model maybeAdminAccount
+        , blueskyServersSection server model maybeAdminAccount
         , facebookAuthConfigSection server model maybeAdminAccount
         , xTwitterAuthConfigSection server model maybeAdminAccount
         ]
@@ -1526,6 +1698,123 @@ mastodonServersSection server model maybeAdminAccount =
 
             _ ->
                 text ""
+        ]
+
+
+{-| Bluesky AppViews clients may browse with no account (`FederationInfo.bluesky_servers`) -- see
+`BlueskyServer`'s own doc for how an AppView differs from a Bluesky account's PDS. Chips are read-only
+badges; admins edit via the same Edit/Save/Cancel flow as the other sections (`BlueskyServersEdit`).
+-}
+blueskyServersSection : RellmServer -> Model -> Maybe RellmAccount -> Html Msg
+blueskyServersSection server model maybeAdminAccount =
+    div [ class "server-details-facebook-auth" ]
+        [ h3 [ class "section-title" ] [ text "Bluesky Servers" ]
+        , case model.blueskyServersEdit of
+            Just edit ->
+                blueskyServersEditorView edit
+
+            Nothing ->
+                let
+                    savedServers : List BlueskyServer
+                    savedServers =
+                        (RellmServers.configurationOf server).federationInfo |> Maybe.map .blueskyServers |> Maybe.withDefault []
+                in
+                if List.isEmpty savedServers then
+                    p [] [ text "No Bluesky servers are configured." ]
+
+                else
+                    div [ class "federated-servers-strip" ] (List.map (blueskyServerChip Nothing) savedServers)
+        , case ( model.blueskyServersEdit, maybeAdminAccount ) of
+            ( Nothing, Just _ ) ->
+                button [ class "server-details-rename-button", onClick BlueskyServersEditClicked ] [ text "Edit Bluesky Servers" ]
+
+            _ ->
+                text ""
+        ]
+
+
+{-| One `BlueskyServer` chip. Read-only (`editing = Nothing`) it just shows the "Added/Enabled by
+Default" badges, like `mastodonServerDisplayChip`; while editing it has the same two flags as
+toggles plus a remove button.
+-}
+blueskyServerChip : Maybe () -> BlueskyServer -> Html Msg
+blueskyServerChip editing blueskyServer =
+    let
+        configuredByDefault : Bool
+        configuredByDefault =
+            Maybe.withDefault False blueskyServer.configuredByDefault
+
+        pinnedByDefault : Bool
+        pinnedByDefault =
+            Maybe.withDefault False blueskyServer.pinnedByDefault
+
+        shownHost : String
+        shownHost =
+            if blueskyServer.host == publicBlueskyAppViewHost then
+                "bsky.app"
+
+            else
+                blueskyServer.host
+    in
+    div [ classes [ "server-chip", "federated-server-chip", hostnameToCSSClass blueskyServer.host ] ]
+        [ div [ classes [ "server-chip-top", "background-color-primary" ] ]
+            [ div [ class "server-chip-host-row" ] [ div [ class "server-chip-host" ] [ text shownHost ] ]
+            , div [ class "mastodon-app-id", title blueskyServer.host ] [ text blueskyServer.host ]
+            ]
+        , case editing of
+            Just () ->
+                div [ classes [ "server-chip-bottom", "federated-server-flags", "background-color-nav" ] ]
+                    [ Common.settingsRow "Added by default" (Common.flagSwitch configuredByDefault (BlueskyServerConfiguredByDefaultToggled blueskyServer.host))
+                    , Common.settingsRow "Enabled by default" (Common.flagSwitch pinnedByDefault (BlueskyServerPinnedByDefaultToggled blueskyServer.host))
+                    , button [ class "remove-btn", onClick (BlueskyServerRemoveClicked blueskyServer.host), title ("Remove " ++ shownHost) ] [ text "╳" ]
+                    ]
+
+            Nothing ->
+                div [ classes [ "server-chip-bottom", "federated-server-flags", "background-color-nav" ] ]
+                    [ if configuredByDefault then
+                        span [ class "federated-server-flag-badge" ] [ text "Added by Default" ]
+
+                      else
+                        text ""
+                    , if pinnedByDefault then
+                        span [ class "federated-server-flag-badge" ] [ text "Enabled by Default" ]
+
+                      else
+                        text ""
+                    , if not configuredByDefault && not pinnedByDefault then
+                        span [ class "federated-server-flag-none" ] [ text "—" ]
+
+                      else
+                        text ""
+                    ]
+        ]
+
+
+blueskyServersEditorView : BlueskyServersEdit -> Html Msg
+blueskyServersEditorView edit =
+    div [ class "server-details-federation-edit" ]
+        [ div [ class "federated-servers-strip" ] (List.map (blueskyServerChip (Just ())) edit.pending)
+        , div [ class "server-details-federation-add" ]
+            [ input
+                [ class "server-details-federation-add-input"
+                , value edit.hostInput
+                , onInput BlueskyServerHostInputChanged
+                , placeholder "bsky.app"
+                ]
+                []
+            , button
+                [ class "server-details-rename-button"
+                , onClick (BlueskyServerAddClicked edit.hostInput)
+                , disabled (String.isEmpty (normalizeBlueskyServerHost edit.hostInput))
+                ]
+                [ text "Add AppView" ]
+            ]
+        , Common.settingsNote "Enter an AppView's API host. \"bsky.app\" is Bluesky's public AppView. Only one Bluesky source (an AppView or a connected account) is shown at a time, so only the first \"enabled by default\" one takes effect."
+        , div [ class "server-details-permissions-actions" ]
+            [ Common.editSaveButton BlueskyServersSaveClicked edit.status
+            , Common.editCancelButton BlueskyServersCancelClicked edit.status
+            ]
+        , Common.editErrorView edit.status
         ]
 
 

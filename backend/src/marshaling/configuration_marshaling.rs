@@ -810,6 +810,23 @@ mod federation_info_migration_tests {
         assert_eq!(federation_info.mastodon_servers, Vec::new());
     }
 
+    /// Same regression as above, for `bluesky_servers` (also `repeated`, so also needs
+    /// `build.rs`'s `#[serde(default)]` to tolerate `federation_info` JSON stored before it existed).
+    #[test]
+    fn legacy_federation_info_without_bluesky_servers_deserializes() {
+        let legacy = serde_json::json!({
+            "servers": [],
+            "facebook_auth_config": null,
+            "x_twitter_auth_config": null,
+            "mastodon_servers": []
+        });
+
+        let federation_info: FederationInfo = serde_json::from_value(legacy)
+            .expect("federation_info predating bluesky_servers should still deserialize");
+
+        assert_eq!(federation_info.bluesky_servers, Vec::new());
+    }
+
     /// `unsecure_localhost_federated_auth_enabled` is `optional`, so serde already treats a missing
     /// key as `None` for free -- this just guards that `federation_info` JSON stored before it
     /// existed keeps deserializing (and reads as "not enabled") rather than panicking `to_proto`.

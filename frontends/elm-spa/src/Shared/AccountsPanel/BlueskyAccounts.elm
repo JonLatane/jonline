@@ -1,7 +1,10 @@
 module Shared.AccountsPanel.BlueskyAccounts exposing
     ( BlueskyAccount
     , BlueskyProfile
-    , createSessionTask
+    , applyRefresh
+    , authFor
+    , cleanIdentifier
+    , connectTask
     , decoder
     , disableOtherBlueskyAccounts
     , encodeList
@@ -9,13 +12,15 @@ module Shared.AccountsPanel.BlueskyAccounts exposing
     , fetchProfileTask
     , isReauthError
     , performWithBlueskyAccount
+    , pdsHostFromEndpoint
+    , pdsHostFromDidDocument
     )
 
 {-| Everything about a connected Bluesky account that doesn't need `Shared.AccountsPanel.Model`
 itself to make sense: the persisted-list element type (`BlueskyAccount`), its encode/decode
-(`Ports.persistBlueskyAccounts`'s wire format), and the plain HTTP tasks/decoders
-`Shared.AccountsPanel.update` drives to build/refresh it (`com.atproto.server.createSession`,
-`com.atproto.server.refreshSession`, `app.bsky.actor.getProfile`).
+(carried in `Ports.persistBlueskyAccounts`'s wire format, see `Shared.AccountsPanel.BlueskyAppViews.BlueskyState`), and the plain HTTP tasks/decoders
+`Shared.AccountsPanel.update` drives to build/refresh it (resolving the handle's PDS, then
+`com.atproto.server.createSession` there, `com.atproto.server.refreshSession`, `app.bsky.actor.getProfile`).
 
 What's deliberately _not_ here, and stays in `Shared.AccountsPanel` itself: the `Model` fields this
 lives in, `BlueskyConnectForm` (the handle/App Password form itself -- tightly coupled to
@@ -29,20 +34,25 @@ import Http
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode
 import Shared.AccountsPanel.SortOrder exposing (sortOrderDecoder)
-import Shared.Federation.Common exposing (jsonResolver, nonEmpty)
+import Shared.Federation.Bluesky as Bluesky
+import Shared.Federation.Common exposing (BlueskyAuth, jsonResolver, nonEmpty)
 import Task exposing (Task)
 import Time
+import Url
 
 
 {-| A Bluesky (AT Protocol) account connected via `UI.blueskyConnectSection`'s form -- unlike
 Mastodon, there's no OAuth popup at all: `com.atproto.server.createSession` (see
-`createSessionTask`) takes a handle and App Password directly, the same "plain form" shape
+`connectTask`) takes a handle and App Password directly, the same "plain form" shape
 `Pages.Auth.To.Key_` already uses for Rellm's own Login RPC (and is itself the identity check --
 the session response already carries `handle`, so there's no separate verify-credentials round trip
-the way Mastodon's OAuth `code` needs). Known first-pass limitation: always calls `bsky.social`
-directly rather than resolving `handle` to its actual PDS first (see `createSessionTask`'s own
-doc), so a self-hosted-PDS account won't connect yet -- the overwhelming majority of Bluesky accounts
-are hosted there by default, so this covers the common case. `enabled` mirrors `RellmServer.enabled` --
+the way Mastodon's OAuth `code` needs). The session is created on the account's _own_ PDS, which
+`connectTask` finds by resolving `handle` to a DID and reading that DID document's `#atproto_pds`
+service (an account on Eurosky, a self-hosted PDS, etc. isn't on `bsky.social`); `pdsHost` remembers
+it so every later authenticated call (and `refreshSession`) goes to the same place -- see
+`Shared.Federation.Common.BlueskyAuth`. Accounts Bluesky PBC hosts itself live on `*.host.bsky.network`
+shards but log in through the `bsky.social` entryway, so those resolve to `bsky.social`
+(`pdsHostFromEndpoint`). `enabled` mirrors `RellmServer.enabled` --
 see `Shared.AccountsPanel.MastodonServers.BrowsedMastodonInstance`'s own doc. `avatarUrl`/
 `displayName` both start `Nothing` (the `createSession` response this is built from carries no
 profile info at all) and are filled in shortly after, if they resolve, by a follow-up
@@ -68,7 +78,38 @@ type alias BlueskyAccount =
     , displayName : Maybe String
     , sortOrder : Int
     , needsReauth : Bool
+    , pdsHost : String
     }
+
+
+{-| The PDS host used for accounts persisted before `pdsHost` existed, and as the fallback whenever a
+handle's PDS can't be resolved -- all of those were/are created on Bluesky's own entryway.
+-}
+defaultPdsHost : String
+defaultPdsHost =
+    "bsky.social"
+
+
+{-| Folds a `refreshed` account (rotated tokens, from `performWithBlueskyAccount`) into the `stored` one it
+came from. Only the session fields change: `refreshed` is a snapshot from when its request _started_, so
+its `enabled`/`sortOrder`/`avatarUrl`/`displayName` can be stale by the time it lands -- e.g. the user
+toggled the account off, or enabled an AppView (which must keep the account disabled), while the request
+was in flight -- and must not clobber what's stored now.
+-}
+applyRefresh : BlueskyAccount -> BlueskyAccount -> BlueskyAccount
+applyRefresh refreshed stored =
+    { stored
+        | accessToken = refreshed.accessToken
+        , refreshToken = refreshed.refreshToken
+        , needsReauth = refreshed.needsReauth
+    }
+
+
+{-| How requests made as `account` are sent -- to its own PDS, with its access token.
+-}
+authFor : BlueskyAccount -> BlueskyAuth
+authFor account =
+    { host = account.pdsHost, accessToken = account.accessToken }
 
 
 encodeList : List BlueskyAccount -> Encode.Value
@@ -87,17 +128,19 @@ encodeAccount account =
         , ( "displayName", account.displayName |> Maybe.map Encode.string |> Maybe.withDefault Encode.null )
         , ( "sortOrder", Encode.int account.sortOrder )
         , ( "needsReauth", Encode.bool account.needsReauth )
+        , ( "pdsHost", Encode.string account.pdsHost )
         ]
 
 
 {-| Disables every other Bluesky account besides `keepEnabledHandle` -- only one Bluesky account
 may be enabled (contributing to the combined feed/`UI.accountsMenuServerSummary`'s own count) at a
 time, mirroring `Shared.AccountsPanel.RellmAccounts.disableOtherRellmAccountsOnServer`'s identical
-"one signed-in identity" reasoning, just account-wide rather than per-server (there's no separate
-Bluesky "server" to scope by -- every connected account shares the one `bsky.social` PDS). Called
+"one signed-in identity" reasoning, just account-wide rather than per-server (Bluesky accounts aren't
+tied to a server entry the way Rellm accounts are, and all of them read the same global network). Called
 whenever an account becomes enabled, whether by toggling it on (`ToggleBlueskyAccountEnabled`) or by
-a fresh connect (`GotBlueskyConnectResult`, whose `BlueskyAccounts.createSessionTask` result always
-starts `enabled = True`).
+a fresh connect (`GotBlueskyConnectResult`, whose `BlueskyAccounts.connectTask` result always
+starts `enabled = True`). The same exclusivity extends to the anonymously-browsed AppView
+(`Shared.AccountsPanel.BlueskyAppViews`) -- see its `disableAll`/`enableOnly`/`normalize`.
 -}
 disableOtherBlueskyAccounts : String -> List BlueskyAccount -> List BlueskyAccount
 disableOtherBlueskyAccounts keepEnabledHandle accounts =
@@ -158,6 +201,16 @@ accountDecoder =
         (Decode.maybe (Decode.field "displayName" Decode.string))
         sortOrderDecoder
         needsReauthDecoder
+        |> Decode.andThen (\withoutPds -> Decode.map withoutPds pdsHostDecoder)
+
+
+{-| Defaults to `defaultPdsHost` if the key is missing entirely -- an account persisted before
+`pdsHost` existed, all of which were created on `bsky.social`.
+-}
+pdsHostDecoder : Decoder String
+pdsHostDecoder =
+    Decode.maybe (Decode.field "pdsHost" Decode.string)
+        |> Decode.map (Maybe.andThen nonEmpty >> Maybe.withDefault defaultPdsHost)
 
 
 {-| Defaults to `""` if the key is missing entirely -- an account persisted before `refreshToken`
@@ -186,17 +239,30 @@ needsReauthDecoder =
         ]
 
 
-{-| `com.atproto.server.createSession` -- Bluesky's own login RPC, taking a handle and App Password
-directly (see `BlueskyAccount`'s own doc on why there's no OAuth popup here, and the known
-`bsky.social`-only limitation). Decodes `handle`/`accessJwt`/`refreshJwt`, all a `BlueskyAccount`
-needs.
+{-| Connects an account: finds `handle`'s PDS (`resolvePdsHost`), then `createSessionTask` there. See
+`BlueskyAccount`'s own doc for why it isn't just `bsky.social`.
 -}
-createSessionTask : String -> String -> Task Http.Error BlueskyAccount
-createSessionTask handle appPassword =
+connectTask : String -> String -> Task Http.Error BlueskyAccount
+connectTask handle appPassword =
+    let
+        identifier : String
+        identifier =
+            cleanIdentifier handle
+    in
+    resolvePdsHost identifier
+        |> Task.andThen (\pdsHost -> createSessionTask pdsHost identifier appPassword)
+
+
+{-| `com.atproto.server.createSession` on `pdsHost` -- Bluesky's own login RPC, taking a handle and App
+Password directly (see `BlueskyAccount`'s own doc on why there's no OAuth popup here). Decodes
+`handle`/`accessJwt`/`refreshJwt`, all a `BlueskyAccount` needs, and records `pdsHost` on it.
+-}
+createSessionTask : String -> String -> String -> Task Http.Error BlueskyAccount
+createSessionTask pdsHost handle appPassword =
     Http.task
         { method = "POST"
         , headers = []
-        , url = "https://bsky.social/xrpc/com.atproto.server.createSession"
+        , url = "https://" ++ pdsHost ++ "/xrpc/com.atproto.server.createSession"
         , body =
             Http.jsonBody
                 (Encode.object
@@ -205,14 +271,211 @@ createSessionTask handle appPassword =
                     ]
                 )
         , resolver =
-            jsonResolver sessionDecoder
+            jsonResolver (sessionDecoder pdsHost)
                 (\metadata body -> Http.BadBody (errorBody body |> Maybe.withDefault ("HTTP " ++ String.fromInt metadata.statusCode)))
         , timeout = Just 10000
         }
 
 
-sessionDecoder : Decode.Decoder BlueskyAccount
-sessionDecoder =
+{-| What the user typed into the handle field, trimmed and without a leading `@`.
+-}
+cleanIdentifier : String -> String
+cleanIdentifier raw =
+    let
+        trimmed : String
+        trimmed =
+            String.trim raw
+    in
+    if String.startsWith "@" trimmed then
+        String.dropLeft 1 trimmed
+
+    else
+        trimmed
+
+
+{-| Where `identifier` (see `cleanIdentifier`) logs in. A DID (`did:plc:...`) is used as-is, a handle is
+resolved to one (`Shared.Federation.Bluesky.resolveHandle`, public AppView), and then that DID's document
+(`plc.directory` for `did:plc:`, `/.well-known/did.json` for `did:web:`) names the PDS -- see
+`pdsHostFromDidDocument`.
+
+The App Password is sent to whatever host that resolves to, so a lookup that merely _fails_ (network
+blip, CORS, a DID/endpoint we refuse) must not quietly fall back to `bsky.social` -- that would hand an
+Eurosky/self-hosted account's password to a different operator. It fails with `pdsLookupFailedError`
+instead. The only fallbacks to `defaultPdsHost` are the two cases where that really is the right
+server: an email address (which only `bsky.social` accepts as an identifier), and a handle the AppView
+definitively says it doesn't know (HTTP 400 -- `bsky.social` can still authenticate some custom-domain
+handles it hosts).
+-}
+resolvePdsHost : String -> Task Http.Error String
+resolvePdsHost identifier =
+    if String.contains "@" identifier then
+        Task.succeed defaultPdsHost
+
+    else
+        resolveDid identifier
+            |> Task.andThen
+                (\maybeDid ->
+                    case maybeDid of
+                        Nothing ->
+                            Task.succeed defaultPdsHost
+
+                        Just resolvedDid ->
+                            fetchDidDocument resolvedDid
+                                |> Task.andThen
+                                    (\document ->
+                                        case pdsHostFromDidDocument document of
+                                            Just host ->
+                                                Task.succeed host
+
+                                            Nothing ->
+                                                Task.fail pdsLookupFailedError
+                                    )
+                )
+            |> Task.mapError (\_ -> pdsLookupFailedError)
+
+
+{-| The DID for `identifier` (itself, if it already is one); `Nothing` only for a handle the AppView
+definitively doesn't know (HTTP 400), and a failed task for anything else.
+-}
+resolveDid : String -> Task Http.Error (Maybe String)
+resolveDid identifier =
+    if String.startsWith "did:" identifier then
+        Task.succeed (Just identifier)
+
+    else
+        Bluesky.resolveHandle identifier
+            |> Task.map Just
+            |> Task.onError
+                (\err ->
+                    if err == Http.BadStatus 400 then
+                        Task.succeed Nothing
+
+                    else
+                        Task.fail err
+                )
+
+
+pdsLookupFailedError : Http.Error
+pdsLookupFailedError =
+    Http.BadBody "Couldn't find this account's server. Check the handle, or try again in a moment."
+
+
+{-| `did:plc:...` -> `https://plc.directory/did:plc:...`; `did:web:host` -> `https://host/.well-known/did.json`
+(path-style `did:web:host:path` DIDs aren't used for AT Protocol accounts). Both are public with CORS enabled.
+-}
+fetchDidDocument : String -> Task Http.Error Decode.Value
+fetchDidDocument did =
+    let
+        url : Maybe String
+        url =
+            if String.startsWith "did:plc:" did then
+                Just ("https://plc.directory/" ++ did)
+
+            else if String.startsWith "did:web:" did then
+                Just ("https://" ++ (String.dropLeft 8 did |> String.replace "%3A" ":") ++ "/.well-known/did.json")
+
+            else
+                Nothing
+    in
+    case url of
+        Just u ->
+            Http.task
+                { method = "GET"
+                , headers = []
+                , url = u
+                , body = Http.emptyBody
+                , resolver = jsonResolver Decode.value (\metadata _ -> Http.BadStatus metadata.statusCode)
+                , timeout = Just 10000
+                }
+
+        Nothing ->
+            Task.fail (Http.BadUrl did)
+
+
+{-| The login host named by a DID document: its `service` entry with an id ending `#atproto_pds`, via
+`pdsHostFromEndpoint`. `Nothing` if the document has none.
+-}
+pdsHostFromDidDocument : Decode.Value -> Maybe String
+pdsHostFromDidDocument document =
+    let
+        serviceDecoder : Decoder (Maybe String)
+        serviceDecoder =
+            Decode.map2
+                (\id endpoint ->
+                    if String.endsWith "#atproto_pds" id then
+                        pdsHostFromEndpoint endpoint
+
+                    else
+                        Nothing
+                )
+                (Decode.field "id" Decode.string)
+                (Decode.field "serviceEndpoint" Decode.string)
+    in
+    Decode.decodeValue
+        (Decode.field "service" (Decode.list (Decode.oneOf [ serviceDecoder, Decode.succeed Nothing ])))
+        document
+        |> Result.toMaybe
+        |> Maybe.andThen (List.filterMap identity >> List.head)
+
+
+{-| The host (with port, if any) to send XRPC requests to for a PDS `serviceEndpoint` URL. Bluesky
+PBC's own PDS shards (`*.host.bsky.network`) don't accept a login themselves -- accounts on them sign in
+through the `bsky.social` entryway, which then routes to the right shard -- so those map to
+`defaultPdsHost`. Plain `http://` endpoints are refused (an App Password would cross the network
+unencrypted), as is anything that isn't a URL.
+-}
+pdsHostFromEndpoint : String -> Maybe String
+pdsHostFromEndpoint endpoint =
+    case Url.fromString endpoint of
+        Just url ->
+            if url.protocol /= Url.Https then
+                Nothing
+
+            else if String.endsWith ".host.bsky.network" url.host then
+                Just defaultPdsHost
+
+            else if not (isPublicHostname url.host) then
+                Nothing
+
+            else
+                Just
+                    (url.host
+                        ++ (url.port_ |> Maybe.map (\port_ -> ":" ++ String.fromInt port_) |> Maybe.withDefault "")
+                    )
+
+        Nothing ->
+            Nothing
+
+
+{-| Whether `host` looks like a real internet hostname: not `localhost`/`*.local`/`*.internal`, not an IP
+literal. The App Password is sent to whatever PDS a DID document names, so a DID pointing at an internal
+address isn't worth honouring from a browser (a purely defensive filter -- the user is only ever
+resolving the identity they typed).
+-}
+isPublicHostname : String -> Bool
+isPublicHostname host =
+    let
+        lower : String
+        lower =
+            String.toLower host
+
+        isIpv4 : Bool
+        isIpv4 =
+            String.all (\c -> Char.isDigit c || c == '.') lower
+    in
+    String.contains "." lower
+        && not isIpv4
+        && not (String.contains ":" lower)
+        && not (String.contains "[" lower)
+        && lower
+        /= "localhost"
+        && not (String.endsWith ".localhost" lower)
+        && not (String.endsWith ".local" lower)
+        && not (String.endsWith ".internal" lower)
+
+
+sessionDecoder : String -> Decode.Decoder BlueskyAccount
+sessionDecoder pdsHost =
     Decode.map8 BlueskyAccount
         (Decode.field "handle" Decode.string)
         (Decode.field "accessJwt" Decode.string)
@@ -225,6 +488,7 @@ sessionDecoder =
         -- see that handler.
         (Decode.succeed 0)
         (Decode.succeed False)
+        |> Decode.map (\withoutPds -> withoutPds pdsHost)
 
 
 {-| `com.atproto.server.refreshSession` -- exchanges `account`'s `refreshToken` for a fresh
@@ -240,7 +504,7 @@ refreshSessionTask account =
     Http.task
         { method = "POST"
         , headers = [ Http.header "Authorization" ("Bearer " ++ account.refreshToken) ]
-        , url = "https://bsky.social/xrpc/com.atproto.server.refreshSession"
+        , url = "https://" ++ account.pdsHost ++ "/xrpc/com.atproto.server.refreshSession"
         , body = Http.emptyBody
         , resolver =
             jsonResolver refreshedTokensDecoder
@@ -278,12 +542,12 @@ well be fine. Callers should persist the returned account whenever this succeeds
 may have rotated.
 
 -}
-performWithBlueskyAccount : BlueskyAccount -> (String -> Task Http.Error a) -> Task Http.Error ( BlueskyAccount, a )
+performWithBlueskyAccount : BlueskyAccount -> (BlueskyAuth -> Task Http.Error a) -> Task Http.Error ( BlueskyAccount, a )
 performWithBlueskyAccount account req =
     let
         run : Bool -> BlueskyAccount -> Task Http.Error ( BlueskyAccount, a )
         run justRefreshed current =
-            req current.accessToken
+            req (authFor current)
                 |> Task.map (\result -> ( current, result ))
                 |> Task.onError
                     (\originalError ->
@@ -302,7 +566,7 @@ performWithBlueskyAccount account req =
                                     )
                                 |> Task.andThen
                                     (\refreshedAccount ->
-                                        req refreshedAccount.accessToken
+                                        req (authFor refreshedAccount)
                                             |> Task.map (\result -> ( refreshedAccount, result ))
                                     )
                     )
@@ -425,16 +689,16 @@ type alias BlueskyProfile =
 
 
 {-| `app.bsky.actor.getProfile` for `handle`, authenticated with the just-connected account's own
-`accessToken` -- fetched once right after `createSessionTask` succeeds (see
+`accessToken` -- fetched once right after `connectTask` succeeds (see
 `GotBlueskyConnectResult`/`GotBlueskyProfileResult`), since the session response itself carries no
 profile info.
 -}
-fetchProfileTask : String -> String -> Task Http.Error BlueskyProfile
-fetchProfileTask handle accessToken =
+fetchProfileTask : BlueskyAccount -> Task Http.Error BlueskyProfile
+fetchProfileTask account =
     Http.task
         { method = "GET"
-        , headers = [ Http.header "Authorization" ("Bearer " ++ accessToken) ]
-        , url = "https://bsky.social/xrpc/app.bsky.actor.getProfile?actor=" ++ handle
+        , headers = [ Http.header "Authorization" ("Bearer " ++ account.accessToken) ]
+        , url = "https://" ++ account.pdsHost ++ "/xrpc/app.bsky.actor.getProfile?actor=" ++ Url.percentEncode account.handle
         , body = Http.emptyBody
         , resolver =
             jsonResolver profileDecoder

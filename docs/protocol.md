@@ -153,6 +153,7 @@
     - [WebUserInterface](#rellm-WebUserInterface)
   
 - [federation.proto](#federation-proto)
+    - [BlueskyServer](#rellm-BlueskyServer)
     - [FacebookAuthConfig](#rellm-FacebookAuthConfig)
     - [FederatedAccount](#rellm-FederatedAccount)
     - [FederatedServer](#rellm-FederatedServer)
@@ -293,15 +294,22 @@ client visits this server - see those fields&#39; own docs for the current relat
 two.
 
 ##### BlueSky/AT Protocol
-Unlike Mastodon, AT Protocol has no &#34;local instance timeline&#34; concept at all - every Personal
-Data Server (PDS) only ever serves its own users&#39; own repos, so there is nothing equivalent to
-browse anonymously. Cross-protocol federation with Bluesky therefore always requires a connected
-account: a handle and an [App Password](https://bsky.app/settings/app-passwords) (not OAuth --
-AT Protocol has no per-client app-registration step the way Mastodon/Facebook/X require), used to
-call `com.atproto.server.createSession` and then the account&#39;s own
-`app.bsky.feed.getTimeline`. Because there&#39;s no server-side app to register, there is no
-`BlueskyServer` config type mirroring [`MastodonServer`](#rellm-MastodonServer) - nothing about
-connecting a Bluesky account is admin-configurable the way a Mastodon OAuth app is.
+AT Protocol splits &#34;a server&#34; into roles: a Personal Data Server (PDS) hosts an account&#39;s data and
+handles its login, while an AppView serves the read side (feeds, threads, profiles) for the whole
+network. Like Mastodon&#39;s public timelines, a client can browse public Bluesky data with no account
+at all by reading from an AppView such as `public.api.bsky.app` (unauthenticated, CORS-enabled) - an
+admin can recommend one via [`BlueskyServer`](#rellm-BlueskyServer) (`FederationInfo.bluesky_servers`).
+What an anonymous reader can&#39;t get is anything personalized, like a home timeline.
+
+Connecting a Bluesky *account* additionally unlocks that: a handle and an
+[App Password](https://bsky.app/settings/app-passwords) (not OAuth -- AT Protocol has no per-client
+app-registration step the way Mastodon/Facebook/X require), used to call
+`com.atproto.server.createSession` on the account&#39;s *own* PDS (found by resolving the handle to a DID
+and reading the DID document&#39;s `#atproto_pds` service - it isn&#39;t necessarily `bsky.social`) and then
+the account&#39;s own `app.bsky.feed.getTimeline`. Because there&#39;s no server-side app to register,
+nothing about connecting an account is admin-configurable the way a Mastodon OAuth app is. Clients
+show at most one Bluesky source at a time (an AppView *or* an account), since both read the same
+global network.
 
 ### API Design Notes
 #### Moderation and Visibility
@@ -4035,6 +4043,30 @@ a century ahead of Flutter Web, so it&#39;s the default.
 
 
 
+<a name="rellm-BlueskyServer"></a>
+
+### BlueskyServer
+A Bluesky/AT Protocol AppView clients may read public posts from anonymously. See `FederationInfo.bluesky_servers`.
+
+AT Protocol splits &#34;a server&#34; into several roles: a Personal Data Server (PDS) stores an account&#39;s
+data and handles its login, while an AppView serves the read side (feeds, threads, profiles). Every
+AppView indexes the same global network, so an anonymous &#34;Bluesky server&#34; in Rellm&#39;s UI is really an
+AppView - the public one run by Bluesky PBC is `public.api.bsky.app`, which allows unauthenticated
+reads (with CORS) of public data. A connected *account* is separate: it logs in at its own PDS
+(not necessarily `bsky.social`), which proxies reads to an AppView on the account&#39;s behalf.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| host | [string](#string) |  | The AppView&#39;s API hostname, e.g. &#34;public.api.bsky.app&#34; (shown to users as &#34;bsky.app&#34;). |
+| configured_by_default | [bool](#bool) | optional | Indicates to UI clients that they should add the indicated AppView to the user&#39;s browsed Bluesky sources by default (switched off unless also `pinned_by_default`). |
+| pinned_by_default | [bool](#bool) | optional | Indicates to UI clients that they should add *and enable* the indicated AppView by default (showing its public feed alongside the &#34;main&#34; server). Only one Bluesky source (an AppView or a connected account) is shown at a time, so clients should ignore all but the first of these. |
+
+
+
+
+
+
 <a name="rellm-FacebookAuthConfig"></a>
 
 ### FacebookAuthConfig
@@ -4101,6 +4133,7 @@ Note this is only a frontend-enforced measure: the backend can&#39;t stop a modi
 | facebook_auth_config | [FacebookAuthConfig](#rellm-FacebookAuthConfig) | optional | Facebook authentication configuration for the server. If set, allows users to create Facebook (and Instagram) SyncDestinations for their Posts and Occasions. |
 | x_twitter_auth_config | [XTwitterAuthConfig](#rellm-XTwitterAuthConfig) | optional | X (Twitter) authentication configuration for the server. If set, allows users to create X (Twitter) SyncDestinations for their Posts and Occasions - an admin registers one X Developer App here, and every user on the server connects their own X account through it via OAuth, the same relationship `facebook_auth_config` has to individual Facebook Pages. Until set, [`XTwitterAccount`](#rellm-XTwitterAccount) SyncDestinations always fail with `x_twitter_app_not_configured`. |
 | mastodon_servers | [MastodonServer](#rellm-MastodonServer) | repeated | Mastodon instances this server has a registered OAuth app on, letting users connect/read their own account on that instance. Unlike Facebook/X, Mastodon has no single central platform to register an app against - every instance is its own separate OAuth authority, so an admin has to register an app on each instance individually before users on it can connect. If a user&#39;s instance isn&#39;t listed here, clients should surface a &#34;not configured&#34; alert rather than attempting to open an OAuth popup with no app to authorize against. (A client could instead dynamically self-register a throwaway app with the instance directly, via Mastodon&#39;s own `POST /api/v1/apps`, and skip this entirely - Mastodon itself supports that. But that&#39;s a client-side choice the Rellm protocol doesn&#39;t get involved in either way: this field only covers the admin-pre-registered path, which is what lets an app ID be shown/reused consistently across every client on this server rather than each one self-registering its own.) |
+| bluesky_servers | [BlueskyServer](#rellm-BlueskyServer) | repeated | Bluesky/AT Protocol AppViews clients may read public posts from without any account - see [`BlueskyServer`](#rellm-BlueskyServer). Unlike `mastodon_servers`, there are no secrets here: AT Protocol has no per-client app registration, so this list is purely a &#34;which AppViews should clients browse by default&#34; recommendation, mirroring `servers`&#39; `configured_by_default`/ `pinned_by_default`. |
 
 
 

@@ -13,9 +13,9 @@ function's own doc, and `Components.Mastodon.MastodonUserProfilePage` for the Ac
 Followers/following lists live at their own routes (`/:handle@bluesky:.../followers`/`/following`),
 backed by `Components.Pages.BlueskyUsersPage` -- see `Components.Users.followersHref`/`followingHref`.
 
-Fails outright (mirrors `Components.Bluesky.BlueskyPostPage.init`) if no Bluesky account is connected at
-all -- AT Protocol has no anonymous access to anything, so there's no way to view _any_ profile
-without at least one connected account to authenticate the request with.
+Reads as the active connected account (`AccountsPanel.activeBlueskyAccount`) if there is one, and
+anonymously otherwise (`AccountsPanel.browsedBlueskyAuth` -- a profile is public data an AppView serves
+with no login), mirroring `Components.Bluesky.BlueskyPostPage.init`.
 
 -}
 
@@ -53,7 +53,7 @@ type ProfileStatus
 
 
 type Msg
-    = GotProfile ( String, String ) (Result Http.Error ( BlueskyAccount, Bluesky.ActorProfile ))
+    = GotProfile ( String, String ) (Result Http.Error ( Maybe BlueskyAccount, Bluesky.ActorProfile ))
     | PostsMsg PostsPage.Msg
     | SharedMsgReceived Shared.Msg
 
@@ -71,18 +71,22 @@ init shared handle navKey path query =
         -- Handle + refresh token this fetch starts with, for `MarkBlueskyAccountNeedsReauth`.
         actingAccount : ( String, String )
         actingAccount =
-            List.head shared.accounts.blueskyAccounts
+            AccountsPanel.activeBlueskyAccount shared.accounts
                 |> Maybe.map (\a -> ( a.handle, a.refreshToken ))
                 |> Maybe.withDefault ( "", "" )
 
-        fetchTask : Task.Task Http.Error ( BlueskyAccount, Bluesky.ActorProfile )
+        fetchTask : Task.Task Http.Error ( Maybe BlueskyAccount, Bluesky.ActorProfile )
         fetchTask =
-            case shared.accounts.blueskyAccounts of
-                account :: _ ->
-                    BlueskyAccounts.performWithBlueskyAccount account (\accessToken -> Bluesky.fetchActorProfile accessToken handle)
+            case AccountsPanel.activeBlueskyAccount shared.accounts of
+                Just account ->
+                    BlueskyAccounts.performWithBlueskyAccount account (\auth -> Bluesky.fetchActorProfile auth handle)
+                        |> Task.map (Tuple.mapFirst Just)
 
-                [] ->
-                    Task.fail (Http.BadStatus 401)
+                Nothing ->
+                    -- No connected account: a profile is public, so read it anonymously from the
+                    -- browsed AppView.
+                    Bluesky.fetchActorProfile (AccountsPanel.browsedBlueskyAuth shared.accounts) handle
+                        |> Task.map (Tuple.pair Nothing)
     in
     ( { handle = handle
       , profileStatus = LoadingProfile
@@ -114,9 +118,15 @@ update shared msg model =
             in
             ( { model | profileStatus = ProfileLoaded profile, posts = Just postsModel }
             , Effect.batch
-                [ Effect.map PostsMsg postsEffect
-                , Effect.fromShared (Shared.AccountsPanelMsg (AccountsPanel.BlueskyAccountRefreshed account))
-                ]
+                (Effect.map PostsMsg postsEffect
+                    :: (case account of
+                            Just connectedAccount ->
+                                [ Effect.fromShared (Shared.AccountsPanelMsg (AccountsPanel.BlueskyAccountRefreshed connectedAccount)) ]
+
+                            Nothing ->
+                                []
+                       )
+                )
             )
 
         GotProfile ( accountHandle, refreshToken ) (Err err) ->
@@ -175,12 +185,7 @@ view shared model =
         ProfileFailed ->
             p [ class "post-error" ]
                 [ text
-                    (if List.isEmpty shared.accounts.blueskyAccounts then
-                        "Connect a Bluesky account to view this profile."
-
-                     else
-                        "Couldn't load this profile. It may not exist, or the account may be unreachable."
-                    )
+                    "Couldn't load this profile. It may not exist, or the account may be unreachable."
                 ]
 
         ProfileLoaded profile ->

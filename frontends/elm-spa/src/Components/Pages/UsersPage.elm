@@ -566,7 +566,7 @@ candidateSources shared model =
 
                             else
                                 List.map (\instanceHost -> MastodonSearchSource { instanceHost = instanceHost }) (mastodonHostsToSearch shared)
-                                    ++ (if List.isEmpty shared.accounts.blueskyAccounts then
+                                    ++ (if AccountsPanel.activeBlueskyAccount shared.accounts == Nothing && not (List.any .enabled shared.accounts.blueskyAppViews) then
                                             []
 
                                         else
@@ -632,8 +632,8 @@ fetchSourceEffect shared model source =
                 |> Effect.fromCmd
 
         BlueskyListingSource ref listingType ->
-            case shared.accounts.blueskyAccounts of
-                viewerAccount :: _ ->
+            case AccountsPanel.activeBlueskyAccount shared.accounts of
+                Just viewerAccount ->
                     BlueskyAccounts.performWithBlueskyAccount viewerAccount
                         (\accessToken ->
                             case listingType of
@@ -647,26 +647,31 @@ fetchSourceEffect shared model source =
                         |> Task.attempt (fromBlueskyResult viewerAccount >> GotUsers key)
                         |> Effect.fromCmd
 
-                [] ->
-                    -- No connected Bluesky account to authenticate this request with at all (AT
-                    -- Proto has no anonymous access -- see `Shared.Federation.Bluesky`'s own doc).
-                    -- Resolves immediately to `UsersFailed` (rather than `Effect.none`, which would
-                    -- leave this source stuck at `Loading` forever) -- mirrors
-                    -- `Components.Bluesky.BlueskyUserProfilePage.init`'s identical fallback.
-                    Task.fail (Http.BadStatus 401)
+                Nothing ->
+                    -- No connected Bluesky account: followers/follows are public, so read them
+                    -- anonymously from the browsed AppView (`AccountsPanel.browsedBlueskyAuth`).
+                    (case listingType of
+                        FederatedFollowers ->
+                            Bluesky.fetchFollowers (AccountsPanel.browsedBlueskyAuth shared.accounts) ref.handle
+
+                        FederatedFollowing ->
+                            Bluesky.fetchFollows (AccountsPanel.browsedBlueskyAuth shared.accounts) ref.handle
+                    )
+                        |> Task.map (List.map BlueskyListedUser)
                         |> Task.attempt (fromFederatedResult >> GotUsers key)
                         |> Effect.fromCmd
 
         BlueskySearchSource ->
-            case shared.accounts.blueskyAccounts of
-                viewerAccount :: _ ->
+            case AccountsPanel.activeBlueskyAccount shared.accounts of
+                Just viewerAccount ->
                     BlueskyAccounts.performWithBlueskyAccount viewerAccount (\accessToken -> Bluesky.searchActors accessToken model.searchText)
                         |> Task.map (Tuple.mapSecond (List.map BlueskyListedUser))
                         |> Task.attempt (fromBlueskyResult viewerAccount >> GotUsers key)
                         |> Effect.fromCmd
 
-                [] ->
-                    Task.fail (Http.BadStatus 401)
+                Nothing ->
+                    Bluesky.searchActors (AccountsPanel.browsedBlueskyAuth shared.accounts) model.searchText
+                        |> Task.map (List.map BlueskyListedUser)
                         |> Task.attempt (fromFederatedResult >> GotUsers key)
                         |> Effect.fromCmd
 

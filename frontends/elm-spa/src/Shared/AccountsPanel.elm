@@ -36,6 +36,9 @@ module Shared.AccountsPanel exposing
     , mastodonServerFor
     , performWithAccountServer
     , performWithOptionalAccountServer
+    , activeBlueskyAccount
+    , browsedBlueskyAuth
+    , recommendedBlueskyServers
     , recommendedFederatedServers
     , recommendedMastodonServers
     , serverFeedItemChipDomId
@@ -62,7 +65,7 @@ import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode
 import Ports
 import Process
-import Proto.Rellm exposing (AccessTokenResponse, ContactMethod, CustomCSSConfiguration, FederatedServer, GetPushSubscriptionStatusResponse, MastodonServer, PushSubscription, RefreshTokenResponse, ServerConfiguration, ServerInfo, User)
+import Proto.Rellm exposing (AccessTokenResponse, BlueskyServer, ContactMethod, CustomCSSConfiguration, FederatedServer, GetPushSubscriptionStatusResponse, MastodonServer, PushSubscription, RefreshTokenResponse, ServerConfiguration, ServerInfo, User)
 import Proto.Rellm.Rellm as Rellm
 import Proto.Rellm.Visibility exposing (Visibility(..))
 import Proto.Rellm.WebUserInterface exposing (WebUserInterface)
@@ -70,12 +73,14 @@ import Request exposing (Request)
 import Set exposing (Set)
 import Shared.AccountsPanel.AdminTab as AdminTab
 import Shared.AccountsPanel.BlueskyAccounts as BlueskyAccounts exposing (BlueskyAccount)
+import Shared.AccountsPanel.BlueskyAppViews as BlueskyAppViews exposing (BlueskyAppView)
 import Shared.AccountsPanel.DebugTab as DebugTab
 import Shared.AccountsPanel.MastodonAccounts as MastodonAccounts exposing (MastodonAccount)
 import Shared.AccountsPanel.MastodonServers as MastodonServers exposing (BrowsedMastodonInstance, MastodonInstanceInfo)
 import Shared.AccountsPanel.RellmAccounts as RellmAccounts exposing (RellmAccount, RellmContactMethods, contactMethodEditValue, contactMethodVisibilityFromText, rellmAccountId)
 import Shared.AccountsPanel.RellmServers as RellmServers exposing (Branding, Connection, PersistedRellmServer, RellmServer)
 import Shared.AccountsPanel.SortOrder as SortOrder
+import Shared.Federation.Common exposing (BlueskyAuth, anonymousBlueskyAuth, blueskyAuthFor)
 import Shared.Conversions as Conversions
 import Task exposing (Task)
 import Time
@@ -414,6 +419,17 @@ type alias Model =
     -- `Ports.persistMastodonAccountsAndServers` (see that port's own doc).
     , blueskyAccounts : List BlueskyAccount
 
+    -- Bluesky AppViews (`public.api.bsky.app`, i.e. "bsky.app", by default) being browsed anonymously,
+    -- with no account at all -- the Bluesky counterpart of `browsedMastodonInstances`, and so
+    -- (unlike `blueskyAccounts`, which are PDS logins) shown in the server strip as a
+    -- `CombinedBlueskyAppView`. At most one Bluesky source (an AppView here, or an account in
+    -- `blueskyAccounts`) is enabled at a time -- both read the same global network -- and enabling
+    -- either disables the other kind (see `BlueskyAppViews.disableAll`/`enableOnly` and
+    -- `BlueskyAccounts.disableOtherBlueskyAccounts`); disabling one deliberately does _not_ re-enable
+    -- the other. Persisted alongside `blueskyAccounts` via `Ports.persistBlueskyAccounts` (see
+    -- `persistBluesky`).
+    , blueskyAppViews : List BlueskyAppView
+
     -- The Bluesky tab's own handle/App Password fields -- always present (unlike the `Maybe` this
     -- used to be, back when this form's own open/closed state was tracked independently of the
     -- Rellm/Mastodon ones -- see `addAccountServerFormType`), but only rendered/reachable while
@@ -553,6 +569,10 @@ type Msg
     | RemoveBrowsedMastodonInstanceClicked String
     | FinishRemoveBrowsedMastodonInstance String
     | ToggleBrowsedMastodonInstanceEnabled String
+    | AddBlueskyAppViewClicked String
+    | ToggleBlueskyAppViewEnabled String
+    | RemoveBlueskyAppViewClicked String
+    | FinishRemoveBlueskyAppView String
     | NoOp
 
 
@@ -984,19 +1004,20 @@ nextBackSortOrderIn space model =
     (space.nonMainSortOrders model |> List.maximum |> Maybe.withDefault -1) + 1
 
 
-{-| A Rellm server or browsed Mastodon instance, as they appear together in
+{-| A Rellm server, browsed Mastodon instance or browsed Bluesky AppView, as they appear together in
 `UI.combinedServerFeedItemsStrip`'s one merged, reorderable chip strip -- the two underlying lists
 (`servers`, `browsedMastodonInstances`) stay separate (each persisted through its own port --
 `Ports.persistAccountsAndServers`/`persistMastodonAccountsAndServers`), so this is purely a
 rendering-time view over both at once, built by `combinedServerFeedItems`. Connected Bluesky
 accounts _don't_ appear here -- unlike a Rellm server or a browsed Mastodon instance, a Bluesky
-account has no separate sign-in step of its own (connecting _is_ signing in), so it belongs
-alongside the other accounts in `CombinedAccountItem`/`UI.accountsList` instead -- see that type's
-own doc.
+account is a PDS _login_ (connecting _is_ signing in), so it belongs alongside the other accounts
+in `CombinedAccountItem`/`UI.accountsList` instead -- see that type's own doc. An anonymously-browsed
+Bluesky _AppView_ (`BlueskyAppView`) is the server half of that split, and so does appear here.
 -}
 type CombinedServerFeedItem
     = CombinedRellmServer RellmServer
     | CombinedMastodonInstance BrowsedMastodonInstance
+    | CombinedBlueskyAppView BlueskyAppView
 
 
 {-| A stable, cross-type identity for one `CombinedServerFeedItem` -- namespaced by kind (`"server:"`/
@@ -1014,6 +1035,9 @@ combinedServerFeedItemKey item =
         CombinedMastodonInstance instance ->
             "mastodon:" ++ instance.host
 
+        CombinedBlueskyAppView appView ->
+            "bluesky-appview:" ++ appView.host
+
 
 combinedServerFeedItemSortOrder : CombinedServerFeedItem -> Int
 combinedServerFeedItemSortOrder item =
@@ -1023,6 +1047,9 @@ combinedServerFeedItemSortOrder item =
 
         CombinedMastodonInstance instance ->
             instance.sortOrder
+
+        CombinedBlueskyAppView appView ->
+            appView.sortOrder
 
 
 {-| The full, ordered contents of `UI.combinedServerFeedItemsStrip`: the `mainFrontendHost` server first
@@ -1044,6 +1071,7 @@ combinedServerFeedItems model =
         others =
             (otherServers |> List.map CombinedRellmServer)
                 ++ (model.browsedMastodonInstances |> List.map CombinedMastodonInstance)
+                ++ (model.blueskyAppViews |> List.map CombinedBlueskyAppView)
                 |> List.sortBy combinedServerFeedItemSortOrder
     in
     (mainServers |> List.map CombinedRellmServer) ++ others
@@ -1057,6 +1085,7 @@ nonMainServerFeedItemSortOrders : Model -> List Int
 nonMainServerFeedItemSortOrders model =
     (model.servers |> List.filter (\s -> s.frontendHost /= model.mainFrontendHost) |> List.map .sortOrder)
         ++ (model.browsedMastodonInstances |> List.map .sortOrder)
+        ++ (model.blueskyAppViews |> List.map .sortOrder)
 
 
 {-| Looks up one `CombinedServerFeedItem`'s current `sortOrder` by its `combinedServerFeedItemKey`, across
@@ -1087,6 +1116,20 @@ setServerFeedItemSortOrder key newSortOrder model =
                             s
                     )
                     model.servers
+        }
+
+    else if String.startsWith "bluesky-appview:" key then
+        { model
+            | blueskyAppViews =
+                List.map
+                    (\a ->
+                        if "bluesky-appview:" ++ a.host == key then
+                            { a | sortOrder = newSortOrder }
+
+                        else
+                            a
+                    )
+                    model.blueskyAppViews
         }
 
     else
@@ -1398,6 +1441,11 @@ mastodonAccountsAndServersDecoder =
         (Decode.field "browsedInstances" (Decode.list MastodonServers.browsedMastodonInstanceDecoder))
 
 
+persistBluesky : Model -> Cmd Msg
+persistBluesky model =
+    Ports.persistBlueskyAccounts (BlueskyAppViews.encodeState { accounts = model.blueskyAccounts, appViews = model.blueskyAppViews })
+
+
 init : Request -> Flags -> Flags -> Flags -> ( Model, Cmd Msg )
 init req flags blueskyAccountsFlags mastodonAccountsAndServersFlags =
     let
@@ -1406,10 +1454,14 @@ init req flags blueskyAccountsFlags mastodonAccountsAndServersFlags =
             Decode.decodeValue persistedStateDecoder flags
                 |> Result.withDefault emptyPersistedState
 
+        rawBluesky : BlueskyAppViews.BlueskyState
+        rawBluesky =
+            Decode.decodeValue BlueskyAppViews.stateDecoder blueskyAccountsFlags
+                |> Result.withDefault BlueskyAppViews.emptyState
+
         rawBlueskyAccounts : List BlueskyAccount
         rawBlueskyAccounts =
-            Decode.decodeValue BlueskyAccounts.decoder blueskyAccountsFlags
-                |> Result.withDefault []
+            rawBluesky.accounts
 
         rawMastodon : MastodonAccountsAndServers
         rawMastodon =
@@ -1422,8 +1474,8 @@ init req flags blueskyAccountsFlags mastodonAccountsAndServersFlags =
         -- Every other binding in this `let` that reads `persisted`/`persistedMastodon`/
         -- `persistedBlueskyAccounts` (rather than the `raw*` values directly) already sees the
         -- migrated ones.
-        ( migratedServers, migratedBrowsedInstances ) =
-            migrateServerFeedItemSortOrders rawPersisted.servers rawMastodon.browsedInstances
+        ( migratedServers, migratedBrowsedInstances, persistedBlueskyAppViews ) =
+            migrateServerFeedItemSortOrders rawPersisted.servers rawMastodon.browsedInstances rawBluesky.appViews
 
         ( migratedAccounts, migratedMastodonAccounts, persistedBlueskyAccounts ) =
             migrateAccountItemSortOrders rawPersisted.accounts rawMastodon.accounts rawBlueskyAccounts
@@ -1585,6 +1637,7 @@ init req flags blueskyAccountsFlags mastodonAccountsAndServersFlags =
       , serverAnimations =
             ((persisted.servers |> List.map (\server -> "server:" ++ server.frontendHost))
                 ++ (persistedMastodon.browsedInstances |> List.map (\instance -> "mastodon:" ++ instance.host))
+                ++ (persistedBlueskyAppViews |> List.map (\appView -> "bluesky-appview:" ++ appView.host))
             )
                 |> List.map (\key -> ( key, UI.Flip.restingState ))
                 |> Dict.fromList
@@ -1603,6 +1656,7 @@ init req flags blueskyAccountsFlags mastodonAccountsAndServersFlags =
       , browsedMastodonInstances = persistedMastodon.browsedInstances
       , browseMastodonInstanceInput = ""
       , blueskyAccounts = persistedBlueskyAccounts
+      , blueskyAppViews = BlueskyAppViews.normalize persistedBlueskyAccounts persistedBlueskyAppViews
       , blueskyConnectForm = emptyBlueskyConnectForm
       }
     , Cmd.batch
@@ -1625,7 +1679,7 @@ already has one, and a failure (e.g. an expired token) is silently ignored, same
 missingBlueskyAvatarCmd : BlueskyAccount -> Cmd Msg
 missingBlueskyAvatarCmd account =
     if account.avatarUrl == Nothing && not account.needsReauth then
-        Task.attempt (GotBlueskyProfileResult account.handle) (BlueskyAccounts.fetchProfileTask account.handle account.accessToken)
+        Task.attempt (GotBlueskyProfileResult account.handle) (BlueskyAccounts.fetchProfileTask account)
 
     else
         Cmd.none
@@ -2366,6 +2420,49 @@ sendUpdate req msg model =
                                         }
                                     )
 
+                        -- (Like the Mastodon defaults above, one the user later removes comes back on the
+                        -- next first-visit sweep -- there's no "dismissed" memory for either.)
+                        --
+                        -- Same idea for `FederationInfo.blueskyServers`: an AppView needs no negotiation
+                        -- either (it's anonymous reads from a public host). Only one Bluesky source is
+                        -- ever enabled at once, so just the first `pinnedByDefault` one starts on --
+                        -- and only if no Bluesky account/AppView is already enabled from a previous
+                        -- visit's choices.
+                        defaultBlueskyAppViews : List BlueskyAppView
+                        defaultBlueskyAppViews =
+                            let
+                                nothingEnabledYet : Bool
+                                nothingEnabledYet =
+                                    not (List.any .enabled model.blueskyAccounts || List.any .enabled model.blueskyAppViews)
+
+                                wanted : List BlueskyServer
+                                wanted =
+                                    config.federationInfo
+                                        |> Maybe.map .blueskyServers
+                                        |> Maybe.withDefault []
+                                        |> List.filter
+                                            (\bs ->
+                                                not (String.isEmpty bs.host)
+                                                    && (Maybe.withDefault False bs.configuredByDefault || Maybe.withDefault False bs.pinnedByDefault)
+                                                    && not (List.any (\a -> a.host == bs.host) model.blueskyAppViews)
+                                            )
+
+                                firstPinned : Maybe String
+                                firstPinned =
+                                    wanted
+                                        |> List.filter (\bs -> Maybe.withDefault False bs.pinnedByDefault)
+                                        |> List.head
+                                        |> Maybe.map .host
+                            in
+                            wanted
+                                |> List.indexedMap
+                                    (\idx bs ->
+                                        { host = bs.host
+                                        , enabled = nothingEnabledYet && firstPinned == Just bs.host
+                                        , sortOrder = nextBackSortOrder model + List.length newlyAddedMastodonInstances + idx
+                                        }
+                                    )
+
                         -- Appended at the back (like `federatedServerCmds`'s own servers, via
                         -- `appendToEnd`), each getting the next sequential back `sortOrder` so
                         -- they keep their own relative order among themselves too.
@@ -2382,6 +2479,7 @@ sendUpdate req msg model =
                                 , servers = RellmServers.upsertRellmServer 0 server model.servers
                                 , browsingHostConfigResolved = True
                                 , browsedMastodonInstances = model.browsedMastodonInstances ++ newlyAddedMastodonInstances
+                                , blueskyAppViews = model.blueskyAppViews ++ defaultBlueskyAppViews
                             }
 
                         -- Fetches each newly-added default instance's logo/name, same as
@@ -2426,6 +2524,7 @@ sendUpdate req msg model =
                         (refreshPermissionsForServer server newModel.accounts
                             :: devCustomCssCmd newModel server
                             :: Ports.persistMastodonAccountsAndServers (encodeMastodonAccountsAndServers newModel)
+                            :: persistBluesky newModel
                             :: federatedServerCmds
                             ++ mastodonInstanceLogoCmds
                         )
@@ -2512,11 +2611,11 @@ sendUpdate req msg model =
         BlueskyAccountsBroadcastReceived value ->
             -- Unlike `AccountsAndServersBroadcastReceived`'s `servers`, a `BlueskyAccount` carries no
             -- separate "connected this session" state to preserve -- the broadcast value is already
-            -- the other tab's complete, authoritative list (same shape `persistBlueskyAccounts` itself
-            -- persists), so this can just replace `blueskyAccounts` outright.
-            case Decode.decodeValue BlueskyAccounts.decoder value of
-                Ok accounts ->
-                    ( { model | blueskyAccounts = accounts }, Cmd.none )
+            -- the other tab's complete, authoritative state (same shape `persistBlueskyAccounts` itself
+            -- persists), so this can just replace `blueskyAccounts`/`blueskyAppViews` outright.
+            case Decode.decodeValue BlueskyAppViews.stateDecoder value of
+                Ok bluesky ->
+                    ( { model | blueskyAccounts = bluesky.accounts, blueskyAppViews = BlueskyAppViews.normalize bluesky.accounts bluesky.appViews }, Cmd.none )
 
                 Err _ ->
                     ( model, Cmd.none )
@@ -4088,7 +4187,7 @@ sendUpdate req msg model =
                     model.blueskyConnectForm
             in
             ( { model | blueskyConnectForm = { form | status = Submitting } }
-            , Task.attempt GotBlueskyConnectResult (BlueskyAccounts.createSessionTask form.handle form.appPassword)
+            , Task.attempt GotBlueskyConnectResult (BlueskyAccounts.connectTask form.handle form.appPassword)
             )
 
         GotBlueskyConnectResult (Ok connectedAccount) ->
@@ -4111,23 +4210,30 @@ sendUpdate req msg model =
                                 |> Maybe.withDefault (nextFrontAccountSortOrder model)
                     }
 
-                -- `account.enabled` is always `True` fresh out of `createSessionTask` -- disables
+                -- `account.enabled` is always `True` fresh out of `connectTask` -- disables
                 -- every previously-connected Bluesky account so this new one becomes the sole
                 -- enabled one. See `BlueskyAccounts.disableOtherBlueskyAccounts`'s own doc.
                 newAccounts : List BlueskyAccount
                 newAccounts =
                     BlueskyAccounts.disableOtherBlueskyAccounts account.handle
                         (account :: List.filter (not << sameHandle) model.blueskyAccounts)
+
+                -- A freshly connected account is enabled, which turns the anonymous AppView off (an
+                -- account's view of the network is a superset of an anonymous one's).
+                newModel : Model
+                newModel =
+                    { model
+                        | blueskyConnectForm = emptyBlueskyConnectForm
+                        , blueskyAccounts = newAccounts
+                        , blueskyAppViews = BlueskyAppViews.disableAll model.blueskyAppViews
+                        , addAccountServerFormType = Nothing
+                        , reauthenticatingAccount = Nothing
+                    }
             in
-            ( { model
-                | blueskyConnectForm = emptyBlueskyConnectForm
-                , blueskyAccounts = newAccounts
-                , addAccountServerFormType = Nothing
-                , reauthenticatingAccount = Nothing
-              }
+            ( newModel
             , Cmd.batch
-                [ Ports.persistBlueskyAccounts (BlueskyAccounts.encodeList newAccounts)
-                , Task.attempt (GotBlueskyProfileResult account.handle) (BlueskyAccounts.fetchProfileTask account.handle account.accessToken)
+                [ persistBluesky newModel
+                , Task.attempt (GotBlueskyProfileResult account.handle) (BlueskyAccounts.fetchProfileTask account)
                 ]
             )
 
@@ -4155,7 +4261,7 @@ sendUpdate req msg model =
                         )
                         model.blueskyAccounts
             in
-            ( { model | blueskyAccounts = newAccounts }, Ports.persistBlueskyAccounts (BlueskyAccounts.encodeList newAccounts) )
+            withBlueskyAccounts newAccounts model
 
         RemoveBlueskyAccountClicked handle ->
             -- Same "fade first, actually remove once that finishes" deferral as
@@ -4175,13 +4281,14 @@ sendUpdate req msg model =
 
         FinishRemoveBlueskyAccount handle ->
             let
-                newAccounts : List BlueskyAccount
-                newAccounts =
-                    List.filter (\a -> a.handle /= handle) model.blueskyAccounts
+                newModel : Model
+                newModel =
+                    { model
+                        | blueskyAccounts = List.filter (\a -> a.handle /= handle) model.blueskyAccounts
+                        , accountAnimations = Dict.remove ("bluesky:" ++ handle) model.accountAnimations
+                    }
             in
-            ( { model | blueskyAccounts = newAccounts, accountAnimations = Dict.remove ("bluesky:" ++ handle) model.accountAnimations }
-            , Ports.persistBlueskyAccounts (BlueskyAccounts.encodeList newAccounts)
-            )
+            ( newModel, persistBluesky newModel )
 
         ToggleBlueskyAccountEnabled handle ->
             let
@@ -4210,8 +4317,22 @@ sendUpdate req msg model =
 
                     else
                         toggledAccounts
+
+                -- Enabling an account turns the anonymous AppView off; disabling one deliberately
+                -- doesn't turn it back on.
+                newModel : Model
+                newModel =
+                    { model
+                        | blueskyAccounts = newAccounts
+                        , blueskyAppViews =
+                            if justEnabled then
+                                BlueskyAppViews.disableAll model.blueskyAppViews
+
+                            else
+                                model.blueskyAppViews
+                    }
             in
-            ( { model | blueskyAccounts = newAccounts }, Ports.persistBlueskyAccounts (BlueskyAccounts.encodeList newAccounts) )
+            ( newModel, persistBluesky newModel )
 
         BlueskyAccountRefreshed refreshedAccount ->
             -- `BlueskyAccounts.performWithBlueskyAccount` rotated `refreshedAccount`'s tokens (see
@@ -4221,19 +4342,21 @@ sendUpdate req msg model =
             -- `blueskyAccounts` would otherwise force every subsequent request through a refresh of
             -- its own, and eventually fail outright once the old `refreshToken` itself gets rejected.
             let
+                -- Only the session fields -- see `BlueskyAccounts.applyRefresh` on why not the whole
+                -- (possibly stale) account, which could re-enable it behind an enabled AppView's back.
                 newAccounts : List BlueskyAccount
                 newAccounts =
                     List.map
                         (\a ->
                             if a.handle == refreshedAccount.handle then
-                                refreshedAccount
+                                BlueskyAccounts.applyRefresh refreshedAccount a
 
                             else
                                 a
                         )
                         model.blueskyAccounts
             in
-            ( { model | blueskyAccounts = newAccounts }, Ports.persistBlueskyAccounts (BlueskyAccounts.encodeList newAccounts) )
+            withBlueskyAccounts newAccounts model
 
         MarkBlueskyAccountNeedsReauth handle failedRefreshToken ->
             -- `failedRefreshToken` is the refresh token the rejected request started with. Ignored if
@@ -4258,12 +4381,12 @@ sendUpdate req msg model =
                         )
                         model.blueskyAccounts
             in
-            ( { model | blueskyAccounts = newAccounts }, Ports.persistBlueskyAccounts (BlueskyAccounts.encodeList newAccounts) )
+            withBlueskyAccounts newAccounts model
 
         ReconnectBlueskyAccountClicked handle ->
             -- Opens the same Bluesky tab/form `BlueskyConnectClicked` submits, pre-filled with
             -- `handle` -- there's no way to "refresh" past a fully revoked/expired refresh token
-            -- short of a brand new `createSessionTask` call with a fresh App Password, same as
+            -- short of a brand new `connectTask` call with a fresh App Password, same as
             -- disconnecting and reconnecting from scratch. `GotBlueskyConnectResult` replaces the
             -- old entry for the same handle with the fresh one.
             ( { model
@@ -4353,8 +4476,106 @@ sendUpdate req msg model =
             in
             ( newModel, Ports.persistMastodonAccountsAndServers (encodeMastodonAccountsAndServers newModel) )
 
+        AddBlueskyAppViewClicked host ->
+            addBlueskyAppView model host
+
+        ToggleBlueskyAppViewEnabled host ->
+            let
+                justEnabled : Bool
+                justEnabled =
+                    model.blueskyAppViews |> List.any (\a -> a.host == host && not a.enabled)
+
+                -- Enabling an AppView turns every other Bluesky source off (the other AppViews, and
+                -- every connected account); disabling one deliberately doesn't turn anything back on.
+                newModel : Model
+                newModel =
+                    if justEnabled then
+                        { model
+                            | blueskyAppViews = BlueskyAppViews.enableOnly host model.blueskyAppViews
+                            , blueskyAccounts = List.map (\a -> { a | enabled = False }) model.blueskyAccounts
+                        }
+
+                    else
+                        { model
+                            | blueskyAppViews =
+                                List.map
+                                    (\a ->
+                                        if a.host == host then
+                                            { a | enabled = False }
+
+                                        else
+                                            a
+                                    )
+                                    model.blueskyAppViews
+                        }
+            in
+            ( newModel, persistBluesky newModel )
+
+        RemoveBlueskyAppViewClicked host ->
+            -- Same "fade first, actually remove once that finishes" deferral as
+            -- `RemoveBrowsedMastodonInstanceClicked` -- see `serverAnimations`.
+            let
+                key : String
+                key =
+                    "bluesky-appview:" ++ host
+
+                currentState : UI.Flip.State Msg
+                currentState =
+                    Dict.get key model.serverAnimations |> Maybe.withDefault UI.Flip.restingState
+            in
+            ( { model | serverAnimations = Dict.insert key (UI.Flip.remove (FinishRemoveBlueskyAppView host) currentState) model.serverAnimations }
+            , Cmd.none
+            )
+
+        FinishRemoveBlueskyAppView host ->
+            let
+                newModel : Model
+                newModel =
+                    { model
+                        | blueskyAppViews = List.filter (\a -> a.host /= host) model.blueskyAppViews
+                        , serverAnimations = Dict.remove ("bluesky-appview:" ++ host) model.serverAnimations
+                    }
+            in
+            ( newModel, persistBluesky newModel )
+
         NoOp ->
             ( model, Cmd.none )
+
+
+{-| `withBlueskyAccounts newAccounts model` -- replaces `model.blueskyAccounts` and persists, for the
+handlers that change nothing but the accounts.
+-}
+withBlueskyAccounts : List BlueskyAccount -> Model -> ( Model, Cmd Msg )
+withBlueskyAccounts newAccounts model =
+    let
+        newModel : Model
+        newModel =
+            { model | blueskyAccounts = newAccounts }
+    in
+    ( newModel, persistBluesky newModel )
+
+
+{-| Adds `host` (a `BlueskyServer.host`, trimmed by the caller) to `model.blueskyAppViews` at the front
+of the strip, enabled -- which, as with toggling one on, turns every other Bluesky source off. A no-op
+for a blank host or one already present.
+-}
+addBlueskyAppView : Model -> String -> ( Model, Cmd Msg )
+addBlueskyAppView model host =
+    if String.isEmpty host || List.any (\a -> a.host == host) model.blueskyAppViews then
+        ( model, Cmd.none )
+
+    else
+        let
+            newModel : Model
+            newModel =
+                { model
+                    | blueskyAppViews =
+                        { host = host, enabled = True, sortOrder = nextFrontSortOrder model }
+                            :: BlueskyAppViews.disableAll model.blueskyAppViews
+                    , blueskyAccounts = List.map (\a -> { a | enabled = False }) model.blueskyAccounts
+                }
+        in
+        ( newModel, persistBluesky newModel )
 
 
 emptyForm : AccountForm
@@ -4464,6 +4685,47 @@ recommendedMastodonServers : Model -> List MastodonServer
 recommendedMastodonServers model =
     allMastodonServers model
         |> List.filter (\ms -> not (List.any (\i -> i.host == ms.domain) model.browsedMastodonInstances))
+
+
+{-| The connected Bluesky account to act as for one-off reads (a profile, a post and its thread, followers,
+actor search, a starred post): the first one that's enabled and doesn't need re-authenticating. A
+disabled account must not keep serving reads (its PDS and bearer token would be used even after the user
+switched to an AppView), and one that needs re-auth would just fail -- both fall through to an anonymous
+read via `browsedBlueskyAuth` instead.
+-}
+activeBlueskyAccount : Model -> Maybe BlueskyAccount
+activeBlueskyAccount model =
+    model.blueskyAccounts
+        |> List.filter (\a -> a.enabled && not a.needsReauth)
+        |> List.head
+
+
+{-| How to read public Bluesky data with no connected account: from the enabled browsed AppView if
+there is one, else Bluesky PBC's public one (`publicBlueskyAppViewHost`) -- for the pages (a profile, a
+post, followers) that fall back to an anonymous read when no account is connected.
+-}
+browsedBlueskyAuth : Model -> BlueskyAuth
+browsedBlueskyAuth model =
+    model.blueskyAppViews
+        |> List.filter .enabled
+        |> List.head
+        |> Maybe.map (.host >> blueskyAuthFor)
+        |> Maybe.withDefault anonymousBlueskyAuth
+
+
+{-| `mainFrontendHost`'s own `FederationInfo.blueskyServers` that aren't already in
+`model.blueskyAppViews` -- the Bluesky counterpart of `recommendedMastodonServers`, driving
+`UI.recommendedServersStrip`'s Bluesky chips. (`configuredByDefault`/`pinnedByDefault` ones were already
+added by `GotMainServerResult`, so in practice this is the rest.)
+-}
+recommendedBlueskyServers : Model -> List BlueskyServer
+recommendedBlueskyServers model =
+    RellmServers.rellmServerForHost model.servers model.mainFrontendHost
+        |> Maybe.map RellmServers.configurationOf
+        |> Maybe.andThen .federationInfo
+        |> Maybe.map .blueskyServers
+        |> Maybe.withDefault []
+        |> List.filter (\bs -> not (List.any (\a -> a.host == bs.host) model.blueskyAppViews))
 
 
 {-| The admin-registered `MastodonServer` entry for `instanceHost`, if one exists -- what
@@ -5000,7 +5262,7 @@ persistCombinedItemOrder : Model -> Cmd Msg
 persistCombinedItemOrder model =
     Cmd.batch
         [ persist model
-        , Ports.persistBlueskyAccounts (BlueskyAccounts.encodeList model.blueskyAccounts)
+        , persistBluesky model
         , Ports.persistMastodonAccountsAndServers (encodeMastodonAccountsAndServers model)
         ]
 
@@ -5086,20 +5348,27 @@ them, the first time a client loads a version of the app that has `sortOrder` at
 the _account_ item space now (see `CombinedAccountItem`), migrated separately by
 `migrateAccountItemSortOrders`.
 -}
-migrateServerFeedItemSortOrders : List PersistedRellmServer -> List BrowsedMastodonInstance -> ( List PersistedRellmServer, List BrowsedMastodonInstance )
-migrateServerFeedItemSortOrders servers instances =
+migrateServerFeedItemSortOrders :
+    List PersistedRellmServer
+    -> List BrowsedMastodonInstance
+    -> List BlueskyAppView
+    -> ( List PersistedRellmServer, List BrowsedMastodonInstance, List BlueskyAppView )
+migrateServerFeedItemSortOrders servers instances appViews =
     let
         start : Int
         start =
-            SortOrder.nextMigratedSortOrderStart [ List.map .sortOrder servers, List.map .sortOrder instances ]
+            SortOrder.nextMigratedSortOrderStart [ List.map .sortOrder servers, List.map .sortOrder instances, List.map .sortOrder appViews ]
 
         ( afterServers, migratedServers ) =
             SortOrder.assignMissingSortOrders start servers
 
-        ( _, migratedInstances ) =
+        ( afterInstances, migratedInstances ) =
             SortOrder.assignMissingSortOrders afterServers instances
+
+        ( _, migratedAppViews ) =
+            SortOrder.assignMissingSortOrders afterInstances appViews
     in
-    ( migratedServers, migratedInstances )
+    ( migratedServers, migratedInstances, migratedAppViews )
 
 
 {-| Same idea as `migrateServerFeedItemSortOrders`, one level down (see `CombinedAccountItem`'s own
