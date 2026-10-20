@@ -1323,11 +1323,11 @@ fetchFeedSource shared model requestId source =
 
         BlueskyAppViewFeed host ->
             -- Anonymous: straight from the AppView, no account, nothing to refresh/persist. A blank
-            -- `model.searchText` shows its public feed; otherwise it's a network-wide post search,
-            -- which the public AppView only answers on its `api.bsky.app` front door (see
-            -- `anonymousSearchHost`).
+            -- `model.searchText` shows the newest posts on the network (`Bluesky.fetchLatestPosts`);
+            -- otherwise it's a network-wide post search. Either way it's `searchPosts`, which the
+            -- public AppView only answers on its `api.bsky.app` front door (see `anonymousSearchHost`).
             (if String.isEmpty (String.trim model.searchText) then
-                Bluesky.fetchPublicFeed (blueskyAuthFor host)
+                Bluesky.fetchLatestPosts (blueskyAuthFor (anonymousSearchHost host))
 
              else
                 Bluesky.searchPosts (blueskyAuthFor (anonymousSearchHost host)) (String.trim model.searchText)
@@ -1497,7 +1497,7 @@ acting account changed) and persists the new `search_text`/`context` to the URL 
 both connected accounts and browsed AppViews -- is included here (unlike `MastodonInstance`, which has
 no search of its own -- see `refetchFeeds`'s own doc) since `fetchFeedSource` actually does something
 different with a changed `model.searchText` for them (`Bluesky.searchPosts` instead of `Bluesky.fetchPosts`/
-`fetchPublicFeed`), gated the same way
+`fetchLatestPosts`), gated the same way
 `relevantFeedSources` gates it off entirely: only while `model.author == Nothing`, since a Bluesky
 network-wide search has no way to scope itself to one profile's own posts the way a real `GetPosts`
 request can.
