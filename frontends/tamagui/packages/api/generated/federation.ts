@@ -181,7 +181,18 @@ export interface BlueskyServer {
    * (showing its public feed alongside the "main" server). Only one Bluesky source (an AppView or
    * a connected account) is shown at a time, so clients should ignore all but the first of these.
    */
-  pinnedByDefault?: boolean | undefined;
+  pinnedByDefault?:
+    | boolean
+    | undefined;
+  /**
+   * URL of an image to show as this AppView's logo in clients' server lists (an `https://` URL; clients
+   * ignore anything else). Unlike a Mastodon instance (`GET /api/v1/instance` has a `thumbnail`) or a
+   * Rellm server (which carries its own `ServerLogo`), an AppView has no way to describe itself, so
+   * there is nothing to discover one from - it has to be provided here. Clients show a built-in logo for
+   * Bluesky's own public AppView (`public.api.bsky.app`) when this is unset, and a plain placeholder for
+   * any other AppView.
+   */
+  logoUrl?: string | undefined;
 }
 
 function createBaseGetServiceVersionResponse(): GetServiceVersionResponse {
@@ -854,7 +865,7 @@ export const MastodonServer: MessageFns<MastodonServer> = {
 };
 
 function createBaseBlueskyServer(): BlueskyServer {
-  return { host: "", configuredByDefault: undefined, pinnedByDefault: undefined };
+  return { host: "", configuredByDefault: undefined, pinnedByDefault: undefined, logoUrl: undefined };
 }
 
 export const BlueskyServer: MessageFns<BlueskyServer> = {
@@ -867,6 +878,9 @@ export const BlueskyServer: MessageFns<BlueskyServer> = {
     }
     if (message.pinnedByDefault !== undefined) {
       writer.uint32(24).bool(message.pinnedByDefault);
+    }
+    if (message.logoUrl !== undefined) {
+      writer.uint32(34).string(message.logoUrl);
     }
     return writer;
   },
@@ -902,6 +916,14 @@ export const BlueskyServer: MessageFns<BlueskyServer> = {
           message.pinnedByDefault = reader.bool();
           continue;
         }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.logoUrl = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -918,6 +940,7 @@ export const BlueskyServer: MessageFns<BlueskyServer> = {
         ? globalThis.Boolean(object.configuredByDefault)
         : undefined,
       pinnedByDefault: isSet(object.pinnedByDefault) ? globalThis.Boolean(object.pinnedByDefault) : undefined,
+      logoUrl: isSet(object.logoUrl) ? globalThis.String(object.logoUrl) : undefined,
     };
   },
 
@@ -932,6 +955,9 @@ export const BlueskyServer: MessageFns<BlueskyServer> = {
     if (message.pinnedByDefault !== undefined) {
       obj.pinnedByDefault = message.pinnedByDefault;
     }
+    if (message.logoUrl !== undefined) {
+      obj.logoUrl = message.logoUrl;
+    }
     return obj;
   },
 
@@ -943,6 +969,7 @@ export const BlueskyServer: MessageFns<BlueskyServer> = {
     message.host = object.host ?? "";
     message.configuredByDefault = object.configuredByDefault ?? undefined;
     message.pinnedByDefault = object.pinnedByDefault ?? undefined;
+    message.logoUrl = object.logoUrl ?? undefined;
     return message;
   },
 };

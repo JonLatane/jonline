@@ -27,6 +27,7 @@ import Set exposing (Set)
 import Shared
 import Shared.AccountsPanel as AccountsPanel
 import Shared.Federation.Common exposing (publicBlueskyAppViewHost)
+import Shared.AccountsPanel.BlueskyAppViews as BlueskyAppViews
 import Shared.AccountsPanel.MastodonServers as MastodonServers exposing (MastodonInstanceInfo)
 import Shared.AccountsPanel.RellmAccounts exposing (RellmAccount)
 import Shared.AccountsPanel.RellmServers as RellmServers exposing (RellmServer)
@@ -134,6 +135,7 @@ type Msg
     | BlueskyServerRemoveClicked String
     | BlueskyServerConfiguredByDefaultToggled String
     | BlueskyServerPinnedByDefaultToggled String
+    | BlueskyServerLogoUrlChanged String String
     | MastodonAppIdChanged String String
     | MastodonAppSecretEditClicked String
     | MastodonAppSecretChanged String String
@@ -220,6 +222,11 @@ type alias BlueskyServersEdit =
     { pending : List BlueskyServer
     , hostInput : String
     , status : AccountsPanel.FormStatus
+
+    -- Each pending server's logo URL box, exactly as typed (keyed by host) -- `BlueskyServer.logoUrl`
+    -- itself only gets the `normalizeLogoUrl`'d value, on save, so half-typed text isn't thrown away
+    -- mid-edit.
+    , logoInputs : Dict String String
     }
 
 
@@ -641,12 +648,21 @@ updateMsg shared targetHost isSecure maybeServer msg model =
         BlueskyServersEditClicked ->
             case maybeServer of
                 Just server ->
+                    let
+                        savedBlueskyServers : List BlueskyServer
+                        savedBlueskyServers =
+                            (RellmServers.configurationOf server).federationInfo |> Maybe.map .blueskyServers |> Maybe.withDefault []
+                    in
                     ( { model
                         | blueskyServersEdit =
                             Just
-                                { pending = (RellmServers.configurationOf server).federationInfo |> Maybe.map .blueskyServers |> Maybe.withDefault []
+                                { pending = savedBlueskyServers
                                 , hostInput = ""
                                 , status = AccountsPanel.Idle
+                                , logoInputs =
+                                    savedBlueskyServers
+                                        |> List.filterMap (\bs -> bs.logoUrl |> Maybe.map (Tuple.pair bs.host))
+                                        |> Dict.fromList
                                 }
                       }
                     , Effect.none
@@ -662,7 +678,7 @@ updateMsg shared targetHost isSecure maybeServer msg model =
             case ( model.blueskyServersEdit, Common.adminAccountFor shared targetHost ) of
                 ( Just edit, Just account ) ->
                     ( { model | blueskyServersEdit = Just { edit | status = AccountsPanel.Submitting } }
-                    , AccountsPanel.updateServerConfig shared.accounts ( Just account.userId, targetHost ) (applyBlueskyServers edit.pending)
+                    , AccountsPanel.updateServerConfig shared.accounts ( Just account.userId, targetHost ) (applyBlueskyServers (withLogoInputs edit))
                         |> Task.attempt GotBlueskyServersSaveResult
                         |> Effect.fromCmd
                     )
@@ -704,7 +720,7 @@ updateMsg shared targetHost isSecure maybeServer msg model =
                             | blueskyServersEdit =
                                 Just
                                     { edit
-                                        | pending = edit.pending ++ [ { host = host, configuredByDefault = Just False, pinnedByDefault = Just False } ]
+                                        | pending = edit.pending ++ [ { host = host, configuredByDefault = Just False, pinnedByDefault = Just False, logoUrl = Nothing } ]
                                         , hostInput = ""
                                     }
                           }
@@ -725,6 +741,11 @@ updateMsg shared targetHost isSecure maybeServer msg model =
                     model.blueskyServersEdit
                         |> Maybe.map (mapPendingBlueskyHost host (\bs -> { bs | configuredByDefault = Just (not (Maybe.withDefault False bs.configuredByDefault)) }))
               }
+            , Effect.none
+            )
+
+        BlueskyServerLogoUrlChanged host text ->
+            ( { model | blueskyServersEdit = model.blueskyServersEdit |> Maybe.map (\edit -> { edit | logoInputs = Dict.insert host text edit.logoInputs }) }
             , Effect.none
             )
 
@@ -1330,6 +1351,16 @@ applyBlueskyServers blueskyServers config =
     { config | federationInfo = Just { federationInfo | blueskyServers = blueskyServers } }
 
 
+{-| The servers `BlueskyServersSaveClicked` sends: `edit.pending`, each with its `logoUrl` taken from what's
+in its logo box (`BlueskyAppViews.normalizeLogoUrl` -- blank or non-http(s) means no logo).
+-}
+withLogoInputs : BlueskyServersEdit -> List BlueskyServer
+withLogoInputs edit =
+    List.map
+        (\bs -> { bs | logoUrl = Dict.get bs.host edit.logoInputs |> Maybe.andThen BlueskyAppViews.normalizeLogoUrl })
+        edit.pending
+
+
 mapPendingBlueskyHost : String -> (BlueskyServer -> BlueskyServer) -> BlueskyServersEdit -> BlueskyServersEdit
 mapPendingBlueskyHost host f edit =
     { edit | pending = List.map (\bs -> if bs.host == host then f bs else bs) edit.pending }
@@ -1737,8 +1768,8 @@ blueskyServersSection server model maybeAdminAccount =
 Default" badges, like `mastodonServerDisplayChip`; while editing it has the same two flags as
 toggles plus a remove button.
 -}
-blueskyServerChip : Maybe () -> BlueskyServer -> Html Msg
-blueskyServerChip editing blueskyServer =
+blueskyServerChip : Maybe String -> BlueskyServer -> Html Msg
+blueskyServerChip editingLogoInput blueskyServer =
     let
         configuredByDefault : Bool
         configuredByDefault =
@@ -1755,16 +1786,37 @@ blueskyServerChip editing blueskyServer =
 
             else
                 blueskyServer.host
+
+        -- While editing, the preview follows what's typed into the logo box; otherwise it's what clients show.
+        logoUrl : Maybe String
+        logoUrl =
+            BlueskyAppViews.logoUrlFor
+                [ { blueskyServer | logoUrl = editingLogoInput |> Maybe.withDefault (Maybe.withDefault "" blueskyServer.logoUrl) |> Just } ]
+                blueskyServer.host
     in
     div [ classes [ "server-chip", "federated-server-chip", hostnameToCSSClass blueskyServer.host ] ]
         [ div [ classes [ "server-chip-top", "background-color-primary" ] ]
-            [ div [ class "server-chip-host-row" ] [ div [ class "server-chip-host" ] [ text shownHost ] ]
+            [ case logoUrl of
+                Just url ->
+                    div [ class "server-chip-host-row" ] [ img [ class "server-logo-image", src url, alt (shownHost ++ " logo") ] [] ]
+
+                Nothing ->
+                    text ""
+            , div [ class "server-chip-host-row" ] [ div [ class "server-chip-host" ] [ text shownHost ] ]
             , div [ class "mastodon-app-id", title blueskyServer.host ] [ text blueskyServer.host ]
             ]
-        , case editing of
-            Just () ->
+        , case editingLogoInput of
+            Just logoInput ->
                 div [ classes [ "server-chip-bottom", "federated-server-flags", "background-color-nav" ] ]
-                    [ Common.settingsRow "Added by default" (Common.flagSwitch configuredByDefault (BlueskyServerConfiguredByDefaultToggled blueskyServer.host))
+                    [ input
+                        [ class "server-details-federation-add-input"
+                        , value logoInput
+                        , onInput (BlueskyServerLogoUrlChanged blueskyServer.host)
+                        , placeholder "Logo image URL (https://…)"
+                        , title "An https:// image URL shown as this server's logo. Leave blank for the default."
+                        ]
+                        []
+                    , Common.settingsRow "Added by default" (Common.flagSwitch configuredByDefault (BlueskyServerConfiguredByDefaultToggled blueskyServer.host))
                     , Common.settingsRow "Enabled by default" (Common.flagSwitch pinnedByDefault (BlueskyServerPinnedByDefaultToggled blueskyServer.host))
                     , button [ class "remove-btn", onClick (BlueskyServerRemoveClicked blueskyServer.host), title ("Remove " ++ shownHost) ] [ text "╳" ]
                     ]
@@ -1793,7 +1845,7 @@ blueskyServerChip editing blueskyServer =
 blueskyServersEditorView : BlueskyServersEdit -> Html Msg
 blueskyServersEditorView edit =
     div [ class "server-details-federation-edit" ]
-        [ div [ class "federated-servers-strip" ] (List.map (blueskyServerChip (Just ())) edit.pending)
+        [ div [ class "federated-servers-strip" ] (List.map (\bs -> blueskyServerChip (Just (Dict.get bs.host edit.logoInputs |> Maybe.withDefault "")) bs) edit.pending)
         , div [ class "server-details-federation-add" ]
             [ input
                 [ class "server-details-federation-add-input"

@@ -37,6 +37,7 @@ module Shared.AccountsPanel exposing
     , performWithAccountServer
     , performWithOptionalAccountServer
     , activeBlueskyAccount
+    , allBlueskyServers
     , browsedBlueskyAuth
     , recommendedBlueskyServers
     , recommendedFederatedServers
@@ -4713,6 +4714,19 @@ browsedBlueskyAuth model =
         |> Maybe.withDefault anonymousBlueskyAuth
 
 
+{-| Every `BlueskyServer` on `mainFrontendHost`'s own `FederationInfo`, whether or not it's been added --
+`recommendedBlueskyServers` filters it, and the AppView chips look their `logoUrl` up in it (see
+`BlueskyAppViews.logoUrlFor`).
+-}
+allBlueskyServers : Model -> List BlueskyServer
+allBlueskyServers model =
+    RellmServers.rellmServerForHost model.servers model.mainFrontendHost
+        |> Maybe.map RellmServers.configurationOf
+        |> Maybe.andThen .federationInfo
+        |> Maybe.map .blueskyServers
+        |> Maybe.withDefault []
+
+
 {-| `mainFrontendHost`'s own `FederationInfo.blueskyServers` that aren't already in
 `model.blueskyAppViews` -- the Bluesky counterpart of `recommendedMastodonServers`, driving
 `UI.recommendedServersStrip`'s Bluesky chips. (`configuredByDefault`/`pinnedByDefault` ones were already
@@ -4720,11 +4734,7 @@ added by `GotMainServerResult`, so in practice this is the rest.)
 -}
 recommendedBlueskyServers : Model -> List BlueskyServer
 recommendedBlueskyServers model =
-    RellmServers.rellmServerForHost model.servers model.mainFrontendHost
-        |> Maybe.map RellmServers.configurationOf
-        |> Maybe.andThen .federationInfo
-        |> Maybe.map .blueskyServers
-        |> Maybe.withDefault []
+    allBlueskyServers model
         |> List.filter (\bs -> not (List.any (\a -> a.host == bs.host) model.blueskyAppViews))
 
 

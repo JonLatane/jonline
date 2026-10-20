@@ -150,10 +150,12 @@ const BlueskyServer$json = {
     {'1': 'host', '3': 1, '4': 1, '5': 9, '10': 'host'},
     {'1': 'configured_by_default', '3': 2, '4': 1, '5': 8, '9': 0, '10': 'configuredByDefault', '17': true},
     {'1': 'pinned_by_default', '3': 3, '4': 1, '5': 8, '9': 1, '10': 'pinnedByDefault', '17': true},
+    {'1': 'logo_url', '3': 4, '4': 1, '5': 9, '9': 2, '10': 'logoUrl', '17': true},
   ],
   '8': [
     {'1': '_configured_by_default'},
     {'1': '_pinned_by_default'},
+    {'1': '_logo_url'},
   ],
 };
 
@@ -161,6 +163,7 @@ const BlueskyServer$json = {
 final $typed_data.Uint8List blueskyServerDescriptor = $convert.base64Decode(
     'Cg1CbHVlc2t5U2VydmVyEhIKBGhvc3QYASABKAlSBGhvc3QSNwoVY29uZmlndXJlZF9ieV9kZW'
     'ZhdWx0GAIgASgISABSE2NvbmZpZ3VyZWRCeURlZmF1bHSIAQESLwoRcGlubmVkX2J5X2RlZmF1'
-    'bHQYAyABKAhIAVIPcGlubmVkQnlEZWZhdWx0iAEBQhgKFl9jb25maWd1cmVkX2J5X2RlZmF1bH'
-    'RCFAoSX3Bpbm5lZF9ieV9kZWZhdWx0');
+    'bHQYAyABKAhIAVIPcGlubmVkQnlEZWZhdWx0iAEBEh4KCGxvZ29fdXJsGAQgASgJSAJSB2xvZ2'
+    '9VcmyIAQFCGAoWX2NvbmZpZ3VyZWRfYnlfZGVmYXVsdEIUChJfcGlubmVkX2J5X2RlZmF1bHRC'
+    'CwoJX2xvZ29fdXJs');
 
