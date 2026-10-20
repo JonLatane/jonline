@@ -82,6 +82,11 @@ import Url.Builder
 
 type alias Model =
     { postsByServer : Dict String ServerFeed
+
+    -- The `requestId` the next fetch `refetchFeeds` starts will be tagged with -- see `ServerFeed.requestId`.
+    -- Model-wide (not per feed) so a source dropped and later re-added can never reuse an id an old,
+    -- still-in-flight response is carrying.
+    , nextRequestId : Int
     , postAnimations : Dict String PostAnimation
     , author : Maybe ( String, User )
 
@@ -194,7 +199,7 @@ type SubmitStatus
 
 
 type Msg
-    = GotFeedPosts String FeedResult
+    = GotFeedPosts String Int FeedResult
     | Poll
     | Animate Animation.Msg
     | RemovePost String
@@ -269,6 +274,12 @@ type alias ServerFeed =
     -- The real server host the posts came from -- `postsByServer`'s own key is `feedSourceKey`,
     -- which for a `RellmFederatedAuthor` isn't just the host (two profiles can share one).
     , host : String
+
+    -- The id of the fetch whose response this feed is waiting on (see `Model.nextRequestId`). A response
+    -- carrying any other id is stale -- e.g. an older text search that finished after a newer one (or
+    -- after the search was cleared) -- and is dropped by `GotFeedPosts` rather than overwriting the
+    -- current results.
+    , requestId : Int
     }
 
 
@@ -506,6 +517,7 @@ init shared author navKey path query embeddedPage availableSyncDestinations prof
         ( fetchedModel, fetchEffect ) =
             fetchNewFeeds shared
                 { postsByServer = Dict.empty
+                , nextRequestId = 0
                 , postAnimations = Dict.empty
                 , author = author
                 , federatedAuthors = []
@@ -673,10 +685,22 @@ quoteConfig shared =
     }
 
 
+{-| Applies `f` to `feed` only if `requestId` is the fetch it's currently waiting on (see
+`ServerFeed.requestId`) -- a response from a superseded fetch changes nothing.
+-}
+ifCurrent : Int -> (ServerFeed -> ServerFeed) -> ServerFeed -> ServerFeed
+ifCurrent requestId f feed =
+    if feed.requestId == requestId then
+        f feed
+
+    else
+        feed
+
+
 updateInner : Shared.Model -> Msg -> Model -> ( Model, Effect Msg )
 updateInner shared msg model =
     case msg of
-        GotFeedPosts host (FeedLoaded rawPosts maybeAccountsPanelMsg) ->
+        GotFeedPosts host requestId (FeedLoaded rawPosts maybeAccountsPanelMsg) ->
             let
                 accountEffect : Effect Msg
                 accountEffect =
@@ -717,14 +741,14 @@ updateInner shared msg model =
             ( { model
                 | postsByServer =
                     Dict.update host
-                        (Maybe.map (\feed -> { feed | status = Loaded posts }))
+                        (Maybe.map (ifCurrent requestId (\feed -> { feed | status = Loaded posts })))
                         model.postsByServer
               }
                 |> syncAnimations
             , accountEffect
             )
 
-        GotFeedPosts host (FeedFailed maybeAccountsPanelMsg) ->
+        GotFeedPosts host requestId (FeedFailed maybeAccountsPanelMsg) ->
             let
                 accountEffect : Effect Msg
                 accountEffect =
@@ -734,7 +758,7 @@ updateInner shared msg model =
             in
             ( { model
                 | postsByServer =
-                    Dict.update host (Maybe.map (\feed -> { feed | status = Failed })) model.postsByServer
+                    Dict.update host (Maybe.map (ifCurrent requestId (\feed -> { feed | status = Failed }))) model.postsByServer
               }
                 |> syncAnimations
             , accountEffect
@@ -1231,8 +1255,8 @@ mastodonHostsToFetch shared =
 
 
 {-| One real `GetPosts` fetch of `server`, scoped to `authorId` (the page's own `author`, or one `RellmFederatedAuthor`'s profile) and settling as `source`'s own `GotFeedPosts`. -}
-fetchRellmPosts : Shared.Model -> Model -> FeedSource -> RellmServer -> Maybe String -> Effect Msg
-fetchRellmPosts shared model source server authorId =
+fetchRellmPosts : Shared.Model -> Model -> Int -> FeedSource -> RellmServer -> Maybe String -> Effect Msg
+fetchRellmPosts shared model requestId source server authorId =
     let
         cutoff : Maybe Time.Posix
         cutoff =
@@ -1251,7 +1275,7 @@ fetchRellmPosts shared model source server authorId =
         model.searchText
         model.context
         cutoff
-        |> Task.attempt (fromServerResult >> GotFeedPosts (feedSourceKey source))
+        |> Task.attempt (fromServerResult >> GotFeedPosts (feedSourceKey source) requestId)
         |> Effect.fromCmd
 
 
@@ -1265,18 +1289,18 @@ real `GetPosts` request's own `TEXTSEARCH` mode. `MastodonInstance` has no searc
 at all, so its fetch ignores `model.searchText` entirely. Every case funnels its result through the
 same `GotFeedPosts` `Msg` regardless -- see `fromServerResult`/`fromFederatedResult`.
 -}
-fetchFeedSource : Shared.Model -> Model -> FeedSource -> Effect Msg
-fetchFeedSource shared model source =
+fetchFeedSource : Shared.Model -> Model -> Int -> FeedSource -> Effect Msg
+fetchFeedSource shared model requestId source =
     case source of
         RellmServer server ->
-            fetchRellmPosts shared model source server (model.author |> Maybe.map (Tuple.second >> .id))
+            fetchRellmPosts shared model requestId source server (model.author |> Maybe.map (Tuple.second >> .id))
 
         RellmFederatedAuthor server userId ->
-            fetchRellmPosts shared model source server (Just userId)
+            fetchRellmPosts shared model requestId source server (Just userId)
 
         MastodonInstance host ->
             Mastodon.fetchPosts host
-                |> Task.attempt (fromFederatedResult >> GotFeedPosts (feedSourceKey source))
+                |> Task.attempt (fromFederatedResult >> GotFeedPosts (feedSourceKey source) requestId)
                 |> Effect.fromCmd
 
         BlueskyFeed account ->
@@ -1294,7 +1318,7 @@ fetchFeedSource shared model source =
                         Bluesky.searchPosts auth trimmedSearch
             in
             BlueskyAccounts.performWithBlueskyAccount account request
-                |> Task.attempt (fromBlueskyResult account >> GotFeedPosts (feedSourceKey source))
+                |> Task.attempt (fromBlueskyResult account >> GotFeedPosts (feedSourceKey source) requestId)
                 |> Effect.fromCmd
 
         BlueskyAppViewFeed host ->
@@ -1308,19 +1332,19 @@ fetchFeedSource shared model source =
              else
                 Bluesky.searchPosts (blueskyAuthFor (anonymousSearchHost host)) (String.trim model.searchText)
             )
-                |> Task.attempt (fromFederatedResult >> GotFeedPosts (feedSourceKey source))
+                |> Task.attempt (fromFederatedResult >> GotFeedPosts (feedSourceKey source) requestId)
                 |> Effect.fromCmd
 
         MastodonAccountFeed ref ->
             Mastodon.fetchAccountStatuses ref.instanceHost ref.accountId
-                |> Task.attempt (fromFederatedResult >> GotFeedPosts (feedSourceKey source))
+                |> Task.attempt (fromFederatedResult >> GotFeedPosts (feedSourceKey source) requestId)
                 |> Effect.fromCmd
 
         BlueskyAuthorFeed ref ->
             case AccountsPanel.activeBlueskyAccount shared.accounts of
                 Just viewerAccount ->
                     BlueskyAccounts.performWithBlueskyAccount viewerAccount (\accessToken -> Bluesky.fetchAuthorFeed accessToken ref.handle)
-                        |> Task.attempt (fromBlueskyResult viewerAccount >> GotFeedPosts (feedSourceKey source))
+                        |> Task.attempt (fromBlueskyResult viewerAccount >> GotFeedPosts (feedSourceKey source) requestId)
                         |> Effect.fromCmd
 
                 Nothing ->
@@ -1328,7 +1352,7 @@ fetchFeedSource shared model source =
                     -- (from whichever AppView is browsed, else Bluesky's public one) -- nothing to
                     -- refresh/persist.
                     Bluesky.fetchAuthorFeed (AccountsPanel.browsedBlueskyAuth shared.accounts) ref.handle
-                        |> Task.attempt (fromFederatedResult >> GotFeedPosts (feedSourceKey source))
+                        |> Task.attempt (fromFederatedResult >> GotFeedPosts (feedSourceKey source) requestId)
                         |> Effect.fromCmd
 
 
@@ -1376,8 +1400,11 @@ refetchFeeds shared model sourcesToFetch =
             prunedPostsByServer =
                 Dict.filter (\host _ -> List.member host keptKeys) model.postsByServer
 
-            markSource : FeedSource -> Dict String ServerFeed -> Dict String ServerFeed
-            markSource source dict =
+            -- Each source gets the next `requestId`, so only its newest fetch's response lands (see
+            -- `ServerFeed.requestId`) -- e.g. typing "tom" then "tom p" quickly can't let a slow "tom"
+            -- response replace the "tom p" results, nor a slow search replace the feed after clearing it.
+            markSource : FeedSource -> ( Dict String ServerFeed, List ( Int, FeedSource ) ) -> ( Dict String ServerFeed, List ( Int, FeedSource ) )
+            markSource source ( dict, started ) =
                 let
                     key : String
                     key =
@@ -1398,16 +1425,29 @@ refetchFeeds shared model sourcesToFetch =
                                     else
                                         Nothing
                                 )
+
+                    requestId : Int
+                    requestId =
+                        model.nextRequestId + List.length started
                 in
-                Dict.insert key
-                    { status = Maybe.withDefault Loading statusIfSameAccount, accountId = accountId, host = feedSourceHost source }
+                ( Dict.insert key
+                    { status = Maybe.withDefault Loading statusIfSameAccount
+                    , accountId = accountId
+                    , host = feedSourceHost source
+                    , requestId = requestId
+                    }
                     dict
+                , started ++ [ ( requestId, source ) ]
+                )
+
+            ( markedPostsByServer, startedFetches ) =
+                List.foldl markSource ( prunedPostsByServer, [] ) sourcesToFetch
         in
         ( { model
-            | postsByServer =
-                List.foldl markSource prunedPostsByServer sourcesToFetch
+            | postsByServer = markedPostsByServer
+            , nextRequestId = model.nextRequestId + List.length startedFetches
           }
-        , Effect.batch (List.map (fetchFeedSource shared model) sourcesToFetch)
+        , Effect.batch (List.map (\( requestId, source ) -> fetchFeedSource shared model requestId source) startedFetches)
         )
             |> Tuple.mapFirst syncAnimations
 
