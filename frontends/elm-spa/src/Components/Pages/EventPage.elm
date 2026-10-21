@@ -211,7 +211,7 @@ type alias Model =
 
 
 type Msg
-    = GotEvent (Result Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Rellm.GetEventsResponse ))
+    = GotEvent (Maybe String) (Result Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Rellm.GetEventsResponse ))
       -- One occasion's RSVP form/list (see `Components.Rsvps`), keyed by occasion id.
     | RsvpsMsg String Rsvps.Msg
       -- The owner-only RSVP settings (see `rsvpSettingsView`). Each edit is applied to the loaded
@@ -625,8 +625,33 @@ subscriptions model =
         ]
 
 
+{-| Whether `msg` is the reply to a fetch made as an account that's no longer the acting one on this
+Event's server (`fetchedAccountId` moved on -- see `Shared.AccountsPanelMsg`'s handling below, which
+refetches as the new account). Its Event is what the *previous* account was allowed to see, and a
+slow reply must not overwrite the newer fetch's. (A refreshed token it may carry is dropped too; the
+next request refreshes again.)
+-}
+isStaleReply : Msg -> Model -> Bool
+isStaleReply msg model =
+    case msg of
+        GotEvent fetchedAs _ ->
+            fetchedAs /= model.fetchedAccountId
+
+        _ ->
+            False
+
+
 update : Shared.Model -> Msg -> Model -> ( Model, Effect Msg )
 update shared msg model =
+    if isStaleReply msg model then
+        ( model, Effect.none )
+
+    else
+        updateInner shared msg model
+
+
+updateInner : Shared.Model -> Msg -> Model -> ( Model, Effect Msg )
+updateInner shared msg model =
     case msg of
         RsvpsMsg occasionId rsvpsMsg ->
             case model.eventStatus of
@@ -709,7 +734,7 @@ update shared msg model =
         ExportClosed ->
             ( { model | exportOpen = False }, Effect.none )
 
-        GotEvent (Ok ( maybeAccountsPanelMsg, response )) ->
+        GotEvent _ (Ok ( maybeAccountsPanelMsg, response )) ->
             let
                 accountEffect : Effect Msg
                 accountEffect =
@@ -799,7 +824,7 @@ update shared msg model =
             , Effect.batch [ accountEffect, breadcrumbsEffect, scrollEffect, syncDestinationsFetchEffect ]
             )
 
-        GotEvent (Err _) ->
+        GotEvent _ (Err _) ->
             ( { model | eventStatus = EventFailed }, Effect.none )
 
         GotSyncDestinationsResult (Ok ( maybeAccountsPanelMsg, response )) ->
@@ -1806,7 +1831,7 @@ fetchIfReady shared model =
             Just _ ->
                 ( { model | fetchStarted = True, fetchedAccountId = currentAccountId shared model }
                 , Events.fetchEvent shared.accounts (maybeAccountServerFor shared model) model.rsvpTokenParam model.occasionId
-                    |> Task.attempt GotEvent
+                    |> Task.attempt (GotEvent (currentAccountId shared model))
                     |> Effect.fromCmd
                 )
 
@@ -1825,7 +1850,7 @@ refetch : Shared.Model -> Model -> ( Model, Effect Msg )
 refetch shared model =
     ( { model | fetchedAccountId = currentAccountId shared model }
     , Events.fetchEvent shared.accounts (maybeAccountServerFor shared model) model.rsvpTokenParam model.occasionId
-        |> Task.attempt GotEvent
+        |> Task.attempt (GotEvent (currentAccountId shared model))
         |> Effect.fromCmd
     )
 

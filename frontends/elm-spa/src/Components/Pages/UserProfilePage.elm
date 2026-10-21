@@ -147,11 +147,20 @@ type alias Model =
     -- `ResolverMsg` branch) -- cleared right after, so a later refetch (e.g. after a
     -- follow/unfollow) doesn't keep re-scrolling the page back to it.
     , pendingScrollSectionId : Maybe String
+
+    -- Bumped (by `clearViewerSpecificState`) every time the account acting on this server changes.
+    -- Every request this page itself starts is tagged with the epoch it was started in
+    -- (`attemptInActingEpoch`), and a reply from an older epoch is dropped -- see `InActingEpoch`.
+    , actingEpoch : Int
     }
 
 
 type Msg
     = ResolverMsg Resolver.Msg
+      -- A reply to a request this page started, tagged with the `actingEpoch` it was started in; dropped
+      -- if the acting account has changed since, so e.g. a name save started as one account can't
+      -- overwrite the freshly fetched profile of the next. See `attemptInActingEpoch`.
+    | InActingEpoch Int Msg
     | PostsMsg PostsPage.Msg
     | EventsMsg EventsPage.Msg
     | ConnectClicked
@@ -679,7 +688,7 @@ saveSyncSourceRow shared model source configuration =
     in
     ( { model | syncSources = { es | rowEdits = Dict.insert source.id { edit | status = Submitting } es.rowEdits } }
     , performForOwner shared model (\accountServer -> SyncSources.updateSyncSource shared.accounts accountServer updated)
-        |> Task.attempt (GotSyncSourceRowSaveResult source.id)
+        |> attemptInActingEpoch model (GotSyncSourceRowSaveResult source.id)
         |> Effect.fromCmd
     )
 
@@ -1171,6 +1180,7 @@ init shared pageIsSecure targetHost lookup navKey path query fragment =
             , navKey = navKey
             , path = path
             , query = query
+            , actingEpoch = 0
             , pendingScrollSectionId =
                 if List.member fragment (List.map Just [ "subscriptions", "sync-sources", "sync-destinations", "ai-providers", "ai-models", "contact-methods" ]) then
                     fragment
@@ -1463,6 +1473,16 @@ syncEmbeddedSyncToggles shared sectionId model =
 updateInner : Shared.Model -> Msg -> Model -> ( Model, Effect Msg )
 updateInner shared msg model =
     case msg of
+        InActingEpoch epoch innerMsg ->
+            if epoch == model.actingEpoch then
+                updateInner shared innerMsg model
+
+            else
+                -- Started by an account that's no longer the acting one: whatever it came back with
+                -- is for the wrong viewer. (A token refresh it may carry is dropped too; the next
+                -- request just refreshes again.)
+                ( model, Effect.none )
+
         ResolverMsg subMsg ->
             let
                 ( newResolver, resolverEffect ) =
@@ -1766,23 +1786,17 @@ updateInner shared msg model =
                         -- ConfirmPhoneDelete`'s own doc) resolving successfully -- `Shared.update`'s
                         -- own handling already merged the account's now-`Nothing` phone/email into
                         -- `AccountsPanel.Model` (for the Accounts Panel's own copy of this same
-                        -- feature); this is the page-local half, merging the updated `User` straight
-                        -- into `model.resolver` the same way `GotPhoneSaveResult`/`GotEmailSaveResult`
-                        -- do, no extra refetch needed since the RPC's own response already carries
-                        -- the full fresh `User` back.
-                        Shared.GotPhoneDeleteResult _ (Ok ( _, updatedUser )) ->
-                            ( { resolvedModel
-                                | resolver = withResolvedUser updatedUser resolvedModel.resolver
-                                , phoneEdit = Nothing
-                                , phoneVerification = Nothing
-                              }
-                            , Effect.none
-                            )
+                        -- feature). This is the page-local half: refetch the profile. The reply's
+                        -- own `User` isn't merged straight in (as `GotPhoneSaveResult`/
+                        -- `GotEmailSaveResult` do, since those are this page's own, epoch-tagged
+                        -- requests) because this request is fired from `Shared`, where it can't be
+                        -- tagged -- if the acting account changed while it was in flight, its `User`
+                        -- would be the *previous* account's view of this profile.
+                        Shared.GotPhoneDeleteResult _ (Ok _) ->
+                            refetch shared { resolvedModel | phoneEdit = Nothing, phoneVerification = Nothing }
 
-                        Shared.GotEmailDeleteResult _ (Ok ( _, updatedUser )) ->
-                            ( { resolvedModel | resolver = withResolvedUser updatedUser resolvedModel.resolver, emailEdit = Nothing }
-                            , Effect.none
-                            )
+                        Shared.GotEmailDeleteResult _ (Ok _) ->
+                            refetch shared { resolvedModel | emailEdit = Nothing }
 
                         _ ->
                             ( resolvedModel, Effect.none )
@@ -1852,7 +1866,7 @@ updateInner shared msg model =
                 ( Resolver.Loaded user, Just edit, Just ( server, account ) ) ->
                     ( { model | realNameEdit = Just { edit | status = Submitting } }
                     , Users.updateUser shared.accounts ( Just account.userId, server.frontendHost ) user.id (\freshUser -> { freshUser | realName = edit.input })
-                        |> Task.attempt GotRealNameSaveResult
+                        |> attemptInActingEpoch model GotRealNameSaveResult
                         |> Effect.fromCmd
                     )
 
@@ -1907,7 +1921,7 @@ updateInner shared msg model =
                             Nothing ->
                                 ( { model | usernameEdit = Just { edit | status = Submitting } }
                                 , Users.updateUser shared.accounts ( Just account.userId, server.frontendHost ) user.id (\freshUser -> { freshUser | username = newUsername })
-                                    |> Task.attempt GotUsernameSaveResult
+                                    |> attemptInActingEpoch model GotUsernameSaveResult
                                     |> Effect.fromCmd
                                 )
 
@@ -2014,7 +2028,7 @@ updateInner shared msg model =
                 ( Resolver.Loaded user, Just edit, Just ( server, account ) ) ->
                     ( { model | avatarEdit = Just { edit | status = Submitting } }
                     , Users.updateUser shared.accounts ( Just account.userId, server.frontendHost ) user.id (applyAvatarChoice edit.choice)
-                        |> Task.attempt GotAvatarSaveResult
+                        |> attemptInActingEpoch model GotAvatarSaveResult
                         |> Effect.fromCmd
                     )
 
@@ -2067,7 +2081,7 @@ updateInner shared msg model =
                 ( Resolver.Loaded user, Just edit, Just ( server, account ) ) ->
                     ( { model | visibilityEdit = Just { edit | status = Submitting } }
                     , Users.updateUser shared.accounts ( Just account.userId, server.frontendHost ) user.id (\freshUser -> { freshUser | visibility = edit.pending })
-                        |> Task.attempt GotVisibilitySaveResult
+                        |> attemptInActingEpoch model GotVisibilitySaveResult
                         |> Effect.fromCmd
                     )
 
@@ -2112,7 +2126,7 @@ updateInner shared msg model =
                 ( Resolver.Loaded user, Just edit, Just ( server, account ) ) ->
                     ( { model | moderationEdit = Just { edit | status = Submitting } }
                     , Users.updateUser shared.accounts ( Just account.userId, server.frontendHost ) user.id (\freshUser -> { freshUser | moderation = edit.pending })
-                        |> Task.attempt GotModerationSaveResult
+                        |> attemptInActingEpoch model GotModerationSaveResult
                         |> Effect.fromCmd
                     )
 
@@ -2146,7 +2160,7 @@ updateInner shared msg model =
                     in
                     ( { model | followModerationStatus = Submitting }
                     , Users.updateUser shared.accounts ( Just account.userId, server.frontendHost ) user.id (\freshUser -> { freshUser | defaultFollowModeration = newModeration })
-                        |> Task.attempt GotFollowModerationSaveResult
+                        |> attemptInActingEpoch model GotFollowModerationSaveResult
                         |> Effect.fromCmd
                     )
 
@@ -2225,7 +2239,7 @@ updateInner shared msg model =
                                         }
                             }
                         )
-                        |> Task.attempt GotPhoneSaveResult
+                        |> attemptInActingEpoch model GotPhoneSaveResult
                         |> Effect.fromCmd
                     )
 
@@ -2266,7 +2280,7 @@ updateInner shared msg model =
                                 | phone = freshUser.phone |> Maybe.map (\cm -> { cm | consentState = newConsent })
                             }
                         )
-                        |> Task.attempt GotPhoneConsentSaveResult
+                        |> attemptInActingEpoch model GotPhoneConsentSaveResult
                         |> Effect.fromCmd
                     )
 
@@ -2343,7 +2357,7 @@ updateInner shared msg model =
                                         }
                             }
                         )
-                        |> Task.attempt GotEmailSaveResult
+                        |> attemptInActingEpoch model GotEmailSaveResult
                         |> Effect.fromCmd
                     )
 
@@ -2384,7 +2398,7 @@ updateInner shared msg model =
                                 | email = freshUser.email |> Maybe.map (\cm -> { cm | consentState = newConsent })
                             }
                         )
-                        |> Task.attempt GotEmailConsentSaveResult
+                        |> attemptInActingEpoch model GotEmailConsentSaveResult
                         |> Effect.fromCmd
                     )
 
@@ -2416,7 +2430,7 @@ updateInner shared msg model =
                             in
                             ( { model | phoneVerification = Just pendingVerification }
                             , Users.startContactMethodVerification shared.accounts ( Just account.userId, server.frontendHost ) contactMethod
-                                |> Task.attempt GotStartPhoneVerificationResult
+                                |> attemptInActingEpoch model GotStartPhoneVerificationResult
                                 |> Effect.fromCmd
                             )
 
@@ -2465,7 +2479,7 @@ updateInner shared msg model =
                             , Users.verifyContactMethod shared.accounts
                                 ( Just account.userId, server.frontendHost )
                                 { value = phoneValue, code = pendingVerification.code }
-                                |> Task.attempt GotVerifyPhoneCodeResult
+                                |> attemptInActingEpoch model GotVerifyPhoneCodeResult
                                 |> Effect.fromCmd
                             )
 
@@ -2584,7 +2598,7 @@ updateInner shared msg model =
                             ( Just account.userId, server.frontendHost )
                             user.id
                             (\freshUser -> { freshUser | mediaStorageLimitBytes = Maybe.map Conversions.int64FromInt newLimit })
-                            |> Task.attempt GotStorageQuotaSaveResult
+                            |> attemptInActingEpoch model GotStorageQuotaSaveResult
                             |> Effect.fromCmd
                         )
 
@@ -2615,7 +2629,7 @@ updateInner shared msg model =
                 Just ( server, account ) ->
                     ( { model | cancelingSubscriptions = Dict.insert subscription.id Submitting model.cancelingSubscriptions }
                     , Market.cancelMarketSubscription shared.accounts ( Just account.userId, server.frontendHost ) subscription
-                        |> Task.attempt (GotCancelSubscriptionResult subscription.id)
+                        |> attemptInActingEpoch model (GotCancelSubscriptionResult subscription.id)
                         |> Effect.fromCmd
                     )
 
@@ -2704,7 +2718,7 @@ updateInner shared msg model =
                 ( Resolver.Loaded user, Just edit, Just ( server, account ) ) ->
                     ( { model | permissionsEdit = Just { edit | status = Submitting } }
                     , Users.updateUser shared.accounts ( Just account.userId, server.frontendHost ) user.id (\freshUser -> { freshUser | permissions = edit.pending })
-                        |> Task.attempt GotPermissionsSaveResult
+                        |> attemptInActingEpoch model GotPermissionsSaveResult
                         |> Effect.fromCmd
                     )
 
@@ -2767,7 +2781,7 @@ updateInner shared msg model =
                         Just selected ->
                             ( { model | federatedProfilesEdit = Just { edit | status = Submitting } }
                             , Users.federateProfile shared.accounts ( Just account.userId, server.frontendHost ) { host = selected.server, userId = selected.userId }
-                                |> Task.attempt GotFederatedProfileAddResult
+                                |> attemptInActingEpoch model GotFederatedProfileAddResult
                                 |> Effect.fromCmd
                             )
 
@@ -2810,7 +2824,7 @@ updateInner shared msg model =
                 ( Just edit, Just ( server, signedInAccount ) ) ->
                     ( { model | federatedProfilesEdit = Just { edit | status = Submitting } }
                     , Users.defederateProfile shared.accounts ( Just signedInAccount.userId, server.frontendHost ) account
-                        |> Task.attempt GotFederatedProfileRemoveResult
+                        |> attemptInActingEpoch model GotFederatedProfileRemoveResult
                         |> Effect.fromCmd
                     )
 
@@ -2858,7 +2872,9 @@ updateInner shared msg model =
 
                         mappedFollowEffect : Effect Msg
                         mappedFollowEffect =
-                            Effect.map FollowStatusAndButtonMsg followEffect
+                            -- Tagged with the epoch (see `attemptInActingEpoch`): the component's own requests
+                            -- act as whoever is acting now, and their replies mean nothing to the next account.
+                            Effect.map (\m -> InActingEpoch model.actingEpoch (FollowStatusAndButtonMsg m)) followEffect
                     in
                     case subMsg of
                         FollowStatusAndButton.GotFollowResult (Ok _) ->
@@ -2936,7 +2952,7 @@ updateInner shared msg model =
                     }
               }
             , performForOwner shared model (\accountServer -> SyncSources.updateSyncSource shared.accounts accountServer source)
-                |> Task.attempt (GotSyncSourceRowSaveResult source.id)
+                |> attemptInActingEpoch model (GotSyncSourceRowSaveResult source.id)
                 |> Effect.fromCmd
             )
 
@@ -3004,7 +3020,7 @@ updateInner shared msg model =
             in
             ( { model | syncSources = mapEventSyncAddForm (\f -> { f | status = Submitting }) es }
             , performForOwner shared model (\accountServer -> SyncSources.createSyncSource shared.accounts accountServer newSource)
-                |> Task.attempt GotSyncSourceAddResult
+                |> attemptInActingEpoch model GotSyncSourceAddResult
                 |> Effect.fromCmd
             )
 
@@ -3067,7 +3083,7 @@ updateInner shared msg model =
                     in
                     ( { model | syncSources = { es | refreshStatus = Submitting } }
                     , SyncSources.getSyncSources shared.accounts ( Just account.userId, server.frontendHost ) user.id
-                        |> Task.attempt GotSyncSourcesRefreshResult
+                        |> attemptInActingEpoch model GotSyncSourcesRefreshResult
                         |> Effect.fromCmd
                     )
 
@@ -3162,7 +3178,7 @@ updateInner shared msg model =
                     case facebookLoginResultDecoder value of
                         Ok accessToken ->
                             ( setSyncDestinationsLogin (FacebookLoginFetchingPages platform accessToken) model
-                            , fetchFacebookPages accessToken |> Effect.fromCmd
+                            , fetchFacebookPages model.actingEpoch accessToken |> Effect.fromCmd
                             )
 
                         -- The user just closed the popup -- quietly go back to not-logged-in rather
@@ -3231,7 +3247,7 @@ updateInner shared msg model =
                     in
                     ( setSyncDestinationsLogin (FacebookLoginLinking platform page) model
                     , performForOwner shared model (\accountServer -> SyncDestinations.createSyncDestination shared.accounts accountServer newDestination)
-                        |> Task.attempt GotFacebookLinkResult
+                        |> attemptInActingEpoch model GotFacebookLinkResult
                         |> Effect.fromCmd
                     )
 
@@ -3287,7 +3303,7 @@ updateInner shared msg model =
                     in
                     ( setSyncDestinationsMastodon (MastodonConnectLinking form) model
                     , performForOwner shared model (\accountServer -> SyncDestinations.createSyncDestination shared.accounts accountServer newDestination)
-                        |> Task.attempt GotMastodonLinkResult
+                        |> attemptInActingEpoch model GotMastodonLinkResult
                         |> Effect.fromCmd
                     )
 
@@ -3343,7 +3359,7 @@ updateInner shared msg model =
                     in
                     ( setSyncDestinationsBluesky (BlueskyConnectLinking form) model
                     , performForOwner shared model (\accountServer -> SyncDestinations.createSyncDestination shared.accounts accountServer newDestination)
-                        |> Task.attempt GotBlueskyLinkResult
+                        |> attemptInActingEpoch model GotBlueskyLinkResult
                         |> Effect.fromCmd
                     )
 
@@ -3411,7 +3427,7 @@ updateInner shared msg model =
                             in
                             ( setSyncDestinationsThreads ThreadsConnectLinking model
                             , performForOwner shared model (\accountServer -> SyncDestinations.createSyncDestination shared.accounts accountServer newDestination)
-                                |> Task.attempt GotThreadsLinkResult
+                                |> attemptInActingEpoch model GotThreadsLinkResult
                                 |> Effect.fromCmd
                             )
 
@@ -3488,7 +3504,7 @@ updateInner shared msg model =
                             in
                             ( setSyncDestinationsXTwitter XTwitterConnectLinking model
                             , performForOwner shared model (\accountServer -> SyncDestinations.createSyncDestination shared.accounts accountServer newDestination)
-                                |> Task.attempt GotXTwitterLinkResult
+                                |> attemptInActingEpoch model GotXTwitterLinkResult
                                 |> Effect.fromCmd
                             )
 
@@ -3532,7 +3548,7 @@ updateInner shared msg model =
             in
             ( { model | syncDestinations = { ed | deleteStatuses = Dict.insert destination.id Submitting ed.deleteStatuses } }
             , performForOwner shared model (\accountServer -> SyncDestinations.deleteSyncDestination shared.accounts accountServer destination)
-                |> Task.attempt (GotSyncDestinationDeleteResult destination.id)
+                |> attemptInActingEpoch model (GotSyncDestinationDeleteResult destination.id)
                 |> Effect.fromCmd
             )
 
@@ -3624,7 +3640,7 @@ updateInner shared msg model =
             in
             ( { model | aiProviders = { ap | rowEdits = Dict.insert provider.id { edit | status = Submitting } ap.rowEdits } }
             , performForOwner shared model (\accountServer -> AIProviders.updateAIProvider shared.accounts accountServer updated)
-                |> Task.attempt (GotAIProviderRowSaveResult provider.id)
+                |> attemptInActingEpoch model (GotAIProviderRowSaveResult provider.id)
                 |> Effect.fromCmd
             )
 
@@ -3706,7 +3722,7 @@ updateInner shared msg model =
             in
             ( { model | aiProviders = mapAIProviderAddForm (\f -> { f | status = Submitting }) ap }
             , performForOwner shared model (\accountServer -> AIProviders.createAIProvider shared.accounts accountServer newProvider)
-                |> Task.attempt GotAIProviderAddResult
+                |> attemptInActingEpoch model GotAIProviderAddResult
                 |> Effect.fromCmd
             )
 
@@ -3734,7 +3750,7 @@ updateInner shared msg model =
             in
             ( { model | aiProviders = { ap | deleteStatuses = Dict.insert provider.id Submitting ap.deleteStatuses } }
             , performForOwner shared model (\accountServer -> AIProviders.deleteAIProvider shared.accounts accountServer provider)
-                |> Task.attempt (GotAIProviderDeleteResult provider.id)
+                |> attemptInActingEpoch model (GotAIProviderDeleteResult provider.id)
                 |> Effect.fromCmd
             )
 
@@ -3782,7 +3798,7 @@ updateInner shared msg model =
                     in
                     ( { model | aiProviders = { ap | refreshStatus = Submitting } }
                     , AIProviders.getAIProviders shared.accounts ( Just account.userId, server.frontendHost ) user.id
-                        |> Task.attempt GotAIProvidersRefreshResult
+                        |> attemptInActingEpoch model GotAIProvidersRefreshResult
                         |> Effect.fromCmd
                     )
 
@@ -3917,7 +3933,7 @@ updateInner shared msg model =
             in
             ( { model | aiProviders = { ap | grantForms = Dict.insert provider.id { form | status = Submitting } ap.grantForms } }
             , performForOwner shared model (\accountServer -> AIProviders.grantAIProvider shared.accounts accountServer request)
-                |> Task.attempt (GotAIProviderGrantResult provider.id)
+                |> attemptInActingEpoch model (GotAIProviderGrantResult provider.id)
                 |> Effect.fromCmd
             )
 
@@ -3970,7 +3986,7 @@ updateInner shared msg model =
             in
             ( { model | aiProviders = { ap | revokeStatuses = Dict.insert key Submitting ap.revokeStatuses } }
             , performForOwner shared model (\accountServer -> AIProviders.revokeAIProvider shared.accounts accountServer request)
-                |> Task.attempt (GotAIProviderRevokeResult key)
+                |> attemptInActingEpoch model (GotAIProviderRevokeResult key)
                 |> Effect.fromCmd
             )
 
@@ -4015,7 +4031,7 @@ updateInner shared msg model =
                 ( Resolver.Loaded user, Just edit, Just ( server, account ) ) ->
                     ( { model | passwordResetEdit = Just { edit | status = Submitting } }
                     , Users.resetPassword shared.accounts ( Just account.userId, server.frontendHost ) user edit.input
-                        |> Task.attempt GotPasswordResetSaveResult
+                        |> attemptInActingEpoch model GotPasswordResetSaveResult
                         |> Effect.fromCmd
                     )
 
@@ -4432,6 +4448,16 @@ refetch shared model =
         |> Tuple.mapSecond (Effect.map ResolverMsg)
 
 
+{-| `Task.attempt`, tagging the reply with `model`'s `actingEpoch` so it can be dropped (see
+`InActingEpoch`) if the account acting on this server changes before it arrives -- otherwise a save
+or refresh started as one account would, on returning, overwrite the profile just refetched as the
+next. Used for every request this page itself starts that acts on, or reads, the viewer's data.
+-}
+attemptInActingEpoch : Model -> (Result x a -> Msg) -> Task.Task x a -> Cmd Msg
+attemptInActingEpoch model toMsg =
+    Task.attempt (\result -> InActingEpoch model.actingEpoch (toMsg result))
+
+
 {-| `model` with `newResolver` swapped in. If that update re-fetched the profile because the account
 acting on this server changed (see `Resolver.actingAccountId` -- logging in/out of it, or
 enabling/disabling an account on it), also drops the UI state tied to the *previous* acting account
@@ -4453,12 +4479,14 @@ Destinations / AI Providers sections' own in-progress state. What an edit form w
 whether it was allowed to be open at all -- depended on who was looking, and a form left open would
 otherwise reappear (or submit as) the next account that acts here. Expanded/collapsed toggles, the
 federated-feeds choice, and the embedded Posts/Events copies (which refetch on their own, see
-`PostsPage.fetchNewFeeds`) are left alone.
+`PostsPage.fetchNewFeeds`) are left alone. Bumps `actingEpoch`, which orphans every request this page
+had in flight (see `attemptInActingEpoch`).
 -}
 clearViewerSpecificState : Model -> Model
 clearViewerSpecificState model =
     { model
-        | realNameEdit = Nothing
+        | actingEpoch = model.actingEpoch + 1
+        , realNameEdit = Nothing
         , usernameEdit = Nothing
         , avatarEdit = Nothing
         , visibilityEdit = Nothing
@@ -4811,11 +4839,11 @@ all, since it's Facebook's own API being asked "which Pages can this token manag
 Rellm-specific. Only `id`/`name` are read out of each entry (see `FacebookPageOption`'s own doc
 for why the per-page access token Facebook also returns here isn't used).
 -}
-fetchFacebookPages : String -> Cmd Msg
-fetchFacebookPages accessToken =
+fetchFacebookPages : Int -> String -> Cmd Msg
+fetchFacebookPages actingEpoch accessToken =
     Http.get
         { url = "https://graph.facebook.com/v19.0/me/accounts?fields=id,name&access_token=" ++ Url.percentEncode accessToken
-        , expect = Http.expectJson GotFacebookPagesResult facebookPagesDecoder
+        , expect = Http.expectJson (\result -> InActingEpoch actingEpoch (GotFacebookPagesResult result)) facebookPagesDecoder
         }
 
 

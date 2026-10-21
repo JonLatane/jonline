@@ -127,7 +127,7 @@ type alias Model =
 
 
 type Msg
-    = GotPost (Result Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Rellm.GetPostsResponse ))
+    = GotPost (Maybe String) (Result Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Rellm.GetPostsResponse ))
     | GotBreadcrumbAncestors Post (Result Grpc.Error ( Maybe AccountsPanel.Msg, List Post ))
     | PostRepliesMsg PostReplies.Msg
     | ConnectClicked
@@ -305,13 +305,33 @@ subscriptions model =
         ]
 
 
+{-| Whether `msg` is the reply to a fetch made as an account that's no longer the acting one on this
+Post's server (`fetchedAccountId` moved on -- see `Shared.AccountsPanelMsg`'s handling below, which
+refetches as the new account). Its Post is what the *previous* account was allowed to see, and a
+slow reply must not overwrite the newer fetch's. (A refreshed token it may carry is dropped too; the
+next request refreshes again.)
+-}
+isStaleReply : Msg -> Model -> Bool
+isStaleReply msg model =
+    case msg of
+        GotPost fetchedAs _ ->
+            fetchedAs /= model.fetchedAccountId
+
+        _ ->
+            False
+
+
 update : Shared.Model -> Msg -> Model -> ( Model, Effect Msg )
 update shared msg model =
-    let
-        ( newModel, effect ) =
-            updateInner shared msg model
-    in
-    ( newModel, Effect.batch [ effect, quoteRequestEffect shared newModel ] )
+    if isStaleReply msg model then
+        ( model, Effect.none )
+
+    else
+        let
+            ( newModel, effect ) =
+                updateInner shared msg model
+        in
+        ( newModel, Effect.batch [ effect, quoteRequestEffect shared newModel ] )
 
 
 {-| Asks `Shared.QuoteLinks` for the quoted post of the post being shown, if it quotes one (see
@@ -344,7 +364,7 @@ quotePairs host post =
 updateInner : Shared.Model -> Msg -> Model -> ( Model, Effect Msg )
 updateInner shared msg model =
     case msg of
-        GotPost (Ok ( maybeAccountsPanelMsg, response )) ->
+        GotPost _ (Ok ( maybeAccountsPanelMsg, response )) ->
             let
                 accountEffect : Effect Msg
                 accountEffect =
@@ -427,7 +447,7 @@ updateInner shared msg model =
             , Effect.batch [ accountEffect, repliesEffect, breadcrumbsEffect, postUpdatedEffect, syncDestinationsFetchEffect ]
             )
 
-        GotPost (Err _) ->
+        GotPost _ (Err _) ->
             ( { model | postStatus = PostFailed }, Effect.none )
 
         GotSyncDestinationsResult (Ok ( maybeAccountsPanelMsg, response )) ->
@@ -823,7 +843,7 @@ fetchIfReady shared model =
             Just _ ->
                 ( { model | fetchStarted = True, fetchedAccountId = currentAccountId shared model }
                 , Posts.fetchPost shared.accounts (maybeAccountServerFor shared model) model.postId
-                    |> Task.attempt GotPost
+                    |> Task.attempt (GotPost (currentAccountId shared model))
                     |> Effect.fromCmd
                 )
 
@@ -847,7 +867,7 @@ refetch shared model =
         Just _ ->
             ( { model | fetchedAccountId = currentAccountId shared model }
             , Posts.fetchPost shared.accounts (maybeAccountServerFor shared model) model.postId
-                |> Task.attempt GotPost
+                |> Task.attempt (GotPost (currentAccountId shared model))
                 |> Effect.fromCmd
             )
 

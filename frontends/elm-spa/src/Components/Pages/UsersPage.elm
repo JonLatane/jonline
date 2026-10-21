@@ -126,7 +126,7 @@ type alias Model =
 
 
 type Msg
-    = GotUsers String UsersResult
+    = GotUsers String (Maybe String) UsersResult
     | Poll
     | Animate Animation.Msg
     | RemoveUser String
@@ -401,17 +401,37 @@ fromShared =
 
 update : Shared.Model -> Msg -> Model -> ( Model, Effect Msg )
 update shared msg model =
-    let
-        ( newModel, effect ) =
-            updateInner shared msg model
-    in
-    ( newModel, Effect.batch [ effect, setBreadcrumbsRoot shared newModel ] )
+    if isStaleReply msg model then
+        ( model, Effect.none )
+
+    else
+        let
+            ( newModel, effect ) =
+                updateInner shared msg model
+        in
+        ( newModel, Effect.batch [ effect, setBreadcrumbsRoot shared newModel ] )
+
+
+{-| Whether `msg` is the reply to a fetch made as an account that's no longer the one `fetchNewSources`
+last fetched that source's feed as (`SourceFeed.accountId`) -- logging in/out of the server, or
+enabling/disabling an account on it, has since started a fetch as the new account, and this reply
+is what the *previous* one could see. (A refreshed token it may carry is dropped too; the next
+request refreshes again.)
+-}
+isStaleReply : Msg -> Model -> Bool
+isStaleReply msg model =
+    case msg of
+        GotUsers key fetchedAs _ ->
+            (Dict.get key model.usersByServer |> Maybe.map .accountId) /= Just fetchedAs
+
+        _ ->
+            False
 
 
 updateInner : Shared.Model -> Msg -> Model -> ( Model, Effect Msg )
 updateInner shared msg model =
     case msg of
-        GotUsers sourceKey (UsersLoaded listedUsers maybeAccountsPanelMsg) ->
+        GotUsers sourceKey _ (UsersLoaded listedUsers maybeAccountsPanelMsg) ->
             let
                 accountEffect : Effect Msg
                 accountEffect =
@@ -429,7 +449,7 @@ updateInner shared msg model =
             , accountEffect
             )
 
-        GotUsers sourceKey (UsersFailed maybeAccountsPanelMsg) ->
+        GotUsers sourceKey _ (UsersFailed maybeAccountsPanelMsg) ->
             ( { model
                 | usersByServer =
                     Dict.update sourceKey (Maybe.map (\feed -> { feed | status = Failed })) model.usersByServer
@@ -599,6 +619,12 @@ fetchSourceEffect shared model source =
         key : String
         key =
             userSourceKey source
+
+        -- What `markSource` recorded for this source's feed when this fetch was started; a reply made
+        -- as a different account than the feed's current one is stale (see `isStaleReply`).
+        accountId : Maybe String
+        accountId =
+            sourceAccountId shared source
     in
     case source of
         RellmSource server ->
@@ -610,7 +636,7 @@ fetchSourceEffect shared model source =
                 (model.target |> Maybe.map (\( _, user, _ ) -> user.id))
                 (model.target |> Maybe.map (\( _, _, listingType ) -> listingType) |> Maybe.withDefault EVERYONE)
                 model.searchText
-                |> Task.attempt (fromRellmResult >> GotUsers key)
+                |> Task.attempt (fromRellmResult >> GotUsers key accountId)
                 |> Effect.fromCmd
 
         MastodonListingSource ref listingType ->
@@ -622,13 +648,13 @@ fetchSourceEffect shared model source =
                     Mastodon.fetchFollowing ref.instanceHost ref.accountId
             )
                 |> Task.map (List.map (\account -> MastodonListedUser { instanceHost = ref.instanceHost, account = account }))
-                |> Task.attempt (fromFederatedResult >> GotUsers key)
+                |> Task.attempt (fromFederatedResult >> GotUsers key accountId)
                 |> Effect.fromCmd
 
         MastodonSearchSource ref ->
             Mastodon.searchAccounts ref.instanceHost model.searchText
                 |> Task.map (List.map (\account -> MastodonListedUser { instanceHost = ref.instanceHost, account = account }))
-                |> Task.attempt (fromFederatedResult >> GotUsers key)
+                |> Task.attempt (fromFederatedResult >> GotUsers key accountId)
                 |> Effect.fromCmd
 
         BlueskyListingSource ref listingType ->
@@ -644,7 +670,7 @@ fetchSourceEffect shared model source =
                                     Bluesky.fetchFollows accessToken ref.handle
                         )
                         |> Task.map (Tuple.mapSecond (List.map BlueskyListedUser))
-                        |> Task.attempt (fromBlueskyResult viewerAccount >> GotUsers key)
+                        |> Task.attempt (fromBlueskyResult viewerAccount >> GotUsers key accountId)
                         |> Effect.fromCmd
 
                 Nothing ->
@@ -658,7 +684,7 @@ fetchSourceEffect shared model source =
                             Bluesky.fetchFollows (AccountsPanel.browsedBlueskyAuth shared.accounts) ref.handle
                     )
                         |> Task.map (List.map BlueskyListedUser)
-                        |> Task.attempt (fromFederatedResult >> GotUsers key)
+                        |> Task.attempt (fromFederatedResult >> GotUsers key accountId)
                         |> Effect.fromCmd
 
         BlueskySearchSource ->
@@ -666,13 +692,13 @@ fetchSourceEffect shared model source =
                 Just viewerAccount ->
                     BlueskyAccounts.performWithBlueskyAccount viewerAccount (\accessToken -> Bluesky.searchActors accessToken model.searchText)
                         |> Task.map (Tuple.mapSecond (List.map BlueskyListedUser))
-                        |> Task.attempt (fromBlueskyResult viewerAccount >> GotUsers key)
+                        |> Task.attempt (fromBlueskyResult viewerAccount >> GotUsers key accountId)
                         |> Effect.fromCmd
 
                 Nothing ->
                     Bluesky.searchActors (AccountsPanel.browsedBlueskyAuth shared.accounts) model.searchText
                         |> Task.map (List.map BlueskyListedUser)
-                        |> Task.attempt (fromFederatedResult >> GotUsers key)
+                        |> Task.attempt (fromFederatedResult >> GotUsers key accountId)
                         |> Effect.fromCmd
 
 

@@ -325,7 +325,7 @@ type Msg
     = RsvpsMsg String String Rsvps.Msg
     | ExportOccasionToggled String
     | ExportOccasionClosed
-    | GotServerEvents String (Result Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Rellm.GetEventsResponse ))
+    | GotServerEvents String (Maybe String) (Result Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Rellm.GetEventsResponse ))
     | GotNow Time.Posix
     | Poll
     | Animate Animation.Msg
@@ -888,20 +888,40 @@ accountsPanelEffect maybeAccountsPanelMsg =
         |> Maybe.withDefault Effect.none
 
 
+{-| Whether `msg` is the reply to a fetch made as an account that's no longer the one `refetchServers`
+last fetched that server's feed as (`ServerFeed.accountId`) -- logging in/out of the server, or
+enabling/disabling an account on it, has since started a fetch as the new account, and this reply
+is what the *previous* one could see. (A refreshed token it may carry is dropped too; the next
+request refreshes again.)
+-}
+isStaleReply : Msg -> Model -> Bool
+isStaleReply msg model =
+    case msg of
+        GotServerEvents key fetchedAs _ ->
+            (Dict.get key model.eventsByServer |> Maybe.map .accountId) /= Just fetchedAs
+
+        _ ->
+            False
+
+
 update : Shared.Model -> Msg -> Model -> ( Model, Effect Msg )
 update shared msg model =
-    let
-        ( newModel, effect ) =
-            updateInner shared msg model
-    in
-    ( newModel
-    , Effect.batch
-        [ effect
-        , setBreadcrumbsRoot shared newModel
-        , calendarRenderEffect shared model newModel
-        , pendingCalendarPreviewScrollEffect model newModel
-        ]
-    )
+    if isStaleReply msg model then
+        ( model, Effect.none )
+
+    else
+        let
+            ( newModel, effect ) =
+                updateInner shared msg model
+        in
+        ( newModel
+        , Effect.batch
+            [ effect
+            , setBreadcrumbsRoot shared newModel
+            , calendarRenderEffect shared model newModel
+            , pendingCalendarPreviewScrollEffect model newModel
+            ]
+        )
 
 
 updateInner : Shared.Model -> Msg -> Model -> ( Model, Effect Msg )
@@ -978,7 +998,7 @@ updateInner shared msg model =
         ExportOccasionClosed ->
             ( { model | exportOpenFor = Nothing }, Effect.none )
 
-        GotServerEvents frontendHost (Ok ( maybeAccountsPanelMsg, response )) ->
+        GotServerEvents frontendHost _ (Ok ( maybeAccountsPanelMsg, response )) ->
             ( { model
                 | eventsByServer =
                     Dict.update frontendHost
@@ -989,7 +1009,7 @@ updateInner shared msg model =
             , accountsPanelEffect maybeAccountsPanelMsg
             )
 
-        GotServerEvents frontendHost (Err _) ->
+        GotServerEvents frontendHost _ (Err _) ->
             ( { model
                 | eventsByServer =
                     Dict.update frontendHost (Maybe.map (\feed -> { feed | status = Failed })) model.eventsByServer
@@ -1851,7 +1871,12 @@ fetchServerEffect shared model endsAfter source =
         model.searchText
         (queryEndsAfter shared model endsAfter)
         model.anonymousAuthTokens
-        |> Task.attempt (GotServerEvents source.key)
+        |> Task.attempt
+            (GotServerEvents source.key
+                (RellmAccounts.enabledRellmAccountForServer shared.accounts.accounts source.server.frontendHost
+                    |> Maybe.map RellmAccounts.rellmAccountId
+                )
+            )
         |> Effect.fromCmd
 
 
