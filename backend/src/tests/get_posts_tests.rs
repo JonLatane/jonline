@@ -2053,6 +2053,145 @@ mod excluded_author_user_ids {
     }
 
     #[test]
+    fn author_listing_omits_excluded_authors() {
+        let mut conn = test_conn();
+        conn.test_transaction::<_, Status, _>(|conn| {
+            let author = create_user(conn, "excl_author_listing");
+            let post = public_post(conn, &author, "author listing post");
+
+            // Excluding the very author asked for leaves nothing...
+            let excluded = get_posts(
+                GetPostsRequest {
+                    author_user_id: Some(author.id.to_proto_id()),
+                    excluded_author_user_ids: vec![author.id.to_proto_id()],
+                    ..Default::default()
+                },
+                &None,
+                conn,
+            )?;
+            assert!(excluded.posts.is_empty());
+
+            // ...while excluding someone else changes nothing.
+            let other = create_user(conn, "excl_author_listing_other");
+            let kept = get_posts(
+                GetPostsRequest {
+                    author_user_id: Some(author.id.to_proto_id()),
+                    excluded_author_user_ids: vec![other.id.to_proto_id()],
+                    ..Default::default()
+                },
+                &None,
+                conn,
+            )?;
+            assert_eq!(ids(&kept), vec![post.id.to_proto_id()]);
+            Ok(())
+        });
+    }
+
+    #[test]
+    fn my_groups_listing_omits_excluded_authors() {
+        let mut conn = test_conn();
+        conn.test_transaction::<_, Status, _>(|conn| {
+            let member = create_user(conn, "excl_mygroups_member");
+            let kept = create_user(conn, "excl_mygroups_kept");
+            let dropped = create_user(conn, "excl_mygroups_dropped");
+            let group = create_group(conn, "excl-mygroups-group", GroupOpts::default());
+            create_membership(
+                conn,
+                &member,
+                &group,
+                Moderation::Approved,
+                Moderation::Approved,
+                vec![],
+            );
+            let kept_post = public_post(conn, &kept, "kept my groups");
+            let dropped_post = public_post(conn, &dropped, "dropped my groups");
+            create_group_post(conn, &kept_post, &group, &kept, Moderation::Approved);
+            create_group_post(conn, &dropped_post, &group, &dropped, Moderation::Approved);
+
+            let response = get_posts(
+                GetPostsRequest {
+                    listing_type: PostListingType::MyGroupsPosts as i32,
+                    excluded_author_user_ids: vec![dropped.id.to_proto_id()],
+                    ..Default::default()
+                },
+                &Some(&member),
+                conn,
+            )?;
+            assert_eq!(ids(&response), vec![kept_post.id.to_proto_id()]);
+            Ok(())
+        });
+    }
+
+    #[test]
+    fn group_listing_omits_excluded_authors() {
+        let mut conn = test_conn();
+        conn.test_transaction::<_, Status, _>(|conn| {
+            let kept = create_user(conn, "excl_group_kept");
+            let dropped = create_user(conn, "excl_group_dropped");
+            let group = create_group(
+                conn,
+                "excl-group-public",
+                GroupOpts {
+                    non_member_permissions: vec![Permission::ViewPosts],
+                },
+            );
+            let kept_post = public_post(conn, &kept, "kept group");
+            let dropped_post = public_post(conn, &dropped, "dropped group");
+            create_group_post(conn, &kept_post, &group, &kept, Moderation::Approved);
+            create_group_post(conn, &dropped_post, &group, &dropped, Moderation::Approved);
+
+            let response = get_posts(
+                GetPostsRequest {
+                    listing_type: PostListingType::GroupPosts as i32,
+                    group_id: Some(group.id.to_proto_id()),
+                    excluded_author_user_ids: vec![dropped.id.to_proto_id()],
+                    ..Default::default()
+                },
+                &None,
+                conn,
+            )?;
+            assert_eq!(ids(&response), vec![kept_post.id.to_proto_id()]);
+            Ok(())
+        });
+    }
+
+    #[test]
+    fn group_pending_moderation_listing_omits_excluded_authors() {
+        let mut conn = test_conn();
+        conn.test_transaction::<_, Status, _>(|conn| {
+            let kept = create_user(conn, "excl_pending_kept");
+            let dropped = create_user(conn, "excl_pending_dropped");
+            let moderator = create_user(conn, "excl_pending_mod");
+            let group = create_group(conn, "excl-pending-group", GroupOpts::default());
+            create_membership(
+                conn,
+                &moderator,
+                &group,
+                Moderation::Approved,
+                Moderation::Approved,
+                vec![Permission::ViewPosts],
+            );
+            let kept_post = public_post(conn, &kept, "kept pending");
+            let dropped_post = public_post(conn, &dropped, "dropped pending");
+            create_group_post(conn, &kept_post, &group, &kept, Moderation::Pending);
+            create_group_post(conn, &dropped_post, &group, &dropped, Moderation::Pending);
+
+            let response = get_posts(
+                GetPostsRequest {
+                    listing_type: PostListingType::GroupPostsPendingModeration as i32,
+                    group_id: Some(group.id.to_proto_id()),
+                    excluded_author_user_ids: vec![dropped.id.to_proto_id()],
+                    ..Default::default()
+                },
+                &Some(&moderator),
+                conn,
+            )?;
+            assert_eq!(ids(&response), vec![kept_post.id.to_proto_id()]);
+            Ok(())
+        });
+    }
+
+    #[test]
     fn malformed_id_is_invalid_argument() {
         let mut conn = test_conn();
         conn.test_transaction::<_, Status, _>(|conn| {

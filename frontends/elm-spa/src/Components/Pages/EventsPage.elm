@@ -332,7 +332,7 @@ type Msg
     = RsvpsMsg String String Rsvps.Msg
     | ExportOccasionToggled String
     | ExportOccasionClosed
-    | GotServerEvents String (Maybe String) (Result Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Rellm.GetEventsResponse ))
+    | GotServerEvents String (Maybe String) (List String) (Result Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Rellm.GetEventsResponse ))
     | GotNow Time.Posix
     | Poll
     | Animate Animation.Msg
@@ -908,17 +908,20 @@ accountsPanelEffect maybeAccountsPanelMsg =
 
 
 {-| The effect to run *instead of* handling `msg`, when `msg` is the reply to a fetch made as an account
-that's no longer the one `refetchServers` last fetched that server's feed as (`ServerFeed.accountId`) --
-logging in/out of the server, or enabling/disabling an account on it, has since started a fetch as the
-new account, and this reply is what the *previous* one could see. Its token refresh is still
+that's no longer the one `refetchServers` last fetched that server's feed as (`ServerFeed.accountId`), or
+leaving out users that aren't the ones it's now leaving out (`ServerFeed.excludedAuthorIds` -- hiding
+someone and showing them again before the first fetch lands starts two requests, and the older one
+must not replace the newer one's results) -- logging in/out of the server, or enabling/disabling an
+account on it, has since started a fetch as the new account, and this reply is what the *previous* one
+could see. Its token refresh is still
 forwarded: a refresh can rotate the account's refresh token, so losing the new one could force a
 re-login.
 -}
 staleReplyEffect : Msg -> Model -> Maybe (Effect Msg)
 staleReplyEffect msg model =
     case msg of
-        GotServerEvents key fetchedAs result ->
-            if (Dict.get key model.eventsByServer |> Maybe.map .accountId) /= Just fetchedAs then
+        GotServerEvents key fetchedAs fetchedExcluding result ->
+            if (Dict.get key model.eventsByServer |> Maybe.map (\feed -> ( feed.accountId, feed.excludedAuthorIds ))) /= Just ( fetchedAs, fetchedExcluding ) then
                 Just (accountsPanelEffect (AccountsPanel.tokenRefreshOf result))
 
             else
@@ -1002,9 +1005,9 @@ countabilibarEffect shared msg model =
                     |> Maybe.withDefault Effect.none
 
 
-{-| Every Rellm server's events on screen -- the author and id of each -- the same set `syncAnimations`
-shows (so, e.g., "Hide started events" changes the counts): loaded, not already started/ended where
-that's hidden, and not by anyone hidden. Events without an author can't be counted.
+{-| Every Rellm server's events on screen -- the author and id of each -- the same set
+`syncAnimations` (or, in `Calendar` mode, `calendarEvents`) shows, so "Hide started events" changes the
+counts: loaded, not hidden by that toggle, and not by anyone hidden. Events without an author can't be counted.
 -}
 shownEvents : Shared.Model -> Model -> Dict String (List ( Proto.Rellm.Author, String ))
 shownEvents shared model =
@@ -1022,7 +1025,7 @@ shownEvents shared model =
                                     (Maybe.withDefault [] existing
                                         ++ List.filterMap
                                             (\( event, occasion ) ->
-                                                if hiddenAsStarted model occasion || hiddenAsEnded model occasion || isHiddenAuthor model feed.host event then
+                                                if hiddenInListing model occasion || isHiddenAuthor model feed.host event then
                                                     Nothing
 
                                                 else
@@ -1038,6 +1041,19 @@ shownEvents shared model =
         )
         Dict.empty
         model.eventsByServer
+
+
+{-| Whether `occasion` is filtered out of what's on screen (apart from hidden users): by the "hide
+started/long events" toggle -- `calendarEvents`' rule (`hiddenAsLong`) in `Calendar` mode, and
+`syncAnimations`' (`hiddenAsStarted`/`hiddenAsEnded`) in every other.
+-}
+hiddenInListing : Model -> Occasion -> Bool
+hiddenInListing model occasion =
+    if model.mode == Calendar then
+        hiddenAsLong model occasion
+
+    else
+        hiddenAsStarted model occasion || hiddenAsEnded model occasion
 
 
 {-| The hosts with a fetch still to land (or a feed with nothing loaded yet) -- not yet worth
@@ -1148,7 +1164,7 @@ updateInner shared msg model =
         ExportOccasionClosed ->
             ( { model | exportOpenFor = Nothing }, Effect.none )
 
-        GotServerEvents frontendHost _ (Ok ( maybeAccountsPanelMsg, response )) ->
+        GotServerEvents frontendHost _ _ (Ok ( maybeAccountsPanelMsg, response )) ->
             ( { model
                 | eventsByServer =
                     Dict.update frontendHost
@@ -1159,7 +1175,7 @@ updateInner shared msg model =
             , accountsPanelEffect maybeAccountsPanelMsg
             )
 
-        GotServerEvents frontendHost _ (Err _) ->
+        GotServerEvents frontendHost _ _ (Err _) ->
             ( { model
                 | eventsByServer =
                     Dict.update frontendHost (Maybe.map (\feed -> { feed | status = Failed, refreshing = False })) model.eventsByServer
@@ -2037,6 +2053,7 @@ fetchServerEffect shared model endsAfter source =
                 (RellmAccounts.enabledRellmAccountForServer shared.accounts.accounts source.server.frontendHost
                     |> Maybe.map RellmAccounts.rellmAccountId
                 )
+                (sourceExcludedAuthorIds model source)
             )
         |> Effect.fromCmd
 

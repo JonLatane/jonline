@@ -16,6 +16,7 @@ module Shared.Countabilibar exposing
     , isPanelOpen
     , noneHidden
     , panel
+    , popoverUsers
     , reset
     , subscriptions
     , syncMsg
@@ -67,7 +68,7 @@ import Browser.Dom as Dom
 import Components.Authors as Authors
 import Dict exposing (Dict)
 import Html exposing (Html, button, div, input, span, text)
-import Html.Attributes exposing (checked, class, id, title, type_)
+import Html.Attributes exposing (checked, class, disabled, id, title, type_)
 import Html.Events exposing (onCheck, onClick)
 import Html.Keyed
 import Json.Decode as Decode
@@ -797,7 +798,14 @@ authorEntries model host =
             , visible = visible
             }
     in
-    List.map (entry True) (serverFor host model).authorCounts
+    -- A hidden server's users are in its cache (`hiddenHosts`), all hidden along with it.
+    (case List.filter (\server -> server.host == host) model.hiddenHosts |> List.head of
+        Just cached ->
+            List.map (entry False) cached.authorCounts
+
+        Nothing ->
+            List.map (entry True) (serverFor host model).authorCounts
+    )
         ++ (model.hiddenAuthors |> List.filter (\( authorHost, _ ) -> authorHost == host) |> List.map (Tuple.second >> entry False))
 
 
@@ -1110,19 +1118,26 @@ entryView accountsPanelModel model entry =
                     )
                 :: UI.Flip.moveAttributes entry.move
             )
-            [ visibilityCheckbox data.visible data.kind, body ]
+            [ visibilityCheckbox True data.visible data.kind, body ]
             ]
         ]
 
 
-visibilityCheckbox : Bool -> EntryKind -> Html Msg
-visibilityCheckbox isVisible kind =
+{-| `isEnabled` is `False` for a user of a hidden server (listed in the popover, but only the server's own
+checkbox can bring them back).
+-}
+visibilityCheckbox : Bool -> Bool -> EntryKind -> Html Msg
+visibilityCheckbox isEnabled isVisible kind =
     input
         [ type_ "checkbox"
         , class "countabilibar-checkbox"
         , checked isVisible
+        , disabled (not isEnabled)
         , title
-            (if isVisible then
+            (if not isEnabled then
+                "Hidden with its server – show the server first"
+
+             else if isVisible then
                 "Showing – uncheck to hide"
 
              else
@@ -1229,7 +1244,7 @@ panel accountsPanelModel model =
                 , div [ class "countabilibar-panel-list" ]
                     (authorEntries model host
                         |> List.sortBy (\data -> ( negate (data.posts + data.events), data.key ))
-                        |> List.map (panelRow accountsPanelModel)
+                        |> List.map (panelRow accountsPanelModel (List.any (\server -> server.host == host) model.hiddenHosts))
                     )
                 ]
 
@@ -1237,8 +1252,25 @@ panel accountsPanelModel model =
             div [ classes [ "countabilibar-panel", "nav-panel", openClosedClass False ] ] []
 
 
-panelRow : AccountsPanel.Model -> EntryData -> Html Msg
-panelRow accountsPanelModel data =
+{-| What the popover lists for `host`, as `( user id, visible, posts + events )`, highest-first.
+-}
+popoverUsers : String -> Model -> List ( String, Bool, Int )
+popoverUsers host model =
+    authorEntries model host
+        |> List.sortBy (\data -> ( negate (data.posts + data.events), data.key ))
+        |> List.filterMap
+            (\data ->
+                case data.kind of
+                    AuthorEntry _ author ->
+                        Just ( author.userId, data.visible, data.posts + data.events )
+
+                    ServerEntry _ ->
+                        Nothing
+            )
+
+
+panelRow : AccountsPanel.Model -> Bool -> EntryData -> Html Msg
+panelRow accountsPanelModel hostHidden data =
     case data.kind of
         AuthorEntry host author ->
             div
@@ -1252,7 +1284,7 @@ panelRow accountsPanelModel data =
                            )
                     )
                 ]
-                [ visibilityCheckbox data.visible data.kind
+                [ visibilityCheckbox (not hostHidden) data.visible data.kind
                 , authorLabel accountsPanelModel host author
                 , countsView data
                 ]

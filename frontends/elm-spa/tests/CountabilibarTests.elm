@@ -237,6 +237,11 @@ suite =
                     counted [ CountPost "a.example" alice "p1", TogglePanel "a.example" ]
                         |> (\model -> ( model.openHost, (apply [ TogglePanel "a.example" ] model).openHost ))
                         |> Expect.equal ( Just "a.example", Nothing )
+            , test "a hidden server's popover still lists its users, all hidden" <|
+                \_ ->
+                    counted [ CountPosts "a.example" [ ( alice, "p1" ), ( bob, "p2" ), ( bob, "p3" ) ], HideHost "a.example" ]
+                        |> Countabilibar.popoverUsers "a.example"
+                        |> Expect.equal [ ( "bob", False, 2 ), ( "alice", False, 1 ) ]
             , test "closes by itself once its server has nothing left" <|
                 \_ ->
                     counted [ CountPost "a.example" alice "p1", TogglePanel "a.example", RemovePost "a.example" alice "p1" ]

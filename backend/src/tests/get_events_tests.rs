@@ -1496,6 +1496,91 @@ mod excluded_author_user_ids {
     }
 
     #[test]
+    fn author_listing_omits_excluded_authors() {
+        let mut conn = test_conn();
+        conn.test_transaction::<_, Status, _>(|conn| {
+            let author = create_user(conn, "excl_evt_author_listing");
+            let other = create_user(conn, "excl_evt_author_listing_other");
+            let event = public_event(conn, &author, "author listing event");
+
+            let excluded = get_events(
+                GetEventsRequest {
+                    author_user_id: Some(author.id.to_proto_id()),
+                    excluded_author_user_ids: vec![author.id.to_proto_id()],
+                    ..Default::default()
+                },
+                &None,
+                conn,
+            )?;
+            assert!(excluded.events.is_empty());
+
+            let kept = get_events(
+                GetEventsRequest {
+                    author_user_id: Some(author.id.to_proto_id()),
+                    excluded_author_user_ids: vec![other.id.to_proto_id()],
+                    ..Default::default()
+                },
+                &None,
+                conn,
+            )?;
+            assert_eq!(ids(&kept), vec![event.post_id.to_proto_id()]);
+            Ok(())
+        });
+    }
+
+    #[test]
+    fn group_listing_omits_excluded_authors() {
+        let mut conn = test_conn();
+        conn.test_transaction::<_, Status, _>(|conn| {
+            let kept = create_user(conn, "excl_evt_group_kept");
+            let dropped = create_user(conn, "excl_evt_group_dropped");
+            let group = create_group(
+                conn,
+                "excl-evt-group",
+                GroupOpts {
+                    non_member_permissions: vec![Permission::ViewPosts],
+                },
+            );
+            let mut group_event = |author: &crate::models::User| {
+                let (event, post) = create_event(
+                    conn,
+                    author,
+                    EventOpts {
+                        visibility: Visibility::GlobalPublic,
+                        ..Default::default()
+                    },
+                );
+                create_occasion(
+                    conn,
+                    &event,
+                    Some(author),
+                    OccasionOpts {
+                        visibility: Visibility::GlobalPublic,
+                        ..Default::default()
+                    },
+                );
+                create_group_post(conn, &post, &group, author, Moderation::Approved);
+                event
+            };
+            let kept_event = group_event(&kept);
+            group_event(&dropped);
+
+            let response = get_events(
+                GetEventsRequest {
+                    listing_type: EventListingType::GroupEvents as i32,
+                    group_id: Some(group.id.to_proto_id()),
+                    excluded_author_user_ids: vec![dropped.id.to_proto_id()],
+                    ..Default::default()
+                },
+                &None,
+                conn,
+            )?;
+            assert_eq!(ids(&response), vec![kept_event.post_id.to_proto_id()]);
+            Ok(())
+        });
+    }
+
+    #[test]
     fn malformed_id_is_invalid_argument() {
         let mut conn = test_conn();
         conn.test_transaction::<_, Status, _>(|conn| {
