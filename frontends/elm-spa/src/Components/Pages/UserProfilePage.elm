@@ -1473,7 +1473,7 @@ updateInner shared msg model =
                     { model | resolver = newResolver }
             in
             case ( subMsg, newResolver.status ) of
-                ( Resolver.GotUser (Ok _), Resolver.Loaded user ) ->
+                ( Resolver.GotUser _ (Ok _), Resolver.Loaded user ) ->
                     let
                         ( federatedModel, federatedEffect ) =
                             kickOffFederatedFetches shared user newModel
@@ -1666,7 +1666,7 @@ updateInner shared msg model =
             let
                 ( resolvedModel, resolverEffect ) =
                     Resolver.update shared (Resolver.fromShared subMsg) model.resolver
-                        |> Tuple.mapFirst (\newResolver -> { model | resolver = newResolver })
+                        |> Tuple.mapFirst (\newResolver -> withResolverUpdate newResolver model)
                         |> Tuple.mapSecond (Effect.map ResolverMsg)
 
                 ( fetchedModel, fetchEffect ) =
@@ -4430,6 +4430,55 @@ refetch shared model =
     Resolver.refetch shared model.resolver
         |> Tuple.mapFirst (\newResolver -> { model | resolver = newResolver })
         |> Tuple.mapSecond (Effect.map ResolverMsg)
+
+
+{-| `model` with `newResolver` swapped in. If that update re-fetched the profile because the account
+acting on this server changed (see `Resolver.actingAccountId` -- logging in/out of it, or
+enabling/disabling an account on it), also drops the UI state tied to the *previous* acting account
+(see `clearViewerSpecificState`).
+-}
+withResolverUpdate : Resolver.Model -> Model -> Model
+withResolverUpdate newResolver model =
+    if model.resolver.fetchStarted && newResolver.fetchedAs /= model.resolver.fetchedAs then
+        clearViewerSpecificState { model | resolver = newResolver }
+
+    else
+        { model | resolver = newResolver }
+
+
+{-| Drops everything on the page that belongs to whoever *was* acting on this server: open edit
+forms (name, username, avatar, visibility, moderation, phone, email, storage quota, permissions,
+linked profiles, password reset), in-flight/finished request statuses, and the Sync Sources / Sync
+Destinations / AI Providers sections' own in-progress state. What an edit form was editing -- or
+whether it was allowed to be open at all -- depended on who was looking, and a form left open would
+otherwise reappear (or submit as) the next account that acts here. Expanded/collapsed toggles, the
+federated-feeds choice, and the embedded Posts/Events copies (which refetch on their own, see
+`PostsPage.fetchNewFeeds`) are left alone.
+-}
+clearViewerSpecificState : Model -> Model
+clearViewerSpecificState model =
+    { model
+        | realNameEdit = Nothing
+        , usernameEdit = Nothing
+        , avatarEdit = Nothing
+        , visibilityEdit = Nothing
+        , moderationEdit = Nothing
+        , followModerationStatus = Idle
+        , phoneEdit = Nothing
+        , emailEdit = Nothing
+        , phoneConsentStatus = Idle
+        , emailConsentStatus = Idle
+        , phoneVerification = Nothing
+        , storageQuotaEdit = Nothing
+        , cancelingSubscriptions = Dict.empty
+        , permissionsEdit = Nothing
+        , federatedProfilesEdit = Nothing
+        , passwordResetEdit = Nothing
+        , syncSources = initSyncSources
+        , syncDestinations = initSyncDestinations
+        , aiProviders = initAIProviders
+        , followStatusAndButton = FollowStatusAndButton.init
+    }
 
 
 {-| Re-`init`s the embedded `EventsPage` copy against `model.resolver`'s
