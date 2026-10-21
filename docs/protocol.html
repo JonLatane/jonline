@@ -9243,13 +9243,19 @@ Instagram account</strong>. Unlike <a href="#rellm-FacebookPage"><code>FacebookP
           <td>post_count</td>
           <td><a href="#uint64">uint64</a></td>
           <td></td>
-          <td>The number of posts total associated with this SyncSource. Populated for an RSS/Atom source (recomputed on each sync, like <code>event_count</code>/<code>occasion_count</code> are for an ICS source); always 0 for an ICS source, which syncs Events/Occasions instead.</td>
+          <td>The number of posts total associated with this SyncSource. Populated for an RSS/Atom source (recomputed on each sync, like <code>event_count</code>/<code>occasion_count</code> are for an ICS or StellarWP source); always 0 for an ICS/StellarWP source, which syncs Events/Occasions instead.</td>
         </tr>
         <tr>
           <td>ics_subscription_url</td>
           <td><a href="#string">string</a></td>
           <td></td>
           <td>The iCal subscription URL for the calendar sync. Creates/updates Events/Occasions.</td>
+        </tr>
+        <tr>
+          <td>stellarwp_subscription_endpoint</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>The iCal export URL of a site running <a href="https://theeventscalendar.com/">The Events Calendar</a> (a StellarWP WordPress plugin; the URL is the plugin's "Export" link, e.g. <code>https://example.com/?post_type=tribe_events&#x26;amp;ical=1&#x26;amp;eventDisplay=list</code>). Creates/updates Events/Occasions, like <code>ics_subscription_url</code>, but each sync follows the plugin's <code>paged=N</code> pagination to fetch as many pages as it can -- the plugin caps a single iCal response at its "events per page" setting (30 on many sites), so a plain <code>ics_subscription_url</code> only ever sees the next couple of weeks of events on a busy calendar.</td>
         </tr>
         <tr>
           <td>rss_subscription_url</td>

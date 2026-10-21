@@ -313,11 +313,23 @@ export interface SyncSource {
   /**
    * The number of posts total associated with this SyncSource. Populated for an RSS/Atom
    * source (recomputed on each sync, like `event_count`/`occasion_count` are for an
-   * ICS source); always 0 for an ICS source, which syncs Events/Occasions instead.
+   * ICS or StellarWP source); always 0 for an ICS/StellarWP source, which syncs Events/Occasions instead.
    */
   postCount: number;
   /** The iCal subscription URL for the calendar sync. Creates/updates Events/Occasions. */
   icsSubscriptionUrl?:
+    | string
+    | undefined;
+  /**
+   * The iCal export URL of a site running [The Events Calendar](https://theeventscalendar.com/)
+   * (a StellarWP WordPress plugin; the URL is the plugin's "Export" link, e.g.
+   * `https://example.com/?post_type=tribe_events&ical=1&eventDisplay=list`). Creates/updates
+   * Events/Occasions, like `ics_subscription_url`, but each sync follows the plugin's `paged=N`
+   * pagination to fetch as many pages as it can -- the plugin caps a single iCal response at its
+   * "events per page" setting (30 on many sites), so a plain `ics_subscription_url` only ever
+   * sees the next couple of weeks of events on a busy calendar.
+   */
+  stellarwpSubscriptionEndpoint?:
     | string
     | undefined;
   /** The RSS subscription URL for the feed sync. Creates/updates plain Posts. */
@@ -1459,6 +1471,7 @@ function createBaseSyncSource(): SyncSource {
     occasionCount: 0,
     postCount: 0,
     icsSubscriptionUrl: undefined,
+    stellarwpSubscriptionEndpoint: undefined,
     rssSubscriptionUrl: undefined,
     atomSubscriptionUrl: undefined,
   };
@@ -1491,16 +1504,19 @@ export const SyncSource: MessageFns<SyncSource> = {
       writer.uint32(64).uint64(message.occasionCount);
     }
     if (message.postCount !== 0) {
-      writer.uint32(80).uint64(message.postCount);
+      writer.uint32(72).uint64(message.postCount);
     }
     if (message.icsSubscriptionUrl !== undefined) {
-      writer.uint32(74).string(message.icsSubscriptionUrl);
+      writer.uint32(162).string(message.icsSubscriptionUrl);
+    }
+    if (message.stellarwpSubscriptionEndpoint !== undefined) {
+      writer.uint32(170).string(message.stellarwpSubscriptionEndpoint);
     }
     if (message.rssSubscriptionUrl !== undefined) {
-      writer.uint32(90).string(message.rssSubscriptionUrl);
+      writer.uint32(178).string(message.rssSubscriptionUrl);
     }
     if (message.atomSubscriptionUrl !== undefined) {
-      writer.uint32(98).string(message.atomSubscriptionUrl);
+      writer.uint32(186).string(message.atomSubscriptionUrl);
     }
     return writer;
   },
@@ -1576,32 +1592,40 @@ export const SyncSource: MessageFns<SyncSource> = {
           message.occasionCount = longToNumber(reader.uint64());
           continue;
         }
-        case 10: {
-          if (tag !== 80) {
+        case 9: {
+          if (tag !== 72) {
             break;
           }
 
           message.postCount = longToNumber(reader.uint64());
           continue;
         }
-        case 9: {
-          if (tag !== 74) {
+        case 20: {
+          if (tag !== 162) {
             break;
           }
 
           message.icsSubscriptionUrl = reader.string();
           continue;
         }
-        case 11: {
-          if (tag !== 90) {
+        case 21: {
+          if (tag !== 170) {
+            break;
+          }
+
+          message.stellarwpSubscriptionEndpoint = reader.string();
+          continue;
+        }
+        case 22: {
+          if (tag !== 178) {
             break;
           }
 
           message.rssSubscriptionUrl = reader.string();
           continue;
         }
-        case 12: {
-          if (tag !== 98) {
+        case 23: {
+          if (tag !== 186) {
             break;
           }
 
@@ -1629,6 +1653,9 @@ export const SyncSource: MessageFns<SyncSource> = {
       occasionCount: isSet(object.occasionCount) ? globalThis.Number(object.occasionCount) : 0,
       postCount: isSet(object.postCount) ? globalThis.Number(object.postCount) : 0,
       icsSubscriptionUrl: isSet(object.icsSubscriptionUrl) ? globalThis.String(object.icsSubscriptionUrl) : undefined,
+      stellarwpSubscriptionEndpoint: isSet(object.stellarwpSubscriptionEndpoint)
+        ? globalThis.String(object.stellarwpSubscriptionEndpoint)
+        : undefined,
       rssSubscriptionUrl: isSet(object.rssSubscriptionUrl) ? globalThis.String(object.rssSubscriptionUrl) : undefined,
       atomSubscriptionUrl: isSet(object.atomSubscriptionUrl)
         ? globalThis.String(object.atomSubscriptionUrl)
@@ -1668,6 +1695,9 @@ export const SyncSource: MessageFns<SyncSource> = {
     if (message.icsSubscriptionUrl !== undefined) {
       obj.icsSubscriptionUrl = message.icsSubscriptionUrl;
     }
+    if (message.stellarwpSubscriptionEndpoint !== undefined) {
+      obj.stellarwpSubscriptionEndpoint = message.stellarwpSubscriptionEndpoint;
+    }
     if (message.rssSubscriptionUrl !== undefined) {
       obj.rssSubscriptionUrl = message.rssSubscriptionUrl;
     }
@@ -1694,6 +1724,7 @@ export const SyncSource: MessageFns<SyncSource> = {
     message.occasionCount = object.occasionCount ?? 0;
     message.postCount = object.postCount ?? 0;
     message.icsSubscriptionUrl = object.icsSubscriptionUrl ?? undefined;
+    message.stellarwpSubscriptionEndpoint = object.stellarwpSubscriptionEndpoint ?? undefined;
     message.rssSubscriptionUrl = object.rssSubscriptionUrl ?? undefined;
     message.atomSubscriptionUrl = object.atomSubscriptionUrl ?? undefined;
     return message;

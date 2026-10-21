@@ -8022,7 +8022,7 @@ encodeSyncSource =
 
  The number of posts total associated with this SyncSource. Populated for an RSS/Atom
  source (recomputed on each sync, like `event_count`/`occasion_count` are for an
- ICS source); always 0 for an ICS source, which syncs Events/Occasions instead.
+ ICS or StellarWP source); always 0 for an ICS/StellarWP source, which syncs Events/Occasions instead.
 
 
 -}

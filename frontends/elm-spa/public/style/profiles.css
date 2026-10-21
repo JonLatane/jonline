@@ -766,6 +766,25 @@
   font-size: 0.8rem;
 }
 
+/* The "this looks like a StellarWP feed" nudge under an iCal source's URL -- see
+   `UserProfilePage.stellarWpSuggestionView`. */
+.sync-source-suggestion {
+  flex-basis: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.5rem;
+  border: 1px dashed var(--border);
+  border-radius: 4px;
+  font-size: 0.8rem;
+}
+
+.sync-source-suggestion-text {
+  flex: 1 1 16rem;
+  color: var(--muted);
+}
+
 /* Components.SyncDestinations, embedded on UserProfilePage below Sync Sources. */
 
 /* See `.sync-sources-section`'s own comment above -- same flex-vs-margin-collapse gotcha and

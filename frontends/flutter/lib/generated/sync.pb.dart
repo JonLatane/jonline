@@ -1098,6 +1098,7 @@ class SyncDestinationStatus extends $pb.GeneratedMessage {
 
 enum SyncSource_Configuration {
   icsSubscriptionUrl, 
+  stellarwpSubscriptionEndpoint, 
   rssSubscriptionUrl, 
   atomSubscriptionUrl, 
   notSet
@@ -1114,8 +1115,9 @@ class SyncSource extends $pb.GeneratedMessage {
     $13.Timestamp? lastSyncedAt,
     $fixnum.Int64? eventCount,
     $fixnum.Int64? occasionCount,
-    $core.String? icsSubscriptionUrl,
     $fixnum.Int64? postCount,
+    $core.String? icsSubscriptionUrl,
+    $core.String? stellarwpSubscriptionEndpoint,
     $core.String? rssSubscriptionUrl,
     $core.String? atomSubscriptionUrl,
   }) {
@@ -1144,11 +1146,14 @@ class SyncSource extends $pb.GeneratedMessage {
     if (occasionCount != null) {
       $result.occasionCount = occasionCount;
     }
+    if (postCount != null) {
+      $result.postCount = postCount;
+    }
     if (icsSubscriptionUrl != null) {
       $result.icsSubscriptionUrl = icsSubscriptionUrl;
     }
-    if (postCount != null) {
-      $result.postCount = postCount;
+    if (stellarwpSubscriptionEndpoint != null) {
+      $result.stellarwpSubscriptionEndpoint = stellarwpSubscriptionEndpoint;
     }
     if (rssSubscriptionUrl != null) {
       $result.rssSubscriptionUrl = rssSubscriptionUrl;
@@ -1163,13 +1168,14 @@ class SyncSource extends $pb.GeneratedMessage {
   factory SyncSource.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
   static const $core.Map<$core.int, SyncSource_Configuration> _SyncSource_ConfigurationByTag = {
-    9 : SyncSource_Configuration.icsSubscriptionUrl,
-    11 : SyncSource_Configuration.rssSubscriptionUrl,
-    12 : SyncSource_Configuration.atomSubscriptionUrl,
+    20 : SyncSource_Configuration.icsSubscriptionUrl,
+    21 : SyncSource_Configuration.stellarwpSubscriptionEndpoint,
+    22 : SyncSource_Configuration.rssSubscriptionUrl,
+    23 : SyncSource_Configuration.atomSubscriptionUrl,
     0 : SyncSource_Configuration.notSet
   };
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'SyncSource', package: const $pb.PackageName(_omitMessageNames ? '' : 'rellm'), createEmptyInstance: create)
-    ..oo(0, [9, 11, 12])
+    ..oo(0, [20, 21, 22, 23])
     ..aOS(1, _omitFieldNames ? '' : 'id')
     ..aOM<$5.Author>(2, _omitFieldNames ? '' : 'owner', subBuilder: $5.Author.create)
     ..a<$fixnum.Int64>(3, _omitFieldNames ? '' : 'syncIntervalSeconds', $pb.PbFieldType.OU6, defaultOrMaker: $fixnum.Int64.ZERO)
@@ -1178,10 +1184,11 @@ class SyncSource extends $pb.GeneratedMessage {
     ..aOM<$13.Timestamp>(6, _omitFieldNames ? '' : 'lastSyncedAt', subBuilder: $13.Timestamp.create)
     ..a<$fixnum.Int64>(7, _omitFieldNames ? '' : 'eventCount', $pb.PbFieldType.OU6, defaultOrMaker: $fixnum.Int64.ZERO)
     ..a<$fixnum.Int64>(8, _omitFieldNames ? '' : 'occasionCount', $pb.PbFieldType.OU6, defaultOrMaker: $fixnum.Int64.ZERO)
-    ..aOS(9, _omitFieldNames ? '' : 'icsSubscriptionUrl')
-    ..a<$fixnum.Int64>(10, _omitFieldNames ? '' : 'postCount', $pb.PbFieldType.OU6, defaultOrMaker: $fixnum.Int64.ZERO)
-    ..aOS(11, _omitFieldNames ? '' : 'rssSubscriptionUrl')
-    ..aOS(12, _omitFieldNames ? '' : 'atomSubscriptionUrl')
+    ..a<$fixnum.Int64>(9, _omitFieldNames ? '' : 'postCount', $pb.PbFieldType.OU6, defaultOrMaker: $fixnum.Int64.ZERO)
+    ..aOS(20, _omitFieldNames ? '' : 'icsSubscriptionUrl')
+    ..aOS(21, _omitFieldNames ? '' : 'stellarwpSubscriptionEndpoint')
+    ..aOS(22, _omitFieldNames ? '' : 'rssSubscriptionUrl')
+    ..aOS(23, _omitFieldNames ? '' : 'atomSubscriptionUrl')
     ..hasRequiredFields = false
   ;
 
@@ -1299,47 +1306,63 @@ class SyncSource extends $pb.GeneratedMessage {
   @$pb.TagNumber(8)
   void clearOccasionCount() => clearField(8);
 
-  /// The iCal subscription URL for the calendar sync. Creates/updates Events/Occasions.
-  @$pb.TagNumber(9)
-  $core.String get icsSubscriptionUrl => $_getSZ(8);
-  @$pb.TagNumber(9)
-  set icsSubscriptionUrl($core.String v) { $_setString(8, v); }
-  @$pb.TagNumber(9)
-  $core.bool hasIcsSubscriptionUrl() => $_has(8);
-  @$pb.TagNumber(9)
-  void clearIcsSubscriptionUrl() => clearField(9);
-
   /// The number of posts total associated with this SyncSource. Populated for an RSS/Atom
   /// source (recomputed on each sync, like `event_count`/`occasion_count` are for an
-  /// ICS source); always 0 for an ICS source, which syncs Events/Occasions instead.
-  @$pb.TagNumber(10)
-  $fixnum.Int64 get postCount => $_getI64(9);
-  @$pb.TagNumber(10)
-  set postCount($fixnum.Int64 v) { $_setInt64(9, v); }
-  @$pb.TagNumber(10)
-  $core.bool hasPostCount() => $_has(9);
-  @$pb.TagNumber(10)
-  void clearPostCount() => clearField(10);
+  /// ICS or StellarWP source); always 0 for an ICS/StellarWP source, which syncs Events/Occasions instead.
+  @$pb.TagNumber(9)
+  $fixnum.Int64 get postCount => $_getI64(8);
+  @$pb.TagNumber(9)
+  set postCount($fixnum.Int64 v) { $_setInt64(8, v); }
+  @$pb.TagNumber(9)
+  $core.bool hasPostCount() => $_has(8);
+  @$pb.TagNumber(9)
+  void clearPostCount() => clearField(9);
+
+  /// The iCal subscription URL for the calendar sync. Creates/updates Events/Occasions.
+  @$pb.TagNumber(20)
+  $core.String get icsSubscriptionUrl => $_getSZ(9);
+  @$pb.TagNumber(20)
+  set icsSubscriptionUrl($core.String v) { $_setString(9, v); }
+  @$pb.TagNumber(20)
+  $core.bool hasIcsSubscriptionUrl() => $_has(9);
+  @$pb.TagNumber(20)
+  void clearIcsSubscriptionUrl() => clearField(20);
+
+  /// The iCal export URL of a site running [The Events Calendar](https://theeventscalendar.com/)
+  /// (a StellarWP WordPress plugin; the URL is the plugin's "Export" link, e.g.
+  /// `https://example.com/?post_type=tribe_events&ical=1&eventDisplay=list`). Creates/updates
+  /// Events/Occasions, like `ics_subscription_url`, but each sync follows the plugin's `paged=N`
+  /// pagination to fetch as many pages as it can -- the plugin caps a single iCal response at its
+  /// "events per page" setting (30 on many sites), so a plain `ics_subscription_url` only ever
+  /// sees the next couple of weeks of events on a busy calendar.
+  @$pb.TagNumber(21)
+  $core.String get stellarwpSubscriptionEndpoint => $_getSZ(10);
+  @$pb.TagNumber(21)
+  set stellarwpSubscriptionEndpoint($core.String v) { $_setString(10, v); }
+  @$pb.TagNumber(21)
+  $core.bool hasStellarwpSubscriptionEndpoint() => $_has(10);
+  @$pb.TagNumber(21)
+  void clearStellarwpSubscriptionEndpoint() => clearField(21);
 
   /// The RSS subscription URL for the feed sync. Creates/updates plain Posts.
-  @$pb.TagNumber(11)
-  $core.String get rssSubscriptionUrl => $_getSZ(10);
-  @$pb.TagNumber(11)
-  set rssSubscriptionUrl($core.String v) { $_setString(10, v); }
-  @$pb.TagNumber(11)
-  $core.bool hasRssSubscriptionUrl() => $_has(10);
-  @$pb.TagNumber(11)
-  void clearRssSubscriptionUrl() => clearField(11);
+  @$pb.TagNumber(22)
+  $core.String get rssSubscriptionUrl => $_getSZ(11);
+  @$pb.TagNumber(22)
+  set rssSubscriptionUrl($core.String v) { $_setString(11, v); }
+  @$pb.TagNumber(22)
+  $core.bool hasRssSubscriptionUrl() => $_has(11);
+  @$pb.TagNumber(22)
+  void clearRssSubscriptionUrl() => clearField(22);
 
   /// The Atom subscription URL for the feed sync. Creates/updates plain Posts.
-  @$pb.TagNumber(12)
-  $core.String get atomSubscriptionUrl => $_getSZ(11);
-  @$pb.TagNumber(12)
-  set atomSubscriptionUrl($core.String v) { $_setString(11, v); }
-  @$pb.TagNumber(12)
-  $core.bool hasAtomSubscriptionUrl() => $_has(11);
-  @$pb.TagNumber(12)
-  void clearAtomSubscriptionUrl() => clearField(12);
+  @$pb.TagNumber(23)
+  $core.String get atomSubscriptionUrl => $_getSZ(12);
+  @$pb.TagNumber(23)
+  set atomSubscriptionUrl($core.String v) { $_setString(12, v); }
+  @$pb.TagNumber(23)
+  $core.bool hasAtomSubscriptionUrl() => $_has(12);
+  @$pb.TagNumber(23)
+  void clearAtomSubscriptionUrl() => clearField(23);
 }
 
 class GetSyncSourcesResponse extends $pb.GeneratedMessage {

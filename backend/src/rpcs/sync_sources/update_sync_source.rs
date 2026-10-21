@@ -4,7 +4,7 @@ use diesel::*;
 use tonic::Status;
 
 use crate::db_connection::PgPooledConnection;
-use crate::logic::sync_source;
+use crate::logic::{stellarwp_page_url, sync_source_after_edit};
 use crate::marshaling::*;
 use crate::models;
 use crate::protos::*;
@@ -50,6 +50,13 @@ pub fn update_sync_source(
     }
     if request.configuration.is_some() {
         existing.configuration = source_configuration_to_json(&request.configuration);
+        if let Some(endpoint) = existing
+            .configuration
+            .get("stellarwp_subscription_endpoint")
+            .and_then(|v| v.as_str())
+        {
+            stellarwp_page_url(endpoint, 1)?;
+        }
     }
     existing.updated_at = Some(SystemTime::now());
 
@@ -65,7 +72,7 @@ pub fn update_sync_source(
 
     // Unlike create, a failed re-sync doesn't undo the config change -- the caller (and the UI's
     // "last synced at") can see the source still exists but didn't sync just now.
-    sync_source(&existing, conn)?;
+    sync_source_after_edit(&existing, conn)?;
     existing = models::get_sync_source(existing.id, conn)?;
 
     Ok(MarshalableSyncSource(existing, owner).to_proto())

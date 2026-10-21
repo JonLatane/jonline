@@ -4440,8 +4440,9 @@ A user-owned source to sync events from.
 | last_synced_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time the SyncSource was last synced. |
 | event_count | [uint64](#uint64) |  | The number of events total associated with this SyncSource. Recomputed on each sync. |
 | occasion_count | [uint64](#uint64) |  | The number of occasions total associated with this SyncSource. Recomputed on each sync. |
-| post_count | [uint64](#uint64) |  | The number of posts total associated with this SyncSource. Populated for an RSS/Atom source (recomputed on each sync, like `event_count`/`occasion_count` are for an ICS source); always 0 for an ICS source, which syncs Events/Occasions instead. |
+| post_count | [uint64](#uint64) |  | The number of posts total associated with this SyncSource. Populated for an RSS/Atom source (recomputed on each sync, like `event_count`/`occasion_count` are for an ICS or StellarWP source); always 0 for an ICS/StellarWP source, which syncs Events/Occasions instead. |
 | ics_subscription_url | [string](#string) |  | The iCal subscription URL for the calendar sync. Creates/updates Events/Occasions. |
+| stellarwp_subscription_endpoint | [string](#string) |  | The iCal export URL of a site running [The Events Calendar](https://theeventscalendar.com/) (a StellarWP WordPress plugin; the URL is the plugin&#39;s &#34;Export&#34; link, e.g. `https://example.com/?post_type=tribe_events&amp;ical=1&amp;eventDisplay=list`). Creates/updates Events/Occasions, like `ics_subscription_url`, but each sync follows the plugin&#39;s `paged=N` pagination to fetch as many pages as it can -- the plugin caps a single iCal response at its &#34;events per page&#34; setting (30 on many sites), so a plain `ics_subscription_url` only ever sees the next couple of weeks of events on a busy calendar. |
 | rss_subscription_url | [string](#string) |  | The RSS subscription URL for the feed sync. Creates/updates plain Posts. |
 | atom_subscription_url | [string](#string) |  | The Atom subscription URL for the feed sync. Creates/updates plain Posts. |
 

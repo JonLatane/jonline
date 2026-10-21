@@ -3,6 +3,7 @@ module Components.SyncSources exposing
     , deleteSyncSource
     , getSyncSources
     , intervalOptions
+    , looksLikeStellarWpUrl
     , syncedCountsLabel
     , updateSyncSource
     )
@@ -33,7 +34,7 @@ import Shared.Conversions as Conversions
 import Task exposing (Task)
 
 
-{-| An ICS source's "N events" alone when every event has exactly one occasion
+{-| An ICS or StellarWP source's "N events" alone when every event has exactly one occasion
 (the common non-recurring case, where naming both is redundant) -- otherwise
 "N events and M occasions". An RSS/Atom source (which syncs plain Posts, not
 Events -- see `posts.proto`'s `Post.sync_source`) instead shows "N posts",
@@ -46,25 +47,33 @@ syncedCountsLabel : SyncSource -> String
 syncedCountsLabel source =
     case source.configuration of
         Just (Configuration.IcsSubscriptionUrl _) ->
-            let
-                eventCount : Int
-                eventCount =
-                    Conversions.int64ToInt source.eventCount
+            eventsAndOccasionsLabel source
 
-                occasionCount : Int
-                occasionCount =
-                    Conversions.int64ToInt source.occasionCount
-            in
-            if eventCount == occasionCount then
-                pluralCount eventCount "event"
-
-            else
-                pluralCount eventCount "event"
-                    ++ " and "
-                    ++ pluralCount occasionCount "occasion"
+        Just (Configuration.StellarwpSubscriptionEndpoint _) ->
+            eventsAndOccasionsLabel source
 
         _ ->
             pluralCount (Conversions.int64ToInt source.postCount) "post"
+
+
+eventsAndOccasionsLabel : SyncSource -> String
+eventsAndOccasionsLabel source =
+    let
+        eventCount : Int
+        eventCount =
+            Conversions.int64ToInt source.eventCount
+
+        occasionCount : Int
+        occasionCount =
+            Conversions.int64ToInt source.occasionCount
+    in
+    if eventCount == occasionCount then
+        pluralCount eventCount "event"
+
+    else
+        pluralCount eventCount "event"
+            ++ " and "
+            ++ pluralCount occasionCount "occasion"
 
 
 pluralCount : Int -> String -> String
@@ -78,6 +87,65 @@ pluralCount count noun =
             else
                 "s"
            )
+
+
+{-| Whether `url` looks like an iCal export from [The Events Calendar](https://theeventscalendar.com/)
+(the StellarWP WordPress plugin) -- its `?ical=1` export, which the plugin caps at one page of events
+(30 on many sites), so a plain iCal source on it only ever sees the next couple of weeks. Such a
+source should be a `StellarwpSubscriptionEndpoint` instead, which follows the plugin's pagination
+(see `protos/sync.proto`). Used to suggest exactly that switch in `Components.Pages.UserProfilePage`'s
+Sync Sources section.
+
+Matches `ical=1` together with any of the plugin's own query parameters (`post_type=tribe_events`,
+`eventDisplay`, `tribe_display`, `tribe-bar-*`, `tribe_events_cat`, `tribe_eventcategory`,
+`tribe_paged`, `shortcode`), or with an `/events/` path -- covering both the `?post_type=tribe_events`
+form of the export link and the pretty `/events/list/?ical=1` and `/events/.../ical/` forms. A
+plain `.ics` file (which never carries `ical=1`) never matches.
+
+-}
+looksLikeStellarWpUrl : String -> Bool
+looksLikeStellarWpUrl url =
+    let
+        ( beforeQuery, query ) =
+            case String.split "?" (String.toLower (String.trim url)) of
+                [] ->
+                    ( "", "" )
+
+                path :: rest ->
+                    ( path, String.join "?" rest )
+
+        params : List String
+        params =
+            query
+                |> String.split "#"
+                |> List.head
+                |> Maybe.withDefault ""
+                |> String.split "&"
+
+        paramNamed : String -> Bool
+        paramNamed name =
+            List.any (\param -> String.startsWith (name ++ "=") param || param == name) params
+
+        paramNameStartsWith : String -> Bool
+        paramNameStartsWith prefix =
+            List.any (String.startsWith prefix) params
+
+        isTribeEventsExport : Bool
+        isTribeEventsExport =
+            List.member "ical=1" params
+                && (List.member "post_type=tribe_events" params
+                    || List.any paramNamed [ "eventdisplay", "tribe_display", "tribe_events_cat", "tribe_paged", "shortcode" ]
+                    || paramNameStartsWith "tribe-bar-"
+                    || paramNameStartsWith "tribe_eventcategory"
+                    || String.contains "/events/" beforeQuery
+                   )
+
+        isTribeEventsPrettyIcalPath : Bool
+        isTribeEventsPrettyIcalPath =
+            String.contains "/events/" beforeQuery
+                && (String.endsWith "/ical/" beforeQuery || String.endsWith "/ical" beforeQuery)
+    in
+    String.startsWith "http" beforeQuery && (isTribeEventsExport || isTribeEventsPrettyIcalPath)
 
 
 {-| `targetUserId = ""` asks the backend for the caller's own sources (see

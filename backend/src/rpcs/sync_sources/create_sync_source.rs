@@ -2,7 +2,7 @@ use diesel::*;
 use tonic::{Code, Status};
 
 use crate::db_connection::PgPooledConnection;
-use crate::logic::sync_source;
+use crate::logic::{stellarwp_page_url, sync_source_after_edit};
 use crate::marshaling::*;
 use crate::models;
 use crate::protos::*;
@@ -28,8 +28,13 @@ pub fn create_sync_source(
     )?;
 
     let configuration = source_configuration_to_json(&request.configuration);
-    let has_subscription_url = ["ics_subscription_url", "rss_subscription_url", "atom_subscription_url"]
-        .iter()
+    let has_subscription_url = [
+        "ics_subscription_url",
+        "stellarwp_subscription_endpoint",
+        "rss_subscription_url",
+        "atom_subscription_url",
+    ]
+    .iter()
         .any(|key| {
             configuration
                 .get(key)
@@ -42,6 +47,12 @@ pub fn create_sync_source(
             Code::InvalidArgument,
             "subscription_url_required",
         ));
+    }
+    if let Some(endpoint) = configuration
+        .get("stellarwp_subscription_endpoint")
+        .and_then(|v| v.as_str())
+    {
+        stellarwp_page_url(endpoint, 1)?;
     }
 
     let sync_interval_seconds = if request.sync_interval_seconds == 0 {
@@ -68,9 +79,10 @@ pub fn create_sync_source(
         })?;
 
     // Not transactional with the insert above (per product decision) -- if the very first sync
+    // (just the first page, for a paginated StellarWP source -- see `sync_source_after_edit`)
     // fails, delete the source we just created rather than leaving a never-synced, broken row
     // around, and surface the sync error to the caller.
-    if let Err(sync_err) = sync_source(&inserted, conn) {
+    if let Err(sync_err) = sync_source_after_edit(&inserted, conn) {
         log::error!(
             "Initial sync failed for new SyncSource {}, deleting it: {:?}",
             inserted.id,

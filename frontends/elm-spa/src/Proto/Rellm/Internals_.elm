@@ -707,14 +707,18 @@ import Protobuf.Types.Int64
 fieldNumbersProto__Rellm__SyncSource__Configuration__Configuration :
     FieldNumbersProto__Rellm__SyncSource__Configuration__Configuration
 fieldNumbersProto__Rellm__SyncSource__Configuration__Configuration =
-    { icsSubscriptionUrl = 9, rssSubscriptionUrl = 11, atomSubscriptionUrl = 12 }
+    { icsSubscriptionUrl = 20, stellarwpSubscriptionEndpoint = 21, rssSubscriptionUrl = 22, atomSubscriptionUrl = 23 }
 
 
 {-| The field numbers for the fields of `Proto__Rellm__SyncSource__Configuration__Configuration`. This is mostly useful for internals, like documentation generation.
 
 -}
 type alias FieldNumbersProto__Rellm__SyncSource__Configuration__Configuration =
-    { icsSubscriptionUrl : Int, rssSubscriptionUrl : Int, atomSubscriptionUrl : Int }
+    { icsSubscriptionUrl : Int
+    , stellarwpSubscriptionEndpoint : Int
+    , rssSubscriptionUrl : Int
+    , atomSubscriptionUrl : Int
+    }
 
 
 {-| Declares how to decode a `Proto__Rellm__SyncSource__Configuration__Configuration` from Bytes. To actually perform the conversion from Bytes, you need to use Protobuf.Decode.decode from eriktim/elm-protocol-buffers.
@@ -724,9 +728,14 @@ decodeProto__Rellm__SyncSource__Configuration__Configuration :
     (Maybe Proto__Rellm__SyncSource__Configuration__Configuration -> a -> a) -> Protobuf.Decode.FieldDecoder a
 decodeProto__Rellm__SyncSource__Configuration__Configuration =
     Protobuf.Decode.oneOf
-        [ ( 9, Protobuf.Decode.map Proto.Rellm.SyncSource.Configuration.IcsSubscriptionUrl Protobuf.Decode.string )
-        , ( 11, Protobuf.Decode.map Proto.Rellm.SyncSource.Configuration.RssSubscriptionUrl Protobuf.Decode.string )
-        , ( 12, Protobuf.Decode.map Proto.Rellm.SyncSource.Configuration.AtomSubscriptionUrl Protobuf.Decode.string )
+        [ ( 20, Protobuf.Decode.map Proto.Rellm.SyncSource.Configuration.IcsSubscriptionUrl Protobuf.Decode.string )
+        , ( 21
+          , Protobuf.Decode.map
+                Proto.Rellm.SyncSource.Configuration.StellarwpSubscriptionEndpoint
+                Protobuf.Decode.string
+          )
+        , ( 22, Protobuf.Decode.map Proto.Rellm.SyncSource.Configuration.RssSubscriptionUrl Protobuf.Decode.string )
+        , ( 23, Protobuf.Decode.map Proto.Rellm.SyncSource.Configuration.AtomSubscriptionUrl Protobuf.Decode.string )
         ]
 
 
@@ -741,20 +750,23 @@ encodeProto__Rellm__SyncSource__Configuration__Configuration value =
             ( 0, Protobuf.Encode.none )
 
         Just (Proto.Rellm.SyncSource.Configuration.IcsSubscriptionUrl innerValue) ->
-            ( 9, Protobuf.Encode.string innerValue )
+            ( 20, Protobuf.Encode.string innerValue )
+
+        Just (Proto.Rellm.SyncSource.Configuration.StellarwpSubscriptionEndpoint innerValue) ->
+            ( 21, Protobuf.Encode.string innerValue )
 
         Just (Proto.Rellm.SyncSource.Configuration.RssSubscriptionUrl innerValue) ->
-            ( 11, Protobuf.Encode.string innerValue )
+            ( 22, Protobuf.Encode.string innerValue )
 
         Just (Proto.Rellm.SyncSource.Configuration.AtomSubscriptionUrl innerValue) ->
-            ( 12, Protobuf.Encode.string innerValue )
+            ( 23, Protobuf.Encode.string innerValue )
 
 
 {-| `Proto__Rellm__SyncSource__Configuration__Configuration` options
 
 -}
 type alias Proto__Rellm__SyncSource__Configuration__Configuration =
-    Proto.Rellm.SyncSource.Configuration.Configuration String String String
+    Proto.Rellm.SyncSource.Configuration.Configuration String String String String
 
 
 {-| The field numbers for the fields of `Proto__Rellm__SyncDestination__Configuration__Configuration`. This is mostly useful for internals, like documentation generation.
@@ -9864,7 +9876,7 @@ fieldNumbersProto__Rellm__SyncSource =
     , lastSyncedAt = 6
     , eventCount = 7
     , occasionCount = 8
-    , postCount = 10
+    , postCount = 9
     , configuration = fieldNumbersProto__Rellm__SyncSource__Configuration__Configuration
     }
 
@@ -9911,7 +9923,7 @@ decodeProto__Rellm__SyncSource =
             (\a r -> { r | lastSyncedAt = a })
         , Protobuf.Decode.optional 7 Protobuf.Decode.uint64 (\a r -> { r | eventCount = a })
         , Protobuf.Decode.optional 8 Protobuf.Decode.uint64 (\a r -> { r | occasionCount = a })
-        , Protobuf.Decode.optional 10 Protobuf.Decode.uint64 (\a r -> { r | postCount = a })
+        , Protobuf.Decode.optional 9 Protobuf.Decode.uint64 (\a r -> { r | postCount = a })
         , decodeProto__Rellm__SyncSource__Configuration__Configuration (\a r -> { r | configuration = a })
         ]
 
@@ -9945,7 +9957,7 @@ encodeProto__Rellm__SyncSource value =
           )
         , ( 7, Protobuf.Encode.uint64 value.eventCount )
         , ( 8, Protobuf.Encode.uint64 value.occasionCount )
-        , ( 10, Protobuf.Encode.uint64 value.postCount )
+        , ( 9, Protobuf.Encode.uint64 value.postCount )
         , encodeProto__Rellm__SyncSource__Configuration__Configuration value.configuration
         ]
 

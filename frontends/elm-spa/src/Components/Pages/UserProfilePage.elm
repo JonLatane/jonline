@@ -244,6 +244,7 @@ type Msg
     | SyncSourceRowUrlChanged SyncSource String
     | SyncSourceRowIntervalChanged SyncSource Int
     | SyncSourceRowSaveClicked SyncSource
+    | SyncSourceRowUseStellarWpClicked SyncSource
     | SyncSourceRowRefreshClicked SyncSource
     | GotSyncSourceRowSaveResult String (Result Grpc.Error ( Maybe AccountsPanel.Msg, SyncSource ))
     | SyncSourceAddUrlChanged String
@@ -540,6 +541,7 @@ is, via `configurationForKindOf`.
 -}
 type SyncSourceKind
     = Ics
+    | StellarWp
     | Rss
     | Atom
 
@@ -549,6 +551,9 @@ syncSourceKindLabel kind =
     case kind of
         Ics ->
             "iCal"
+
+        StellarWp ->
+            "StellarWP"
 
         Rss ->
             "RSS"
@@ -560,6 +565,9 @@ syncSourceKindLabel kind =
 syncSourceKindFromLabel : String -> SyncSourceKind
 syncSourceKindFromLabel label =
     case label of
+        "StellarWP" ->
+            StellarWp
+
         "RSS" ->
             Rss
 
@@ -573,6 +581,9 @@ syncSourceKindFromLabel label =
 syncSourceKindOf : SyncSource -> SyncSourceKind
 syncSourceKindOf source =
     case source.configuration of
+        Just (Configuration.StellarwpSubscriptionEndpoint _) ->
+            StellarWp
+
         Just (Configuration.RssSubscriptionUrl _) ->
             Rss
 
@@ -588,11 +599,14 @@ syncSourceKindOf source =
 already had (an existing source's kind is never changed by this UI) with a new `url`, falling
 back to `kind` only if `existing` somehow has no configuration set at all.
 -}
-configurationForKindOf : Maybe (Configuration.Configuration String String String) -> SyncSourceKind -> String -> Configuration.Configuration String String String
+configurationForKindOf : Maybe (Configuration.Configuration String String String String) -> SyncSourceKind -> String -> Configuration.Configuration String String String String
 configurationForKindOf existing kind url =
     case existing of
         Just (Configuration.IcsSubscriptionUrl _) ->
             Configuration.IcsSubscriptionUrl url
+
+        Just (Configuration.StellarwpSubscriptionEndpoint _) ->
+            Configuration.StellarwpSubscriptionEndpoint url
 
         Just (Configuration.RssSubscriptionUrl _) ->
             Configuration.RssSubscriptionUrl url
@@ -605,6 +619,9 @@ configurationForKindOf existing kind url =
                 Ics ->
                     Configuration.IcsSubscriptionUrl url
 
+                StellarWp ->
+                    Configuration.StellarwpSubscriptionEndpoint url
+
                 Rss ->
                     Configuration.RssSubscriptionUrl url
 
@@ -613,7 +630,7 @@ configurationForKindOf existing kind url =
 
 
 {-| The permission (`protos/permissions.proto`) that gates creating/updating a `SyncSource` of
-`kind` -- `SYNC_EVENTS_FROM_ICS`/`SYNC_POSTS_FROM_RSS`/`SYNC_POSTS_FROM_ATOM`, mirroring
+`kind` -- `SYNC_EVENTS_FROM_ICS` (for both iCal and StellarWP, which both sync Events)/`SYNC_POSTS_FROM_RSS`/`SYNC_POSTS_FROM_ATOM`, mirroring
 `backend/src/marshaling/sync_marshaling.rs`'s own `required_sync_source_permission` exactly.
 -}
 syncSourceKindPermission : SyncSourceKind -> Permission
@@ -622,11 +639,43 @@ syncSourceKindPermission kind =
         Ics ->
             SYNCEVENTSFROMICS
 
+        StellarWp ->
+            SYNCEVENTSFROMICS
+
         Rss ->
             SYNCPOSTSFROMRSS
 
         Atom ->
             SYNCPOSTSFROMATOM
+
+
+{-| Saves `source` (an existing row) with `configuration` and whatever interval its row edit has
+pending -- what both `SyncSourceRowSaveClicked` (keeping the row's own kind) and
+`SyncSourceRowUseStellarWpClicked` (switching an iCal row to StellarWP) do.
+-}
+saveSyncSourceRow : Shared.Model -> Model -> SyncSource -> Configuration.Configuration String String String String -> ( Model, Effect Msg )
+saveSyncSourceRow shared model source configuration =
+    let
+        es : SyncSourcesState
+        es =
+            model.syncSources
+
+        edit : EventSyncRowEdit
+        edit =
+            eventSyncRowEditFor source es
+
+        updated : SyncSource
+        updated =
+            { source
+                | configuration = Just configuration
+                , syncIntervalSeconds = Conversions.int64FromInt edit.pendingIntervalSeconds
+            }
+    in
+    ( { model | syncSources = { es | rowEdits = Dict.insert source.id { edit | status = Submitting } es.rowEdits } }
+    , performForOwner shared model (\accountServer -> SyncSources.updateSyncSource shared.accounts accountServer updated)
+        |> Task.attempt (GotSyncSourceRowSaveResult source.id)
+        |> Effect.fromCmd
+    )
 
 
 {-| Whether `maybeAccount` holds `kind`'s own permission (or `ADMIN`) -- gates that one option in
@@ -649,7 +698,7 @@ gating the add row/section as a whole on there being at least one.
 -}
 availableSyncSourceKinds : Maybe RellmAccount -> List SyncSourceKind
 availableSyncSourceKinds maybeAccount =
-    [ Ics, Rss, Atom ] |> List.filter (\kind -> hasSyncSourceKindPermission kind maybeAccount)
+    [ Ics, StellarWp, Rss, Atom ] |> List.filter (\kind -> hasSyncSourceKindPermission kind maybeAccount)
 
 
 {-| Whether `maybeAccount` holds _any_ of the 3 SyncSource permissions (or `ADMIN`) -- gates
@@ -2846,27 +2895,12 @@ updateInner shared msg model =
             ( { model | syncSources = { es | rowEdits = Dict.insert source.id { edit | pendingIntervalSeconds = seconds } es.rowEdits } }, Effect.none )
 
         SyncSourceRowSaveClicked source ->
-            let
-                es : SyncSourcesState
-                es =
-                    model.syncSources
+            saveSyncSourceRow shared model source (configurationForKindOf source.configuration Ics (eventSyncRowEditFor source model.syncSources).pendingUrl)
 
-                edit : EventSyncRowEdit
-                edit =
-                    eventSyncRowEditFor source es
-
-                updated : SyncSource
-                updated =
-                    { source
-                        | configuration = Just (configurationForKindOf source.configuration Ics edit.pendingUrl)
-                        , syncIntervalSeconds = Conversions.int64FromInt edit.pendingIntervalSeconds
-                    }
-            in
-            ( { model | syncSources = { es | rowEdits = Dict.insert source.id { edit | status = Submitting } es.rowEdits } }
-            , performForOwner shared model (\accountServer -> SyncSources.updateSyncSource shared.accounts accountServer updated)
-                |> Task.attempt (GotSyncSourceRowSaveResult source.id)
-                |> Effect.fromCmd
-            )
+        -- One-click version of "switch this iCal source to a StellarWP one, then Save" -- the fix
+        -- `stellarWpSuggestionView` offers for a feed that `looksLikeStellarWpUrl`.
+        SyncSourceRowUseStellarWpClicked source ->
+            saveSyncSourceRow shared model source (configurationForKindOf Nothing StellarWp (eventSyncRowEditFor source model.syncSources).pendingUrl)
 
         SyncSourceRowRefreshClicked source ->
             let
@@ -6596,7 +6630,7 @@ eventSyncRowEditFor source es =
         |> Maybe.withDefault { pendingUrl = eventSyncUrl source, pendingIntervalSeconds = Conversions.int64ToInt source.syncIntervalSeconds, status = Idle }
 
 
-{-| `source`'s current subscription URL, whichever `Configuration` variant (ICS, RSS, or Atom)
+{-| `source`'s current subscription URL, whichever `Configuration` variant (ICS, StellarWP, RSS, or Atom)
 it actually is -- an existing row's kind is never re-chosen in this UI (see `SyncSourceKind`'s
 own doc), so its edit form only ever needs the URL text, not which variant it's in.
 -}
@@ -6604,6 +6638,9 @@ eventSyncUrl : SyncSource -> String
 eventSyncUrl source =
     case source.configuration of
         Just (Configuration.IcsSubscriptionUrl url) ->
+            url
+
+        Just (Configuration.StellarwpSubscriptionEndpoint url) ->
             url
 
         Just (Configuration.RssSubscriptionUrl url) ->
@@ -6824,12 +6861,36 @@ syncSourceRowView targetHost browserTimeZone es source =
                 [ class "sync-source-delete", onClick (SyncSourceDeleteClicked source True) ]
                 [ text (syncSourceDeleteButtonLabel source) ]
             ]
+        , if syncSourceKindOf source == Ics && SyncSources.looksLikeStellarWpUrl edit.pendingUrl then
+            stellarWpSuggestionView (SyncSourceRowUseStellarWpClicked source) "Switch to StellarWP" submitting
+
+          else
+            text ""
         , case edit.status of
             SubmitFailed err ->
                 div [ class "sync-source-error" ] [ text err ]
 
             _ ->
                 text ""
+        ]
+
+
+{-| The "this looks like a StellarWP feed" nudge shown under an iCal source's URL when
+`SyncSources.looksLikeStellarWpUrl` matches it: The Events Calendar (StellarWP's WordPress plugin)
+caps each iCal response at one page of events (30 on many sites), so a plain iCal source on it only
+ever sees the next couple of weeks, while a StellarWP source (`protos/sync.proto`'s
+`stellarwp_subscription_endpoint`) follows the plugin's pagination. `msg` is what the button does --
+on an existing row it saves the switch outright (`SyncSourceRowUseStellarWpClicked`), on the add form
+it just picks the StellarWP type (`SyncSourceAddKindChanged`) for the user to then create.
+-}
+stellarWpSuggestionView : Msg -> String -> Bool -> Html Msg
+stellarWpSuggestionView msg buttonLabel disabledAttr =
+    div [ class "sync-source-suggestion" ]
+        [ span [ class "sync-source-suggestion-text" ]
+            [ text "This looks like a feed from The Events Calendar (StellarWP's WordPress plugin). Those feeds cap each response at ~30 events, so a plain iCal source only sees the next couple of weeks -- a StellarWP source fetches every page." ]
+        , button
+            [ classes [ "sync-source-suggestion-button", "background-color-primary" ], onClick msg, disabled disabledAttr ]
+            [ text buttonLabel ]
         ]
 
 
@@ -6852,6 +6913,11 @@ syncSourceAddRowView targetHost availableKinds addForm =
             ]
             []
         , eventSyncIntervalSelect SyncSourceAddIntervalChanged addForm.intervalSeconds (addForm.status == Submitting)
+        , if effectiveKind == Ics && List.member StellarWp availableKinds && SyncSources.looksLikeStellarWpUrl addForm.url then
+            stellarWpSuggestionView (SyncSourceAddKindChanged StellarWp) "Use StellarWP" (addForm.status == Submitting)
+
+          else
+            text ""
         , button
             [ classes [ "sync-source-add", "background-color-primary" ]
             , onClick SyncSourceAddClicked

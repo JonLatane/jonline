@@ -24,6 +24,17 @@ import Proto.Rellm.Internals_
  The iCal subscription URL for the calendar sync. Creates/updates Events/Occasions.
 
 
+### StellarwpSubscriptionEndpoint
+
+ The iCal export URL of a site running [The Events Calendar](https://theeventscalendar.com/)
+ (a StellarWP WordPress plugin; the URL is the plugin's "Export" link, e.g.
+ `https://example.com/?post_type=tribe_events&ical=1&eventDisplay=list`). Creates/updates
+ Events/Occasions, like `ics_subscription_url`, but each sync follows the plugin's `paged=N`
+ pagination to fetch as many pages as it can -- the plugin caps a single iCal response at its
+ "events per page" setting (30 on many sites), so a plain `ics_subscription_url` only ever
+ sees the next couple of weeks of events on a busy calendar.
+
+
 ### RssSubscriptionUrl
 
  The RSS subscription URL for the feed sync. Creates/updates plain Posts.

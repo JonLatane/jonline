@@ -1,5 +1,5 @@
-//! Pulls events from a `SyncSource`'s external calendar (currently only ICS subscription
-//! URLs) and upserts them into `events`/`occasions`/`posts`.
+//! Pulls events from a `SyncSource`'s external calendar (an ICS subscription URL, or a paginated
+//! StellarWP "The Events Calendar" endpoint -- see `stellarwp_sync`) and upserts them into `events`/`occasions`/`posts`.
 //!
 //! Recurring `VEVENT`s (an `RRULE`) are expanded with the `rrule` crate: one ICS `UID` maps to
 //! one `Event`, and each occurrence maps to one `Occasion`, keyed by
@@ -136,21 +136,40 @@ pub fn sync_source_text(
     ics_text: &str,
     conn: &mut PgPooledConnection,
 ) -> Result<(), Status> {
-    let calendar: Calendar = ics_text.parse().map_err(|e| {
+    let calendar = parse_calendar(ics_text)?;
+    sync_source_calendar(source, &calendar, None, conn)
+}
+
+pub(super) fn parse_calendar(ics_text: &str) -> Result<Calendar, Status> {
+    ics_text.parse().map_err(|e| {
         log::error!("Failed to parse ICS text: {:?}", e);
         Status::new(Code::FailedPrecondition, "ics_parse_failed")
-    })?;
+    })
+}
 
+/// Upserts everything in an already-parsed `calendar` into `source`'s Events/Occasions.
+///
+/// `missing_horizon` is for a feed known to be *truncated* (a paginated fetch that stopped at its
+/// page cap, or a deliberately first-page-only sync): `Some(t)` means "the feed's coverage ends at
+/// `t`", so an occasion starting after `t` isn't treated as missing -- it just wasn't fetched,
+/// which says nothing about whether it still exists upstream. `None` means the feed is complete.
+pub fn sync_source_calendar(
+    source: &models::SyncSource,
+    calendar: &Calendar,
+    missing_horizon: Option<DateTime<Utc>>,
+    conn: &mut PgPooledConnection,
+) -> Result<(), Status> {
     let now = Utc::now();
     let window_start = now - Duration::days(SYNC_PAST_WINDOW_DAYS);
     let window_end = now + Duration::days(SYNC_FUTURE_WINDOW_DAYS);
 
-    let event_groups = group_vevents(&calendar, window_start, window_end);
+    let event_groups = group_vevents(calendar, window_start, window_end);
 
     let owner_user_id = source.user_id;
     let moderation = default_event_moderation(conn);
 
     let window_start_db: SystemTime = window_start.into();
+    let missing_horizon_db: Option<SystemTime> = missing_horizon.map(Into::into);
 
     let result = conn.transaction::<(), diesel::result::Error, _>(|conn| {
         // Every currently-existing synced occasion's series UID -> parent Event id, via real,
@@ -190,6 +209,7 @@ pub fn sync_source_text(
                 &moderation,
                 group,
                 window_start_db,
+                missing_horizon_db,
                 now,
             )?;
         }
@@ -219,6 +239,7 @@ pub fn sync_source_text(
                 &moderation,
                 &empty_group,
                 window_start_db,
+                missing_horizon_db,
                 now,
             )?;
 
@@ -355,6 +376,8 @@ fn location_json(location: &Option<String>) -> Option<serde_json::Value> {
 /// `event_id`, then reconciles any existing occasion under `event_id` that's no longer present
 /// in `group.occurrences` -- but only if that occasion's `ends_at` is still within the sync
 /// window (`>= window_start_db`); older ones are left untouched no matter what the feed says now.
+/// Likewise, when `missing_horizon_db` is set (the feed is known to be truncated -- see
+/// `sync_source_calendar`), occasions starting after it are left untouched too.
 /// An in-window occasion that's missing isn't deleted immediately: the first sync that misses it
 /// stamps `sync_missing_since` and leaves it alone, and only a sync that *still* misses it after
 /// `MISSING_GRACE_PERIOD_DAYS` have passed since that stamp actually deletes it. An occasion that
@@ -367,6 +390,7 @@ fn reconcile_occasions(
     moderation: &str,
     group: &EventGroup,
     window_start_db: SystemTime,
+    missing_horizon_db: Option<SystemTime>,
     now: DateTime<Utc>,
 ) -> Result<(), diesel::result::Error> {
     let existing_occasions: Vec<(models::Occasion, Option<SystemTime>)> = occasions::table
@@ -471,6 +495,7 @@ fn reconcile_occasions(
     for missing in existing_by_anchor
         .values()
         .filter(|i| i.ends_at >= window_start_db)
+        .filter(|i| missing_horizon_db.map_or(true, |horizon| i.starts_at <= horizon))
     {
         match missing.sync_missing_since {
             None => newly_missing_ids.push(missing.post_id),
@@ -517,7 +542,7 @@ fn date_perhaps_time_to_utc(d: &DatePerhapsTime) -> Option<DateTime<Utc>> {
     }
 }
 
-fn get_date_property(event: &icalendar::Event, key: &str) -> Option<DateTime<Utc>> {
+pub(super) fn get_date_property(event: &icalendar::Event, key: &str) -> Option<DateTime<Utc>> {
     let property = event.properties().get(key)?;
     let dpt = DatePerhapsTime::from_property(property)?;
     date_perhaps_time_to_utc(&dpt)

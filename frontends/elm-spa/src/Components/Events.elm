@@ -678,7 +678,7 @@ meaningfulPost post =
 {-| Whether `event` is pulled in from an ICS/iCal subscription (i.e. its own
 `Post.syncSource` -- see `posts.proto`'s `Post.sync_source`, which any Post
 can carry now, not just an `Event`'s -- has an `IcsSubscriptionUrl`
-configuration) -- such an `Event` is re-synced from that feed on every run of
+or `StellarwpSubscriptionEndpoint` configuration) -- such an `Event` is re-synced from that feed on every run of
 the backend's `sync_sources` job, so any local edit to its title/link/content
 would just be clobbered the next time that happens. Used by
 `Pages.Event.PostId_` to hide those fields' own edit buttons for a synced
@@ -688,6 +688,9 @@ hasIcsSyncSource : Event -> Bool
 hasIcsSyncSource event =
     case event.post |> Maybe.andThen .syncSource |> Maybe.andThen .configuration of
         Just (SyncSourceConfiguration.IcsSubscriptionUrl _) ->
+            True
+
+        Just (SyncSourceConfiguration.StellarwpSubscriptionEndpoint _) ->
             True
 
         _ ->
@@ -704,13 +707,21 @@ syncSourceView : Event -> Html msg
 syncSourceView event =
     case event.post |> Maybe.andThen .syncSource |> Maybe.andThen .configuration of
         Just (SyncSourceConfiguration.IcsSubscriptionUrl url) ->
-            div [ class "event-synced-from" ]
-                [ text "synced from "
-                , a [ href url, class "event-synced-from-link" ] [ text url ]
-                ]
+            syncedFromView url
+
+        Just (SyncSourceConfiguration.StellarwpSubscriptionEndpoint url) ->
+            syncedFromView url
 
         _ ->
             text ""
+
+
+syncedFromView : String -> Html msg
+syncedFromView url =
+    div [ class "event-synced-from" ]
+        [ text "synced from "
+        , a [ href url, class "event-synced-from-link" ] [ text url ]
+        ]
 
 
 {-| Thin wrapper over `Components.SyncDestinations.syncDestinationsView`, extracting

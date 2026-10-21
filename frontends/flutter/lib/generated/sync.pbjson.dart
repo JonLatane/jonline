@@ -247,15 +247,21 @@ const SyncSource$json = {
     {'1': 'last_synced_at', '3': 6, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '9': 2, '10': 'lastSyncedAt', '17': true},
     {'1': 'event_count', '3': 7, '4': 1, '5': 4, '10': 'eventCount'},
     {'1': 'occasion_count', '3': 8, '4': 1, '5': 4, '10': 'occasionCount'},
-    {'1': 'post_count', '3': 10, '4': 1, '5': 4, '10': 'postCount'},
-    {'1': 'ics_subscription_url', '3': 9, '4': 1, '5': 9, '9': 0, '10': 'icsSubscriptionUrl'},
-    {'1': 'rss_subscription_url', '3': 11, '4': 1, '5': 9, '9': 0, '10': 'rssSubscriptionUrl'},
-    {'1': 'atom_subscription_url', '3': 12, '4': 1, '5': 9, '9': 0, '10': 'atomSubscriptionUrl'},
+    {'1': 'post_count', '3': 9, '4': 1, '5': 4, '10': 'postCount'},
+    {'1': 'ics_subscription_url', '3': 20, '4': 1, '5': 9, '9': 0, '10': 'icsSubscriptionUrl'},
+    {'1': 'stellarwp_subscription_endpoint', '3': 21, '4': 1, '5': 9, '9': 0, '10': 'stellarwpSubscriptionEndpoint'},
+    {'1': 'rss_subscription_url', '3': 22, '4': 1, '5': 9, '9': 0, '10': 'rssSubscriptionUrl'},
+    {'1': 'atom_subscription_url', '3': 23, '4': 1, '5': 9, '9': 0, '10': 'atomSubscriptionUrl'},
   ],
   '8': [
     {'1': 'configuration'},
     {'1': '_updated_at'},
     {'1': '_last_synced_at'},
+  ],
+  '9': [
+    {'1': 10, '2': 11},
+    {'1': 11, '2': 12},
+    {'1': 12, '2': 13},
   ],
 };
 
@@ -268,11 +274,12 @@ final $typed_data.Uint8List syncSourceDescriptor = $convert.base64Decode(
     'bXBIAVIJdXBkYXRlZEF0iAEBEkUKDmxhc3Rfc3luY2VkX2F0GAYgASgLMhouZ29vZ2xlLnByb3'
     'RvYnVmLlRpbWVzdGFtcEgCUgxsYXN0U3luY2VkQXSIAQESHwoLZXZlbnRfY291bnQYByABKARS'
     'CmV2ZW50Q291bnQSJQoOb2NjYXNpb25fY291bnQYCCABKARSDW9jY2FzaW9uQ291bnQSHQoKcG'
-    '9zdF9jb3VudBgKIAEoBFIJcG9zdENvdW50EjIKFGljc19zdWJzY3JpcHRpb25fdXJsGAkgASgJ'
-    'SABSEmljc1N1YnNjcmlwdGlvblVybBIyChRyc3Nfc3Vic2NyaXB0aW9uX3VybBgLIAEoCUgAUh'
-    'Jyc3NTdWJzY3JpcHRpb25VcmwSNAoVYXRvbV9zdWJzY3JpcHRpb25fdXJsGAwgASgJSABSE2F0'
-    'b21TdWJzY3JpcHRpb25VcmxCDwoNY29uZmlndXJhdGlvbkINCgtfdXBkYXRlZF9hdEIRCg9fbG'
-    'FzdF9zeW5jZWRfYXQ=');
+    '9zdF9jb3VudBgJIAEoBFIJcG9zdENvdW50EjIKFGljc19zdWJzY3JpcHRpb25fdXJsGBQgASgJ'
+    'SABSEmljc1N1YnNjcmlwdGlvblVybBJICh9zdGVsbGFyd3Bfc3Vic2NyaXB0aW9uX2VuZHBvaW'
+    '50GBUgASgJSABSHXN0ZWxsYXJ3cFN1YnNjcmlwdGlvbkVuZHBvaW50EjIKFHJzc19zdWJzY3Jp'
+    'cHRpb25fdXJsGBYgASgJSABSEnJzc1N1YnNjcmlwdGlvblVybBI0ChVhdG9tX3N1YnNjcmlwdG'
+    'lvbl91cmwYFyABKAlIAFITYXRvbVN1YnNjcmlwdGlvblVybEIPCg1jb25maWd1cmF0aW9uQg0K'
+    'C191cGRhdGVkX2F0QhEKD19sYXN0X3N5bmNlZF9hdEoECAoQC0oECAsQDEoECAwQDQ==');
 
 @$core.Deprecated('Use getSyncSourcesResponseDescriptor instead')
 const GetSyncSourcesResponse$json = {
