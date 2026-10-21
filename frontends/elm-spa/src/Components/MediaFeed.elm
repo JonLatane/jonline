@@ -93,6 +93,12 @@ type alias HostFeed =
     -- server disconnected until its own reconnect resolves (see
     -- `RellmServers.knownConnectedRellmServer`), so a feed can't always start fetching at once.
     , fetchStarted : Bool
+
+    -- The account (`Nothing` = anonymous) acting on the server when the feed was last fetched -- what
+    -- `GetMedia` returns depends on it (a signed-in viewer can also see `SERVER_PUBLIC` media), so
+    -- `retryFetch` refetches the first page when it changes, and a reply made as another account
+    -- is dropped. See `retryFetch`.
+    , fetchedAs : Maybe String
     }
 
 
@@ -103,7 +109,7 @@ type Status
 
 
 type Msg
-    = GotMediaResult String Int Int (Result Grpc.Error ( Maybe AccountsPanel.Msg, GetMediaResponse ))
+    = GotMediaResult String (Maybe String) Int Int (Result Grpc.Error ( Maybe AccountsPanel.Msg, GetMediaResponse ))
     | SearchChanged String
     | SearchDebounced Int
     | LoadMoreClicked
@@ -122,7 +128,7 @@ init shared kind searchText =
 
 emptyHostFeed : HostFeed
 emptyHostFeed =
-    { media = [], status = Loading, hasNextPage = False, nextPage = 0, loadingMore = False, fetchStarted = False }
+    { media = [], status = Loading, hasNextPage = False, nextPage = 0, loadingMore = False, fetchStarted = False, fetchedAs = Nothing }
 
 
 {-| `GetMedia` with no `user_id` -- the server-wide listing -- for `kind`'s content type, narrowed by
@@ -173,7 +179,9 @@ feed for a newly-enabled one, dropping a disabled one's), then starts the first 
 whose server is connected by now. Safe to call repeatedly -- each feed fetches at most once from
 here (`HostFeed.fetchStarted`) -- the owning page calls it on every `Shared.Msg` it's forwarded (a
 server connecting or being enabled being the cue), same pattern as
-`Components.Pages.MarketPage.attemptFetches`.
+`Components.Pages.MarketPage.attemptFetches`. A feed that's already fetched is fetched again (first
+page, the old media staying on screen meanwhile) when the account acting on its server changes --
+signing in or out, or enabling/disabling an account -- since the listing depends on who's asking.
 -}
 retryFetch : Shared.Model -> Model -> ( Model, Effect Msg )
 retryFetch shared model =
@@ -192,8 +200,24 @@ retryFetch shared model =
         step host ( soFar, effects ) =
             case Dict.get host soFar of
                 Just feed ->
-                    if not feed.fetchStarted && RellmServers.knownConnectedRellmServer shared.accounts.servers host /= Nothing then
-                        ( Dict.insert host { feed | fetchStarted = True } soFar
+                    if RellmServers.knownConnectedRellmServer shared.accounts.servers host == Nothing then
+                        ( soFar, effects )
+
+                    else if not feed.fetchStarted || actingAccountId shared host /= feed.fetchedAs then
+                        -- The paging state (`nextPage`/`hasNextPage`/`loadingMore`) belongs to the previous
+                        -- account's listing, so it's reset: "Load more" must stay unavailable until this
+                        -- first page lands, or it would request one of the *previous* account's page numbers
+                        -- as the new account, and whichever reply came second would skip the pages between.
+                        -- (The old media stays on screen meanwhile.)
+                        ( Dict.insert host
+                            { feed
+                                | fetchStarted = True
+                                , fetchedAs = actingAccountId shared host
+                                , hasNextPage = False
+                                , nextPage = 0
+                                , loadingMore = False
+                            }
+                            soFar
                         , fetch shared model host model.searchVersion 0 :: effects
                         )
 
@@ -209,27 +233,43 @@ retryFetch shared model =
     ( { model | feeds = updatedFeeds }, Effect.batch fetchEffects )
 
 
+{-| The id of the account currently acting on `host` (the enabled one), `Nothing` when anonymous.
+-}
+actingAccountId : Shared.Model -> String -> Maybe String
+actingAccountId shared host =
+    RellmAccounts.enabledRellmAccountForServer shared.accounts.accounts host |> Maybe.map .userId
+
+
 fetch : Shared.Model -> Model -> String -> Int -> Int -> Effect Msg
 fetch shared model host version page =
     AccountsPanel.performWithOptionalAccountServer
         shared.accounts
-        ( RellmAccounts.enabledRellmAccountForServer shared.accounts.accounts host |> Maybe.map .userId, host )
+        ( actingAccountId shared host, host )
         (\server maybeToken ->
             Grpc.new Rellm.getMedia (requestFor model.kind model.searchText page)
                 |> Grpc.setHost (RellmServers.rellmServerUrl server)
                 |> withAccessToken maybeToken
                 |> Grpc.toTask
         )
-        |> Task.attempt (GotMediaResult host version page)
+        |> Task.attempt (GotMediaResult host (actingAccountId shared host) version page)
         |> Effect.fromCmd
 
 
 update : Shared.Model -> Msg -> Model -> ( Model, Effect Msg )
 update shared msg model =
     case msg of
-        GotMediaResult host version page result ->
-            if version /= model.searchVersion then
-                ( model, Effect.none )
+        GotMediaResult host fetchedAs version page result ->
+            if version /= model.searchVersion || Just fetchedAs /= (Dict.get host model.feeds |> Maybe.map .fetchedAs) then
+                -- Stale: for an older search, or made as an account that's no longer the acting one
+                -- (what it returned is what the *previous* account could see; `retryFetch` has
+                -- already started a fetch as the current one). The page data is dropped, but its
+                -- token refresh isn't: a refresh can rotate the account's refresh token, so losing
+                -- the new one could force a re-login.
+                ( model
+                , AccountsPanel.tokenRefreshOf result
+                    |> Maybe.map (Shared.AccountsPanelMsg >> Effect.fromShared)
+                    |> Maybe.withDefault Effect.none
+                )
 
             else
                 case ( result, Dict.get host model.feeds ) of

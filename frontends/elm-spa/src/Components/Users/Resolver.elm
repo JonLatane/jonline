@@ -24,6 +24,14 @@ its own (that's `Shared.Components.ServerDependentView`'s job, driven by
 `Poll`/an `AccountsPanelMsg` passing through `SharedMsg` just keeps retrying,
 same event-driven-plus-slow-poll approach as `Components.Pages.PostsPage`.
 
+What `GetUsers` returns depends on who's asking: the self-or-Admin-only parts of a `User`
+(sync sources/destinations, contact methods, subscriptions, ...) are only there when the account
+acting on `targetHost` is that user or an Admin. So the fetch is re-run whenever that acting account
+changes (logging in or out of the server, or enabling/disabling an account on it -- see
+`actingAccountId`), rather than once for the life of the page; a response that comes back for an
+account that's no longer the acting one is dropped. The same "refetch when the server's acting
+account changes" rule `Components.Pages.PostsPage.fetchNewFeeds` applies to feeds.
+
 -}
 
 import Components.Users as Users
@@ -43,11 +51,14 @@ type alias Model =
     , lookup : Lookup
     , status : Status
     , fetchStarted : Bool
+
+    -- The account (`Nothing` = anonymous) the most recent fetch was made as -- see `actingAccountId`.
+    , fetchedAs : Maybe String
     }
 
 
 type Msg
-    = GotUser (Result Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Rellm.GetUsersResponse ))
+    = GotUser (Maybe String) (Result Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Rellm.GetUsersResponse ))
     | Poll
     | SharedMsg Shared.Msg
 
@@ -67,7 +78,7 @@ type Status
 
 init : Shared.Model -> String -> Lookup -> ( Model, Effect Msg )
 init shared targetHost lookup =
-    fetchIfReady shared { targetHost = targetHost, lookup = lookup, status = Loading, fetchStarted = False }
+    fetchIfReady shared { targetHost = targetHost, lookup = lookup, status = Loading, fetchStarted = False, fetchedAs = Nothing }
 
 
 subscriptions : Model -> Sub Msg
@@ -82,7 +93,7 @@ subscriptions model =
 update : Shared.Model -> Msg -> Model -> ( Model, Effect Msg )
 update shared msg model =
     case msg of
-        GotUser (Ok ( maybeAccountsPanelMsg, response )) ->
+        GotUser fetchedAs (Ok ( maybeAccountsPanelMsg, response )) ->
             let
                 accountEffect : Effect Msg
                 accountEffect =
@@ -90,17 +101,30 @@ update shared msg model =
                         |> Maybe.map (Shared.AccountsPanelMsg >> Effect.fromShared)
                         |> Maybe.withDefault Effect.none
 
-                newStatus : Status
-                newStatus =
-                    response.users
-                        |> List.head
-                        |> Maybe.map Loaded
-                        |> Maybe.withDefault Failed
             in
-            ( { model | status = newStatus }, accountEffect )
+            if fetchedAs == model.fetchedAs then
+                ( { model
+                    | status =
+                        response.users
+                            |> List.head
+                            |> Maybe.map Loaded
+                            |> Maybe.withDefault Failed
+                  }
+                , accountEffect
+                )
 
-        GotUser (Err _) ->
-            ( { model | status = Failed }, Effect.none )
+            else
+                -- Made as an account that's no longer the acting one: what it saw isn't what the
+                -- current account would, so drop it (a refetch as the current account is already
+                -- on its way). A refreshed token it carries is still worth keeping.
+                ( model, accountEffect )
+
+        GotUser fetchedAs (Err _) ->
+            if fetchedAs == model.fetchedAs then
+                ( { model | status = Failed }, Effect.none )
+
+            else
+                ( model, Effect.none )
 
         Poll ->
             fetchIfReady shared model
@@ -110,12 +134,30 @@ update shared msg model =
                 ( fetchedModel, fetchEffect ) =
                     case subMsg of
                         Shared.AccountsPanelMsg _ ->
-                            fetchIfReady shared model
+                            if not model.fetchStarted then
+                                fetchIfReady shared model
+
+                            else if actingAccountId shared model /= model.fetchedAs then
+                                -- Logged in/out of `targetHost`, or enabled/disabled an account on
+                                -- it: the `User` held was fetched as someone else.
+                                refetch shared model
+
+                            else
+                                ( model, Effect.none )
 
                         _ ->
                             ( model, Effect.none )
             in
             ( fetchedModel, Effect.batch [ Effect.fromShared subMsg, fetchEffect ] )
+
+
+{-| The id of the account currently acting on `model.targetHost` (the enabled one -- the same one
+`fetchTask` makes its request as), `Nothing` when none is, i.e. the viewer is anonymous there.
+-}
+actingAccountId : Shared.Model -> Model -> Maybe String
+actingAccountId shared model =
+    RellmAccounts.enabledRellmAccountForServer shared.accounts.accounts model.targetHost
+        |> Maybe.map .userId
 
 
 {-| Kicks off the actual `GetUsers` fetch the first time `targetHost` is a
@@ -132,8 +174,13 @@ fetchIfReady shared model =
     else
         case fetchTask shared model of
             Just fetch ->
-                ( { model | fetchStarted = True }
-                , fetch |> Task.attempt GotUser |> Effect.fromCmd
+                let
+                    viewer : Maybe String
+                    viewer =
+                        actingAccountId shared model
+                in
+                ( { model | fetchStarted = True, fetchedAs = viewer }
+                , fetch |> Task.attempt (GotUser viewer) |> Effect.fromCmd
                 )
 
             Nothing ->
@@ -149,7 +196,12 @@ refetch : Shared.Model -> Model -> ( Model, Effect Msg )
 refetch shared model =
     case fetchTask shared model of
         Just fetch ->
-            ( model, fetch |> Task.attempt GotUser |> Effect.fromCmd )
+            let
+                viewer : Maybe String
+                viewer =
+                    actingAccountId shared model
+            in
+            ( { model | fetchedAs = viewer }, fetch |> Task.attempt (GotUser viewer) |> Effect.fromCmd )
 
         Nothing ->
             ( model, Effect.none )
@@ -168,9 +220,7 @@ fetchTask shared model =
                 let
                     maybeAccountServer : AccountsPanel.MaybeAccountServer
                     maybeAccountServer =
-                        ( RellmAccounts.enabledRellmAccountForServer shared.accounts.accounts model.targetHost |> Maybe.map .userId
-                        , model.targetHost
-                        )
+                        ( actingAccountId shared model, model.targetHost )
                 in
                 case model.lookup of
                     ById userId ->

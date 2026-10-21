@@ -42,6 +42,11 @@ type alias Model =
     { productId : String
     , fetch : ProductFetchState
     , fetchStarted : Bool
+
+    -- The account (`Nothing` = anonymous) acting on the browsing host when the product was last
+    -- fetched -- an Admin also sees delisted products, so what's `Found` depends on it, and the page
+    -- refetches when it changes. See `resetForActingAccountChange`.
+    , fetchedAs : Maybe String
     , purchase : Market.PurchaseState
     , hostingForm : Market.HostingForm
     }
@@ -62,6 +67,7 @@ init shared productId =
                 { productId = productId
                 , fetch = Fetching
                 , fetchStarted = False
+                , fetchedAs = Nothing
                 , purchase = Market.PurchaseIdle
                 , hostingForm = Market.defaultHostingForm
                 }
@@ -89,21 +95,41 @@ attemptFetch shared model =
         ( model, Effect.none )
 
     else
-        ( { model | fetchStarted = True }, fetchProduct shared model.productId )
+        ( { model | fetchStarted = True, fetchedAs = actingAccountId shared }, fetchProduct shared model.productId )
 
 
 fetchProduct : Shared.Model -> String -> Effect Msg
 fetchProduct shared productId =
     Market.getMarketProducts shared.accounts (maybeAccountServer shared)
-        |> Task.attempt (GotProductsResult productId)
+        |> Task.attempt (GotProductsResult (actingAccountId shared) productId)
         |> Effect.fromCmd
 
 
 maybeAccountServer : Shared.Model -> AccountsPanel.MaybeAccountServer
 maybeAccountServer shared =
-    ( RellmAccounts.enabledRellmAccountForServer shared.accounts.accounts shared.accounts.browsingHost |> Maybe.map .userId
-    , shared.accounts.browsingHost
-    )
+    ( actingAccountId shared, shared.accounts.browsingHost )
+
+
+{-| The id of the account currently acting on the browsing host (the enabled one), `Nothing` when
+anonymous.
+-}
+actingAccountId : Shared.Model -> Maybe String
+actingAccountId shared =
+    RellmAccounts.enabledRellmAccountForServer shared.accounts.accounts shared.accounts.browsingHost
+        |> Maybe.map .userId
+
+
+{-| If the account acting on the browsing host is no longer the one the product was fetched as
+(logging in/out, or enabling/disabling an account), readies a refetch as the new one -- the product
+stays on screen meanwhile -- and drops the previous account's purchase progress.
+-}
+resetForActingAccountChange : Shared.Model -> Model -> Model
+resetForActingAccountChange shared model =
+    if model.fetchStarted && actingAccountId shared /= model.fetchedAs then
+        { model | fetchStarted = False, purchase = Market.PurchaseIdle }
+
+    else
+        model
 
 
 titleFor : Model -> String
@@ -127,18 +153,57 @@ titleFor model =
 
 
 type Msg
-    = GotProductsResult String (Result Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Rellm.GetMarketProductsResponse ))
+    = GotProductsResult (Maybe String) String (Result Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Rellm.GetMarketProductsResponse ))
     | HostingFieldChanged (Market.HostingForm -> String -> Market.HostingForm) String
     | BuyClicked MarketProduct
-    | GotPurchaseResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Rellm.MakeMarketPurchaseResponse ))
+    | GotPurchaseResult (Maybe String) (Result Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Rellm.MakeMarketPurchaseResponse ))
     | LoginClicked
     | SharedMsgReceived Shared.Msg
 
 
 update : Shared.Model -> Msg -> Model -> ( Model, Effect Msg )
 update shared msg model =
+    case staleReplyEffect shared msg of
+        Just effect ->
+            ( model, effect )
+
+        Nothing ->
+            updateInner shared msg model
+
+
+{-| The effect to run *instead of* handling `msg`, when `msg` is the reply to a request made as an account
+that's no longer acting on the browsing host -- what it returned is what the *previous* account could
+see (`resetForActingAccountChange` has already readied a refetch as the current one), and a purchase it
+started must not send the browser to *its* checkout or clobber the current account's purchase state.
+The reply's token refresh is still forwarded: a refresh can rotate the account's refresh token, so
+losing the new one could force a re-login.
+-}
+staleReplyEffect : Shared.Model -> Msg -> Maybe (Effect Msg)
+staleReplyEffect shared msg =
+    let
+        staleUnless : Maybe String -> Result x ( Maybe AccountsPanel.Msg, a ) -> Maybe (Effect Msg)
+        staleUnless fetchedAs result =
+            if fetchedAs /= actingAccountId shared then
+                Just (accountsPanelEffect (AccountsPanel.tokenRefreshOf result))
+
+            else
+                Nothing
+    in
     case msg of
-        GotProductsResult productId (Ok ( maybeAccountsPanelMsg, response )) ->
+        GotProductsResult fetchedAs _ result ->
+            staleUnless fetchedAs result
+
+        GotPurchaseResult fetchedAs result ->
+            staleUnless fetchedAs result
+
+        _ ->
+            Nothing
+
+
+updateInner : Shared.Model -> Msg -> Model -> ( Model, Effect Msg )
+updateInner shared msg model =
+    case msg of
+        GotProductsResult _ productId (Ok ( maybeAccountsPanelMsg, response )) ->
             ( { model
                 | fetch =
                     case List.filter (\p -> p.id == productId) response.marketProducts of
@@ -151,7 +216,7 @@ update shared msg model =
             , accountsPanelEffect maybeAccountsPanelMsg
             )
 
-        GotProductsResult _ (Err err) ->
+        GotProductsResult _ _ (Err err) ->
             ( { model | fetch = FetchErrored (AccountsPanel.grpcErrorToString err) }, Effect.none )
 
         HostingFieldChanged setter text ->
@@ -171,16 +236,16 @@ update shared msg model =
             , Market.makeMarketPurchase shared.accounts
                 (maybeAccountServer shared)
                 { marketProductId = product.id, rellmHostingDetails = hostingDetails }
-                |> Task.attempt GotPurchaseResult
+                |> Task.attempt (GotPurchaseResult (actingAccountId shared))
                 |> Effect.fromCmd
             )
 
-        GotPurchaseResult (Ok ( maybeAccountsPanelMsg, response )) ->
+        GotPurchaseResult _ (Ok ( maybeAccountsPanelMsg, response )) ->
             ( { model | purchase = Market.PurchaseIdle }
             , Effect.batch [ accountsPanelEffect maybeAccountsPanelMsg, Effect.fromCmd (Browser.Navigation.load response.checkoutUrl) ]
             )
 
-        GotPurchaseResult (Err err) ->
+        GotPurchaseResult _ (Err err) ->
             ( { model | purchase = Market.PurchaseErrored (AccountsPanel.grpcErrorToString err) }, Effect.none )
 
         LoginClicked ->
@@ -189,7 +254,7 @@ update shared msg model =
         SharedMsgReceived subMsg ->
             let
                 ( retriedModel, retryEffect ) =
-                    attemptFetch shared model
+                    attemptFetch shared (resetForActingAccountChange shared model)
             in
             ( retriedModel, Effect.batch [ Effect.fromShared subMsg, retryEffect ] )
 
