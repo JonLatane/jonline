@@ -627,6 +627,7 @@ class BlueskyServer extends $pb.GeneratedMessage {
     $core.String? host,
     $core.bool? configuredByDefault,
     $core.bool? pinnedByDefault,
+    $core.String? logoUrl,
   }) {
     final $result = create();
     if (host != null) {
@@ -638,6 +639,9 @@ class BlueskyServer extends $pb.GeneratedMessage {
     if (pinnedByDefault != null) {
       $result.pinnedByDefault = pinnedByDefault;
     }
+    if (logoUrl != null) {
+      $result.logoUrl = logoUrl;
+    }
     return $result;
   }
   BlueskyServer._() : super();
@@ -648,6 +652,7 @@ class BlueskyServer extends $pb.GeneratedMessage {
     ..aOS(1, _omitFieldNames ? '' : 'host')
     ..aOB(2, _omitFieldNames ? '' : 'configuredByDefault')
     ..aOB(3, _omitFieldNames ? '' : 'pinnedByDefault')
+    ..aOS(4, _omitFieldNames ? '' : 'logoUrl')
     ..hasRequiredFields = false
   ;
 
@@ -704,6 +709,21 @@ class BlueskyServer extends $pb.GeneratedMessage {
   $core.bool hasPinnedByDefault() => $_has(2);
   @$pb.TagNumber(3)
   void clearPinnedByDefault() => clearField(3);
+
+  /// URL of an image to show as this AppView's logo in clients' server lists (an `https://` URL; clients
+  /// ignore anything else). Unlike a Mastodon instance (`GET /api/v1/instance` has a `thumbnail`) or a
+  /// Rellm server (which carries its own `ServerLogo`), an AppView has no way to describe itself, so
+  /// there is nothing to discover one from - it has to be provided here. Clients show a built-in logo for
+  /// Bluesky's own public AppView (`public.api.bsky.app`) when this is unset, and a plain placeholder for
+  /// any other AppView.
+  @$pb.TagNumber(4)
+  $core.String get logoUrl => $_getSZ(3);
+  @$pb.TagNumber(4)
+  set logoUrl($core.String v) { $_setString(3, v); }
+  @$pb.TagNumber(4)
+  $core.bool hasLogoUrl() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearLogoUrl() => clearField(4);
 }
 
 

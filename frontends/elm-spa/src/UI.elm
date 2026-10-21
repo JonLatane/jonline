@@ -1784,7 +1784,7 @@ recommendedBlueskyServerChip blueskyServer =
         [ div [ classes [ "server-chip-top", hostnameToCSSClass host, "background-color-primary" ] ]
             [ div [ class "server-chip-logo-row" ]
                 [ div [ class "server-name-and-logo regular" ]
-                    [ div [ class "server-logo-placeholder" ] [ text (RellmServers.initialLetter name) ]
+                    [ blueskyServerLogo (BlueskyAppViews.logoUrlFor [ blueskyServer ] host) name
                     , div [ class "server-name-breakdown" ]
                         [ div [ class "server-name-primary" ] [ text "Bluesky" ] ]
                     ]
@@ -2004,6 +2004,19 @@ mastodonServerFeedChip shared count index instance =
         ]
 
 
+{-| An AppView's logo image (`logoUrl`: an admin-set one, or the built-in butterfly for bsky.app -- see
+`BlueskyAppViews.logoUrlFor`), or the first-letter placeholder when it has none.
+-}
+blueskyServerLogo : Maybe String -> String -> Html msg
+blueskyServerLogo maybeLogoUrl name =
+    case maybeLogoUrl of
+        Just url ->
+            federatedFeedLogoImage False (name ++ " logo") (Just url)
+
+        Nothing ->
+            div [ class "server-logo-placeholder" ] [ text (RellmServers.initialLetter name) ]
+
+
 {-| One anonymously-browsed Bluesky AppView (`bsky.app` by default) -- `mastodonServerFeedChip`'s
 Bluesky counterpart, styled the same way (inverted two-tone, `border-color-accent`, reorder arrows
 flanking the top row, host below, one action strip at the bottom). It is a _server_ because it needs no
@@ -2043,7 +2056,7 @@ blueskyAppViewFeedChip shared count index appView =
             [ classes [ "server-chip-top", mainHostClass, "background-color-nav" ] ]
             [ div [ class "server-chip-logo-row" ]
                 [ div [ classList [ ( "reorder-arrow", True ), ( "reorder-arrow-hidden", not reorderInfo.showBackward ) ] ] [ reorderInfo.reorderPair.backward ]
-                , div [ class "server-logo-placeholder" ] [ text (RellmServers.initialLetter name) ]
+                , blueskyServerLogo (BlueskyAppViews.logoUrlFor (AccountsPanel.allBlueskyServers shared.accounts) appView.host) name
                 , div [ classList [ ( "reorder-arrow", True ), ( "reorder-arrow-hidden", not reorderInfo.showForward ) ] ] [ reorderInfo.reorderPair.forward ]
                 ]
             , div [ class "server-chip-host-row" ] [ div [ class "federated-feed-service-label" ] [ text "⇄ Bluesky" ] ]

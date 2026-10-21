@@ -8538,6 +8538,12 @@ directory</a> is (<code>{name}</code> denotes a
           <td>optional</td>
           <td>Indicates to UI clients that they should add <em>and enable</em> the indicated AppView by default (showing its public feed alongside the "main" server). Only one Bluesky source (an AppView or a connected account) is shown at a time, so clients should ignore all but the first of these.</td>
         </tr>
+        <tr>
+          <td>logo_url</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td>URL of an image to show as this AppView's logo in clients' server lists (an <code>https://</code> URL; clients ignore anything else). Unlike a Mastodon instance (<code>GET /api/v1/instance</code> has a <code>thumbnail</code>) or a Rellm server (which carries its own <code>ServerLogo</code>), an AppView has no way to describe itself, so there is nothing to discover one from - it has to be provided here. Clients show a built-in logo for Bluesky's own public AppView (<code>public.api.bsky.app</code>) when this is unset, and a plain placeholder for any other AppView.</td>
+        </tr>
       </tbody>
     </table>
     <p><a name="rellm-FacebookAuthConfig"></a></p>

@@ -8631,7 +8631,7 @@ type alias SyncDestination =
 {-| The field numbers for the fields of `BlueskyServer`. This is mostly useful for internals, like documentation generation.
 
 -}
-fieldNumbersBlueskyServer : { host : Int, configuredByDefault : Int, pinnedByDefault : Int }
+fieldNumbersBlueskyServer : { host : Int, configuredByDefault : Int, pinnedByDefault : Int, logoUrl : Int }
 fieldNumbersBlueskyServer =
     Proto.Rellm.Internals_.fieldNumbersProto__Rellm__BlueskyServer
 

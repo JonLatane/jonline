@@ -18,5 +18,17 @@
     "postinstall": "patch-package",
     "review": "elm-review",
     "review:fix": "elm-review --fix-all"
+  },
+  "overrides": {
+    "elm-spa": {
+      "terser": "^5.14.2"
+    },
+    "node-elm-compiler": {
+      "cross-spawn": "6.0.6"
+    }
+  },
+  "resolutions": {
+    "elm-spa/terser": "^5.14.2",
+    "node-elm-compiler/cross-spawn": "6.0.6"
   }
 }

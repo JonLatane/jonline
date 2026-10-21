@@ -827,6 +827,38 @@ mod federation_info_migration_tests {
         assert_eq!(federation_info.bluesky_servers, Vec::new());
     }
 
+    /// `BlueskyServer.logo_url` is `optional`, so a `bluesky_servers` entry stored before it existed
+    /// (no such key) still deserializes (as `None`), and one with it round-trips.
+    #[test]
+    fn bluesky_server_logo_url_is_optional_and_round_trips() {
+        let legacy = serde_json::json!({
+            "servers": [],
+            "facebook_auth_config": null,
+            "x_twitter_auth_config": null,
+            "mastodon_servers": [],
+            "bluesky_servers": [{ "host": "public.api.bsky.app" }]
+        });
+        let federation_info: FederationInfo =
+            serde_json::from_value(legacy).expect("entry without logo_url should deserialize");
+        assert_eq!(federation_info.bluesky_servers[0].logo_url, None);
+
+        let with_logo = FederationInfo {
+            bluesky_servers: vec![BlueskyServer {
+                host: "appview.example.com".to_string(),
+                configured_by_default: None,
+                pinned_by_default: None,
+                logo_url: Some("https://example.com/logo.png".to_string()),
+            }],
+            ..federation_info
+        };
+        let round_tripped: FederationInfo =
+            serde_json::from_value(serde_json::to_value(&with_logo).unwrap()).unwrap();
+        assert_eq!(
+            round_tripped.bluesky_servers[0].logo_url.as_deref(),
+            Some("https://example.com/logo.png")
+        );
+    }
+
     /// `unsecure_localhost_federated_auth_enabled` is `optional`, so serde already treats a missing
     /// key as `None` for free -- this just guards that `federation_info` JSON stored before it
     /// existed keeps deserializing (and reads as "not enabled") rather than panicking `to_proto`.
