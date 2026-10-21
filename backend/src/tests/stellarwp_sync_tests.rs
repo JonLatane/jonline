@@ -11,7 +11,7 @@ use diesel::Connection;
 use tonic::{Code, Status};
 
 use crate::logic::{
-    collect_pages, stellarwp_page_url, sync_source_stellarwp, sync_source_stellarwp_first_page,
+    collect_pages, SyncQueue, stellarwp_page_url, sync_source_stellarwp, sync_source_stellarwp_first_page,
     sync_source_text,
 };
 use crate::models;
@@ -558,4 +558,45 @@ fn create_rejects_an_invalid_endpoint() {
 
         Ok(())
     });
+}
+
+#[test]
+fn background_queue_runs_sources_one_at_a_time_in_request_order() {
+    let mut queue = SyncQueue::default();
+    assert!(queue.request(1), "a new request should wake the worker");
+    assert!(queue.request(2));
+    assert!(!queue.request(1), "already queued: nothing more to do");
+
+    assert_eq!(queue.start_next(), Some(1));
+    // 2 is still waiting while 1 runs; nothing else starts.
+    assert_eq!(queue.start_next(), Some(2), "start_next hands out the next queued source");
+    queue.finish();
+    assert_eq!(queue.start_next(), None);
+}
+
+#[test]
+fn an_edit_during_a_running_sync_queues_exactly_one_more() {
+    let mut queue = SyncQueue::default();
+    queue.request(7);
+    assert_eq!(queue.start_next(), Some(7));
+
+    // Two edits while 7 syncs: it should run again once, not twice, and not wake the worker (it
+    // picks the rerun up itself when it finishes).
+    assert!(!queue.request(7));
+    assert!(!queue.request(7));
+    queue.finish();
+
+    assert_eq!(queue.start_next(), Some(7), "the rerun");
+    queue.finish();
+    assert_eq!(queue.start_next(), None, "and no more than one");
+}
+
+#[test]
+fn a_finished_sync_with_no_edit_is_not_requeued() {
+    let mut queue = SyncQueue::default();
+    queue.request(3);
+    assert_eq!(queue.start_next(), Some(3));
+    queue.finish();
+    assert_eq!(queue.start_next(), None);
+    assert!(queue.request(3), "a later request starts fresh");
 }

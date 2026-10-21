@@ -78,9 +78,20 @@ fn sync_pages(
     max_pages: u32,
     conn: &mut PgPooledConnection,
 ) -> Result<(), Status> {
+    let paged = fetch_stellarwp_pages(source, max_pages)?;
+    sync_source_stellarwp_fetched(source, &paged, conn)
+}
+
+/// Fetches up to `max_pages` pages of `source`'s StellarWP iCal URL and merges them -- the network
+/// half of a sync, which needs no database connection (so a caller that checks one out only for
+/// the DB work doesn't hold it through a fetch that can take a minute).
+pub fn fetch_stellarwp_pages(
+    source: &models::SyncSource,
+    max_pages: u32,
+) -> Result<PagedCalendar, Status> {
     let endpoint = stellarwp_ics_subscription_url(source)?;
     crate::init_crypto();
-    let paged = in_blocking_context(|| {
+    in_blocking_context(|| {
         let client = reqwest::blocking::Client::builder()
             .user_agent(USER_AGENT)
             .timeout(REQUEST_TIMEOUT)
@@ -92,12 +103,25 @@ fn sync_pages(
         collect_pages(max_pages, |page| {
             fetch_page(&client, &stellarwp_page_url(endpoint, page)?)
         })
-    })?;
+    })
+}
+
+/// The database half of a sync: upserts what [`fetch_stellarwp_pages`] fetched for `source`.
+pub fn sync_source_stellarwp_fetched(
+    source: &models::SyncSource,
+    paged: &PagedCalendar,
+    conn: &mut PgPooledConnection,
+) -> Result<(), Status> {
     let coverage = FeedCoverage {
         truncated_after: paged.coverage_horizon,
         upcoming_only: true,
     };
     sync_source_calendar(source, &paged.calendar, coverage, conn)
+}
+
+/// Whether `source` is a StellarWP source (has a non-empty `stellarwp_ics_subscription_url`).
+pub fn is_stellarwp_source(source: &models::SyncSource) -> bool {
+    stellarwp_ics_subscription_url(source).is_ok()
 }
 
 fn stellarwp_ics_subscription_url(source: &models::SyncSource) -> Result<&str, Status> {
