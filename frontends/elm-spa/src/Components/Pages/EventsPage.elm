@@ -321,6 +321,10 @@ type alias Model =
     -- The card (`eventAnimationKey`) whose "Add to Calendar" popdown is open, if any.
     , exportOpenFor : Maybe String
 
+    -- The `requestId` the next fetch `refetchServers` starts will be tagged with -- model-wide, so a
+    -- feed dropped and later re-added can never reuse an id an old, still-in-flight reply carries.
+    , nextRequestId : Int
+
     -- The servers/users `Shared.Countabilibar` had unchecked as of this page's last `update` (see
     -- `applyHidden`) -- always `Countabilibar.noneHidden` for a feed scoped to one profile, which hiding
     -- would only blank. Mirrors `Components.Pages.PostsPage.Model.hidden`.
@@ -332,7 +336,7 @@ type Msg
     = RsvpsMsg String String Rsvps.Msg
     | ExportOccasionToggled String
     | ExportOccasionClosed
-    | GotServerEvents String (Maybe String) (List String) (Result Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Rellm.GetEventsResponse ))
+    | GotServerEvents String (Maybe String) Int (Result Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Rellm.GetEventsResponse ))
     | GotNow Time.Posix
     | Poll
     | Animate Animation.Msg
@@ -541,6 +545,10 @@ type alias ServerFeed =
     -- of the same names.
     , excludedAuthorIds : List String
     , refreshing : Bool
+
+    -- The id of the newest fetch of this feed (see `Model.nextRequestId`); a reply carrying any other is
+    -- stale -- see `staleReplyEffect`. Mirrors `Components.Pages.PostsPage.ServerFeed.requestId`.
+    , requestId : Int
     }
 
 
@@ -737,6 +745,7 @@ init shared author navKey path query fragment embeddedPage syncsCalendarPreferen
                 , rsvpModels = Dict.empty
                 , anonymousAuthTokens = Dict.get "anonymousAuthToken" query
                 , exportOpenFor = Nothing
+                , nextRequestId = 0
                 , hidden =
                     if author /= Nothing then
                         Countabilibar.noneHidden
@@ -909,9 +918,9 @@ accountsPanelEffect maybeAccountsPanelMsg =
 
 {-| The effect to run *instead of* handling `msg`, when `msg` is the reply to a fetch made as an account
 that's no longer the one `refetchServers` last fetched that server's feed as (`ServerFeed.accountId`), or
-leaving out users that aren't the ones it's now leaving out (`ServerFeed.excludedAuthorIds` -- hiding
-someone and showing them again before the first fetch lands starts two requests, and the older one
-must not replace the newer one's results) -- logging in/out of the server, or enabling/disabling an
+or isn't the newest fetch of that feed (`ServerFeed.requestId` -- hiding someone and showing them
+again before the first fetch lands starts two requests, and the older one must not replace the newer
+one's results, whichever lands last) -- logging in/out of the server, or enabling/disabling an
 account on it, has since started a fetch as the new account, and this reply is what the *previous* one
 could see. Its token refresh is still
 forwarded: a refresh can rotate the account's refresh token, so losing the new one could force a
@@ -920,8 +929,8 @@ re-login.
 staleReplyEffect : Msg -> Model -> Maybe (Effect Msg)
 staleReplyEffect msg model =
     case msg of
-        GotServerEvents key fetchedAs fetchedExcluding result ->
-            if (Dict.get key model.eventsByServer |> Maybe.map (\feed -> ( feed.accountId, feed.excludedAuthorIds ))) /= Just ( fetchedAs, fetchedExcluding ) then
+        GotServerEvents key fetchedAs requestId result ->
+            if (Dict.get key model.eventsByServer |> Maybe.map (\feed -> ( feed.accountId, feed.requestId ))) /= Just ( fetchedAs, requestId ) then
                 Just (accountsPanelEffect (AccountsPanel.tokenRefreshOf result))
 
             else
@@ -2036,8 +2045,8 @@ still `Nothing`) -- mirrors `Components.Pages.PostsPage.refetchServers`'s
 inline `fetchEffect`, just factored out since `GotNow` also needs to kick
 every relevant server's fetch off again once a real cutoff lands.
 -}
-fetchServerEffect : Shared.Model -> Model -> Time.Posix -> EventSource -> Effect Msg
-fetchServerEffect shared model endsAfter source =
+fetchServerEffect : Shared.Model -> Model -> Time.Posix -> Int -> EventSource -> Effect Msg
+fetchServerEffect shared model endsAfter requestId source =
     Events.fetchEvents
         shared.accounts
         ( RellmAccounts.enabledRellmAccountForServer shared.accounts.accounts source.server.frontendHost |> Maybe.map .userId
@@ -2053,7 +2062,7 @@ fetchServerEffect shared model endsAfter source =
                 (RellmAccounts.enabledRellmAccountForServer shared.accounts.accounts source.server.frontendHost
                     |> Maybe.map RellmAccounts.rellmAccountId
                 )
-                (sourceExcludedAuthorIds model source)
+                requestId
             )
         |> Effect.fromCmd
 
@@ -2097,8 +2106,8 @@ refetchServers shared model serversToFetch =
                 prunedEventsByServer =
                     Dict.filter (\key _ -> List.member key relevantKeys) model.eventsByServer
 
-                markServer : EventSource -> Dict String ServerFeed -> Dict String ServerFeed
-                markServer source dict =
+                markServer : ( Int, EventSource ) -> Dict String ServerFeed -> Dict String ServerFeed
+                markServer ( requestId, source ) dict =
                     let
                         accountId : Maybe String
                         accountId =
@@ -2122,14 +2131,19 @@ refetchServers shared model serversToFetch =
                         , host = source.server.frontendHost
                         , excludedAuthorIds = sourceExcludedAuthorIds model source
                         , refreshing = True
+                        , requestId = requestId
                         }
                         dict
+
+                numbered : List ( Int, EventSource )
+                numbered =
+                    List.indexedMap (\index source -> ( model.nextRequestId + index, source )) serversToFetch
             in
             ( { model
-                | eventsByServer =
-                    List.foldl markServer prunedEventsByServer serversToFetch
+                | eventsByServer = List.foldl markServer prunedEventsByServer numbered
+                , nextRequestId = model.nextRequestId + List.length serversToFetch
               }
-            , Effect.batch (List.map (fetchServerEffect shared model endsAfter) serversToFetch)
+            , Effect.batch (List.map (\( requestId, source ) -> fetchServerEffect shared model endsAfter requestId source) numbered)
             )
                 |> Tuple.mapFirst syncAnimations
 
