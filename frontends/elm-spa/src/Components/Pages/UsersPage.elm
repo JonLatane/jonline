@@ -401,31 +401,51 @@ fromShared =
 
 update : Shared.Model -> Msg -> Model -> ( Model, Effect Msg )
 update shared msg model =
-    if isStaleReply msg model then
-        ( model, Effect.none )
+    case staleReplyEffect msg model of
+        Just effect ->
+            ( model, effect )
 
-    else
-        let
-            ( newModel, effect ) =
-                updateInner shared msg model
-        in
-        ( newModel, Effect.batch [ effect, setBreadcrumbsRoot shared newModel ] )
+        Nothing ->
+            let
+                ( newModel, effect ) =
+                    updateInner shared msg model
+            in
+            ( newModel, Effect.batch [ effect, setBreadcrumbsRoot shared newModel ] )
 
 
-{-| Whether `msg` is the reply to a fetch made as an account that's no longer the one `fetchNewSources`
-last fetched that source's feed as (`SourceFeed.accountId`) -- logging in/out of the server, or
-enabling/disabling an account on it, has since started a fetch as the new account, and this reply
-is what the *previous* one could see. (A refreshed token it may carry is dropped too; the next
-request refreshes again.)
+{-| The effect to run *instead of* handling `msg`, when `msg` is the reply to a fetch made as an account
+that's no longer the one `fetchNewSources` last fetched that source's feed as (`SourceFeed.accountId`) --
+logging in/out of the server, or enabling/disabling an account on it, has since started a fetch as the
+new account, and this reply is what the *previous* one could see. Its token refresh is still
+forwarded: a refresh can rotate the account's refresh token, so losing the new one could force a
+re-login.
 -}
-isStaleReply : Msg -> Model -> Bool
-isStaleReply msg model =
+staleReplyEffect : Msg -> Model -> Maybe (Effect Msg)
+staleReplyEffect msg model =
     case msg of
-        GotUsers key fetchedAs _ ->
-            (Dict.get key model.usersByServer |> Maybe.map .accountId) /= Just fetchedAs
+        GotUsers key fetchedAs result ->
+            if (Dict.get key model.usersByServer |> Maybe.map .accountId) /= Just fetchedAs then
+                Just
+                    (usersResultTokenRefresh result
+                        |> Maybe.map (Shared.AccountsPanelMsg >> Effect.fromShared)
+                        |> Maybe.withDefault Effect.none
+                    )
+
+            else
+                Nothing
 
         _ ->
-            False
+            Nothing
+
+
+usersResultTokenRefresh : UsersResult -> Maybe AccountsPanel.Msg
+usersResultTokenRefresh result =
+    case result of
+        UsersLoaded _ maybeAccountsPanelMsg ->
+            maybeAccountsPanelMsg
+
+        UsersFailed maybeAccountsPanelMsg ->
+            maybeAccountsPanelMsg
 
 
 updateInner : Shared.Model -> Msg -> Model -> ( Model, Effect Msg )

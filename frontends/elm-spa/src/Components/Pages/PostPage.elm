@@ -305,33 +305,39 @@ subscriptions model =
         ]
 
 
-{-| Whether `msg` is the reply to a fetch made as an account that's no longer the acting one on this
-Post's server (`fetchedAccountId` moved on -- see `Shared.AccountsPanelMsg`'s handling below, which
-refetches as the new account). Its Post is what the *previous* account was allowed to see, and a
-slow reply must not overwrite the newer fetch's. (A refreshed token it may carry is dropped too; the
-next request refreshes again.)
+{-| The effect to run *instead of* handling `msg`, when `msg` is the reply to a fetch made as an account
+that's no longer the acting one on this Post's server (`fetchedAccountId` moved on -- see
+`Shared.AccountsPanelMsg`'s handling below, which refetches as the new account). Its Post is what the
+*previous* account was allowed to see, and a slow reply must not overwrite the newer fetch's -- but
+its token refresh is still forwarded: a refresh can rotate the account's refresh token, so losing the
+new one could force a re-login.
 -}
-isStaleReply : Msg -> Model -> Bool
-isStaleReply msg model =
+staleReplyEffect : Msg -> Model -> Maybe (Effect Msg)
+staleReplyEffect msg model =
     case msg of
-        GotPost fetchedAs _ ->
-            fetchedAs /= model.fetchedAccountId
+        GotPost fetchedAs result ->
+            if fetchedAs /= model.fetchedAccountId then
+                Just (accountsPanelEffect (AccountsPanel.tokenRefreshOf result))
+
+            else
+                Nothing
 
         _ ->
-            False
+            Nothing
 
 
 update : Shared.Model -> Msg -> Model -> ( Model, Effect Msg )
 update shared msg model =
-    if isStaleReply msg model then
-        ( model, Effect.none )
+    case staleReplyEffect msg model of
+        Just effect ->
+            ( model, effect )
 
-    else
-        let
-            ( newModel, effect ) =
-                updateInner shared msg model
-        in
-        ( newModel, Effect.batch [ effect, quoteRequestEffect shared newModel ] )
+        Nothing ->
+            let
+                ( newModel, effect ) =
+                    updateInner shared msg model
+            in
+            ( newModel, Effect.batch [ effect, quoteRequestEffect shared newModel ] )
 
 
 {-| Asks `Shared.QuoteLinks` for the quoted post of the post being shown, if it quotes one (see

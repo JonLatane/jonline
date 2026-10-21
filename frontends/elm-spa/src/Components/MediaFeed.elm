@@ -204,7 +204,20 @@ retryFetch shared model =
                         ( soFar, effects )
 
                     else if not feed.fetchStarted || actingAccountId shared host /= feed.fetchedAs then
-                        ( Dict.insert host { feed | fetchStarted = True, fetchedAs = actingAccountId shared host } soFar
+                        -- The paging state (`nextPage`/`hasNextPage`/`loadingMore`) belongs to the previous
+                        -- account's listing, so it's reset: "Load more" must stay unavailable until this
+                        -- first page lands, or it would request one of the *previous* account's page numbers
+                        -- as the new account, and whichever reply came second would skip the pages between.
+                        -- (The old media stays on screen meanwhile.)
+                        ( Dict.insert host
+                            { feed
+                                | fetchStarted = True
+                                , fetchedAs = actingAccountId shared host
+                                , hasNextPage = False
+                                , nextPage = 0
+                                , loadingMore = False
+                            }
+                            soFar
                         , fetch shared model host model.searchVersion 0 :: effects
                         )
 
@@ -249,9 +262,14 @@ update shared msg model =
             if version /= model.searchVersion || Just fetchedAs /= (Dict.get host model.feeds |> Maybe.map .fetchedAs) then
                 -- Stale: for an older search, or made as an account that's no longer the acting one
                 -- (what it returned is what the *previous* account could see; `retryFetch` has
-                -- already started a fetch as the current one). A refreshed token it may carry is
-                -- dropped too; the next request refreshes again.
-                ( model, Effect.none )
+                -- already started a fetch as the current one). The page data is dropped, but its
+                -- token refresh isn't: a refresh can rotate the account's refresh token, so losing
+                -- the new one could force a re-login.
+                ( model
+                , AccountsPanel.tokenRefreshOf result
+                    |> Maybe.map (Shared.AccountsPanelMsg >> Effect.fromShared)
+                    |> Maybe.withDefault Effect.none
+                )
 
             else
                 case ( result, Dict.get host model.feeds ) of

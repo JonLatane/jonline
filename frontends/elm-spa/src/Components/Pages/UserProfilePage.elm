@@ -157,10 +157,11 @@ type alias Model =
 
 type Msg
     = ResolverMsg Resolver.Msg
-      -- A reply to a request this page started, tagged with the `actingEpoch` it was started in; dropped
-      -- if the acting account has changed since, so e.g. a name save started as one account can't
-      -- overwrite the freshly fetched profile of the next. See `attemptInActingEpoch`.
-    | InActingEpoch Int Msg
+      -- A reply to a request this page started, tagged with the `actingEpoch` it was started in (and
+      -- carrying the reply's token refresh, if any, separately); dropped if the acting account has
+      -- changed since, so e.g. a name save started as one account can't overwrite the freshly fetched
+      -- profile of the next -- but its token refresh is still forwarded. See `attemptInActingEpoch`.
+    | InActingEpoch Int (Maybe AccountsPanel.Msg) Msg
     | PostsMsg PostsPage.Msg
     | EventsMsg EventsPage.Msg
     | ConnectClicked
@@ -1473,15 +1474,16 @@ syncEmbeddedSyncToggles shared sectionId model =
 updateInner : Shared.Model -> Msg -> Model -> ( Model, Effect Msg )
 updateInner shared msg model =
     case msg of
-        InActingEpoch epoch innerMsg ->
+        InActingEpoch epoch tokenRefresh innerMsg ->
             if epoch == model.actingEpoch then
                 updateInner shared innerMsg model
 
             else
                 -- Started by an account that's no longer the acting one: whatever it came back with
-                -- is for the wrong viewer. (A token refresh it may carry is dropped too; the next
-                -- request just refreshes again.)
-                ( model, Effect.none )
+                -- is for the wrong viewer, so the page data is dropped. Its token refresh isn't: a
+                -- refresh can rotate the account's refresh token, so losing the new one could force
+                -- a re-login.
+                ( model, accountsPanelEffect tokenRefresh )
 
         ResolverMsg subMsg ->
             let
@@ -2874,7 +2876,7 @@ updateInner shared msg model =
                         mappedFollowEffect =
                             -- Tagged with the epoch (see `attemptInActingEpoch`): the component's own requests
                             -- act as whoever is acting now, and their replies mean nothing to the next account.
-                            Effect.map (\m -> InActingEpoch model.actingEpoch (FollowStatusAndButtonMsg m)) followEffect
+                            Effect.map (\m -> InActingEpoch model.actingEpoch (followResultTokenRefresh m) (FollowStatusAndButtonMsg m)) followEffect
                     in
                     case subMsg of
                         FollowStatusAndButton.GotFollowResult (Ok _) ->
@@ -4448,14 +4450,33 @@ refetch shared model =
         |> Tuple.mapSecond (Effect.map ResolverMsg)
 
 
+{-| The token refresh (if any) a `FollowStatusAndButton` request's reply carries -- see
+`AccountsPanel.tokenRefreshOf`.
+-}
+followResultTokenRefresh : FollowStatusAndButton.Msg -> Maybe AccountsPanel.Msg
+followResultTokenRefresh msg =
+    case msg of
+        FollowStatusAndButton.GotFollowResult result ->
+            AccountsPanel.tokenRefreshOf result
+
+        FollowStatusAndButton.GotUnfollowResult result ->
+            AccountsPanel.tokenRefreshOf result
+
+        FollowStatusAndButton.GotModerationResult result ->
+            AccountsPanel.tokenRefreshOf result
+
+        _ ->
+            Nothing
+
+
 {-| `Task.attempt`, tagging the reply with `model`'s `actingEpoch` so it can be dropped (see
 `InActingEpoch`) if the account acting on this server changes before it arrives -- otherwise a save
 or refresh started as one account would, on returning, overwrite the profile just refetched as the
 next. Used for every request this page itself starts that acts on, or reads, the viewer's data.
 -}
-attemptInActingEpoch : Model -> (Result x a -> Msg) -> Task.Task x a -> Cmd Msg
+attemptInActingEpoch : Model -> (Result x ( Maybe AccountsPanel.Msg, a ) -> Msg) -> Task.Task x ( Maybe AccountsPanel.Msg, a ) -> Cmd Msg
 attemptInActingEpoch model toMsg =
-    Task.attempt (\result -> InActingEpoch model.actingEpoch (toMsg result))
+    Task.attempt (\result -> InActingEpoch model.actingEpoch (AccountsPanel.tokenRefreshOf result) (toMsg result))
 
 
 {-| `model` with `newResolver` swapped in. If that update re-fetched the profile because the account
@@ -4843,7 +4864,7 @@ fetchFacebookPages : Int -> String -> Cmd Msg
 fetchFacebookPages actingEpoch accessToken =
     Http.get
         { url = "https://graph.facebook.com/v19.0/me/accounts?fields=id,name&access_token=" ++ Url.percentEncode accessToken
-        , expect = Http.expectJson (\result -> InActingEpoch actingEpoch (GotFacebookPagesResult result)) facebookPagesDecoder
+        , expect = Http.expectJson (\result -> InActingEpoch actingEpoch Nothing (GotFacebookPagesResult result)) facebookPagesDecoder
         }
 
 

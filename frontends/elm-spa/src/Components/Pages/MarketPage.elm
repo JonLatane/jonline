@@ -442,36 +442,51 @@ type Msg
       -- Buying
     | HostingFieldChanged String (Market.HostingForm -> String -> Market.HostingForm) String
     | BuyClicked MarketProduct
-    | GotPurchaseResult String (Result Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Rellm.MakeMarketPurchaseResponse ))
+    | GotPurchaseResult (Maybe String) String (Result Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Rellm.MakeMarketPurchaseResponse ))
     | LoginClicked
     | SharedMsgReceived Shared.Msg
 
 
 update : Shared.Model -> Msg -> Model -> ( Model, Effect Msg )
 update shared msg model =
-    if isStaleReply shared msg model then
-        ( model, Effect.none )
+    case staleReplyEffect shared msg model of
+        Just effect ->
+            ( model, effect )
 
-    else
-        updateInner shared msg model
+        Nothing ->
+            updateInner shared msg model
 
 
-{-| Whether `msg` is the reply to a fetch made as an account that's no longer acting on `model.host`
--- what it returned is what the *previous* account could see, and `resetForActingAccountChange` has
-already readied a refetch as the current one. (A refreshed token it may carry is dropped too; the
-next request refreshes again.)
+{-| The effect to run *instead of* handling `msg`, when `msg` is the reply to a request made as an account
+that's no longer acting on `model.host` -- what it returned is what the *previous* account could see
+(`resetForActingAccountChange` has already readied a refetch as the current one), and a purchase it
+started must not send the browser to *its* checkout or clobber the current account's purchase state.
+The reply's token refresh is still forwarded: a refresh can rotate the account's refresh token, so
+losing the new one could force a re-login.
 -}
-isStaleReply : Shared.Model -> Msg -> Model -> Bool
-isStaleReply shared msg model =
-    case msg of
-        GotProductsResult fetchedAs _ ->
-            fetchedAs /= actingAccountId shared model.host
+staleReplyEffect : Shared.Model -> Msg -> Model -> Maybe (Effect Msg)
+staleReplyEffect shared msg model =
+    let
+        staleUnless : Maybe String -> Result x ( Maybe AccountsPanel.Msg, a ) -> Maybe (Effect Msg)
+        staleUnless fetchedAs result =
+            if fetchedAs /= actingAccountId shared model.host then
+                Just (accountsPanelEffect (AccountsPanel.tokenRefreshOf result))
 
-        GotAIProvidersResult fetchedAs _ ->
-            fetchedAs /= actingAccountId shared model.host
+            else
+                Nothing
+    in
+    case msg of
+        GotProductsResult fetchedAs result ->
+            staleUnless fetchedAs result
+
+        GotAIProvidersResult fetchedAs result ->
+            staleUnless fetchedAs result
+
+        GotPurchaseResult fetchedAs _ result ->
+            staleUnless fetchedAs result
 
         _ ->
-            False
+            Nothing
 
 
 updateInner : Shared.Model -> Msg -> Model -> ( Model, Effect Msg )
@@ -625,16 +640,16 @@ updateInner shared msg model =
             , Market.makeMarketPurchase shared.accounts
                 (maybeAccountServer shared model.host)
                 { marketProductId = product.id, rellmHostingDetails = hostingDetails }
-                |> Task.attempt (GotPurchaseResult product.id)
+                |> Task.attempt (GotPurchaseResult (actingAccountId shared model.host) product.id)
                 |> Effect.fromCmd
             )
 
-        GotPurchaseResult productId (Ok ( maybeAccountsPanelMsg, response )) ->
+        GotPurchaseResult _ productId (Ok ( maybeAccountsPanelMsg, response )) ->
             ( { model | purchases = Dict.insert productId Market.PurchaseIdle model.purchases }
             , Effect.batch [ accountsPanelEffect maybeAccountsPanelMsg, Effect.fromCmd (Browser.Navigation.load response.checkoutUrl) ]
             )
 
-        GotPurchaseResult productId (Err err) ->
+        GotPurchaseResult _ productId (Err err) ->
             ( { model | purchases = Dict.insert productId (Market.PurchaseErrored (AccountsPanel.grpcErrorToString err)) model.purchases }
             , Effect.none
             )

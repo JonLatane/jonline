@@ -35,6 +35,7 @@ module Shared.AccountsPanel exposing
     , mainServerTheme
     , mastodonServerFor
     , performWithAccountServer
+    , tokenRefreshOf
     , performWithOptionalAccountServer
     , activeBlueskyAccount
     , allBlueskyServers
@@ -5520,6 +5521,22 @@ resolveAccountServer model ( maybeUserId, host ) =
                         , server
                         )
             )
+
+
+{-| The token-refresh `Msg` (if any) an RPC reply carries back -- every authenticated request here
+resolves to `( Maybe AccountsPanel.Msg, response )`, the first part being the account's new tokens when
+the request had to refresh them. A page that decides to *ignore* a reply (say, because the account that
+made it is no longer the acting one) must still forward this: a refresh can rotate the account's refresh
+token, leaving the old one valid only briefly, so dropping the new one can force a re-login.
+-}
+tokenRefreshOf : Result x ( Maybe Msg, a ) -> Maybe Msg
+tokenRefreshOf result =
+    case result of
+        Ok ( maybeAccountsPanelMsg, _ ) ->
+            maybeAccountsPanelMsg
+
+        Err _ ->
+            Nothing
 
 
 {-| Like `RellmAccounts.performWithRellmAccount`, but takes a `MaybeAccountServer` (resolved
