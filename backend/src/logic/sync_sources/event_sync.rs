@@ -155,7 +155,8 @@ pub(super) fn parse_calendar(ics_text: &str) -> Result<Calendar, Status> {
 pub struct FeedCoverage {
     /// For a *truncated* feed (a paginated fetch that stopped at its page cap, or a deliberately
     /// first-page-only sync): `Some(t)` means "coverage ends at `t`", so an occasion starting after
-    /// `t` isn't treated as missing -- it just wasn't fetched.
+    /// `t` (or at `t` itself -- events sharing a start time can straddle the cutoff) isn't treated
+    /// as missing -- it just wasn't fetched.
     pub truncated_after: Option<DateTime<Utc>>,
     /// The feed only lists *upcoming* events (The Events Calendar's list view does), so an event
     /// drops out of it as soon as it ends. Occasions that have already ended are never treated as
@@ -190,6 +191,19 @@ pub fn sync_source_calendar(
     let missing_horizon_db: Option<SystemTime> = coverage.truncated_after.map(Into::into);
 
     let result = conn.transaction::<(), diesel::result::Error, _>(|conn| {
+        // A sync fetches for a while before it gets here, during which the source may have been
+        // edited or deleted: never write what was fetched for an old configuration over the
+        // current one. `FOR UPDATE` makes this check atomic with the writes below -- an edit
+        // (and the sync it kicks off) waits for this transaction rather than racing it.
+        let current_configuration: serde_json::Value = sync_sources::table
+            .filter(sync_sources::id.eq(source.id))
+            .select(sync_sources::configuration)
+            .for_update()
+            .first(conn)?;
+        if current_configuration != source.configuration {
+            return Err(diesel::result::Error::RollbackTransaction);
+        }
+
         // Every currently-existing synced occasion's series UID -> parent Event id, via real,
         // indexed columns (see the module doc comment) instead of an app-level JSON key. Multiple
         // occasions of a recurring series share the same `event_id`, so a plain overwrite while
@@ -294,9 +308,18 @@ pub fn sync_source_calendar(
         Ok(())
     });
 
-    result.map_err(|e| {
-        log::error!("Failed to sync SyncSource {}: {:?}", source.id, e);
-        Status::new(Code::Internal, "failed_to_sync_source")
+    result.map_err(|e| match e {
+        diesel::result::Error::RollbackTransaction | diesel::result::Error::NotFound => {
+            log::info!(
+                "SyncSource {} was edited or deleted during its sync; discarding the fetched events.",
+                source.id
+            );
+            Status::new(Code::Aborted, "sync_source_changed")
+        }
+        e => {
+            log::error!("Failed to sync SyncSource {}: {:?}", source.id, e);
+            Status::new(Code::Internal, "failed_to_sync_source")
+        }
     })
 }
 
@@ -513,7 +536,9 @@ fn reconcile_occasions(
     for missing in existing_by_anchor
         .values()
         .filter(|i| i.ends_at >= prune_window_start_db)
-        .filter(|i| missing_horizon_db.map_or(true, |horizon| i.starts_at <= horizon))
+        // Strictly before: events sharing the horizon's start time may straddle the page boundary,
+        // so some of them can be unfetched.
+        .filter(|i| missing_horizon_db.map_or(true, |horizon| i.starts_at < horizon))
     {
         match missing.sync_missing_since {
             None => newly_missing_ids.push(missing.post_id),

@@ -105,22 +105,54 @@ fn collects_the_whole_feed_when_each_page_overlaps_the_last_by_most_of_its_lengt
 }
 
 #[test]
-fn stops_at_a_page_with_nothing_new_even_if_the_site_ignores_paged() {
-    // A site that ignores `paged` serves the same page forever.
+fn a_site_that_ignores_paged_is_truncated_not_complete() {
+    // A site that ignores `paged` serves the same page forever. Stops fetching, but a repeated page
+    // doesn't prove nothing lies beyond it -- so the feed must stay treated as truncated.
     let fetches = AtomicU32::new(0);
     let same = page(&[("a", 1), ("b", 2)]);
-    let paged = collect_pages(40, |_| {
+    let paged = collect_pages(80, |_| {
         fetches.fetch_add(1, Ordering::SeqCst);
         Ok(same.clone())
     })
     .expect("collect should succeed");
 
     assert_eq!(uids(&paged), vec!["a", "b"]);
-    assert_eq!(paged.coverage_horizon, None);
+    assert_eq!(paged.coverage_horizon, Some(start_in_days(2)));
     assert!(
-        fetches.load(Ordering::SeqCst) < 40,
-        "should not have walked all 40 pages"
+        fetches.load(Ordering::SeqCst) < 80,
+        "should not have walked all 80 pages"
     );
+}
+
+#[test]
+fn a_short_feed_whose_tail_repeats_before_the_empty_page_is_still_complete() {
+    // Like trianglefarms.com: 13 events fit on page 1, page 2 repeats the tail, page 3 is empty.
+    let fetch = serve_in_memory(vec![
+        page(&[("a", 1), ("b", 2), ("c", 3)]),
+        page(&[("c", 3)]),
+    ]);
+
+    let paged = collect_pages(80, fetch).expect("collect should succeed");
+
+    assert_eq!(uids(&paged), vec!["a", "b", "c"]);
+    assert_eq!(paged.coverage_horizon, None, "the empty page proved the end");
+}
+
+#[test]
+fn a_repeated_page_right_before_a_batch_boundary_is_probed_for_the_end() {
+    // Pages 1-4 are the first batch; page 4 repeats page 3, and the empty page is page 5 (next
+    // batch) -- the probe after the stall must still find it.
+    let fetch = serve_in_memory(vec![
+        page(&[("a", 1)]),
+        page(&[("a", 1), ("b", 2)]),
+        page(&[("b", 2), ("c", 3)]),
+        page(&[("c", 3)]),
+    ]);
+
+    let paged = collect_pages(80, fetch).expect("collect should succeed");
+
+    assert_eq!(uids(&paged), vec!["a", "b", "c"]);
+    assert_eq!(paged.coverage_horizon, None);
 }
 
 #[test]
@@ -364,6 +396,91 @@ fn events_that_have_ended_are_kept_when_they_drop_out_of_the_upcoming_only_feed(
             .map(|(uid, _)| uid)
             .collect();
         assert_eq!(remaining, vec!["ended", "upcoming-1"]);
+
+        Ok(())
+    });
+}
+
+#[test]
+fn an_occasion_tied_with_the_coverage_horizon_is_not_pruned() {
+    let mut conn = test_conn();
+    conn.test_transaction::<_, Status, _>(|conn| {
+        let user = create_user(conn, "swp_tied_horizon");
+        // Pages are cut off after the first, which ends with "b"; "c" starts at the very same
+        // time as "b" and may simply be on the next page.
+        let url = serve_stellarwp_pages(vec![page(&[("a", 1), ("b", 5)])]);
+        let source = create_stellarwp_sync_source_row(conn, &user, &url);
+        sync_source_text(&source, &page(&[("a", 1), ("b", 5), ("c", 5), ("d", 9)]), conn)
+            .expect("initial sync should succeed");
+
+        sync_source_stellarwp_first_page(&source, conn).expect("first-page sync should succeed");
+
+        for (uid, occasion) in synced_occasions(conn, source.id) {
+            assert!(
+                occasion.sync_missing_since.is_none(),
+                "{uid} starts at or after the horizon and must not be marked missing"
+            );
+        }
+
+        Ok(())
+    });
+}
+
+#[test]
+fn a_site_that_ignores_paged_does_not_prune_what_it_never_showed() {
+    let mut conn = test_conn();
+    conn.test_transaction::<_, Status, _>(|conn| {
+        let user = create_user(conn, "swp_ignores_paged");
+        // Every page is the same one.
+        let url = serve_stellarwp_pages(vec![page(&[("a", 1), ("b", 2)]); 100]);
+        let source = create_stellarwp_sync_source_row(conn, &user, &url);
+        sync_source_text(&source, &page(&[("a", 1), ("b", 2), ("later", 20)]), conn)
+            .expect("initial sync should succeed");
+
+        sync_source_stellarwp(&source, conn).expect("sync should succeed");
+
+        for (uid, occasion) in synced_occasions(conn, source.id) {
+            assert!(
+                occasion.sync_missing_since.is_none(),
+                "{uid}: a repeated page isn't proof the feed has nothing later"
+            );
+        }
+
+        Ok(())
+    });
+}
+
+#[test]
+fn a_sync_for_a_since_edited_configuration_discards_what_it_fetched() {
+    let mut conn = test_conn();
+    conn.test_transaction::<_, Status, _>(|conn| {
+        let user = create_user(conn, "swp_edited_midsync");
+        let old_url = serve_stellarwp_pages(vec![page(&[("old-event", 1)])]);
+        let new_url = serve_stellarwp_pages(vec![page(&[("new-event", 1)])]);
+        let source = create_stellarwp_sync_source_row(conn, &user, &old_url);
+
+        // The source is edited (to the new URL) after `source` was loaded but before its sync
+        // gets to save anything -- a sync for the old configuration must not write its events.
+        diesel::update(crate::schema::sync_sources::table.filter(crate::schema::sync_sources::id.eq(source.id)))
+            .set(crate::schema::sync_sources::configuration.eq(
+                serde_json::json!({ "stellarwp_ics_subscription_url": new_url }),
+            ))
+            .execute(conn)
+            .unwrap();
+
+        let err = sync_source_stellarwp(&source, conn).unwrap_err();
+        assert_eq!(err.code(), Code::Aborted);
+        assert_eq!(err.message(), "sync_source_changed");
+        assert!(synced_occasions(conn, source.id).is_empty());
+
+        // The current configuration syncs fine.
+        let current = models::get_sync_source(source.id, conn)?;
+        sync_source_stellarwp(&current, conn).expect("sync should succeed");
+        let uids: Vec<String> = synced_occasions(conn, source.id)
+            .into_iter()
+            .map(|(uid, _)| uid)
+            .collect();
+        assert_eq!(uids, vec!["new-event"]);
 
         Ok(())
     });

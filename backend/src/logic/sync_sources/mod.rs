@@ -7,7 +7,7 @@ pub use feed_sync::*;
 mod stellarwp_sync;
 pub use stellarwp_sync::*;
 
-use std::collections::HashSet;
+use std::collections::HashMap;
 use std::sync::{LazyLock, Mutex};
 
 use tonic::{Code, Status};
@@ -67,18 +67,25 @@ pub fn sync_source_after_edit(
     sync_source(source, conn)
 }
 
-/// Ids of `SyncSource`s with a background sync running, so a flurry of edits to one source runs
-/// one full sync at a time rather than several racing to insert the same rows.
-static BACKGROUND_SYNCS_IN_FLIGHT: LazyLock<Mutex<HashSet<i64>>> =
-    LazyLock::new(|| Mutex::new(HashSet::new()));
+/// `SyncSource`s with a background sync running, mapped to whether another edit has asked for one
+/// since it began (so a flurry of edits to one source runs one full sync at a time, and the last
+/// edit's configuration always gets a full sync after the one that was in flight).
+static BACKGROUND_SYNCS_IN_FLIGHT: LazyLock<Mutex<HashMap<i64, bool>>> =
+    LazyLock::new(|| Mutex::new(HashMap::new()));
 
-/// Removes a source from [`BACKGROUND_SYNCS_IN_FLIGHT`] when dropped, even if the sync panics.
-struct InFlightGuard(i64);
+/// Removes a source from [`BACKGROUND_SYNCS_IN_FLIGHT`] when dropped, unless its thread already
+/// did so itself (`finished`) -- i.e. only when the sync panicked.
+struct InFlightGuard {
+    source_id: i64,
+    finished: bool,
+}
 
 impl Drop for InFlightGuard {
     fn drop(&mut self) {
-        if let Ok(mut in_flight) = BACKGROUND_SYNCS_IN_FLIGHT.lock() {
-            in_flight.remove(&self.0);
+        if !self.finished {
+            if let Ok(mut in_flight) = BACKGROUND_SYNCS_IN_FLIGHT.lock() {
+                in_flight.remove(&self.source_id);
+            }
         }
     }
 }
@@ -88,21 +95,33 @@ impl Drop for InFlightGuard {
 /// first, so it syncs whatever configuration is current by the time the thread runs. A thread
 /// rather than a child process: the server can't safely `fork` while multi-threaded, and the
 /// sync code needs nothing a thread doesn't already have.
+///
+/// If one is already running for `source_id`, no second thread starts; the running one is told to
+/// sync again (with the then-current configuration) when it finishes. A sync whose fetched data
+/// turns out to be for a configuration that's since been edited discards it (see
+/// `event_sync::sync_source_calendar`) and the rerun picks up the new one.
 fn spawn_background_sync(source_id: i64) {
     match BACKGROUND_SYNCS_IN_FLIGHT.lock() {
         Ok(mut in_flight) => {
-            if !in_flight.insert(source_id) {
-                log::info!("Background sync of SyncSource {} already running.", source_id);
+            if let Some(rerun_requested) = in_flight.get_mut(&source_id) {
+                *rerun_requested = true;
+                log::info!(
+                    "Background sync of SyncSource {} already running; it will run again.",
+                    source_id
+                );
                 return;
             }
+            in_flight.insert(source_id, false);
         }
         Err(_) => return,
     }
-    let guard = InFlightGuard(source_id);
+    let mut guard = InFlightGuard {
+        source_id,
+        finished: false,
+    };
     let spawned = std::thread::Builder::new()
         .name(format!("sync-source-{}", source_id))
         .spawn(move || {
-            let _guard = guard;
             let pool = db_connection::establish_job_pool();
             let mut conn = match pool.get() {
                 Ok(conn) => conn,
@@ -112,24 +131,36 @@ fn spawn_background_sync(source_id: i64) {
                         source_id,
                         e
                     );
-                    return;
+                    return; // `guard` clears the in-flight entry
                 }
             };
-            let source = match models::get_sync_source(source_id, &mut conn) {
-                Ok(source) => source,
-                Err(e) => {
+            loop {
+                match models::get_sync_source(source_id, &mut conn) {
+                    Ok(source) => match sync_source(&source, &mut conn) {
+                        Ok(()) => log::info!("Background sync of SyncSource {} finished.", source_id),
+                        Err(e) => log::error!(
+                            "Background sync of SyncSource {} failed: {:?}",
+                            source_id,
+                            e
+                        ),
+                    },
                     // Deleted since the edit that spawned this -- nothing to sync.
-                    log::info!("Background sync of SyncSource {} skipped: {:?}", source_id, e);
-                    return;
+                    Err(e) => log::info!("Background sync of SyncSource {} skipped: {:?}", source_id, e),
                 }
-            };
-            match sync_source(&source, &mut conn) {
-                Ok(()) => log::info!("Background sync of SyncSource {} finished.", source_id),
-                Err(e) => log::error!(
-                    "Background sync of SyncSource {} failed: {:?}",
-                    source_id,
-                    e
-                ),
+
+                // Rerun if another edit asked for one meanwhile; otherwise leave -- deciding and
+                // clearing the in-flight entry under one lock, so an edit can't slip in between.
+                let Ok(mut in_flight) = BACKGROUND_SYNCS_IN_FLIGHT.lock() else {
+                    return;
+                };
+                match in_flight.get_mut(&source_id) {
+                    Some(rerun_requested) if *rerun_requested => *rerun_requested = false,
+                    _ => {
+                        in_flight.remove(&source_id);
+                        guard.finished = true;
+                        return;
+                    }
+                }
             }
         });
     if let Err(e) = spawned {
