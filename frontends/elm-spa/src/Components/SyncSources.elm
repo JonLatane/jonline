@@ -3,7 +3,12 @@ module Components.SyncSources exposing
     , deleteSyncSource
     , getSyncSources
     , intervalOptions
+    , looksLikeStellarWpUrl
     , syncedCountsLabel
+    , userAgentFromLabel
+    , userAgentLabel
+    , userAgentOf
+    , userAgentOptions
     , updateSyncSource
     )
 
@@ -27,13 +32,14 @@ import Grpc
 import Proto.Rellm exposing (GetSyncSourcesResponse, SyncSource, defaultUser)
 import Proto.Rellm.Rellm as Rellm
 import Proto.Rellm.SyncSource.Configuration as Configuration
+import Proto.Rellm.SyncSourceUserAgent as UserAgent exposing (SyncSourceUserAgent)
 import Shared.AccountsPanel as AccountsPanel
 import Shared.AccountsPanel.RellmServers as RellmServers exposing (withAccessToken)
 import Shared.Conversions as Conversions
 import Task exposing (Task)
 
 
-{-| An ICS source's "N events" alone when every event has exactly one occasion
+{-| An ICS or StellarWP source's "N events" alone when every event has exactly one occasion
 (the common non-recurring case, where naming both is redundant) -- otherwise
 "N events and M occasions". An RSS/Atom source (which syncs plain Posts, not
 Events -- see `posts.proto`'s `Post.sync_source`) instead shows "N posts",
@@ -46,25 +52,33 @@ syncedCountsLabel : SyncSource -> String
 syncedCountsLabel source =
     case source.configuration of
         Just (Configuration.IcsSubscriptionUrl _) ->
-            let
-                eventCount : Int
-                eventCount =
-                    Conversions.int64ToInt source.eventCount
+            eventsAndOccasionsLabel source
 
-                occasionCount : Int
-                occasionCount =
-                    Conversions.int64ToInt source.occasionCount
-            in
-            if eventCount == occasionCount then
-                pluralCount eventCount "event"
-
-            else
-                pluralCount eventCount "event"
-                    ++ " and "
-                    ++ pluralCount occasionCount "occasion"
+        Just (Configuration.StellarwpIcsSubscriptionUrl _) ->
+            eventsAndOccasionsLabel source
 
         _ ->
             pluralCount (Conversions.int64ToInt source.postCount) "post"
+
+
+eventsAndOccasionsLabel : SyncSource -> String
+eventsAndOccasionsLabel source =
+    let
+        eventCount : Int
+        eventCount =
+            Conversions.int64ToInt source.eventCount
+
+        occasionCount : Int
+        occasionCount =
+            Conversions.int64ToInt source.occasionCount
+    in
+    if eventCount == occasionCount then
+        pluralCount eventCount "event"
+
+    else
+        pluralCount eventCount "event"
+            ++ " and "
+            ++ pluralCount occasionCount "occasion"
 
 
 pluralCount : Int -> String -> String
@@ -78,6 +92,115 @@ pluralCount count noun =
             else
                 "s"
            )
+
+
+{-| The `User-Agent` choices offered for a source's fetches, in display order (`protos/sync.proto`'s
+`SyncSourceUserAgent`). Some feeds sit behind bot protection that only admits certain clients --
+raleighnc.gov's Cloudflare rules let `curl/*` through and challenge everything else, including a
+request with no `User-Agent` at all.
+-}
+userAgentOptions : List ( SyncSourceUserAgent, String )
+userAgentOptions =
+    [ ( UserAgent.NOUSERAGENT, "No User Agent" )
+    , ( UserAgent.RELLM, "Rellm" )
+    , ( UserAgent.CURL, "curl" )
+    ]
+
+
+userAgentLabel : SyncSourceUserAgent -> String
+userAgentLabel userAgent =
+    userAgentOptions
+        |> List.filter (\( option, _ ) -> option == userAgent)
+        |> List.head
+        |> Maybe.map Tuple.second
+        |> Maybe.withDefault "No User Agent"
+
+
+{-| The inverse of `userAgentLabel` (for a `<select>`'s value); an unrecognized label reads as
+"No User Agent".
+-}
+userAgentFromLabel : String -> SyncSourceUserAgent
+userAgentFromLabel label =
+    userAgentOptions
+        |> List.filter (\( _, optionLabel ) -> optionLabel == label)
+        |> List.head
+        |> Maybe.map Tuple.first
+        |> Maybe.withDefault UserAgent.NOUSERAGENT
+
+
+{-| `source`'s `User-Agent` setting; unset or a value this client doesn't know reads as "No User
+Agent" -- what every source did before the setting existed.
+-}
+userAgentOf : SyncSource -> SyncSourceUserAgent
+userAgentOf source =
+    case source.userAgent of
+        Just (UserAgent.SyncSourceUserAgentUnrecognized_ _) ->
+            UserAgent.NOUSERAGENT
+
+        Just userAgent ->
+            userAgent
+
+        Nothing ->
+            UserAgent.NOUSERAGENT
+
+
+{-| Whether `url` looks like an iCal export from [The Events Calendar](https://theeventscalendar.com/)
+(the StellarWP WordPress plugin) -- its `?ical=1` export, which the plugin caps at one page of events
+(30 on many sites), so a plain iCal source on it only ever sees the next couple of weeks. Such a
+source should be a `StellarwpIcsSubscriptionUrl` instead, which follows the plugin's pagination
+(see `protos/sync.proto`). Used to suggest exactly that switch in `Components.Pages.UserProfilePage`'s
+Sync Sources section.
+
+Matches `ical=1` together with any of the plugin's own query parameters (`post_type=tribe_events`,
+`eventDisplay`, `tribe_display`, `tribe-bar-*`, `tribe_events_cat`, `tribe_eventcategory`,
+`tribe_paged`, `shortcode`), or with an `/events/` path -- covering both the `?post_type=tribe_events`
+form of the export link and the pretty `/events/list/?ical=1` and `/events/.../ical/` forms. A
+plain `.ics` file (which never carries `ical=1`) never matches.
+
+-}
+looksLikeStellarWpUrl : String -> Bool
+looksLikeStellarWpUrl url =
+    let
+        ( beforeQuery, query ) =
+            case String.split "?" (String.toLower (String.trim url)) of
+                [] ->
+                    ( "", "" )
+
+                path :: rest ->
+                    ( path, String.join "?" rest )
+
+        params : List String
+        params =
+            query
+                |> String.split "#"
+                |> List.head
+                |> Maybe.withDefault ""
+                |> String.split "&"
+
+        paramNamed : String -> Bool
+        paramNamed name =
+            List.any (\param -> String.startsWith (name ++ "=") param || param == name) params
+
+        paramNameStartsWith : String -> Bool
+        paramNameStartsWith prefix =
+            List.any (String.startsWith prefix) params
+
+        isTribeEventsExport : Bool
+        isTribeEventsExport =
+            List.member "ical=1" params
+                && (List.member "post_type=tribe_events" params
+                    || List.any paramNamed [ "eventdisplay", "tribe_display", "tribe_events_cat", "tribe_paged", "shortcode" ]
+                    || paramNameStartsWith "tribe-bar-"
+                    || paramNameStartsWith "tribe_eventcategory"
+                    || String.contains "/events/" beforeQuery
+                   )
+
+        isTribeEventsPrettyIcalPath : Bool
+        isTribeEventsPrettyIcalPath =
+            String.contains "/events/" beforeQuery
+                && (String.endsWith "/ical/" beforeQuery || String.endsWith "/ical" beforeQuery)
+    in
+    String.startsWith "http" beforeQuery && (isTribeEventsExport || isTribeEventsPrettyIcalPath)
 
 
 {-| `targetUserId = ""` asks the backend for the caller's own sources (see

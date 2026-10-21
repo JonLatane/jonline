@@ -215,6 +215,18 @@ message SyncDestinationStatus {
   optional google.protobuf.Timestamp synced_at = 4;
 }
 
+// The HTTP `User-Agent` a [`SyncSource`](#rellm-SyncSource) sends when fetching its feed. Some feeds
+// sit behind bot protection that only admits certain clients (e.g. raleighnc.gov's Cloudflare rules let
+// `curl/*` through and challenge everything else, including a request with no `User-Agent` at all).
+enum SyncSourceUserAgent {
+  // Send no `User-Agent` header at all. What every source did before this setting existed.
+  NO_USER_AGENT = 0;
+  // Identify as Rellm: `Rellm-SyncSource/1.0 (+https://rellm.org)`.
+  RELLM = 1;
+  // Identify as `curl/8.7.1`.
+  CURL = 2;
+}
+
 // A user-owned source to sync events from.
 message SyncSource {
   // Unique ID for the synchronization.
@@ -239,16 +251,34 @@ message SyncSource {
   uint64 occasion_count = 8;
   // The number of posts total associated with this SyncSource. Populated for an RSS/Atom
   // source (recomputed on each sync, like `event_count`/`occasion_count` are for an
-  // ICS source); always 0 for an ICS source, which syncs Events/Occasions instead.
-  uint64 post_count = 10;
+  // ICS or StellarWP source); always 0 for an ICS/StellarWP source, which syncs Events/Occasions instead.
+  uint64 post_count = 9;
+
+  // Field numbers 10-12 were the previous numbers of `post_count`/`rss_subscription_url`/
+  // `atom_subscription_url`, before the `configuration` variants were renumbered into 20+.
+  reserved 10, 11, 12;
+
+  // The `User-Agent` this source's fetches send. Unset on create means `NO_USER_AGENT`; unset on
+  // update leaves the current value alone. Always set in responses.
+  optional SyncSourceUserAgent user_agent = 13;
 
   oneof configuration {
     // The iCal subscription URL for the calendar sync. Creates/updates Events/Occasions.
-    string ics_subscription_url = 9;
+    string ics_subscription_url = 20;
+    // The iCal export URL of a site running [The Events Calendar](https://theeventscalendar.com/)
+    // (a StellarWP WordPress plugin; the URL is the plugin's "Export" link, e.g.
+    // `https://example.com/?post_type=tribe_events&ical=1&eventDisplay=list`). Creates/updates
+    // Events/Occasions, like `ics_subscription_url`, but each sync follows the plugin's `paged=N`
+    // pagination to fetch as many pages as it can -- the plugin caps a single iCal response at its
+    // "events per page" setting (30 on many sites), so a plain `ics_subscription_url` only ever
+    // sees the next couple of weeks of events on a busy calendar. The plugin's list only shows
+    // *upcoming* events, so unlike `ics_subscription_url` an event dropping out of the feed
+    // doesn't mean it was removed: events that have already ended are kept, not pruned.
+    string stellarwp_ics_subscription_url = 21;
     // The RSS subscription URL for the feed sync. Creates/updates plain Posts.
-    string rss_subscription_url = 11;
+    string rss_subscription_url = 22;
     // The Atom subscription URL for the feed sync. Creates/updates plain Posts.
-    string atom_subscription_url = 12;
+    string atom_subscription_url = 23;
   }
 }
 

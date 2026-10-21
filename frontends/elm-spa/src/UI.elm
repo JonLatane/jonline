@@ -4220,6 +4220,9 @@ deleteConfirmationModal shared =
                                         Just (Configuration.IcsSubscriptionUrl url) ->
                                             url
 
+                                        Just (Configuration.StellarwpIcsSubscriptionUrl url) ->
+                                            url
+
                                         Just (Configuration.RssSubscriptionUrl url) ->
                                             url
 

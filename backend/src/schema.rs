@@ -461,6 +461,7 @@ diesel::table! {
         event_count -> Int8,
         occasion_count -> Int8,
         post_count -> Int8,
+        user_agent -> Text,
     }
 }
 

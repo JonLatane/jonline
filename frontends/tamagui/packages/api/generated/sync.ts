@@ -12,6 +12,53 @@ import { Author } from "./media";
 export const protobufPackage = "rellm";
 
 /**
+ * The HTTP `User-Agent` a [`SyncSource`](#rellm-SyncSource) sends when fetching its feed. Some feeds
+ * sit behind bot protection that only admits certain clients (e.g. raleighnc.gov's Cloudflare rules let
+ * `curl/*` through and challenge everything else, including a request with no `User-Agent` at all).
+ */
+export enum SyncSourceUserAgent {
+  /** NO_USER_AGENT - Send no `User-Agent` header at all. What every source did before this setting existed. */
+  NO_USER_AGENT = 0,
+  /** RELLM - Identify as Rellm: `Rellm-SyncSource/1.0 (+https://rellm.org)`. */
+  RELLM = 1,
+  /** CURL - Identify as `curl/8.7.1`. */
+  CURL = 2,
+  UNRECOGNIZED = -1,
+}
+
+export function syncSourceUserAgentFromJSON(object: any): SyncSourceUserAgent {
+  switch (object) {
+    case 0:
+    case "NO_USER_AGENT":
+      return SyncSourceUserAgent.NO_USER_AGENT;
+    case 1:
+    case "RELLM":
+      return SyncSourceUserAgent.RELLM;
+    case 2:
+    case "CURL":
+      return SyncSourceUserAgent.CURL;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return SyncSourceUserAgent.UNRECOGNIZED;
+  }
+}
+
+export function syncSourceUserAgentToJSON(object: SyncSourceUserAgent): string {
+  switch (object) {
+    case SyncSourceUserAgent.NO_USER_AGENT:
+      return "NO_USER_AGENT";
+    case SyncSourceUserAgent.RELLM:
+      return "RELLM";
+    case SyncSourceUserAgent.CURL:
+      return "CURL";
+    case SyncSourceUserAgent.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+/**
  * A user-owned destination to sync (cross-post) content out to. Mirrors [`SyncSource`](#rellm-SyncSource),
  * but for pushing content out rather than pulling content in. Originally Event-specific
  * (as `EventSyncDestination`), now shared by both [`Occasion`](#rellm-Occasion)s (see `events.proto`'s
@@ -313,11 +360,32 @@ export interface SyncSource {
   /**
    * The number of posts total associated with this SyncSource. Populated for an RSS/Atom
    * source (recomputed on each sync, like `event_count`/`occasion_count` are for an
-   * ICS source); always 0 for an ICS source, which syncs Events/Occasions instead.
+   * ICS or StellarWP source); always 0 for an ICS/StellarWP source, which syncs Events/Occasions instead.
    */
   postCount: number;
+  /**
+   * The `User-Agent` this source's fetches send. Unset on create means `NO_USER_AGENT`; unset on
+   * update leaves the current value alone. Always set in responses.
+   */
+  userAgent?:
+    | SyncSourceUserAgent
+    | undefined;
   /** The iCal subscription URL for the calendar sync. Creates/updates Events/Occasions. */
   icsSubscriptionUrl?:
+    | string
+    | undefined;
+  /**
+   * The iCal export URL of a site running [The Events Calendar](https://theeventscalendar.com/)
+   * (a StellarWP WordPress plugin; the URL is the plugin's "Export" link, e.g.
+   * `https://example.com/?post_type=tribe_events&ical=1&eventDisplay=list`). Creates/updates
+   * Events/Occasions, like `ics_subscription_url`, but each sync follows the plugin's `paged=N`
+   * pagination to fetch as many pages as it can -- the plugin caps a single iCal response at its
+   * "events per page" setting (30 on many sites), so a plain `ics_subscription_url` only ever
+   * sees the next couple of weeks of events on a busy calendar. The plugin's list only shows
+   * *upcoming* events, so unlike `ics_subscription_url` an event dropping out of the feed
+   * doesn't mean it was removed: events that have already ended are kept, not pruned.
+   */
+  stellarwpIcsSubscriptionUrl?:
     | string
     | undefined;
   /** The RSS subscription URL for the feed sync. Creates/updates plain Posts. */
@@ -1458,7 +1526,9 @@ function createBaseSyncSource(): SyncSource {
     eventCount: 0,
     occasionCount: 0,
     postCount: 0,
+    userAgent: undefined,
     icsSubscriptionUrl: undefined,
+    stellarwpIcsSubscriptionUrl: undefined,
     rssSubscriptionUrl: undefined,
     atomSubscriptionUrl: undefined,
   };
@@ -1491,16 +1561,22 @@ export const SyncSource: MessageFns<SyncSource> = {
       writer.uint32(64).uint64(message.occasionCount);
     }
     if (message.postCount !== 0) {
-      writer.uint32(80).uint64(message.postCount);
+      writer.uint32(72).uint64(message.postCount);
+    }
+    if (message.userAgent !== undefined) {
+      writer.uint32(104).int32(message.userAgent);
     }
     if (message.icsSubscriptionUrl !== undefined) {
-      writer.uint32(74).string(message.icsSubscriptionUrl);
+      writer.uint32(162).string(message.icsSubscriptionUrl);
+    }
+    if (message.stellarwpIcsSubscriptionUrl !== undefined) {
+      writer.uint32(170).string(message.stellarwpIcsSubscriptionUrl);
     }
     if (message.rssSubscriptionUrl !== undefined) {
-      writer.uint32(90).string(message.rssSubscriptionUrl);
+      writer.uint32(178).string(message.rssSubscriptionUrl);
     }
     if (message.atomSubscriptionUrl !== undefined) {
-      writer.uint32(98).string(message.atomSubscriptionUrl);
+      writer.uint32(186).string(message.atomSubscriptionUrl);
     }
     return writer;
   },
@@ -1576,32 +1652,48 @@ export const SyncSource: MessageFns<SyncSource> = {
           message.occasionCount = longToNumber(reader.uint64());
           continue;
         }
-        case 10: {
-          if (tag !== 80) {
+        case 9: {
+          if (tag !== 72) {
             break;
           }
 
           message.postCount = longToNumber(reader.uint64());
           continue;
         }
-        case 9: {
-          if (tag !== 74) {
+        case 13: {
+          if (tag !== 104) {
+            break;
+          }
+
+          message.userAgent = reader.int32() as any;
+          continue;
+        }
+        case 20: {
+          if (tag !== 162) {
             break;
           }
 
           message.icsSubscriptionUrl = reader.string();
           continue;
         }
-        case 11: {
-          if (tag !== 90) {
+        case 21: {
+          if (tag !== 170) {
+            break;
+          }
+
+          message.stellarwpIcsSubscriptionUrl = reader.string();
+          continue;
+        }
+        case 22: {
+          if (tag !== 178) {
             break;
           }
 
           message.rssSubscriptionUrl = reader.string();
           continue;
         }
-        case 12: {
-          if (tag !== 98) {
+        case 23: {
+          if (tag !== 186) {
             break;
           }
 
@@ -1628,7 +1720,11 @@ export const SyncSource: MessageFns<SyncSource> = {
       eventCount: isSet(object.eventCount) ? globalThis.Number(object.eventCount) : 0,
       occasionCount: isSet(object.occasionCount) ? globalThis.Number(object.occasionCount) : 0,
       postCount: isSet(object.postCount) ? globalThis.Number(object.postCount) : 0,
+      userAgent: isSet(object.userAgent) ? syncSourceUserAgentFromJSON(object.userAgent) : undefined,
       icsSubscriptionUrl: isSet(object.icsSubscriptionUrl) ? globalThis.String(object.icsSubscriptionUrl) : undefined,
+      stellarwpIcsSubscriptionUrl: isSet(object.stellarwpIcsSubscriptionUrl)
+        ? globalThis.String(object.stellarwpIcsSubscriptionUrl)
+        : undefined,
       rssSubscriptionUrl: isSet(object.rssSubscriptionUrl) ? globalThis.String(object.rssSubscriptionUrl) : undefined,
       atomSubscriptionUrl: isSet(object.atomSubscriptionUrl)
         ? globalThis.String(object.atomSubscriptionUrl)
@@ -1665,8 +1761,14 @@ export const SyncSource: MessageFns<SyncSource> = {
     if (message.postCount !== 0) {
       obj.postCount = Math.round(message.postCount);
     }
+    if (message.userAgent !== undefined) {
+      obj.userAgent = syncSourceUserAgentToJSON(message.userAgent);
+    }
     if (message.icsSubscriptionUrl !== undefined) {
       obj.icsSubscriptionUrl = message.icsSubscriptionUrl;
+    }
+    if (message.stellarwpIcsSubscriptionUrl !== undefined) {
+      obj.stellarwpIcsSubscriptionUrl = message.stellarwpIcsSubscriptionUrl;
     }
     if (message.rssSubscriptionUrl !== undefined) {
       obj.rssSubscriptionUrl = message.rssSubscriptionUrl;
@@ -1693,7 +1795,9 @@ export const SyncSource: MessageFns<SyncSource> = {
     message.eventCount = object.eventCount ?? 0;
     message.occasionCount = object.occasionCount ?? 0;
     message.postCount = object.postCount ?? 0;
+    message.userAgent = object.userAgent ?? undefined;
     message.icsSubscriptionUrl = object.icsSubscriptionUrl ?? undefined;
+    message.stellarwpIcsSubscriptionUrl = object.stellarwpIcsSubscriptionUrl ?? undefined;
     message.rssSubscriptionUrl = object.rssSubscriptionUrl ?? undefined;
     message.atomSubscriptionUrl = object.atomSubscriptionUrl ?? undefined;
     return message;

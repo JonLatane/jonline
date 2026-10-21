@@ -35,17 +35,19 @@ use crate::schema::{posts, sync_sources};
 /// `sync_source_text`.
 pub fn sync_source_feed(source: &models::SyncSource, conn: &mut PgPooledConnection) -> Result<(), Status> {
     let url = feed_subscription_url(source)?;
-    let feed_text = fetch_feed(url)?;
+    let feed_text = fetch_feed(source, url)?;
     sync_feed_text(source, &feed_text, conn)
 }
 
 /// See `event_sync::fetch_ics`'s doc comment -- same `block_in_place` requirement, since this is
 /// also called from within Rocket's Tokio runtime in production but also directly from plain
 /// `#[test]`s.
-fn fetch_feed(url: &str) -> Result<String, Status> {
+fn fetch_feed(source: &models::SyncSource, url: &str) -> Result<String, Status> {
     crate::init_crypto();
     let fetch = || {
-        reqwest::blocking::get(url)
+        super::client_builder(source)
+            .build()
+            .and_then(|client| client.get(url).send())
             .and_then(|response| response.error_for_status())
             .map_err(|e| {
                 log::error!("Failed to fetch feed from {}: {:?}", url, e);

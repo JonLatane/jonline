@@ -30,6 +30,13 @@ pub fn establish_job_pool() -> PgPool {
     build_pool(1, 1)
 }
 
+/// For work a server process does in the background on its own thread (see
+/// `logic::sync_sources::background_sync`): at most one connection, and none opened until first
+/// needed (`min_idle(0)`), so an idle server costs the shared Postgres nothing extra.
+pub fn establish_background_pool() -> PgPool {
+    build_pool(1, 0)
+}
+
 fn build_pool(max_size: u32, min_idle: u32) -> PgPool {
     dotenv().ok();
 

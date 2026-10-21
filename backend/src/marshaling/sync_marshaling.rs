@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 use std::time::SystemTime;
 
+use tonic::{Code, Status};
+
 use super::{ToDbId, ToProtoAuthor, ToProtoId, ToProtoTime};
 use crate::db_connection::PgPooledConnection;
 use crate::models;
@@ -55,20 +57,30 @@ impl ToProtoMarshalableSyncSource for MarshalableSyncSource {
             event_count: source.event_count as u64,
             occasion_count: source.occasion_count as u64,
             post_count: source.post_count as u64,
+            user_agent: Some(user_agent_from_db(&source.user_agent) as i32),
             configuration: source_configuration_to_proto(&source.configuration),
         }
     }
 }
 
 /// `configuration` JSONB shape today: one of `{"ics_subscription_url": "https://..."}`,
-/// `{"rss_subscription_url": "https://..."}`, or `{"atom_subscription_url": "https://..."}` --
-/// mirrors the proto `oneof`'s 3 variants (an ICS URL syncs Events/Occasions;
-/// RSS/Atom sync plain Posts -- see `logic::sync_sources::feed_sync`).
+/// `{"stellarwp_ics_subscription_url": "https://..."}`, `{"rss_subscription_url": "https://..."}`,
+/// or `{"atom_subscription_url": "https://..."}` -- mirrors the proto `oneof`'s 4 variants (an ICS
+/// URL or StellarWP iCal URL syncs Events/Occasions; RSS/Atom sync plain Posts -- see
+/// `logic::sync_sources::feed_sync`).
 pub fn source_configuration_to_proto(
     configuration: &serde_json::Value,
 ) -> Option<sync_source::Configuration> {
     if let Some(url) = configuration.get("ics_subscription_url").and_then(|v| v.as_str()) {
         return Some(sync_source::Configuration::IcsSubscriptionUrl(url.to_string()));
+    }
+    if let Some(url) = configuration
+        .get("stellarwp_ics_subscription_url")
+        .and_then(|v| v.as_str())
+    {
+        return Some(sync_source::Configuration::StellarwpIcsSubscriptionUrl(
+            url.to_string(),
+        ));
     }
     if let Some(url) = configuration.get("rss_subscription_url").and_then(|v| v.as_str()) {
         return Some(sync_source::Configuration::RssSubscriptionUrl(url.to_string()));
@@ -79,12 +91,32 @@ pub fn source_configuration_to_proto(
     None
 }
 
+/// The `SyncSourceUserAgent` stored in `sync_sources.user_agent` (its proto enum name); anything
+/// unrecognized reads as `NoUserAgent`, the setting every source had before the column existed.
+pub fn user_agent_from_db(user_agent: &str) -> SyncSourceUserAgent {
+    SyncSourceUserAgent::from_str_name(user_agent).unwrap_or(SyncSourceUserAgent::NoUserAgent)
+}
+
+/// What to store in `sync_sources.user_agent` for a request's `user_agent` field (`None` -> the
+/// default, `NO_USER_AGENT`); an enum value this server doesn't know is rejected.
+pub fn user_agent_to_db(user_agent: Option<i32>) -> Result<String, Status> {
+    match user_agent {
+        None => Ok(SyncSourceUserAgent::NoUserAgent.as_str_name().to_string()),
+        Some(value) => SyncSourceUserAgent::try_from(value)
+            .map(|user_agent| user_agent.as_str_name().to_string())
+            .map_err(|_| Status::new(Code::InvalidArgument, "invalid_user_agent")),
+    }
+}
+
 pub fn source_configuration_to_json(
     configuration: &Option<sync_source::Configuration>,
 ) -> serde_json::Value {
     match configuration {
         Some(sync_source::Configuration::IcsSubscriptionUrl(url)) => {
             serde_json::json!({ "ics_subscription_url": url })
+        }
+        Some(sync_source::Configuration::StellarwpIcsSubscriptionUrl(url)) => {
+            serde_json::json!({ "stellarwp_ics_subscription_url": url })
         }
         Some(sync_source::Configuration::RssSubscriptionUrl(url)) => {
             serde_json::json!({ "rss_subscription_url": url })
@@ -98,7 +130,8 @@ pub fn source_configuration_to_json(
 
 /// Which permission gates creating/updating a `SyncSource` with this `configuration` -- one of
 /// `SyncEventsFromIcs`/`SyncPostsFromRss`/`SyncPostsFromAtom` (see `permissions.proto`), matching
-/// whichever `oneof` variant is set. Falls back to `SyncEventsFromIcs` for `None` (mirrors
+/// whichever `oneof` variant is set (a StellarWP iCal URL syncs Events like an ICS URL does, so it
+/// shares `SyncEventsFromIcs`). Falls back to `SyncEventsFromIcs` for `None` (mirrors
 /// `source_configuration_to_json`'s own `None` fallback, and matches `create_sync_source`'s
 /// existing behavior before RSS/Atom sources existed).
 pub fn required_sync_source_permission(configuration: &Option<sync_source::Configuration>) -> Permission {

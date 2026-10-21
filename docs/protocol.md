@@ -177,6 +177,8 @@
     - [ThreadsAccount](#rellm-ThreadsAccount)
     - [XTwitterAccount](#rellm-XTwitterAccount)
   
+    - [SyncSourceUserAgent](#rellm-SyncSourceUserAgent)
+  
 - [ai_providers.proto](#ai_providers-proto)
     - [AIModel](#rellm-AIModel)
     - [AIProvider](#rellm-AIProvider)
@@ -4441,8 +4443,10 @@ A user-owned source to sync events from.
 | last_synced_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time the SyncSource was last synced. |
 | event_count | [uint64](#uint64) |  | The number of events total associated with this SyncSource. Recomputed on each sync. |
 | occasion_count | [uint64](#uint64) |  | The number of occasions total associated with this SyncSource. Recomputed on each sync. |
-| post_count | [uint64](#uint64) |  | The number of posts total associated with this SyncSource. Populated for an RSS/Atom source (recomputed on each sync, like `event_count`/`occasion_count` are for an ICS source); always 0 for an ICS source, which syncs Events/Occasions instead. |
+| post_count | [uint64](#uint64) |  | The number of posts total associated with this SyncSource. Populated for an RSS/Atom source (recomputed on each sync, like `event_count`/`occasion_count` are for an ICS or StellarWP source); always 0 for an ICS/StellarWP source, which syncs Events/Occasions instead. |
+| user_agent | [SyncSourceUserAgent](#rellm-SyncSourceUserAgent) | optional | The `User-Agent` this source&#39;s fetches send. Unset on create means `NO_USER_AGENT`; unset on update leaves the current value alone. Always set in responses. |
 | ics_subscription_url | [string](#string) |  | The iCal subscription URL for the calendar sync. Creates/updates Events/Occasions. |
+| stellarwp_ics_subscription_url | [string](#string) |  | The iCal export URL of a site running [The Events Calendar](https://theeventscalendar.com/) (a StellarWP WordPress plugin; the URL is the plugin&#39;s &#34;Export&#34; link, e.g. `https://example.com/?post_type=tribe_events&amp;ical=1&amp;eventDisplay=list`). Creates/updates Events/Occasions, like `ics_subscription_url`, but each sync follows the plugin&#39;s `paged=N` pagination to fetch as many pages as it can -- the plugin caps a single iCal response at its &#34;events per page&#34; setting (30 on many sites), so a plain `ics_subscription_url` only ever sees the next couple of weeks of events on a busy calendar. The plugin&#39;s list only shows *upcoming* events, so unlike `ics_subscription_url` an event dropping out of the feed doesn&#39;t mean it was removed: events that have already ended are kept, not pruned. |
 | rss_subscription_url | [string](#string) |  | The RSS subscription URL for the feed sync. Creates/updates plain Posts. |
 | atom_subscription_url | [string](#string) |  | The Atom subscription URL for the feed sync. Creates/updates plain Posts. |
 
@@ -4511,6 +4515,21 @@ not yet built; a video attachment is silently skipped.
 
 
  
+
+
+<a name="rellm-SyncSourceUserAgent"></a>
+
+### SyncSourceUserAgent
+The HTTP `User-Agent` a [`SyncSource`](#rellm-SyncSource) sends when fetching its feed. Some feeds
+sit behind bot protection that only admits certain clients (e.g. raleighnc.gov&#39;s Cloudflare rules let
+`curl/*` through and challenge everything else, including a request with no `User-Agent` at all).
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| NO_USER_AGENT | 0 | Send no `User-Agent` header at all. What every source did before this setting existed. |
+| RELLM | 1 | Identify as Rellm: `Rellm-SyncSource/1.0 (&#43;https://rellm.org)`. |
+| CURL | 2 | Identify as `curl/8.7.1`. |
+
 
  
 

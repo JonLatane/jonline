@@ -412,6 +412,7 @@ pub fn create_sync_source_row(
             user_id: user.id,
             sync_interval_seconds: 3600,
             configuration: serde_json::json!({ "ics_subscription_url": ics_subscription_url }),
+            user_agent: "NO_USER_AGENT".to_string(),
         })
         .get_result::<models::SyncSource>(conn)
         .expect("failed to create test sync source")
@@ -428,6 +429,7 @@ pub fn create_feed_sync_source_row(
             user_id: user.id,
             sync_interval_seconds: 3600,
             configuration: serde_json::json!({ "rss_subscription_url": feed_subscription_url }),
+            user_agent: "NO_USER_AGENT".to_string(),
         })
         .get_result::<models::SyncSource>(conn)
         .expect("failed to create test sync source")
@@ -652,6 +654,83 @@ pub fn serve_ics(ics_text: &str) -> String {
         }
     });
     format!("http://127.0.0.1:{port}/test.ics")
+}
+
+/// Mirrors `serve_ics`, for a StellarWP "The Events Calendar" feed: serves `pages[n - 1]` for a
+/// request with `paged=n` (page 1 when there's no `paged` param, like the real plugin), and an
+/// empty-bodied `200 text/html` past the last page -- the plugin's "past the end" response.
+pub fn serve_stellarwp_pages(pages: Vec<String>) -> String {
+    serve_stellarwp_pages_recording_user_agents(pages).0
+}
+
+/// [`serve_stellarwp_pages`], also returning every request's `User-Agent` header (`None` when the
+/// request sent none), in arrival order.
+pub fn serve_stellarwp_pages_recording_user_agents(
+    pages: Vec<String>,
+) -> (String, std::sync::Arc<std::sync::Mutex<Vec<Option<String>>>>) {
+    use std::io::{Read, Write};
+    use std::net::TcpListener;
+    use std::sync::{Arc, Mutex};
+
+    let listener = TcpListener::bind("127.0.0.1:0").expect("failed to bind test StellarWP server");
+    let port = listener
+        .local_addr()
+        .expect("failed to read test StellarWP server port")
+        .port();
+    let user_agents: Arc<Mutex<Vec<Option<String>>>> = Arc::new(Mutex::new(vec![]));
+    let recorded = user_agents.clone();
+    std::thread::spawn(move || {
+        for stream in listener.incoming() {
+            let Ok(mut stream) = stream else { continue };
+            let mut buf = [0u8; 2048];
+            let read = stream.read(&mut buf).unwrap_or(0);
+            let request = String::from_utf8_lossy(&buf[..read]);
+            let request_line = request.lines().next().unwrap_or("");
+            let user_agent = request.lines().find_map(|line| {
+                let (name, value) = line.split_once(':')?;
+                name.eq_ignore_ascii_case("user-agent")
+                    .then(|| value.trim().to_string())
+            });
+            recorded.lock().unwrap().push(user_agent);
+            let page: usize = request_line
+                .split(['?', '&', ' '])
+                .find_map(|part| part.strip_prefix("paged="))
+                .and_then(|n| n.parse().ok())
+                .unwrap_or(1);
+            let (content_type, body) = match pages.get(page.wrapping_sub(1)) {
+                Some(body) => ("text/calendar", body.as_str()),
+                None => ("text/html", ""),
+            };
+            let response = format!(
+                "HTTP/1.1 200 OK\r\nContent-Type: {}\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
+                content_type,
+                body.len(),
+                body
+            );
+            let _ = stream.write_all(response.as_bytes());
+        }
+    });
+    (
+        format!("http://127.0.0.1:{port}/?post_type=tribe_events&ical=1&eventDisplay=list"),
+        user_agents,
+    )
+}
+
+/// Mirrors `create_sync_source_row`, for a StellarWP "The Events Calendar" iCal URL.
+pub fn create_stellarwp_sync_source_row(
+    conn: &mut PgPooledConnection,
+    user: &models::User,
+    stellarwp_ics_subscription_url: &str,
+) -> models::SyncSource {
+    insert_into(sync_sources::table)
+        .values(&models::NewSyncSource {
+            user_id: user.id,
+            sync_interval_seconds: 3600,
+            configuration: serde_json::json!({ "stellarwp_ics_subscription_url": stellarwp_ics_subscription_url }),
+            user_agent: "NO_USER_AGENT".to_string(),
+        })
+        .get_result::<models::SyncSource>(conn)
+        .expect("failed to create test sync source")
 }
 
 /// Mirrors `serve_ics`, for an RSS/Atom feed body instead of an ICS calendar.

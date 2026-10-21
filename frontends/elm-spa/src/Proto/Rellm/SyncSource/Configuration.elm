@@ -22,6 +22,19 @@ To run it, add a dependency via `elm install` on [`elm-protocol-buffers`](https:
  The iCal subscription URL for the calendar sync. Creates/updates Events/Occasions.
 
 
+### StellarwpIcsSubscriptionUrl
+
+ The iCal export URL of a site running [The Events Calendar](https://theeventscalendar.com/)
+ (a StellarWP WordPress plugin; the URL is the plugin's "Export" link, e.g.
+ `https://example.com/?post_type=tribe_events&ical=1&eventDisplay=list`). Creates/updates
+ Events/Occasions, like `ics_subscription_url`, but each sync follows the plugin's `paged=N`
+ pagination to fetch as many pages as it can -- the plugin caps a single iCal response at its
+ "events per page" setting (30 on many sites), so a plain `ics_subscription_url` only ever
+ sees the next couple of weeks of events on a busy calendar. The plugin's list only shows
+ *upcoming* events, so unlike `ics_subscription_url` an event dropping out of the feed
+ doesn't mean it was removed: events that have already ended are kept, not pruned.
+
+
 ### RssSubscriptionUrl
 
  The RSS subscription URL for the feed sync. Creates/updates plain Posts.
@@ -33,7 +46,8 @@ To run it, add a dependency via `elm install` on [`elm-protocol-buffers`](https:
 
 
 -}
-type Configuration a0 a1 a2
+type Configuration a0 a1 a2 a3
     = IcsSubscriptionUrl a0
-    | RssSubscriptionUrl a1
-    | AtomSubscriptionUrl a2
+    | StellarwpIcsSubscriptionUrl a1
+    | RssSubscriptionUrl a2
+    | AtomSubscriptionUrl a3
