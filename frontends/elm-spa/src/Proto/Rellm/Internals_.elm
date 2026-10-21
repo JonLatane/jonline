@@ -10562,9 +10562,10 @@ type alias Proto__Rellm__SyncDestination =
 {-| The field numbers for the fields of `Proto__Rellm__BlueskyServer`. This is mostly useful for internals, like documentation generation.
 
 -}
-fieldNumbersProto__Rellm__BlueskyServer : { host : Int, configuredByDefault : Int, pinnedByDefault : Int }
+fieldNumbersProto__Rellm__BlueskyServer :
+    { host : Int, configuredByDefault : Int, pinnedByDefault : Int, logoUrl : Int }
 fieldNumbersProto__Rellm__BlueskyServer =
-    { host = 1, configuredByDefault = 2, pinnedByDefault = 3 }
+    { host = 1, configuredByDefault = 2, pinnedByDefault = 3, logoUrl = 4 }
 
 
 {-| Default for Proto__Rellm__BlueskyServer. Should only be used for 'required' decoders as an initial value.
@@ -10572,7 +10573,7 @@ fieldNumbersProto__Rellm__BlueskyServer =
 -}
 defaultProto__Rellm__BlueskyServer : Proto__Rellm__BlueskyServer
 defaultProto__Rellm__BlueskyServer =
-    { host = "", configuredByDefault = Nothing, pinnedByDefault = Nothing }
+    { host = "", configuredByDefault = Nothing, pinnedByDefault = Nothing, logoUrl = Nothing }
 
 
 {-| Declares how to decode a `Proto__Rellm__BlueskyServer` from Bytes. To actually perform the conversion from Bytes, you need to use Protobuf.Decode.decode from eriktim/elm-protocol-buffers.
@@ -10591,6 +10592,7 @@ decodeProto__Rellm__BlueskyServer =
             3
             (Protobuf.Decode.map Just Protobuf.Decode.bool)
             (\a r -> { r | pinnedByDefault = a })
+        , Protobuf.Decode.optional 4 (Protobuf.Decode.map Just Protobuf.Decode.string) (\a r -> { r | logoUrl = a })
         ]
 
 
@@ -10603,6 +10605,7 @@ encodeProto__Rellm__BlueskyServer value =
         [ ( 1, Protobuf.Encode.string value.host )
         , ( 2, (Maybe.map Protobuf.Encode.bool >> Maybe.withDefault Protobuf.Encode.none) value.configuredByDefault )
         , ( 3, (Maybe.map Protobuf.Encode.bool >> Maybe.withDefault Protobuf.Encode.none) value.pinnedByDefault )
+        , ( 4, (Maybe.map Protobuf.Encode.string >> Maybe.withDefault Protobuf.Encode.none) value.logoUrl )
         ]
 
 
@@ -10610,7 +10613,7 @@ encodeProto__Rellm__BlueskyServer value =
 
 -}
 type alias Proto__Rellm__BlueskyServer =
-    { host : String, configuredByDefault : Maybe Bool, pinnedByDefault : Maybe Bool }
+    { host : String, configuredByDefault : Maybe Bool, pinnedByDefault : Maybe Bool, logoUrl : Maybe String }
 
 
 {-| The field numbers for the fields of `Proto__Rellm__MastodonServer`. This is mostly useful for internals, like documentation generation.

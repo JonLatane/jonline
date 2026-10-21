@@ -8,6 +8,7 @@ existed, and the anonymous-AppView list helpers.
 import Expect
 import Json.Decode as Decode
 import Json.Encode as Encode
+import Proto.Rellm exposing (defaultBlueskyServer)
 import Shared.AccountsPanel.BlueskyAccounts as BlueskyAccounts
 import Shared.AccountsPanel.BlueskyAppViews as BlueskyAppViews
 import Shared.Federation.Common as Common
@@ -161,6 +162,40 @@ suite =
                 \_ ->
                     Common.anonymousSearchHost "appview.example.com"
                         |> Expect.equal "appview.example.com"
+            ]
+        , describe "AppView logos"
+            [ test "Bluesky's public AppView has a built-in logo" <|
+                \_ ->
+                    BlueskyAppViews.logoUrlFor [] Common.publicBlueskyAppViewHost
+                        |> Maybe.map (String.startsWith "data:image/svg+xml,")
+                        |> Expect.equal (Just True)
+            , test "another AppView has none unless configured" <|
+                \_ ->
+                    BlueskyAppViews.logoUrlFor [] "appview.example.com"
+                        |> Expect.equal Nothing
+            , test "a configured logo_url wins, including over the built-in one" <|
+                \_ ->
+                    BlueskyAppViews.logoUrlFor
+                        [ { defaultBlueskyServer | host = Common.publicBlueskyAppViewHost, logoUrl = Just "https://example.com/logo.png" } ]
+                        Common.publicBlueskyAppViewHost
+                        |> Expect.equal (Just "https://example.com/logo.png")
+            , test "a configured entry for a different host doesn't apply" <|
+                \_ ->
+                    BlueskyAppViews.logoUrlFor
+                        [ { defaultBlueskyServer | host = "other.example.com", logoUrl = Just "https://example.com/logo.png" } ]
+                        "appview.example.com"
+                        |> Expect.equal Nothing
+            , test "a configured logo_url that isn't https is ignored (falling back to the built-in one)" <|
+                \_ ->
+                    BlueskyAppViews.logoUrlFor
+                        [ { defaultBlueskyServer | host = Common.publicBlueskyAppViewHost, logoUrl = Just "javascript:alert(1)" } ]
+                        Common.publicBlueskyAppViewHost
+                        |> Expect.equal (BlueskyAppViews.builtInLogoUrl Common.publicBlueskyAppViewHost)
+            , test "normalizeLogoUrl trims and accepts only https" <|
+                \_ ->
+                    [ "  https://example.com/a.png ", "http://example.com/a.png", "ftp://example.com/a.png", "", "   ", "example.com/a.png" ]
+                        |> List.map BlueskyAppViews.normalizeLogoUrl
+                        |> Expect.equal [ Just "https://example.com/a.png", Nothing, Nothing, Nothing, Nothing, Nothing ]
             ]
         , describe "cleanIdentifier"
             [ test "trims and drops a leading @" <|

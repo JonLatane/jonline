@@ -4062,6 +4062,7 @@ reads (with CORS) of public data. A connected *account* is separate: it logs in 
 | host | [string](#string) |  | The AppView&#39;s API hostname, e.g. &#34;public.api.bsky.app&#34; (shown to users as &#34;bsky.app&#34;). |
 | configured_by_default | [bool](#bool) | optional | Indicates to UI clients that they should add the indicated AppView to the user&#39;s browsed Bluesky sources by default (switched off unless also `pinned_by_default`). |
 | pinned_by_default | [bool](#bool) | optional | Indicates to UI clients that they should add *and enable* the indicated AppView by default (showing its public feed alongside the &#34;main&#34; server). Only one Bluesky source (an AppView or a connected account) is shown at a time, so clients should ignore all but the first of these. |
+| logo_url | [string](#string) | optional | URL of an image to show as this AppView&#39;s logo in clients&#39; server lists (an `https://` URL; clients ignore anything else). Unlike a Mastodon instance (`GET /api/v1/instance` has a `thumbnail`) or a Rellm server (which carries its own `ServerLogo`), an AppView has no way to describe itself, so there is nothing to discover one from - it has to be provided here. Clients show a built-in logo for Bluesky&#39;s own public AppView (`public.api.bsky.app`) when this is unset, and a plain placeholder for any other AppView. |
 
 
 

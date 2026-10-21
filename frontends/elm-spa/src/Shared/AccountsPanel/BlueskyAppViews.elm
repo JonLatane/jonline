@@ -1,6 +1,7 @@
 module Shared.AccountsPanel.BlueskyAppViews exposing
     ( BlueskyAppView
     , BlueskyState
+    , builtInLogoUrl
     , decoder
     , disableAll
     , displayName
@@ -8,7 +9,9 @@ module Shared.AccountsPanel.BlueskyAppViews exposing
     , enableOnly
     , encode
     , encodeState
+    , logoUrlFor
     , normalize
+    , normalizeLogoUrl
     , stateDecoder
     )
 
@@ -30,9 +33,11 @@ here, plus `BlueskyAccounts.disableOtherBlueskyAccounts` for the account side.
 
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode
+import Proto.Rellm exposing (BlueskyServer)
 import Shared.AccountsPanel.BlueskyAccounts as BlueskyAccounts exposing (BlueskyAccount)
 import Shared.AccountsPanel.SortOrder exposing (sortOrderDecoder)
 import Shared.Federation.Common exposing (publicBlueskyAppViewHost)
+import Url
 
 
 {-| One AppView being browsed. `host` is its API hostname (`BlueskyServer.host`, e.g.
@@ -55,6 +60,71 @@ displayName host =
 
     else
         host
+
+
+{-| The logo to show for the AppView at `host`: the `logoUrl` an admin set on its `BlueskyServer` (if
+`configured` -- the main server's `FederationInfo.blueskyServers` -- has an entry for it with one),
+else `builtInLogoUrl`. `Nothing` means "show the letter placeholder".
+-}
+logoUrlFor : List BlueskyServer -> String -> Maybe String
+logoUrlFor configured host =
+    configured
+        |> List.filter (\bs -> bs.host == host)
+        |> List.filterMap (\bs -> bs.logoUrl |> Maybe.andThen normalizeLogoUrl)
+        |> List.head
+        |> orElse (builtInLogoUrl host)
+
+
+orElse : Maybe a -> Maybe a -> Maybe a
+orElse fallback primary =
+    case primary of
+        Just _ ->
+            primary
+
+        Nothing ->
+            fallback
+
+
+{-| A logo URL as an admin may enter it: trimmed, and only `https://` ones count (anything else --
+including a blank box -- is "no logo"), matching `BlueskyServer.logo_url`'s own doc. HTTPS-only because a
+plain `http://` image on an HTTPS page is blocked as mixed content anyway, and it's only ever used as an
+`<img src>`, so a stray scheme couldn't run anything.
+-}
+normalizeLogoUrl : String -> Maybe String
+normalizeLogoUrl raw =
+    let
+        trimmed : String
+        trimmed =
+            String.trim raw
+    in
+    if String.startsWith "https://" trimmed then
+        Just trimmed
+
+    else
+        Nothing
+
+
+{-| The logo bundled with the app for Bluesky's own public AppView (the butterfly, as an inline SVG data
+URI so there's no asset to serve): AT Protocol gives an AppView no way to describe itself (compare a Mastodon
+instance's `thumbnail`), so anything else has none unless an admin sets `BlueskyServer.logo_url`.
+-}
+builtInLogoUrl : String -> Maybe String
+builtInLogoUrl host =
+    if host == publicBlueskyAppViewHost then
+        Just butterflyLogoUrl
+
+    else
+        Nothing
+
+
+butterflyLogoUrl : String
+butterflyLogoUrl =
+    "data:image/svg+xml," ++ Url.percentEncode butterflySvg
+
+
+butterflySvg : String
+butterflySvg =
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><path fill=\"#1185FE\" d=\"M12 10.8c-1.087-2.114-4.046-6.053-6.798-7.995C2.566.944 1.561 1.266.902 1.565.139 1.908 0 3.08 0 3.768c0 .69.378 5.65.624 6.479.815 2.736 3.713 3.66 6.383 3.364.136-.02.275-.039.415-.056-.138.022-.276.04-.415.056-3.912.58-7.387 2.005-2.83 7.078 5.013 5.19 6.87-1.113 7.823-4.308.953 3.195 2.05 9.271 7.733 4.308 4.267-4.308 1.172-6.498-2.74-7.078a8.741 8.741 0 0 1-.415-.056c.14.017.279.036.415.056 2.67.297 5.568-.628 6.383-3.364.246-.828.624-5.79.624-6.478 0-.69-.139-1.861-.902-2.206-.659-.298-1.664-.62-4.3 1.24C16.046 4.748 13.087 8.687 12 10.8Z\"/></svg>"
 
 
 encode : BlueskyAppView -> Encode.Value
