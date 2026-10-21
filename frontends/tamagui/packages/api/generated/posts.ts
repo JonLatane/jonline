@@ -265,6 +265,13 @@ export interface GetPostsRequest {
   authorUserId?:
     | string
     | undefined;
+  /**
+   * Excludes results by any of the given author user IDs. Applies to every feed-style listing (all
+   * listing types except single `post_id`/reply lookups). Numbered out of order (it logically belongs
+   * right after `author_user_id`) so as not to break compatibility; the order will be straightened out in a
+   * later protocol version.
+   */
+  excludedAuthorUserIds: string[];
   /** Limits results to those in the given group ID. */
   groupId?:
     | string
@@ -492,6 +499,7 @@ function createBaseGetPostsRequest(): GetPostsRequest {
   return {
     postId: undefined,
     authorUserId: undefined,
+    excludedAuthorUserIds: [],
     groupId: undefined,
     replyDepth: undefined,
     context: undefined,
@@ -510,6 +518,9 @@ export const GetPostsRequest: MessageFns<GetPostsRequest> = {
     }
     if (message.authorUserId !== undefined) {
       writer.uint32(18).string(message.authorUserId);
+    }
+    for (const v of message.excludedAuthorUserIds) {
+      writer.uint32(130).string(v!);
     }
     if (message.groupId !== undefined) {
       writer.uint32(26).string(message.groupId);
@@ -559,6 +570,14 @@ export const GetPostsRequest: MessageFns<GetPostsRequest> = {
           }
 
           message.authorUserId = reader.string();
+          continue;
+        }
+        case 16: {
+          if (tag !== 130) {
+            break;
+          }
+
+          message.excludedAuthorUserIds.push(reader.string());
           continue;
         }
         case 3: {
@@ -638,6 +657,9 @@ export const GetPostsRequest: MessageFns<GetPostsRequest> = {
     return {
       postId: isSet(object.postId) ? globalThis.String(object.postId) : undefined,
       authorUserId: isSet(object.authorUserId) ? globalThis.String(object.authorUserId) : undefined,
+      excludedAuthorUserIds: globalThis.Array.isArray(object?.excludedAuthorUserIds)
+        ? object.excludedAuthorUserIds.map((e: any) => globalThis.String(e))
+        : [],
       groupId: isSet(object.groupId) ? globalThis.String(object.groupId) : undefined,
       replyDepth: isSet(object.replyDepth) ? globalThis.Number(object.replyDepth) : undefined,
       context: isSet(object.context) ? postContextFromJSON(object.context) : undefined,
@@ -658,6 +680,9 @@ export const GetPostsRequest: MessageFns<GetPostsRequest> = {
     }
     if (message.authorUserId !== undefined) {
       obj.authorUserId = message.authorUserId;
+    }
+    if (message.excludedAuthorUserIds?.length) {
+      obj.excludedAuthorUserIds = message.excludedAuthorUserIds;
     }
     if (message.groupId !== undefined) {
       obj.groupId = message.groupId;
@@ -693,6 +718,7 @@ export const GetPostsRequest: MessageFns<GetPostsRequest> = {
     const message = createBaseGetPostsRequest();
     message.postId = object.postId ?? undefined;
     message.authorUserId = object.authorUserId ?? undefined;
+    message.excludedAuthorUserIds = object.excludedAuthorUserIds?.map((e) => e) || [];
     message.groupId = object.groupId ?? undefined;
     message.replyDepth = object.replyDepth ?? undefined;
     message.context = object.context ?? undefined;

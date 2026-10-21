@@ -618,3 +618,196 @@
 .breadcrumb-server-overview-description {
   font-size: 0.9rem;
 }
+/* Countabilibar -- Shared/Countabilibar.elm's `bar`, a second strip at the very bottom of `.navbar`,
+   *below* `.breadcrumbs-bar-container`, counting the posts/events the page is showing per server (or,
+   with just one server, per user), each with a checkbox to hide/show it.
+
+   Always in the DOM so it can animate its own height: `.countabilibar` is a one-row grid whose track
+   goes `0fr` <-> `1fr` (the same collapse trick `flip.css`'s `.flip-animated-item` uses), and
+   `.countabilibar-clip` clips what's inside. The vertical padding therefore lives on the row *inside*
+   that clip -- closed, the whole thing takes up exactly zero height, with no padding of its own left
+   over. `0.25s ease` matches `UI.Flip.flipDurationMs`, so the last entry fading out and the bar
+   closing finish together. */
+.countabilibar {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.25s ease;
+}
+
+.countabilibar.is-open {
+  grid-template-rows: 1fr;
+}
+
+.countabilibar-clip {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.countabilibar-row {
+  align-items: center;
+  box-sizing: border-box;
+  margin: 0 auto;
+  max-width: 960px;
+  overflow-x: auto;
+  padding: 0.25rem;
+  scrollbar-width: none;
+  width: 100%;
+}
+
+.countabilibar-row::-webkit-scrollbar {
+  display: none;
+}
+
+.countabilibar-slot {
+  display: flex;
+}
+
+/* `flip.css` pads every flip item's child at the bottom (the gap between rows in a vertical list); a
+   single row of chips has no use for it, and it would make the bar visibly taller than its chips. */
+.countabilibar .flip-animated-item.horizontal>.countabilibar-slot {
+  padding-bottom: 0;
+}
+
+.countabilibar-entry {
+  align-items: center;
+  background: var(--chip-bg);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--fg);
+  display: flex;
+  font-size: 0.75rem;
+  gap: 0.35rem;
+  line-height: 1.15;
+  padding: 0.15rem 0.6rem 0.15rem 0.4rem;
+  white-space: nowrap;
+}
+
+.countabilibar-entry.is-hidden,
+.countabilibar-panel-row.is-hidden {
+  opacity: 0.55;
+}
+
+.countabilibar-entry.is-panel-open {
+  border-color: var(--fg);
+}
+
+.countabilibar-checkbox {
+  cursor: pointer;
+  flex: 0 0 auto;
+  height: 0.95rem;
+  margin: 0;
+  width: 0.95rem;
+}
+
+.countabilibar-body {
+  align-items: center;
+  background: none;
+  border: 0;
+  color: inherit;
+  display: flex;
+  font: inherit;
+  gap: 0.5rem;
+  min-width: 0;
+  padding: 0;
+  text-align: left;
+}
+
+.countabilibar-server-body {
+  cursor: pointer;
+}
+
+/* A server's chip is the Home button's own logo + (maybe two-line) name, just smaller. */
+.countabilibar .server-name-and-logo {
+  gap: 0.35rem;
+}
+
+.countabilibar .server-name-and-logo.horizontal .server-logo-image,
+.countabilibar .server-name-and-logo.horizontal .server-logo-emoji,
+.countabilibar .server-name-and-logo.horizontal .server-logo-placeholder {
+  height: 22px;
+  width: 22px;
+}
+
+.countabilibar .server-name-and-logo .server-name-primary,
+.countabilibar .server-name-and-logo .server-name-secondary {
+  font-size: 0.75rem;
+  line-height: 1.1;
+}
+
+.countabilibar-host {
+  font-weight: 600;
+}
+
+.countabilibar-author {
+  align-items: center;
+  display: flex;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.countabilibar-author .post-author-avatar {
+  flex: 0 0 auto;
+  height: 22px;
+  width: 22px;
+}
+
+.countabilibar-author-name {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.countabilibar-username {
+  font-weight: 600;
+}
+
+.countabilibar-real-name {
+  opacity: 0.75;
+}
+
+.countabilibar-counts {
+  flex: 0 0 auto;
+  opacity: 0.85;
+}
+
+/* The popover listing a server's users -- the same spot, width and corner treatment as
+   `.breadcrumb-reply-panel` (see above), below the whole `.navbar` stack. */
+.countabilibar-panel.nav-panel {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+  width: min(90vw, 460px);
+  max-height: 70vh;
+  overflow-y: auto;
+  z-index: 15;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+
+.countabilibar-panel.nav-panel.is-closed {
+  transform: translateX(-50%) translateY(-8px);
+}
+
+.countabilibar-panel-header .server-name-and-logo {
+  min-width: 0;
+}
+
+.countabilibar-panel-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.countabilibar-panel-row {
+  align-items: center;
+  display: flex;
+  font-size: 0.85rem;
+  gap: 0.5rem;
+  justify-content: space-between;
+}
+
+.countabilibar-panel-row .countabilibar-author {
+  flex: 1 1 auto;
+}

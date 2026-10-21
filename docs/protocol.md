@@ -2561,6 +2561,7 @@ Valid GetPostsRequest formats:
 | ----- | ---- | ----- | ----------- |
 | post_id | [string](#string) | optional | Returns the single post with the given ID. |
 | author_user_id | [string](#string) | optional | Limits results to those by the given author user ID. |
+| excluded_author_user_ids | [string](#string) | repeated | Excludes results by any of the given author user IDs. Applies to every feed-style listing (all listing types except single `post_id`/reply lookups). Numbered out of order (it logically belongs right after `author_user_id`) so as not to break compatibility; the order will be straightened out in a later protocol version. |
 | group_id | [string](#string) | optional | Limits results to those in the given group ID. |
 | reply_depth | [uint32](#uint32) | optional | Only supported for depth=2 for now. |
 | context | [PostContext](#rellm-PostContext) | optional | Only POST and REPLY are supported for now. |
@@ -2855,6 +2856,7 @@ Valid GetEventsRequest formats:
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | author_user_id | [string](#string) | optional | Limits results to those by the given author user ID. |
+| excluded_author_user_ids | [string](#string) | repeated | Excludes events by any of the given author user IDs. Applies to every feed-style listing (all but single `post_id`/`occasion_post_ids` lookups). Numbered out of order (it logically belongs right after `author_user_id`) so as not to break compatibility; the order will be straightened out in a later protocol version. |
 | group_id | [string](#string) | optional | Limits results to those in the given group ID (via [`GroupPost`](#rellm-GroupPost) association&#39;s for the Event&#39;s internal [`Post`](#rellm-Post)). |
 | time_filter | [TimeFilter](#rellm-TimeFilter) | optional | Filters returned [`Occasion`](#rellm-Occasion)s by time. |
 | attendee_id | [string](#string) | optional | If set, only returns events that the given user is attending. If `rsvp_statuses` is also set, returns events where that user&#39;s status is one of the given statuses. |

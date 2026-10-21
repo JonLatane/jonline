@@ -29,6 +29,11 @@ message GetEventsRequest {
   reserved "event_id", "occasion_id";
   // Limits results to those by the given author user ID.
   optional string author_user_id = 2;
+  // Excludes events by any of the given author user IDs. Applies to every feed-style listing (all
+  // but single `post_id`/`occasion_post_ids` lookups). Numbered out of order (it logically belongs
+  // right after `author_user_id`) so as not to break compatibility; the order will be straightened out in a
+  // later protocol version.
+  repeated string excluded_author_user_ids = 14;
   // Limits results to those in the given group ID (via [`GroupPost`](#rellm-GroupPost) association's for the Event's internal [`Post`](#rellm-Post)).
   optional string group_id = 3;
   // Filters returned [`Occasion`](#rellm-Occasion)s by time.

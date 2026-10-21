@@ -192,6 +192,13 @@ export interface GetEventsRequest {
   authorUserId?:
     | string
     | undefined;
+  /**
+   * Excludes events by any of the given author user IDs. Applies to every feed-style listing (all
+   * but single `post_id`/`occasion_post_ids` lookups). Numbered out of order (it logically belongs
+   * right after `author_user_id`) so as not to break compatibility; the order will be straightened out in a
+   * later protocol version.
+   */
+  excludedAuthorUserIds: string[];
   /** Limits results to those in the given group ID (via [`GroupPost`](#rellm-GroupPost) association's for the Event's internal [`Post`](#rellm-Post)). */
   groupId?:
     | string
@@ -597,6 +604,7 @@ export interface UserAttendee {
 function createBaseGetEventsRequest(): GetEventsRequest {
   return {
     authorUserId: undefined,
+    excludedAuthorUserIds: [],
     groupId: undefined,
     timeFilter: undefined,
     attendeeId: undefined,
@@ -613,6 +621,9 @@ export const GetEventsRequest: MessageFns<GetEventsRequest> = {
   encode(message: GetEventsRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.authorUserId !== undefined) {
       writer.uint32(18).string(message.authorUserId);
+    }
+    for (const v of message.excludedAuthorUserIds) {
+      writer.uint32(114).string(v!);
     }
     if (message.groupId !== undefined) {
       writer.uint32(26).string(message.groupId);
@@ -659,6 +670,14 @@ export const GetEventsRequest: MessageFns<GetEventsRequest> = {
           }
 
           message.authorUserId = reader.string();
+          continue;
+        }
+        case 14: {
+          if (tag !== 114) {
+            break;
+          }
+
+          message.excludedAuthorUserIds.push(reader.string());
           continue;
         }
         case 3: {
@@ -755,6 +774,9 @@ export const GetEventsRequest: MessageFns<GetEventsRequest> = {
   fromJSON(object: any): GetEventsRequest {
     return {
       authorUserId: isSet(object.authorUserId) ? globalThis.String(object.authorUserId) : undefined,
+      excludedAuthorUserIds: globalThis.Array.isArray(object?.excludedAuthorUserIds)
+        ? object.excludedAuthorUserIds.map((e: any) => globalThis.String(e))
+        : [],
       groupId: isSet(object.groupId) ? globalThis.String(object.groupId) : undefined,
       timeFilter: isSet(object.timeFilter) ? TimeFilter.fromJSON(object.timeFilter) : undefined,
       attendeeId: isSet(object.attendeeId) ? globalThis.String(object.attendeeId) : undefined,
@@ -777,6 +799,9 @@ export const GetEventsRequest: MessageFns<GetEventsRequest> = {
     const obj: any = {};
     if (message.authorUserId !== undefined) {
       obj.authorUserId = message.authorUserId;
+    }
+    if (message.excludedAuthorUserIds?.length) {
+      obj.excludedAuthorUserIds = message.excludedAuthorUserIds;
     }
     if (message.groupId !== undefined) {
       obj.groupId = message.groupId;
@@ -814,6 +839,7 @@ export const GetEventsRequest: MessageFns<GetEventsRequest> = {
   fromPartial<I extends Exact<DeepPartial<GetEventsRequest>, I>>(object: I): GetEventsRequest {
     const message = createBaseGetEventsRequest();
     message.authorUserId = object.authorUserId ?? undefined;
+    message.excludedAuthorUserIds = object.excludedAuthorUserIds?.map((e) => e) || [];
     message.groupId = object.groupId ?? undefined;
     message.timeFilter = (object.timeFilter !== undefined && object.timeFilter !== null)
       ? TimeFilter.fromPartial(object.timeFilter)

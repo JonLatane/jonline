@@ -60,6 +60,7 @@ import Shared.AccountsPanel.RellmAccounts as RellmAccounts exposing (RellmAccoun
 import Shared.AccountsPanel.RellmServers as RellmServers exposing (RellmServer)
 import Shared.Breadcrumbs as Breadcrumbs
 import Shared.Conversions as Conversions
+import Shared.Countabilibar as Countabilibar
 import Shared.CreateNewPanel as CreateNewPanel
 import Shared.Federation.Bluesky as Bluesky
 import Shared.Federation.Common exposing (BlueskyAuth, anonymousSearchHost, blueskyAuthFor)
@@ -176,6 +177,13 @@ type alias Model =
     -- instead of one ICS link.
     , exportPopoverOpen : Bool
 
+    -- The servers/users `Shared.Countabilibar` had unchecked as of this page's last `update` (see
+    -- `applyHidden`) -- always `Countabilibar.noneHidden` for a feed scoped to one profile, which hiding
+    -- would only blank. `syncAnimations` (which has no `Shared.Model`) filters by it, and
+    -- `relevantServers`/`fetchRellmPosts` leave a hidden server out entirely, resp. ask each server to
+    -- leave its hidden users out.
+    , hidden : Countabilibar.Hidden
+
     -- Which of the popover's two "Copy X Link" buttons (if either) most recently fired within
     -- the last 5s -- shows "Link Copied!" on that one specifically (unlike
     -- `Components.Pages.EventsPage.Model.copyLinkCopied`'s plain `Bool`, since there are two
@@ -286,6 +294,16 @@ type alias ServerFeed =
     -- after the search was cleared) -- and is dropped by `GotFeedPosts` rather than overwriting the
     -- current results.
     , requestId : Int
+
+    -- The `GetPostsRequest.excluded_author_user_ids` the fetch behind `status` was sent with -- a
+    -- different set now (someone was hidden or unhidden in `Shared.Countabilibar`) means a refetch, same
+    -- as a changed `accountId` does.
+    , excludedAuthorIds : List String
+
+    -- Whether a fetch is in flight -- including a refetch of an already-`Loaded` feed, whose `status`
+    -- stays as it was meanwhile (see `refetchFeeds`). `Countabilibar` counts leave such a feed's host
+    -- alone until it settles -- see `pendingHosts`.
+    , refreshing : Bool
     }
 
 
@@ -576,6 +594,12 @@ init shared author navKey path query embeddedPage availableSyncDestinations prof
                 , availableSyncDestinations = availableSyncDestinations
                 , pushStatuses = Dict.empty
                 , exportPopoverOpen = False
+                , hidden =
+                    if author /= Nothing || profileFeedSource /= Nothing then
+                        Countabilibar.noneHidden
+
+                    else
+                        Countabilibar.hidden shared.countabilibar
                 , copyLinkCopied = Nothing
                 , copyLinkGeneration = 0
                 }
@@ -668,10 +692,149 @@ federatedAuthorsChanged =
 update : Shared.Model -> Msg -> Model -> ( Model, Effect Msg )
 update shared msg model =
     let
+        ( hiddenModel, hiddenEffect ) =
+            applyHidden shared model
+
         ( newModel, effect ) =
-            updateInner shared msg model
+            updateInner shared msg hiddenModel
     in
-    ( newModel, Effect.batch [ effect, setBreadcrumbsRoot shared newModel, quoteRequestEffect shared newModel ] )
+    ( newModel
+    , Effect.batch
+        [ hiddenEffect
+        , effect
+        , setBreadcrumbsRoot shared newModel
+        , quoteRequestEffect shared newModel
+        , countabilibarEffect shared msg newModel
+        ]
+    )
+
+
+{-| Whether this feed is of one particular profile (`UserProfilePage`'s embedded copy and its
+Mastodon/Bluesky counterparts) rather than a listing across many authors -- there's nothing for
+`Shared.Countabilibar` to hide or count there: the one profile is the whole point of the page.
+-}
+scopedToOneProfile : Model -> Bool
+scopedToOneProfile model =
+    model.author /= Nothing || model.profileFeedSource /= Nothing
+
+
+{-| Brings `model.hidden` up to date with `Shared.Countabilibar`'s (checked on every `update`, so it
+doesn't matter which message caused the change): hidden posts fade out right away (`syncAnimations`),
+and what's fetched changes -- hidden servers stop being fetched, and servers with newly hidden/unhidden
+users are refetched without/with them, which also fills the space they took up with other users' posts
+(see `fetchNewFeeds`).
+-}
+applyHidden : Shared.Model -> Model -> ( Model, Effect Msg )
+applyHidden shared model =
+    let
+        current : Countabilibar.Hidden
+        current =
+            if scopedToOneProfile model then
+                Countabilibar.noneHidden
+
+            else
+                Countabilibar.hidden shared.countabilibar
+    in
+    if current == model.hidden then
+        ( model, Effect.none )
+
+    else
+        fetchNewFeeds shared { model | hidden = current }
+            |> Tuple.mapFirst syncAnimations
+
+
+{-| Keeps `Shared.Countabilibar`'s counts in step with what this feed is showing -- see
+`Countabilibar.syncMsg`. Only top-level posts are counted (not `REPLY` context), only from real Rellm
+servers (a Mastodon/Bluesky post's author has no Rellm user id to hide by), never while the feed is
+scoped to one profile, and not at all on an animation tick (nothing it changes is counted).
+-}
+countabilibarEffect : Shared.Model -> Msg -> Model -> Effect Msg
+countabilibarEffect shared msg model =
+    case msg of
+        Animate _ ->
+            Effect.none
+
+        _ ->
+            if scopedToOneProfile model then
+                Effect.none
+
+            else
+                Countabilibar.syncMsg Countabilibar.PostsKind (pendingHosts model) (shownPosts shared model) shared.countabilibar
+                    |> Maybe.map (Shared.CountabilibarSync >> Effect.fromShared)
+                    |> Maybe.withDefault Effect.none
+
+
+{-| Every Rellm server's posts on screen -- the author and id of each -- exactly what `syncAnimations`
+shows: loaded, in this `context`, and not by anyone hidden. Posts without an author can't be counted.
+-}
+shownPosts : Shared.Model -> Model -> Dict String (List ( Proto.Rellm.Author, String ))
+shownPosts shared model =
+    if model.context /= POST then
+        Dict.empty
+
+    else
+        Dict.foldl
+            (\_ feed shown ->
+                case feed.status of
+                    Loaded posts ->
+                        if RellmServers.rellmServerForHost shared.accounts.servers feed.host == Nothing then
+                            shown
+
+                        else
+                            Dict.update feed.host
+                                (\existing ->
+                                    Just
+                                        (Maybe.withDefault [] existing
+                                            ++ List.filterMap
+                                                (\post ->
+                                                    if post.context == POST && not (isHiddenAuthor model feed.host post) then
+                                                        Maybe.map (\author -> ( author, post.id )) post.author
+
+                                                    else
+                                                        Nothing
+                                                )
+                                                posts
+                                        )
+                                )
+                                shown
+
+                    _ ->
+                        shown
+            )
+            Dict.empty
+            model.postsByServer
+
+
+{-| The hosts with a fetch still to land (or a feed with nothing loaded yet) -- not yet worth
+reconciling counts against, see `Countabilibar.syncMsg`.
+-}
+pendingHosts : Model -> Set String
+pendingHosts model =
+    model.postsByServer
+        |> Dict.values
+        |> List.filter
+            (\feed ->
+                feed.refreshing
+                    || (case feed.status of
+                            Loading ->
+                                True
+
+                            _ ->
+                                False
+                       )
+            )
+        |> List.map .host
+        |> Set.fromList
+
+
+isHiddenAuthor : Model -> String -> Post -> Bool
+isHiddenAuthor model host post =
+    case post.author of
+        Just author ->
+            Countabilibar.isAuthorHidden model.hidden host author.userId
+
+        Nothing ->
+            False
 
 
 {-| Asks `Shared.QuoteLinks` for the quoted post of every Rellm `POST` this page is showing that links to one
@@ -782,7 +945,7 @@ updateInner shared msg model =
             ( { model
                 | postsByServer =
                     Dict.update host
-                        (Maybe.map (ifCurrent requestId (\feed -> { feed | status = Loaded posts })))
+                        (Maybe.map (ifCurrent requestId (\feed -> { feed | status = Loaded posts, refreshing = False })))
                         model.postsByServer
               }
                 |> syncAnimations
@@ -799,7 +962,7 @@ updateInner shared msg model =
             in
             ( { model
                 | postsByServer =
-                    Dict.update host (Maybe.map (ifCurrent requestId (\feed -> { feed | status = Failed }))) model.postsByServer
+                    Dict.update host (Maybe.map (ifCurrent requestId (\feed -> { feed | status = Failed, refreshing = False }))) model.postsByServer
               }
                 |> syncAnimations
             , accountEffect
@@ -1123,8 +1286,8 @@ pushStatusKey postId syncDestinationId =
     postId ++ "|" ++ syncDestinationId
 
 
-{-| The servers this page should ever fetch from: every enabled server for an
-unfiltered feed (`model.author == Nothing`, e.g. `Pages.Home_`), or, once
+{-| The servers this page should ever fetch from: every enabled server (but those hidden in
+`Shared.Countabilibar`) for an unfiltered feed (`model.author == Nothing`, e.g. `Pages.Home_`), or, once
 `author` restricts the feed to one user, _only_ that user's own resolved
 host -- looked up via `RellmServers.rellmServerForHost` (not `enabledServers`),
 since a user profile can be resolved, and its posts fetched anonymously,
@@ -1145,6 +1308,7 @@ relevantServers shared model =
 
         Nothing ->
             AccountsPanel.enabledServers shared.accounts
+                |> List.filter (\server -> not (Countabilibar.isHostHidden model.hidden server.frontendHost))
 
 
 {-| What `GotFeedPosts` leaves out of a freshly fetched feed: any Post whose id is in `hiddenPostIds` (the
@@ -1332,6 +1496,21 @@ beforeCutoff model =
         Nothing
 
 
+{-| The users `source`'s server should leave out of its response --
+`Shared.Countabilibar`'s hidden ones on that server. Hiding one makes room for the others' posts in the
+response (it holds a fixed number of posts), which filtering them out of what's already loaded
+couldn't. Always none for any other kind of source.
+-}
+feedSourceExcludedAuthorIds : Model -> FeedSource -> List String
+feedSourceExcludedAuthorIds model source =
+    case source of
+        RellmServer server ->
+            Countabilibar.hiddenAuthorIds model.hidden server.frontendHost
+
+        _ ->
+            []
+
+
 {-| One real `GetPosts` fetch of `server`, scoped to `authorId` (the page's own `author`, or one `RellmFederatedAuthor`'s profile) and settling as `source`'s own `GotFeedPosts`. -}
 fetchRellmPosts : Shared.Model -> Model -> Int -> FeedSource -> RellmServer -> Maybe String -> Effect Msg
 fetchRellmPosts shared model requestId source server authorId =
@@ -1346,6 +1525,7 @@ fetchRellmPosts shared model requestId source server authorId =
         , server.frontendHost
         )
         authorId
+        (feedSourceExcludedAuthorIds model source)
         model.searchText
         model.context
         (isPopularListing model)
@@ -1521,6 +1701,8 @@ refetchFeeds shared model sourcesToFetch =
                     , accountId = accountId
                     , host = feedSourceHost source
                     , requestId = requestId
+                    , excludedAuthorIds = feedSourceExcludedAuthorIds model source
+                    , refreshing = True
                     }
                     dict
                 , started ++ [ ( requestId, source ) ]
@@ -1570,7 +1752,7 @@ fetchNewFeeds shared model =
                                 True
 
                             Just feed ->
-                                feed.accountId /= feedSourceAccountId shared source
+                                feed.accountId /= feedSourceAccountId shared source || feed.excludedAuthorIds /= feedSourceExcludedAuthorIds model source
                     )
     in
     refetchFeeds shared model sourcesToFetch
@@ -1868,7 +2050,7 @@ syncAnimations model =
                                 let
                                     inContext : List Post
                                     inContext =
-                                        List.filter (\post -> post.context == model.context) posts
+                                        List.filter (\post -> post.context == model.context && not (isHiddenAuthor model feed.host post)) posts
 
                                     total : Float
                                     total =

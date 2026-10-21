@@ -5155,6 +5155,12 @@ directory</a> is (<code>{name}</code> denotes a
           <td>Limits results to those by the given author user ID.</td>
         </tr>
         <tr>
+          <td>excluded_author_user_ids</td>
+          <td><a href="#string">string</a></td>
+          <td>repeated</td>
+          <td>Excludes results by any of the given author user IDs. Applies to every feed-style listing (all listing types except single <code>post_id</code>/reply lookups). Numbered out of order (it logically belongs right after <code>author_user_id</code>) so as not to break compatibility; the order will be straightened out in a later protocol version.</td>
+        </tr>
+        <tr>
           <td>group_id</td>
           <td><a href="#string">string</a></td>
           <td>optional</td>
@@ -5840,6 +5846,12 @@ directory</a> is (<code>{name}</code> denotes a
           <td><a href="#string">string</a></td>
           <td>optional</td>
           <td>Limits results to those by the given author user ID.</td>
+        </tr>
+        <tr>
+          <td>excluded_author_user_ids</td>
+          <td><a href="#string">string</a></td>
+          <td>repeated</td>
+          <td>Excludes events by any of the given author user IDs. Applies to every feed-style listing (all but single <code>post_id</code>/<code>occasion_post_ids</code> lookups). Numbered out of order (it logically belongs right after <code>author_user_id</code>) so as not to break compatibility; the order will be straightened out in a later protocol version.</td>
         </tr>
         <tr>
           <td>group_id</td>

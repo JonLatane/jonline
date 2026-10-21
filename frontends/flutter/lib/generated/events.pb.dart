@@ -51,6 +51,7 @@ class GetEventsRequest extends $pb.GeneratedMessage {
     $core.String? searchText,
     $core.Iterable<$core.String>? occasionPostIds,
     $core.String? anonymousAttendeeAuthToken,
+    $core.Iterable<$core.String>? excludedAuthorUserIds,
   }) {
     final $result = create();
     if (authorUserId != null) {
@@ -83,6 +84,9 @@ class GetEventsRequest extends $pb.GeneratedMessage {
     if (anonymousAttendeeAuthToken != null) {
       $result.anonymousAttendeeAuthToken = anonymousAttendeeAuthToken;
     }
+    if (excludedAuthorUserIds != null) {
+      $result.excludedAuthorUserIds.addAll(excludedAuthorUserIds);
+    }
     return $result;
   }
   GetEventsRequest._() : super();
@@ -100,6 +104,7 @@ class GetEventsRequest extends $pb.GeneratedMessage {
     ..aOS(11, _omitFieldNames ? '' : 'searchText')
     ..pPS(12, _omitFieldNames ? '' : 'occasionPostIds')
     ..aOS(13, _omitFieldNames ? '' : 'anonymousAttendeeAuthToken')
+    ..pPS(14, _omitFieldNames ? '' : 'excludedAuthorUserIds')
     ..hasRequiredFields = false
   ;
 
@@ -225,6 +230,13 @@ class GetEventsRequest extends $pb.GeneratedMessage {
   $core.bool hasAnonymousAttendeeAuthToken() => $_has(9);
   @$pb.TagNumber(13)
   void clearAnonymousAttendeeAuthToken() => clearField(13);
+
+  /// Excludes events by any of the given author user IDs. Applies to every feed-style listing (all
+  /// but single `post_id`/`occasion_post_ids` lookups). Numbered out of order (it logically belongs
+  /// right after `author_user_id`) so as not to break compatibility; the order will be straightened out in a
+  /// later protocol version.
+  @$pb.TagNumber(14)
+  $core.List<$core.String> get excludedAuthorUserIds => $_getList(10);
 }
 
 /// Time filter that works on the `starts_at` and `ends_at` fields of [`Occasion`](#rellm-Occasion).

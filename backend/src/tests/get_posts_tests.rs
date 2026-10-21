@@ -1900,3 +1900,172 @@ mod recently_popular_posts {
         });
     }
 }
+
+mod excluded_author_user_ids {
+    use super::*;
+
+    fn public_post(
+        conn: &mut crate::db_connection::PgPooledConnection,
+        author: &crate::models::User,
+        title: &str,
+    ) -> crate::models::Post {
+        create_post(
+            conn,
+            Some(author),
+            PostOpts {
+                visibility: Visibility::GlobalPublic,
+                title: Some(title.to_string()),
+                ..Default::default()
+            },
+        )
+    }
+
+    #[test]
+    fn default_listing_omits_excluded_authors() {
+        let mut conn = test_conn();
+        conn.test_transaction::<_, Status, _>(|conn| {
+            let kept = create_user(conn, "excl_posts_kept");
+            let dropped = create_user(conn, "excl_posts_dropped");
+            let kept_post = public_post(conn, &kept, "kept excl post");
+            let dropped_post = public_post(conn, &dropped, "dropped excl post");
+
+            let all = get_posts(GetPostsRequest::default(), &None, conn)?;
+            assert!(ids(&all).contains(&dropped_post.id.to_proto_id()));
+
+            let response = get_posts(
+                GetPostsRequest {
+                    excluded_author_user_ids: vec![dropped.id.to_proto_id()],
+                    ..Default::default()
+                },
+                &None,
+                conn,
+            )?;
+            assert!(ids(&response).contains(&kept_post.id.to_proto_id()));
+            assert!(!ids(&response).contains(&dropped_post.id.to_proto_id()));
+            Ok(())
+        });
+    }
+
+    #[test]
+    fn several_authors_can_be_excluded_at_once() {
+        let mut conn = test_conn();
+        conn.test_transaction::<_, Status, _>(|conn| {
+            let kept = create_user(conn, "excl_posts_multi_kept");
+            let dropped1 = create_user(conn, "excl_posts_multi_dropped1");
+            let dropped2 = create_user(conn, "excl_posts_multi_dropped2");
+            let kept_post = public_post(conn, &kept, "kept multi");
+            let dropped_post1 = public_post(conn, &dropped1, "dropped multi 1");
+            let dropped_post2 = public_post(conn, &dropped2, "dropped multi 2");
+
+            let response = get_posts(
+                GetPostsRequest {
+                    excluded_author_user_ids: vec![
+                        dropped1.id.to_proto_id(),
+                        dropped2.id.to_proto_id(),
+                    ],
+                    ..Default::default()
+                },
+                &None,
+                conn,
+            )?;
+            let result_ids = ids(&response);
+            assert!(result_ids.contains(&kept_post.id.to_proto_id()));
+            assert!(!result_ids.contains(&dropped_post1.id.to_proto_id()));
+            assert!(!result_ids.contains(&dropped_post2.id.to_proto_id()));
+            Ok(())
+        });
+    }
+
+    #[test]
+    fn text_search_omits_excluded_authors() {
+        let mut conn = test_conn();
+        conn.test_transaction::<_, Status, _>(|conn| {
+            let kept = create_user(conn, "excl_search_kept");
+            let dropped = create_user(conn, "excl_search_dropped");
+            let kept_post = public_post(conn, &kept, "quuxexcl from kept");
+            let dropped_post = public_post(conn, &dropped, "quuxexcl from dropped");
+
+            let response = get_posts(
+                GetPostsRequest {
+                    listing_type: PostListingType::TextSearch as i32,
+                    search_text: Some("quuxexcl".to_string()),
+                    excluded_author_user_ids: vec![dropped.id.to_proto_id()],
+                    ..Default::default()
+                },
+                &None,
+                conn,
+            )?;
+            assert_eq!(ids(&response), vec![kept_post.id.to_proto_id()]);
+            assert!(!ids(&response).contains(&dropped_post.id.to_proto_id()));
+            Ok(())
+        });
+    }
+
+    #[test]
+    fn recently_popular_omits_excluded_authors() {
+        let mut conn = test_conn();
+        conn.test_transaction::<_, Status, _>(|conn| {
+            let kept = create_user(conn, "excl_popular_kept");
+            let dropped = create_user(conn, "excl_popular_dropped");
+            let kept_post = public_post(conn, &kept, "kept popular");
+            let dropped_post = public_post(conn, &dropped, "dropped popular");
+
+            let response = get_posts(
+                GetPostsRequest {
+                    listing_type: PostListingType::RecentlyPopularPosts as i32,
+                    excluded_author_user_ids: vec![dropped.id.to_proto_id()],
+                    ..Default::default()
+                },
+                &None,
+                conn,
+            )?;
+            assert!(ids(&response).contains(&kept_post.id.to_proto_id()));
+            assert!(!ids(&response).contains(&dropped_post.id.to_proto_id()));
+            Ok(())
+        });
+    }
+
+    #[test]
+    fn following_listing_omits_excluded_authors() {
+        let mut conn = test_conn();
+        conn.test_transaction::<_, Status, _>(|conn| {
+            let viewer = create_user(conn, "excl_follow_viewer");
+            let kept = create_user(conn, "excl_follow_kept");
+            let dropped = create_user(conn, "excl_follow_dropped");
+            create_follow(conn, &viewer, &kept);
+            create_follow(conn, &viewer, &dropped);
+            let kept_post = public_post(conn, &kept, "kept followed");
+            let dropped_post = public_post(conn, &dropped, "dropped followed");
+
+            let response = get_posts(
+                GetPostsRequest {
+                    listing_type: PostListingType::FollowingPosts as i32,
+                    excluded_author_user_ids: vec![dropped.id.to_proto_id()],
+                    ..Default::default()
+                },
+                &Some(&viewer),
+                conn,
+            )?;
+            assert_eq!(ids(&response), vec![kept_post.id.to_proto_id()]);
+            assert!(!ids(&response).contains(&dropped_post.id.to_proto_id()));
+            Ok(())
+        });
+    }
+
+    #[test]
+    fn malformed_id_is_invalid_argument() {
+        let mut conn = test_conn();
+        conn.test_transaction::<_, Status, _>(|conn| {
+            let result = get_posts(
+                GetPostsRequest {
+                    excluded_author_user_ids: vec!["not a real id!".to_string()],
+                    ..Default::default()
+                },
+                &None,
+                conn,
+            );
+            assert_eq!(result.unwrap_err().code(), Code::InvalidArgument);
+            Ok(())
+        });
+    }
+}

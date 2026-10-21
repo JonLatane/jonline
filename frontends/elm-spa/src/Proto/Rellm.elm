@@ -4261,6 +4261,7 @@ type alias TimeFilter =
 -}
 fieldNumbersGetEventsRequest :
     { authorUserId : Int
+    , excludedAuthorUserIds : Int
     , groupId : Int
     , timeFilter : Int
     , attendeeId : Int
@@ -4315,6 +4316,14 @@ encodeGetEventsRequest =
 
 
 ## Fields
+
+### excludedAuthorUserIds
+
+ Excludes events by any of the given author user IDs. Applies to every feed-style listing (all
+ but single `post_id`/`occasion_post_ids` lookups). Numbered out of order (it logically belongs
+ right after `author_user_id`) so as not to break compatibility; the order will be straightened out in a
+ later protocol version.
+
 
 ### rsvpStatuses
 
@@ -4968,6 +4977,7 @@ type alias GetPostsResponse =
 fieldNumbersGetPostsRequest :
     { postId : Int
     , authorUserId : Int
+    , excludedAuthorUserIds : Int
     , groupId : Int
     , replyDepth : Int
     , context : Int
@@ -5027,6 +5037,14 @@ encodeGetPostsRequest =
 
 
 ## Fields
+
+### excludedAuthorUserIds
+
+ Excludes results by any of the given author user IDs. Applies to every feed-style listing (all
+ listing types except single `post_id`/reply lookups). Numbered out of order (it logically belongs
+ right after `author_user_id`) so as not to break compatibility; the order will be straightened out in a
+ later protocol version.
+
 
 ### listingType
 

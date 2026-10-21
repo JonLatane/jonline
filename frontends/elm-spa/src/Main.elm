@@ -101,6 +101,7 @@ import Pages.UsernameOrCustomTab_.Friends
 import Pages.UsernameOrCustomTab_.Posts
 import Request
 import Shared
+import Shared.Countabilibar as Countabilibar
 import Shared.AccountsPanel as AccountsPanel
 import UI.CustomNav as CustomNav
 import Task
@@ -254,8 +255,20 @@ innerUpdate msg model =
 
                     Nothing ->
                         let
+                            -- One page's counts (and hidden servers/users) never carry over to the
+                            -- next -- and this has to happen before `Pages.init`, which already reads
+                            -- what's hidden (see `Shared.Countabilibar.reset`).
+                            sharedBeforeInit : Shared.Model
+                            sharedBeforeInit =
+                                let
+                                    shared0Base : Shared.Model
+                                    shared0Base =
+                                        model.shared
+                                in
+                                { shared0Base | countabilibar = Countabilibar.reset shared0Base.countabilibar }
+
                             ( page, effect ) =
-                                Pages.init (Route.fromUrl url) model.shared url model.key
+                                Pages.init (Route.fromUrl url) sharedBeforeInit url model.key
 
                             isBackNav : Bool
                             isBackNav =
@@ -271,10 +284,10 @@ innerUpdate msg model =
 
                             ( shared0, sharedCmd ) =
                                 if isBackNav then
-                                    Shared.update (Request.create () url model.key) Shared.ShowScrollPreserver model.shared
+                                    Shared.update (Request.create () url model.key) Shared.ShowScrollPreserver sharedBeforeInit
 
                                 else
-                                    ( model.shared, Cmd.none )
+                                    ( sharedBeforeInit, Cmd.none )
 
                             -- Slide the new page in from the side its top-nav tab sits on, if
                             -- this is a nav-tab-to-nav-tab navigation (see
@@ -507,24 +520,37 @@ Any `Shared.Msg`s the page's own `update` forwards back out in response (via
 `Effect.fromShared`) are dropped rather than reapplied to `Shared.update` --
 a page's `SharedMsg` handler only ever echoes back the very message it was
 just given here, and `sharedMsg` has already been applied by the caller, so
-reapplying it would double up a state change that's already been made.
+reapplying it would double up a state change that's already been made. The one
+exception is `Shared.CountabilibarSync` (see `Shared.isCountabilibarSync`): that's never an
+echo, but a page reporting what it's now showing to `Shared.Countabilibar` -- e.g. nothing from a
+server that was just disabled -- and nothing else may ever report it (see
+`Components.Pages.EventsPage.countabilibarEffect`). It's delivered as a fresh message
+rather than applied here, since this function has no way to hand back a changed `Shared.Model`.
+Pages are never notified of those, or of anything else `Shared.notifiesPages` rules out, so there
+is no echo of one to tell apart from the real thing.
 
 -}
 notifyPageOfSharedMsg : Shared.Msg -> Shared.Model -> Gen.Model.Model -> Url -> Key -> ( Gen.Model.Model, Cmd Msg )
 notifyPageOfSharedMsg sharedMsg shared page url key =
-    case sharedMsgForPage sharedMsg page of
-        Nothing ->
-            ( page, Cmd.none )
-
-        Just msg ->
+    case ( Shared.notifiesPages sharedMsg, sharedMsgForPage sharedMsg page ) of
+        ( True, Just msg ) ->
             let
                 ( newPage, effect ) =
                     Pages.update msg page shared url key
 
-                ( _, remainingEffect ) =
+                ( droppedSharedMsgs, remainingEffect ) =
                     Effect.partitionShared effect
+
+                countabilibarCmds : List (Cmd Msg)
+                countabilibarCmds =
+                    droppedSharedMsgs
+                        |> List.filter Shared.isCountabilibarSync
+                        |> List.map (\countMsg -> Task.perform (\_ -> Shared countMsg) (Task.succeed ()))
             in
-            ( newPage, Effect.toCmd ( Shared, Page ) remainingEffect )
+            ( newPage, Cmd.batch (Effect.toCmd ( Shared, Page ) remainingEffect :: countabilibarCmds) )
+
+        _ ->
+            ( page, Cmd.none )
 
 
 

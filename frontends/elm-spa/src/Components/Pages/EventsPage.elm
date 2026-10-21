@@ -66,12 +66,14 @@ import Process
 import Proto.Google.Protobuf exposing (Timestamp)
 import Proto.Rellm exposing (Event, Occasion, SyncDestination, User)
 import Proto.Rellm.CalendarDisplayMode as CalendarDisplayMode exposing (CalendarDisplayMode(..))
+import Set exposing (Set)
 import Shared
 import Shared.AccountsPanel as AccountsPanel
 import Shared.AccountsPanel.RellmAccounts as RellmAccounts exposing (RellmAccount)
 import Shared.AccountsPanel.RellmServers as RellmServers exposing (RellmServer)
 import Shared.Breadcrumbs as Breadcrumbs
 import Shared.Conversions as Conversions
+import Shared.Countabilibar as Countabilibar
 import Shared.CreateNewPanel as CreateNewPanel
 import Shared.MediaViewerPanel as MediaViewerPanel
 import Shared.StarredPanel as StarredPanel
@@ -318,6 +320,11 @@ type alias Model =
 
     -- The card (`eventAnimationKey`) whose "Add to Calendar" popdown is open, if any.
     , exportOpenFor : Maybe String
+
+    -- The servers/users `Shared.Countabilibar` had unchecked as of this page's last `update` (see
+    -- `applyHidden`) -- always `Countabilibar.noneHidden` for a feed scoped to one profile, which hiding
+    -- would only blank. Mirrors `Components.Pages.PostsPage.Model.hidden`.
+    , hidden : Countabilibar.Hidden
     }
 
 
@@ -528,6 +535,12 @@ type alias ServerFeed =
     -- `EventSource.key`, which for a federated author isn't just the host (two profiles can
     -- share one server).
     , host : String
+
+    -- The `GetEventsRequest.excluded_author_user_ids` the fetch behind `status` was sent with, and
+    -- whether a fetch is in flight right now -- mirror `Components.Pages.PostsPage.ServerFeed`'s fields
+    -- of the same names.
+    , excludedAuthorIds : List String
+    , refreshing : Bool
     }
 
 
@@ -724,6 +737,12 @@ init shared author navKey path query fragment embeddedPage syncsCalendarPreferen
                 , rsvpModels = Dict.empty
                 , anonymousAuthTokens = Dict.get "anonymousAuthToken" query
                 , exportOpenFor = Nothing
+                , hidden =
+                    if author /= Nothing then
+                        Countabilibar.noneHidden
+
+                    else
+                        Countabilibar.hidden shared.countabilibar
                 }
                 |> Tuple.mapFirst syncCalendarAnimations
     in
@@ -917,17 +936,142 @@ update shared msg model =
 
         Nothing ->
             let
+                ( hiddenModel, hiddenEffect ) =
+                    applyHidden shared model
+
                 ( newModel, effect ) =
-                    updateInner shared msg model
+                    updateInner shared msg hiddenModel
             in
             ( newModel
             , Effect.batch
-                [ effect
+                [ hiddenEffect
+                , effect
                 , setBreadcrumbsRoot shared newModel
                 , calendarRenderEffect shared model newModel
                 , pendingCalendarPreviewScrollEffect model newModel
+                , countabilibarEffect shared msg newModel
                 ]
             )
+
+
+{-| Brings `model.hidden` up to date with `Shared.Countabilibar`'s (checked on every `update`, so it
+doesn't matter which message caused the change) -- mirrors `Components.Pages.PostsPage.applyHidden`: hidden
+events fade out right away (`syncAnimations`), hidden servers stop being fetched and servers with
+newly hidden/unhidden users are refetched without/with them.
+-}
+applyHidden : Shared.Model -> Model -> ( Model, Effect Msg )
+applyHidden shared model =
+    let
+        current : Countabilibar.Hidden
+        current =
+            if model.author /= Nothing then
+                Countabilibar.noneHidden
+
+            else
+                Countabilibar.hidden shared.countabilibar
+    in
+    if current == model.hidden then
+        ( model, Effect.none )
+
+    else
+        fetchNewServers shared { model | hidden = current }
+            |> Tuple.mapFirst syncAnimations
+
+
+{-| Keeps `Shared.Countabilibar`'s counts in step with what this page is showing -- mirrors
+`Components.Pages.PostsPage.countabilibarEffect` (see `Countabilibar.syncMsg`). Counts Events (not
+Occasions: a recurring event is one), only from real Rellm servers, never while scoped to one
+profile, and not at all on an animation tick.
+-}
+countabilibarEffect : Shared.Model -> Msg -> Model -> Effect Msg
+countabilibarEffect shared msg model =
+    case msg of
+        Animate _ ->
+            Effect.none
+
+        AnimateMove _ ->
+            Effect.none
+
+        _ ->
+            if model.author /= Nothing then
+                Effect.none
+
+            else
+                Countabilibar.syncMsg Countabilibar.EventsKind (pendingHosts model) (shownEvents shared model) shared.countabilibar
+                    |> Maybe.map (Shared.CountabilibarSync >> Effect.fromShared)
+                    |> Maybe.withDefault Effect.none
+
+
+{-| Every Rellm server's events on screen -- the author and id of each -- the same set `syncAnimations`
+shows (so, e.g., "Hide started events" changes the counts): loaded, not already started/ended where
+that's hidden, and not by anyone hidden. Events without an author can't be counted.
+-}
+shownEvents : Shared.Model -> Model -> Dict String (List ( Proto.Rellm.Author, String ))
+shownEvents shared model =
+    Dict.foldl
+        (\_ feed shown ->
+            case feed.status of
+                Loaded pairs ->
+                    if RellmServers.rellmServerForHost shared.accounts.servers feed.host == Nothing then
+                        shown
+
+                    else
+                        Dict.update feed.host
+                            (\existing ->
+                                Just
+                                    (Maybe.withDefault [] existing
+                                        ++ List.filterMap
+                                            (\( event, occasion ) ->
+                                                if hiddenAsStarted model occasion || hiddenAsEnded model occasion || isHiddenAuthor model feed.host event then
+                                                    Nothing
+
+                                                else
+                                                    Maybe.map2 Tuple.pair (event.post |> Maybe.andThen .author) (Maybe.map .id event.post)
+                                            )
+                                            pairs
+                                    )
+                            )
+                            shown
+
+                _ ->
+                    shown
+        )
+        Dict.empty
+        model.eventsByServer
+
+
+{-| The hosts with a fetch still to land (or a feed with nothing loaded yet) -- not yet worth
+reconciling counts against, see `Countabilibar.syncMsg`.
+-}
+pendingHosts : Model -> Set String
+pendingHosts model =
+    model.eventsByServer
+        |> Dict.values
+        |> List.filter
+            (\feed ->
+                feed.refreshing
+                    || (case feed.status of
+                            Loading ->
+                                True
+
+                            _ ->
+                                False
+                       )
+            )
+        |> List.map .host
+        |> Set.fromList
+
+
+{-| Whether `event`'s author is one `Shared.Countabilibar` has hidden on `host`.
+-}
+isHiddenAuthor : Model -> String -> Event -> Bool
+isHiddenAuthor model host event =
+    case event.post |> Maybe.andThen .author of
+        Just author ->
+            Countabilibar.isAuthorHidden model.hidden host author.userId
+
+        Nothing ->
+            False
 
 
 updateInner : Shared.Model -> Msg -> Model -> ( Model, Effect Msg )
@@ -1008,7 +1152,7 @@ updateInner shared msg model =
             ( { model
                 | eventsByServer =
                     Dict.update frontendHost
-                        (Maybe.map (\feed -> { feed | status = Loaded (Events.occasionPairs response) }))
+                        (Maybe.map (\feed -> { feed | status = Loaded (Events.occasionPairs response), refreshing = False }))
                         model.eventsByServer
               }
                 |> syncAnimations
@@ -1018,7 +1162,7 @@ updateInner shared msg model =
         GotServerEvents frontendHost _ (Err _) ->
             ( { model
                 | eventsByServer =
-                    Dict.update frontendHost (Maybe.map (\feed -> { feed | status = Failed })) model.eventsByServer
+                    Dict.update frontendHost (Maybe.map (\feed -> { feed | status = Failed, refreshing = False })) model.eventsByServer
               }
                 |> syncAnimations
             , Effect.none
@@ -1755,6 +1899,7 @@ relevantServers shared model =
 
         Nothing ->
             AccountsPanel.enabledServers shared.accounts
+                |> List.filter (\server -> not (Countabilibar.isHostHidden model.hidden server.frontendHost))
 
 
 {-| Every `EventSource` this page should ever fetch: one per `relevantServers` entry (scoped to
@@ -1858,6 +2003,15 @@ queryEndsAfter shared model endsAfter =
         endsAfter
 
 
+{-| The users `source`'s server should leave out of its response -- `Shared.Countabilibar`'s hidden ones
+on that server. Mirrors `Components.Pages.PostsPage.feedSourceExcludedAuthorIds`: hiding someone makes
+room in the (size-limited) response for everyone else's events, which filtering the loaded ones couldn't.
+-}
+sourceExcludedAuthorIds : Model -> EventSource -> List String
+sourceExcludedAuthorIds model source =
+    Countabilibar.hiddenAuthorIds model.hidden source.server.frontendHost
+
+
 {-| The `GetEvents` fetch (as an `Effect`, ready to batch/return directly)
 for one `server`, using `endsAfter` (the already-unwrapped `model.endsAfter`,
 widened via `queryEndsAfter` -- see its own doc -- before actually being sent
@@ -1874,6 +2028,7 @@ fetchServerEffect shared model endsAfter source =
         , source.server.frontendHost
         )
         source.authorId
+        (sourceExcludedAuthorIds model source)
         model.searchText
         (queryEndsAfter shared model endsAfter)
         model.anonymousAuthTokens
@@ -1945,7 +2100,12 @@ refetchServers shared model serversToFetch =
                                     )
                     in
                     Dict.insert source.key
-                        { status = Maybe.withDefault Loading statusIfSameAccount, accountId = accountId, host = source.server.frontendHost }
+                        { status = Maybe.withDefault Loading statusIfSameAccount
+                        , accountId = accountId
+                        , host = source.server.frontendHost
+                        , excludedAuthorIds = sourceExcludedAuthorIds model source
+                        , refreshing = True
+                        }
                         dict
             in
             ( { model
@@ -2045,7 +2205,7 @@ fetchNewServers shared model =
                                 True
 
                             Just feed ->
-                                feed.accountId /= currentAccountId source
+                                feed.accountId /= currentAccountId source || feed.excludedAuthorIds /= sourceExcludedAuthorIds model source
                     )
     in
     refetchServers shared model serversToFetch
@@ -2261,7 +2421,10 @@ syncAnimations model =
                             case feed.status of
                                 Loaded pairs ->
                                     pairs
-                                        |> List.filter (\( _, occasion ) -> not (hiddenAsStarted model occasion) && not (hiddenAsEnded model occasion))
+                                        |> List.filter
+                                            (\( event, occasion ) ->
+                                                not (hiddenAsStarted model occasion) && not (hiddenAsEnded model occasion) && not (isHiddenAuthor model feed.host event)
+                                            )
                                         |> List.map (\( event, occasion ) -> ( eventAnimationKey feed.host occasion, ( feed.host, event, occasion ) ))
 
                                 _ ->
@@ -2498,12 +2661,21 @@ calendarEvents model =
                 case feed.status of
                     Loaded pairs ->
                         pairs
-                            |> List.filter (\( _, occasion ) -> not (hiddenAsLong model occasion))
+                            |> List.filter (\( event, occasion ) -> not (hiddenAsLong model occasion) && not (isHiddenAuthor model feed.host event))
                             |> List.map (\( event, occasion ) -> ( feed.host, event, occasion ))
 
                     _ ->
                         []
             )
+
+
+{-| What `eventsByServer` holds that `calendarEvents` reads -- `calendarRenderEffect` compares this
+rather than the whole dict, so a feed merely starting/finishing a refetch (`ServerFeed.refreshing`)
+doesn't re-render the calendar.
+-}
+loadedEvents : Model -> Dict String ( String, ServerEvents )
+loadedEvents model =
+    Dict.map (\_ feed -> ( feed.host, feed.status )) model.eventsByServer
 
 
 {-| One `calendarEvents` entry as a FullCalendar
@@ -2638,7 +2810,7 @@ calendarRenderEffect shared oldModel newModel =
     if
         newModel.mode
             == Calendar
-            && (oldModel.mode /= Calendar || oldModel.eventsByServer /= newModel.eventsByServer || oldModel.federatedAuthors /= newModel.federatedAuthors || oldModel.hideStartedOrLongEvents /= newModel.hideStartedOrLongEvents)
+            && (oldModel.mode /= Calendar || loadedEvents oldModel /= loadedEvents newModel || oldModel.federatedAuthors /= newModel.federatedAuthors || oldModel.hideStartedOrLongEvents /= newModel.hideStartedOrLongEvents || oldModel.hidden /= newModel.hidden)
     then
         Ports.renderCalendar
             (Encode.object

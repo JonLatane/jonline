@@ -5878,6 +5878,7 @@ type alias Proto__Rellm__TimeFilter =
 -}
 fieldNumbersProto__Rellm__GetEventsRequest :
     { authorUserId : Int
+    , excludedAuthorUserIds : Int
     , groupId : Int
     , timeFilter : Int
     , attendeeId : Int
@@ -5890,6 +5891,7 @@ fieldNumbersProto__Rellm__GetEventsRequest :
     }
 fieldNumbersProto__Rellm__GetEventsRequest =
     { authorUserId = 2
+    , excludedAuthorUserIds = 14
     , groupId = 3
     , timeFilter = 5
     , attendeeId = 6
@@ -5908,6 +5910,7 @@ fieldNumbersProto__Rellm__GetEventsRequest =
 defaultProto__Rellm__GetEventsRequest : Proto__Rellm__GetEventsRequest
 defaultProto__Rellm__GetEventsRequest =
     { authorUserId = Nothing
+    , excludedAuthorUserIds = []
     , groupId = Nothing
     , timeFilter = Nothing
     , attendeeId = Nothing
@@ -5931,6 +5934,11 @@ decodeProto__Rellm__GetEventsRequest =
             2
             (Protobuf.Decode.map Just Protobuf.Decode.string)
             (\a r -> { r | authorUserId = a })
+        , Protobuf.Decode.repeated
+            14
+            Protobuf.Decode.string
+            .excludedAuthorUserIds
+            (\a r -> { r | excludedAuthorUserIds = a })
         , Protobuf.Decode.optional 3 (Protobuf.Decode.map Just Protobuf.Decode.string) (\a r -> { r | groupId = a })
         , Protobuf.Decode.optional
             5
@@ -5963,6 +5971,7 @@ encodeProto__Rellm__GetEventsRequest : Proto__Rellm__GetEventsRequest -> Protobu
 encodeProto__Rellm__GetEventsRequest value =
     Protobuf.Encode.message
         [ ( 2, (Maybe.map Protobuf.Encode.string >> Maybe.withDefault Protobuf.Encode.none) value.authorUserId )
+        , ( 14, (Protobuf.Encode.list Protobuf.Encode.string) value.excludedAuthorUserIds )
         , ( 3, (Maybe.map Protobuf.Encode.string >> Maybe.withDefault Protobuf.Encode.none) value.groupId )
         , ( 5, (Maybe.map encodeProto__Rellm__TimeFilter >> Maybe.withDefault Protobuf.Encode.none) value.timeFilter )
         , ( 6, (Maybe.map Protobuf.Encode.string >> Maybe.withDefault Protobuf.Encode.none) value.attendeeId )
@@ -5983,6 +5992,7 @@ encodeProto__Rellm__GetEventsRequest value =
 -}
 type alias Proto__Rellm__GetEventsRequest =
     { authorUserId : Maybe String
+    , excludedAuthorUserIds : List String
     , groupId : Maybe String
     , timeFilter : Maybe Proto__Rellm__TimeFilter
     , attendeeId : Maybe String
@@ -6683,6 +6693,7 @@ type alias Proto__Rellm__GetPostsResponse =
 fieldNumbersProto__Rellm__GetPostsRequest :
     { postId : Int
     , authorUserId : Int
+    , excludedAuthorUserIds : Int
     , groupId : Int
     , replyDepth : Int
     , context : Int
@@ -6695,6 +6706,7 @@ fieldNumbersProto__Rellm__GetPostsRequest :
 fieldNumbersProto__Rellm__GetPostsRequest =
     { postId = 1
     , authorUserId = 2
+    , excludedAuthorUserIds = 16
     , groupId = 3
     , replyDepth = 4
     , context = 5
@@ -6713,6 +6725,7 @@ defaultProto__Rellm__GetPostsRequest : Proto__Rellm__GetPostsRequest
 defaultProto__Rellm__GetPostsRequest =
     { postId = Nothing
     , authorUserId = Nothing
+    , excludedAuthorUserIds = []
     , groupId = Nothing
     , replyDepth = Nothing
     , context = Nothing
@@ -6736,6 +6749,11 @@ decodeProto__Rellm__GetPostsRequest =
             2
             (Protobuf.Decode.map Just Protobuf.Decode.string)
             (\a r -> { r | authorUserId = a })
+        , Protobuf.Decode.repeated
+            16
+            Protobuf.Decode.string
+            .excludedAuthorUserIds
+            (\a r -> { r | excludedAuthorUserIds = a })
         , Protobuf.Decode.optional 3 (Protobuf.Decode.map Just Protobuf.Decode.string) (\a r -> { r | groupId = a })
         , Protobuf.Decode.optional 4 (Protobuf.Decode.map Just Protobuf.Decode.uint32) (\a r -> { r | replyDepth = a })
         , Protobuf.Decode.optional
@@ -6764,6 +6782,7 @@ encodeProto__Rellm__GetPostsRequest value =
     Protobuf.Encode.message
         [ ( 1, (Maybe.map Protobuf.Encode.string >> Maybe.withDefault Protobuf.Encode.none) value.postId )
         , ( 2, (Maybe.map Protobuf.Encode.string >> Maybe.withDefault Protobuf.Encode.none) value.authorUserId )
+        , ( 16, (Protobuf.Encode.list Protobuf.Encode.string) value.excludedAuthorUserIds )
         , ( 3, (Maybe.map Protobuf.Encode.string >> Maybe.withDefault Protobuf.Encode.none) value.groupId )
         , ( 4, (Maybe.map Protobuf.Encode.uint32 >> Maybe.withDefault Protobuf.Encode.none) value.replyDepth )
         , ( 5
@@ -6789,6 +6808,7 @@ encodeProto__Rellm__GetPostsRequest value =
 type alias Proto__Rellm__GetPostsRequest =
     { postId : Maybe String
     , authorUserId : Maybe String
+    , excludedAuthorUserIds : List String
     , groupId : Maybe String
     , replyDepth : Maybe Int
     , context : Maybe Proto.Rellm.PostContext.PostContext

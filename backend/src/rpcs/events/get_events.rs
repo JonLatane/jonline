@@ -34,11 +34,34 @@ type EventLoadData = (
     Option<models::Author>,
 );
 
+// `GetEventsRequest.excluded_author_user_ids` as DB ids -- every feed-style listing below filters
+// these authors (the *Event's* author, same as `author_user_id`) out via `exclude_authors!`.
+// Resolved up front so a malformed id is rejected (`InvalidArgument`) whichever listing type the
+// request lands on.
+fn excluded_author_db_ids(request: &GetEventsRequest) -> Result<Vec<i64>, Status> {
+    request
+        .excluded_author_user_ids
+        .iter()
+        .map(|id| id.to_db_id_or_err("excluded_author_user_ids"))
+        .collect()
+}
+
+// Filters an `events`/`posts`-based query to Events whose author (`$column`, e.g. `posts::user_id`
+// or `occasions::user_id`) isn't in `$excluded` (a `&[i64]` from `excluded_author_db_ids`). A no-op
+// (`!= ALL('{}')` is true) when empty, so callers needn't branch. Author-less rows are always kept,
+// rather than dropped by SQL's NULL semantics.
+macro_rules! exclude_authors {
+    ($column:expr, $excluded:expr) => {
+        $column.is_null().or($column.ne_all($excluded.to_vec()))
+    };
+}
+
 pub fn get_events(
     request: GetEventsRequest,
     user: &Option<&models::User>,
     conn: &mut PgPooledConnection,
 ) -> Result<GetEventsResponse, Status> {
+    let excluded = excluded_author_db_ids(&request)?;
     let result: Vec<MarshalableEvent> = if !request.occasion_post_ids.is_empty() {
         get_events_by_occasion_post_ids(&user, &request.occasion_post_ids, conn)?
     } else {
@@ -48,13 +71,16 @@ pub fn get_events(
             request.to_owned().post_id,
         ) {
             // TODO: implement the other listing types
-            (EventListingType::EventTextSearch, _, _) => get_search_events(&request, &user, conn)?,
+            (EventListingType::EventTextSearch, _, _) => {
+                get_search_events(&request, &excluded, &user, conn)?
+            }
             (EventListingType::GroupEvents, _, _) => match &request.group_id {
                 Some(group_id) => get_group_events(
                     group_id.to_db_id_or_err("group_id")?,
                     &user,
                     conn,
                     request.time_filter,
+                    &excluded,
                 )?,
                 _ => return Err(Status::new(Code::InvalidArgument, "group_id_invalid")),
             },
@@ -63,9 +89,10 @@ pub fn get_events(
                 user,
                 conn,
                 request.time_filter,
+                &excluded,
             )?,
             (_, _, Some(post_id)) => get_event_by_post_id(&user, &post_id, conn)?,
-            _ => get_public_and_following_events(&user, conn, request.time_filter)?,
+            _ => get_public_and_following_events(&user, conn, request.time_filter, &excluded)?,
         }
     };
     let mut events = convert_events(&result, conn);
@@ -416,8 +443,9 @@ fn get_public_and_following_events(
     user: &Option<&models::User>,
     conn: &mut PgPooledConnection,
     filter: Option<TimeFilter>,
+    excluded: &[i64],
 ) -> Result<Vec<MarshalableEvent>, Status> {
-    let query = query_visible_events!(user, filter);
+    let query = query_visible_events!(user, filter).filter(exclude_authors!(posts::user_id, excluded));
     let binding = query.load::<EventLoadData>(conn).unwrap();
     let event_data: Vec<&EventLoadData> = binding.iter().collect();
 
@@ -429,8 +457,11 @@ fn get_user_events(
     user: &Option<&models::User>,
     conn: &mut PgPooledConnection,
     filter: Option<TimeFilter>,
+    excluded: &[i64],
 ) -> Result<Vec<MarshalableEvent>, Status> {
-    let query = query_visible_events!(user, filter).filter(posts::user_id.eq(user_id));
+    let query = query_visible_events!(user, filter)
+        .filter(posts::user_id.eq(user_id))
+        .filter(exclude_authors!(posts::user_id, excluded));
     let binding = query.load::<EventLoadData>(conn).unwrap();
     let event_data: Vec<&EventLoadData> = binding.iter().collect();
 
@@ -446,6 +477,7 @@ fn get_user_events(
 // each of those filter combinations is served by a single index scan.
 fn get_search_events(
     request: &GetEventsRequest,
+    excluded: &[i64],
     user: &Option<&models::User>,
     conn: &mut PgPooledConnection,
 ) -> Result<Vec<MarshalableEvent>, Status> {
@@ -492,6 +524,7 @@ fn get_search_events(
         .select(occasions::post_id)
         .order(occasions::post_id)
         .filter(occasions::search_text.matches(search_query))
+        .filter(exclude_authors!(occasions::user_id, excluded))
         .into_boxed();
 
     if let Some(author_user_id) = author_user_id {
@@ -663,6 +696,7 @@ fn get_group_events(
     user: &Option<&models::User>,
     conn: &mut PgPooledConnection,
     filter: Option<TimeFilter>,
+    excluded: &[i64],
 ) -> Result<Vec<MarshalableEvent>, Status> {
     let group = get_group(group_id, conn);
     match group {
@@ -674,7 +708,8 @@ fn get_group_events(
 
             let query = query_visible_events!(user, filter)
                 .filter(group_posts::group_id.eq(group_id))
-                .filter(group_posts::group_moderation.eq_any(PASSING_MODERATIONS));
+                .filter(group_posts::group_moderation.eq_any(PASSING_MODERATIONS))
+                .filter(exclude_authors!(posts::user_id, excluded));
             let binding = query.load::<EventLoadData>(conn).unwrap();
             let event_data: Vec<&EventLoadData> = binding.iter().collect();
 
