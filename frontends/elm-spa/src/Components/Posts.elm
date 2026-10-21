@@ -115,7 +115,8 @@ account if any (so e.g. followed-user/group posts are included too) --
 otherwise identical to `fetchPost`. `authorUserId`, if given, restricts the
 results to that user's posts (see `GetPostsRequest`'s `{listing_type:
 AuthorPosts, author_user_id:}` form), for `Components.Pages.PostsPage`'s use
-on a user's own posts page.
+on a user's own posts page. `excludedAuthorUserIds` leaves those users' posts out
+(`GetPostsRequest.excluded_author_user_ids`) -- what hiding a user in `Shared.Countabilibar` sends.
 
 `searchText`, if non-blank (leading/trailing whitespace is trimmed, and a
 blank string is treated the same as empty), switches the request to
@@ -143,12 +144,13 @@ fetchPosts :
     AccountsPanel.Model
     -> AccountsPanel.MaybeAccountServer
     -> Maybe String
+    -> List String
     -> String
     -> PostContext
     -> Bool
     -> Maybe Time.Posix
     -> Task Grpc.Error ( Maybe AccountsPanel.Msg, GetPostsResponse )
-fetchPosts accountsPanelModel maybeAccountServer authorUserId searchText context popular publishedOrCreatedBefore =
+fetchPosts accountsPanelModel maybeAccountServer authorUserId excludedAuthorUserIds searchText context popular publishedOrCreatedBefore =
     let
         trimmedSearchText : String
         trimmedSearchText =
@@ -159,6 +161,7 @@ fetchPosts accountsPanelModel maybeAccountServer authorUserId searchText context
             if String.isEmpty trimmedSearchText then
                 { defaultGetPostsRequest
                     | authorUserId = authorUserId
+                    , excludedAuthorUserIds = excludedAuthorUserIds
                     , context = Just context
                     , listingType =
                         if popular then
@@ -171,6 +174,7 @@ fetchPosts accountsPanelModel maybeAccountServer authorUserId searchText context
             else
                 { defaultGetPostsRequest
                     | authorUserId = authorUserId
+                    , excludedAuthorUserIds = excludedAuthorUserIds
                     , listingType = TEXTSEARCH
                     , searchText = Just trimmedSearchText
                     , context = Just context

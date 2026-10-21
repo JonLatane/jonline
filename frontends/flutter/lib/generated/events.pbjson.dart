@@ -58,6 +58,7 @@ const GetEventsRequest$json = {
   '1': 'GetEventsRequest',
   '2': [
     {'1': 'author_user_id', '3': 2, '4': 1, '5': 9, '9': 0, '10': 'authorUserId', '17': true},
+    {'1': 'excluded_author_user_ids', '3': 14, '4': 3, '5': 9, '10': 'excludedAuthorUserIds'},
     {'1': 'group_id', '3': 3, '4': 1, '5': 9, '9': 1, '10': 'groupId', '17': true},
     {'1': 'time_filter', '3': 5, '4': 1, '5': 11, '6': '.rellm.TimeFilter', '9': 2, '10': 'timeFilter', '17': true},
     {'1': 'attendee_id', '3': 6, '4': 1, '5': 9, '9': 3, '10': 'attendeeId', '17': true},
@@ -87,17 +88,18 @@ const GetEventsRequest$json = {
 /// Descriptor for `GetEventsRequest`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List getEventsRequestDescriptor = $convert.base64Decode(
     'ChBHZXRFdmVudHNSZXF1ZXN0EikKDmF1dGhvcl91c2VyX2lkGAIgASgJSABSDGF1dGhvclVzZX'
-    'JJZIgBARIeCghncm91cF9pZBgDIAEoCUgBUgdncm91cElkiAEBEjcKC3RpbWVfZmlsdGVyGAUg'
-    'ASgLMhEucmVsbG0uVGltZUZpbHRlckgCUgp0aW1lRmlsdGVyiAEBEiQKC2F0dGVuZGVlX2lkGA'
-    'YgASgJSANSCmF0dGVuZGVlSWSIAQESNgoNcnN2cF9zdGF0dXNlcxgHIAMoDjIRLnJlbGxtLlJz'
-    'dnBTdGF0dXNSDHJzdnBTdGF0dXNlcxIcCgdwb3N0X2lkGAggASgJSARSBnBvc3RJZIgBARI6Cg'
-    'xsaXN0aW5nX3R5cGUYCiABKA4yFy5yZWxsbS5FdmVudExpc3RpbmdUeXBlUgtsaXN0aW5nVHlw'
-    'ZRIkCgtzZWFyY2hfdGV4dBgLIAEoCUgFUgpzZWFyY2hUZXh0iAEBEioKEW9jY2FzaW9uX3Bvc3'
-    'RfaWRzGAwgAygJUg9vY2Nhc2lvblBvc3RJZHMSRgodYW5vbnltb3VzX2F0dGVuZGVlX2F1dGhf'
-    'dG9rZW4YDSABKAlIBlIaYW5vbnltb3VzQXR0ZW5kZWVBdXRoVG9rZW6IAQFCEQoPX2F1dGhvcl'
-    '91c2VyX2lkQgsKCV9ncm91cF9pZEIOCgxfdGltZV9maWx0ZXJCDgoMX2F0dGVuZGVlX2lkQgoK'
-    'CF9wb3N0X2lkQg4KDF9zZWFyY2hfdGV4dEIgCh5fYW5vbnltb3VzX2F0dGVuZGVlX2F1dGhfdG'
-    '9rZW5KBAgBEAJKBAgEEAVSCGV2ZW50X2lkUgtvY2Nhc2lvbl9pZA==');
+    'JJZIgBARI3ChhleGNsdWRlZF9hdXRob3JfdXNlcl9pZHMYDiADKAlSFWV4Y2x1ZGVkQXV0aG9y'
+    'VXNlcklkcxIeCghncm91cF9pZBgDIAEoCUgBUgdncm91cElkiAEBEjcKC3RpbWVfZmlsdGVyGA'
+    'UgASgLMhEucmVsbG0uVGltZUZpbHRlckgCUgp0aW1lRmlsdGVyiAEBEiQKC2F0dGVuZGVlX2lk'
+    'GAYgASgJSANSCmF0dGVuZGVlSWSIAQESNgoNcnN2cF9zdGF0dXNlcxgHIAMoDjIRLnJlbGxtLl'
+    'JzdnBTdGF0dXNSDHJzdnBTdGF0dXNlcxIcCgdwb3N0X2lkGAggASgJSARSBnBvc3RJZIgBARI6'
+    'CgxsaXN0aW5nX3R5cGUYCiABKA4yFy5yZWxsbS5FdmVudExpc3RpbmdUeXBlUgtsaXN0aW5nVH'
+    'lwZRIkCgtzZWFyY2hfdGV4dBgLIAEoCUgFUgpzZWFyY2hUZXh0iAEBEioKEW9jY2FzaW9uX3Bv'
+    'c3RfaWRzGAwgAygJUg9vY2Nhc2lvblBvc3RJZHMSRgodYW5vbnltb3VzX2F0dGVuZGVlX2F1dG'
+    'hfdG9rZW4YDSABKAlIBlIaYW5vbnltb3VzQXR0ZW5kZWVBdXRoVG9rZW6IAQFCEQoPX2F1dGhv'
+    'cl91c2VyX2lkQgsKCV9ncm91cF9pZEIOCgxfdGltZV9maWx0ZXJCDgoMX2F0dGVuZGVlX2lkQg'
+    'oKCF9wb3N0X2lkQg4KDF9zZWFyY2hfdGV4dEIgCh5fYW5vbnltb3VzX2F0dGVuZGVlX2F1dGhf'
+    'dG9rZW5KBAgBEAJKBAgEEAVSCGV2ZW50X2lkUgtvY2Nhc2lvbl9pZA==');
 
 @$core.Deprecated('Use timeFilterDescriptor instead')
 const TimeFilter$json = {

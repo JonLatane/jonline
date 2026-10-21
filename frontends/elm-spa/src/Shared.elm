@@ -10,6 +10,8 @@ module Shared exposing
     , effectiveDarkMode
     , forcedDarkMode
     , init
+    , isCountabilibarSync
+    , notifiesPages
     , normalizeUrl
     , subscriptions
     , themePreferenceLabel
@@ -50,6 +52,7 @@ import Shared.AccountsPanel.RellmServers as RellmServers exposing (RellmServer, 
 import Shared.AudioPlayerPanel as AudioPlayerPanel
 import Shared.Breadcrumbs as Breadcrumbs
 import Shared.BrowserInfo as BrowserInfo
+import Shared.Countabilibar as Countabilibar
 import Shared.CreateNewPanel as CreateNewPanel
 import Shared.FederatedAuth as FederatedAuth
 import Shared.MarkdownPanel as MarkdownPanel
@@ -79,6 +82,10 @@ type alias Model =
     -- See `Panels` for the rest of the app-wide panels.
     , panels : Panels
     , breadcrumbs : Breadcrumbs.Model
+
+    -- The row of post/event counts below the breadcrumbs, fed by `PostsPage`/`EventsPage` -- see
+    -- `Shared.Countabilibar`. Reset (by `Main`) on every route change.
+    , countabilibar : Countabilibar.Model
 
     -- The quoted posts fetched so far for Rellm posts whose `link` points at another post (see
     -- `Shared.QuoteLinks`) -- app-wide so a post quoted by many cards is fetched once, and so the card
@@ -198,6 +205,12 @@ type Msg
     | MessagingPanelMsg MessagingPanel.Msg
     | CloseAllPanels
     | BreadcrumbsMsg Breadcrumbs.Msg
+    | CountabilibarMsg Countabilibar.Msg
+      -- What `PostsPage`/`EventsPage` send to keep the counts in step with what they show (see
+      -- `Countabilibar.syncMsg`) -- applied exactly like `CountabilibarMsg`, but a separate constructor
+      -- because it must never be forwarded back into a page (see `notifiesPages`) or mistaken for an
+      -- echo of one (see `isCountabilibarSync`).
+    | CountabilibarSync Countabilibar.Msg
     | ThemePreferenceClicked
     | SystemPrefersDarkChanged Bool
     | RequestDelete DeleteConfirmation
@@ -567,6 +580,7 @@ init basePath req flags =
                 , confirmingDeleteFor = Nothing
                 }
             , breadcrumbs = Breadcrumbs.init
+            , countabilibar = Countabilibar.init
             , quoteLinks = QuoteLinks.init
             , theme = { preference = themePreference, systemPrefersDark = systemPrefersDark }
             , userPreferences = UserPreferences.init userPreferencesFlags
@@ -660,6 +674,7 @@ subscriptions model =
         , Sub.map MyMediaPanelMsg (MyMediaPanel.subscriptions model.panels.myMediaPanel)
         , Sub.map MessagingPanelMsg (MessagingPanel.subscriptions model.panels.messagingPanel)
         , Sub.map MarkdownPanelMsg (MarkdownPanel.subscriptions model.panels.markdownPanel)
+        , Sub.map CountabilibarMsg (Countabilibar.subscriptions model.countabilibar)
         , if model.panels.starredPanel.showStarredPanel && StarredPanel.hasPendingFetches model.panels.starredPanel then
             Time.every 1500 (\_ -> StarredPanelMsg StarredPanel.PollStarredPosts)
 
@@ -968,6 +983,45 @@ coverArtFollowUp req msg oldModel newModel =
 
         _ ->
             ( newModel, Cmd.none )
+
+
+{-| Whether `msg` is a page reporting what it's showing to `Shared.Countabilibar` (see
+`CountabilibarSync`) -- as opposed to an echo of a message that was just delivered to it. `Main` and
+`Pages.Home_` drop the latter from a page's effects (see `Main.notifyPageOfSharedMsg`) but must keep
+these: a page updated by a forwarded message (e.g. a server just disabled) may have changed what it
+shows with no later update of its own to report it.
+-}
+isCountabilibarSync : Msg -> Bool
+isCountabilibarSync msg =
+    case msg of
+        CountabilibarSync _ ->
+            True
+
+        _ ->
+            False
+
+
+{-| Whether pages need to hear about `msg` (via their own `fromShared`, see `Main.notifyPageOfSharedMsg`).
+Not for anything `Shared.Countabilibar` does on its own account -- counts (a page's own, reported
+back at it), animation ticks and the popover opening -- only for what changes which servers/users
+are hidden, which pages have to react to.
+-}
+notifiesPages : Msg -> Bool
+notifiesPages msg =
+    case msg of
+        CountabilibarSync _ ->
+            False
+
+        CountabilibarMsg countabilibarMsg ->
+            Countabilibar.affectsPages countabilibarMsg
+
+        _ ->
+            True
+
+
+closeCountabilibarPanel : Model -> ( Model, Cmd Msg )
+closeCountabilibarPanel model =
+    ( { model | countabilibar = Countabilibar.closePanel model.countabilibar }, Cmd.none )
 
 
 sharedUpdate : Request -> Msg -> Model -> ( Model, Cmd Msg )
@@ -1391,8 +1445,47 @@ sharedUpdate req msg model =
                 Breadcrumbs.SetRoot _ _ _ ->
                     sharedUpdate req CloseAllPanels breadcrumbsModel
 
+                -- Its popover and the Countabilibar's share the same spot under the nav, so only one
+                -- of them is ever open.
+                Breadcrumbs.SegmentClicked _ ->
+                    closeCountabilibarPanel breadcrumbsModel
+
+                Breadcrumbs.ViewHost ->
+                    closeCountabilibarPanel breadcrumbsModel
+
                 _ ->
                     ( breadcrumbsModel, Cmd.none )
+
+        CountabilibarSync subMsg ->
+            sharedUpdate req (CountabilibarMsg subMsg) model
+
+        CountabilibarMsg subMsg ->
+            let
+                ( countabilibarModel, countabilibarCmd ) =
+                    Countabilibar.update subMsg model.countabilibar
+
+                opensPanel : Bool
+                opensPanel =
+                    case subMsg of
+                        Countabilibar.TogglePanel _ ->
+                            Countabilibar.isPanelOpen countabilibarModel
+
+                        _ ->
+                            False
+
+                updated : Model
+                updated =
+                    { model
+                        | countabilibar = countabilibarModel
+                        , breadcrumbs =
+                            if opensPanel then
+                                Breadcrumbs.update Breadcrumbs.CloseViewer model.breadcrumbs
+
+                            else
+                                model.breadcrumbs
+                    }
+            in
+            ( updated, Cmd.map CountabilibarMsg countabilibarCmd )
 
         MarkdownPanelMsg subMsg ->
             let
@@ -2338,7 +2431,9 @@ sharedUpdate req msg model =
                 ( closedMessagingModel, closeMessagingCmd ) =
                     sharedUpdate req (MessagingPanelMsg MessagingPanel.CloseMessagingPanel) closedCreateNewModel
             in
-            ( closedMessagingModel, Cmd.batch [ closeAccountsCmd, closeStarredCmd, closeCreateNewCmd, closeMessagingCmd ] )
+            ( { closedMessagingModel | countabilibar = Countabilibar.closePanel closedMessagingModel.countabilibar }
+            , Cmd.batch [ closeAccountsCmd, closeStarredCmd, closeCreateNewCmd, closeMessagingCmd ]
+            )
 
         ThemePreferenceClicked ->
             let

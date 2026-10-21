@@ -507,11 +507,18 @@ updateInner shared req msg content =
                         -- re-broadcasts `subMsg`; `eventsEffectRaw`'s own copy is
                         -- dropped via `Effect.partitionShared` (keeping its other
                         -- effects, e.g. `fetchNewServers`'s own fetch, intact).
-                        ( _, eventsEffect ) =
+                        --
+                        -- Its `Shared.Countabilibar` counts (see `Shared.isCountabilibarSync`) aren't
+                        -- echoes of `subMsg`, though, and are kept.
+                        ( eventsSharedMsgs, eventsEffect ) =
                             Effect.partitionShared eventsEffectRaw
                     in
                     ( Feed { feed | posts = newPosts, events = newEvents }
-                    , Effect.batch [ Effect.map PostsMsg postsEffect, Effect.map EventsMsg eventsEffect ]
+                    , Effect.batch
+                        [ Effect.map PostsMsg postsEffect
+                        , Effect.map EventsMsg eventsEffect
+                        , keepCountabilibarMsgs eventsSharedMsgs
+                        ]
                     )
 
         ( SharedMsg subMsg, HomeEvents subModel ) ->
@@ -540,15 +547,31 @@ updateInner shared req msg content =
                 ( newEvents, eventsEffectRaw ) =
                     EventsPage.update shared (EventsPage.fromShared subMsg) subModel.events
 
-                ( _, eventsEffect ) =
+                ( eventsSharedMsgs, eventsEffect ) =
                     Effect.partitionShared eventsEffectRaw
             in
             ( HomePostWithEvents { events = newEvents, post = newPost }
-            , Effect.batch [ Effect.map HomePostMsg postEffect, Effect.map HomePostEventsMsg eventsEffect ]
+            , Effect.batch
+                [ Effect.map HomePostMsg postEffect
+                , Effect.map HomePostEventsMsg eventsEffect
+                , keepCountabilibarMsgs eventsSharedMsgs
+                ]
             )
 
         _ ->
             ( content, Effect.none )
+
+
+{-| What survives of the `Shared.Msg`s `Effect.partitionShared` pulled out of an embedded page's effect that
+was dropped as a duplicate echo of the incoming message (see the dedup above): the `Shared.Countabilibar`
+counts, which were never echoes.
+-}
+keepCountabilibarMsgs : List Shared.Msg -> Effect msg
+keepCountabilibarMsgs sharedMsgs =
+    sharedMsgs
+        |> List.filter Shared.isCountabilibarSync
+        |> List.map Effect.fromShared
+        |> Effect.batch
 
 
 {-| Keeps `Shared.Breadcrumbs` pointed at `mainFrontendHost`, but only for `Feed` -- this feed isn't

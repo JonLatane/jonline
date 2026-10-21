@@ -44,6 +44,10 @@ type alias Model =
     , primaryColorEdit : Maybe ColorEdit
     , navigationColorEdit : Maybe ColorEdit
     , swapStatus : AccountsPanel.FormStatus
+
+    -- The "Enable Countabilibar" switch's own save status -- it saves the moment it's flipped, with no
+    -- Edit/Save/Cancel, so this is only ever `Submitting` (the switch is disabled meanwhile) or an error.
+    , countabilibarStatus : AccountsPanel.FormStatus
     , colorMetaExpanded : Bool
     , customTabsConfig : CustomTabsConfiguration.Model
     , customCssConfig : CustomCssConfiguration.Model
@@ -64,6 +68,10 @@ type Msg
     | SwapColorsClicked
     | GotSwapColorsResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, ServerConfiguration ))
     | ColorMetaExpandedToggled
+      -- The "Enable Countabilibar" switch, carrying whether it's now on (the stored setting is the
+      -- inverse, `ServerInfo.disable_countabilibar`).
+    | CountabilibarEnabledToggled Bool
+    | GotCountabilibarSaveResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, ServerConfiguration ))
     | SharedMsg Shared.Msg
     | CustomTabsConfigurationMsg CustomTabsConfiguration.Msg
     | CustomCssConfigurationMsg CustomCssConfiguration.Msg
@@ -116,6 +124,7 @@ init =
     , primaryColorEdit = Nothing
     , navigationColorEdit = Nothing
     , swapStatus = AccountsPanel.Idle
+    , countabilibarStatus = AccountsPanel.Idle
     , colorMetaExpanded = False
     , customTabsConfig = CustomTabsConfiguration.init
     , customCssConfig = CustomCssConfiguration.init
@@ -290,6 +299,29 @@ update shared targetHost maybeServer msg model =
         ColorMetaExpandedToggled ->
             ( { model | colorMetaExpanded = not model.colorMetaExpanded }, Effect.none )
 
+        CountabilibarEnabledToggled enabled ->
+            case Common.adminAccountFor shared targetHost of
+                Just account ->
+                    ( { model | countabilibarStatus = AccountsPanel.Submitting }
+                    , AccountsPanel.updateServerConfig shared.accounts ( Just account.userId, targetHost ) (setCountabilibarEnabled enabled)
+                        |> Task.attempt GotCountabilibarSaveResult
+                        |> Effect.fromCmd
+                    )
+
+                Nothing ->
+                    ( model, Effect.none )
+
+        GotCountabilibarSaveResult (Ok ( maybeAccountsPanelMsg, newConfig )) ->
+            ( { model | countabilibarStatus = AccountsPanel.Idle }
+            , Effect.batch
+                [ Common.accountsPanelEffect maybeAccountsPanelMsg
+                , Effect.fromShared (Shared.AccountsPanelMsg (AccountsPanel.GotServerConfigSaveResult targetHost newConfig))
+                ]
+            )
+
+        GotCountabilibarSaveResult (Err err) ->
+            ( { model | countabilibarStatus = AccountsPanel.Errored (AccountsPanel.grpcErrorToString err) }, Effect.none )
+
         SharedMsg subMsg ->
             ( model, Effect.fromShared subMsg )
 
@@ -402,6 +434,31 @@ applyColorFor field argb config =
     { config | serverInfo = Just { info | colors = Just newColors } }
 
 
+{-| `CountabilibarEnabledToggled`'s transform: sets `serverInfo.disable_countabilibar` (the inverse of
+`enabled`) on the freshly re-fetched config, leaving everything else untouched. "Enabled" is stored as
+unset rather than `Just False`, so a server that never touches this keeps a config without it.
+-}
+setCountabilibarEnabled : Bool -> ServerConfiguration -> ServerConfiguration
+setCountabilibarEnabled enabled config =
+    let
+        info : Proto.Rellm.ServerInfo
+        info =
+            Maybe.withDefault defaultServerInfo config.serverInfo
+    in
+    { config
+        | serverInfo =
+            Just
+                { info
+                    | disableCountabilibar =
+                        if enabled then
+                            Nothing
+
+                        else
+                            Just True
+                }
+    }
+
+
 {-| `SwapColorsClicked`'s transform: exchanges `colors.primary` and `colors.navigation` on the freshly
 re-fetched config, leaving everything else untouched.
 -}
@@ -478,7 +535,37 @@ view shared server maybeAdminAccount model =
                     p [] [ text (webUserInterfaceText webUi) ]
             ]
         , Html.map CustomTabsConfigurationMsg (CustomTabsConfiguration.view server maybeAdminAccount model.customTabsConfig)
+        , countabilibarRow maybeAdminAccount model info
         , Html.map CustomCssConfigurationMsg (CustomCssConfiguration.view (server.frontendHost == shared.accounts.mainFrontendHost) server maybeAdminAccount model.customCssConfig)
+        ]
+
+
+{-| "Enable Countabilibar" -- whether the row of post/event counts under the breadcrumbs (see
+`Shared.Countabilibar`) is shown for this server's visitors; `ServerInfo.disable_countabilibar`, inverted.
+Sits right below "Tab Style" (the last thing `CustomTabsConfiguration` shows) and, like it, saves
+immediately when flipped: a live switch for a server admin, a read-only one for everyone else.
+-}
+countabilibarRow : Maybe RellmAccount -> Model -> Proto.Rellm.ServerInfo -> Html Msg
+countabilibarRow maybeAdminAccount model info =
+    let
+        enabled : Bool
+        enabled =
+            info.disableCountabilibar /= Just True
+    in
+    div [ class "server-details-setting" ]
+        [ Common.settingsRow "Enable Countabilibar"
+            (case maybeAdminAccount of
+                Just _ ->
+                    if model.countabilibarStatus == AccountsPanel.Submitting then
+                        Common.switchDisplay enabled
+
+                    else
+                        Common.flagSwitch enabled (CountabilibarEnabledToggled (not enabled))
+
+                Nothing ->
+                    Common.switchDisplay enabled
+            )
+        , Common.editErrorView model.countabilibarStatus
         ]
 
 

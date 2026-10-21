@@ -39,12 +39,36 @@ fn published_or_created_before(request: &GetPostsRequest) -> Option<std::time::S
         .map(|ts| ts.to_db())
 }
 
+// `GetPostsRequest.excluded_author_user_ids` as DB ids -- every feed-style listing below filters
+// these authors out via `exclude_authors!`. Resolved up front so a malformed id is rejected the
+// same way (`InvalidArgument`) whichever listing type the request lands on.
+fn excluded_author_db_ids(request: &GetPostsRequest) -> Result<Vec<i64>, Status> {
+    request
+        .excluded_author_user_ids
+        .iter()
+        .map(|id| id.to_db_id_or_err("excluded_author_user_ids"))
+        .collect()
+}
+
+// Filters a `posts`-based query to authors not in `$excluded` (a `&[i64]`/`Vec<i64>` from
+// `excluded_author_db_ids`). A no-op (`!= ALL('{}')` is true) when empty, so callers needn't branch
+// -- and, since it's the same expression either way, it works on boxed and unboxed queries alike.
+// Posts with no author at all are always kept, rather than dropped by SQL's NULL semantics.
+macro_rules! exclude_authors {
+    ($excluded:expr) => {
+        posts::user_id
+            .is_null()
+            .or(posts::user_id.ne_all($excluded.to_vec()))
+    };
+}
+
 pub fn get_posts(
     request: GetPostsRequest,
     user: &Option<&models::User>,
     conn: &mut PgPooledConnection,
 ) -> Result<GetPostsResponse, Status> {
     let cutoff = published_or_created_before(&request);
+    let excluded = excluded_author_db_ids(&request)?;
     let result = match (
         request.listing_type(),
         request.to_owned().post_id,
@@ -62,11 +86,13 @@ pub fn get_posts(
         (PostListingType::MyGroupsPosts, _, _) => get_my_group_posts(
             user.ok_or(Status::new(Code::Unauthenticated, "must_be_logged_in"))?,
             cutoff,
+            &excluded,
             conn,
         )?,
         (PostListingType::FollowingPosts, _, _) => get_following_posts(
             user.ok_or(Status::new(Code::Unauthenticated, "must_be_logged_in"))?,
             cutoff,
+            &excluded,
             conn,
         )?,
         (PostListingType::GroupPosts, _, _) => get_group_posts(
@@ -78,6 +104,7 @@ pub fn get_posts(
             &user.clone(),
             vec![Moderation::Unmoderated, Moderation::Approved],
             cutoff,
+            &excluded,
             conn,
         )?,
         (PostListingType::GroupPostsPendingModeration, _, _) => {
@@ -94,10 +121,11 @@ pub fn get_posts(
                 &binding,
                 vec![Moderation::Pending],
                 cutoff,
+                &excluded,
                 conn,
             )?
         }
-        (_, None, _) => get_public_and_following_posts(&request, &user, conn),
+        (_, None, _) => get_public_and_following_posts(&request, &excluded, &user, conn),
     };
 
     Ok(GetPostsResponse {
@@ -172,6 +200,7 @@ fn get_by_post_id(
 // context here (e.g. "browse all accessible replies") would otherwise always come back empty.
 fn get_public_and_following_posts(
     request: &GetPostsRequest,
+    excluded: &[i64],
     user: &Option<&models::User>,
     conn: &mut PgPooledConnection,
 ) -> Vec<MarshalablePost> {
@@ -189,6 +218,7 @@ fn get_public_and_following_posts(
         ))
         .filter(posts::context.eq(context.as_str_name()))
         .filter(posts::user_id.is_not_null())
+        .filter(exclude_authors!(excluded))
         .order(posts::sort_published_at.desc())
         .limit(PAGE_SIZE)
         .into_boxed();
@@ -254,6 +284,7 @@ fn get_recently_popular_posts(
         .map(|author_user_id| author_user_id.to_db_id_or_err("author_user_id"))
         .transpose()?;
     let cutoff = published_or_created_before(request);
+    let excluded = excluded_author_db_ids(request)?;
     let reference_time = cutoff.unwrap_or_else(SystemTime::now);
     let reference_epoch_secs = cutoff.map(|cutoff| {
         cutoff
@@ -275,6 +306,7 @@ fn get_recently_popular_posts(
         .filter(posts::context.eq(context.as_str_name()))
         .filter(posts::user_id.is_not_null())
         .filter(posts::sort_published_at.ge(reference_time - RECENTLY_POPULAR_WINDOW))
+        .filter(exclude_authors!(excluded))
         .order((
             sql::<Double>(&score).desc(),
             posts::sort_published_at.desc(),
@@ -328,6 +360,7 @@ fn get_search_posts(
         .as_ref()
         .map(|author_user_id| author_user_id.to_db_id_or_err("author_user_id"))
         .transpose()?;
+    let excluded = excluded_author_db_ids(request)?;
 
     // Prefix (not just whole/stemmed lexeme) matching - see `prefix_tsquery_text`'s doc comment.
     // "simple" (not "english") to match posts_build_search_text's indexing config - see
@@ -351,6 +384,7 @@ fn get_search_posts(
     let mut matching_post_ids = query_visible_posts!(user)
         .filter(posts::context.eq(request.context().as_str_name()))
         .filter(posts::search_text.matches(search_query))
+        .filter(exclude_authors!(excluded))
         .select(posts::id)
         .into_boxed();
 
@@ -385,6 +419,7 @@ fn get_search_posts(
 fn get_my_group_posts(
     user: &models::User,
     cutoff: Option<std::time::SystemTime>,
+    excluded: &[i64],
     conn: &mut PgPooledConnection,
 ) -> Result<Vec<MarshalablePost>, Status> {
     // let is_admin = user
@@ -396,6 +431,7 @@ fn get_my_group_posts(
         .filter(posts::context.eq(PostContext::Post.as_str_name()))
         .filter(memberships::user_id.eq(user.id))
         .filter(group_posts::group_moderation.eq_any(PASSING_MODERATIONS))
+        .filter(exclude_authors!(excluded))
         .order(posts::sort_published_at.desc())
         .select((
             models::POST_COLUMNS,
@@ -423,6 +459,7 @@ fn get_group_posts(
     user: &Option<&models::User>,
     moderations: Vec<Moderation>,
     cutoff: Option<std::time::SystemTime>,
+    excluded: &[i64],
     conn: &mut PgPooledConnection,
 ) -> Result<Vec<MarshalablePost>, Status> {
     let group = get_group(group_id, conn);
@@ -440,6 +477,7 @@ fn get_group_posts(
                 .filter(posts::context.eq(PostContext::Post.as_str_name()))
                 .filter(group_posts::group_id.eq(group_id))
                 .filter(group_posts::group_moderation.eq_any(moderations.to_string_moderations()))
+                .filter(exclude_authors!(excluded))
                 .order(posts::sort_published_at.desc())
                 .select((
                     models::POST_COLUMNS,
@@ -493,10 +531,12 @@ fn get_user_posts(
         .unwrap()
         .to_string()
         .to_db_id_or_err("user_id")?;
+    let excluded = excluded_author_db_ids(&request)?;
 
     let mut query = query_visible_posts!(current_user)
         .filter(posts::context.eq(request.context().as_str_name()))
         .filter(posts::user_id.eq(user_id))
+        .filter(exclude_authors!(excluded))
         .select((
             models::POST_COLUMNS,
             models::AUTHOR_COLUMNS.nullable(),
@@ -522,11 +562,13 @@ fn get_user_posts(
 fn get_following_posts(
     user: &models::User,
     cutoff: Option<std::time::SystemTime>,
+    excluded: &[i64],
     conn: &mut PgPooledConnection,
 ) -> Result<Vec<MarshalablePost>, Status> {
     let mut query = query_visible_posts!(&Some(user))
         .filter(posts::context.eq(PostContext::Post.as_str_name()))
         .filter(follows::user_id.eq(user.id))
+        .filter(exclude_authors!(excluded))
         .select((
             models::POST_COLUMNS,
             models::AUTHOR_COLUMNS.nullable(),

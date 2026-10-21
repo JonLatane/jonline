@@ -33,6 +33,7 @@ import Shared.AccountsPanel.RellmServers as RellmServers exposing (Branding, Rel
 import Shared.Federation.Common exposing (publicBlueskyAppViewHost)
 import Shared.AudioPlayerPanel as AudioPlayerPanel
 import Shared.Breadcrumbs as Breadcrumbs
+import Shared.Countabilibar as Countabilibar
 import Shared.BrowserInfo as BrowserInfo
 import Shared.ByteFormat as ByteFormat
 import Shared.Conversions exposing (timestampToPosix)
@@ -245,6 +246,11 @@ headerNav shared currentRoute =
         -- includes `breadcrumbsBar`'s row) rather than just some narrower
         -- element's. See `breadcrumbsReplyPanel`.
         , breadcrumbsReplyPanel shared
+
+        -- Below the breadcrumbs' row, so the popovers (this one's and `breadcrumbsReplyPanel`'s) both
+        -- anchor under the whole stack -- see `countabilibarBar`.
+        , countabilibarBar shared
+        , countabilibarPanel shared
         ]
 
 
@@ -361,6 +367,13 @@ sharedBackdrop shared =
               }
             , { isOpen = shared.breadcrumbs.viewingPost /= Nothing || shared.breadcrumbs.viewingHost
               , closeMsg = Shared.BreadcrumbsMsg Breadcrumbs.CloseViewer
+              , blurs = True
+              }
+
+            -- Shares the Breadcrumbs viewer's spot (and is never open together with it -- see
+            -- `Shared.update`), so which of the two sits "behind" the other doesn't matter.
+            , { isOpen = Countabilibar.isPanelOpen shared.countabilibar && countabilibarEnabled shared
+              , closeMsg = Shared.CountabilibarMsg Countabilibar.ClosePanel
               , blurs = True
               }
 
@@ -4811,6 +4824,43 @@ see nav.css) resolves against `.navbar` itself.
 breadcrumbsReplyPanel : Shared.Model -> Html Shared.Msg
 breadcrumbsReplyPanel shared =
     Html.map Shared.BreadcrumbsMsg (Breadcrumbs.previewPanel shared.basePath shared.accounts shared.breadcrumbs)
+
+
+{-| The post/event counts row (see `Shared.Countabilibar`) at the bottom of `.navbar`, below
+`breadcrumbsBar` -- like it, there's no nav icon: pages feed it, and it renders (at zero height) nothing
+until there's something to count.
+-}
+countabilibarBar : Shared.Model -> Html Shared.Msg
+countabilibarBar shared =
+    if countabilibarEnabled shared then
+        Html.map Shared.CountabilibarMsg (Countabilibar.bar shared.accounts shared.countabilibar)
+
+    else
+        text ""
+
+
+{-| Whether the main server (the one driving the nav's chrome, like `currentTabStyle`) hasn't turned the
+Countabilibar off -- `ServerInfo.disable_countabilibar`, set from the Theme tab of its Server Information
+page. Enabled while the server's configuration isn't known yet.
+-}
+countabilibarEnabled : Shared.Model -> Bool
+countabilibarEnabled shared =
+    mainServer shared
+        |> Maybe.andThen (\server -> (RellmServers.configurationOf server).serverInfo)
+        |> Maybe.andThen .disableCountabilibar
+        |> (/=) (Just True)
+
+
+{-| The popover under `countabilibarBar`, listing the users counted on the server tapped there -- a
+`.navbar` descendant for the same reason `breadcrumbsReplyPanel` is.
+-}
+countabilibarPanel : Shared.Model -> Html Shared.Msg
+countabilibarPanel shared =
+    if countabilibarEnabled shared then
+        Html.map Shared.CountabilibarMsg (Countabilibar.panel shared.basePath shared.accounts shared.countabilibar)
+
+    else
+        text ""
 
 
 {-| The app-wide fullscreen image/video viewer (see `Shared.MediaViewerPanel`)

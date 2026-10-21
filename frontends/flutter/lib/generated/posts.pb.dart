@@ -53,6 +53,7 @@ class GetPostsRequest extends $pb.GeneratedMessage {
     $core.String? postIds,
     PostListingType? listingType,
     $core.int? page,
+    $core.Iterable<$core.String>? excludedAuthorUserIds,
   }) {
     final $result = create();
     if (postId != null) {
@@ -85,6 +86,9 @@ class GetPostsRequest extends $pb.GeneratedMessage {
     if (page != null) {
       $result.page = page;
     }
+    if (excludedAuthorUserIds != null) {
+      $result.excludedAuthorUserIds.addAll(excludedAuthorUserIds);
+    }
     return $result;
   }
   GetPostsRequest._() : super();
@@ -102,6 +106,7 @@ class GetPostsRequest extends $pb.GeneratedMessage {
     ..aOS(9, _omitFieldNames ? '' : 'postIds')
     ..e<PostListingType>(10, _omitFieldNames ? '' : 'listingType', $pb.PbFieldType.OE, defaultOrMaker: PostListingType.ALL_ACCESSIBLE_POSTS, valueOf: PostListingType.valueOf, enumValues: PostListingType.values)
     ..a<$core.int>(15, _omitFieldNames ? '' : 'page', $pb.PbFieldType.OU3)
+    ..pPS(16, _omitFieldNames ? '' : 'excludedAuthorUserIds')
     ..hasRequiredFields = false
   ;
 
@@ -228,6 +233,13 @@ class GetPostsRequest extends $pb.GeneratedMessage {
   $core.bool hasPage() => $_has(9);
   @$pb.TagNumber(15)
   void clearPage() => clearField(15);
+
+  /// Excludes results by any of the given author user IDs. Applies to every feed-style listing (all
+  /// listing types except single `post_id`/reply lookups). Numbered out of order (it logically belongs
+  /// right after `author_user_id`) so as not to break compatibility; the order will be straightened out in a
+  /// later protocol version.
+  @$pb.TagNumber(16)
+  $core.List<$core.String> get excludedAuthorUserIds => $_getList(10);
 }
 
 /// Used for getting posts.

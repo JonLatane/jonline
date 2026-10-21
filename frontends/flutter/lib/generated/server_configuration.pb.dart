@@ -2017,8 +2017,7 @@ class ServerInfo extends $pb.GeneratedMessage {
     WebUserInterface? webUserInterface,
     ServerColors? colors,
     $core.String? mediaPolicy,
-  @$core.Deprecated('This field is deprecated.')
-    $core.Iterable<$core.String>? recommendedServerHosts,
+    $core.bool? disableCountabilibar,
   }) {
     final $result = create();
     if (name != null) {
@@ -2045,9 +2044,8 @@ class ServerInfo extends $pb.GeneratedMessage {
     if (mediaPolicy != null) {
       $result.mediaPolicy = mediaPolicy;
     }
-    if (recommendedServerHosts != null) {
-      // ignore: deprecated_member_use_from_same_package
-      $result.recommendedServerHosts.addAll(recommendedServerHosts);
+    if (disableCountabilibar != null) {
+      $result.disableCountabilibar = disableCountabilibar;
     }
     return $result;
   }
@@ -2064,7 +2062,7 @@ class ServerInfo extends $pb.GeneratedMessage {
     ..e<WebUserInterface>(6, _omitFieldNames ? '' : 'webUserInterface', $pb.PbFieldType.OE, defaultOrMaker: WebUserInterface.FLUTTER_WEB, valueOf: WebUserInterface.valueOf, enumValues: WebUserInterface.values)
     ..aOM<ServerColors>(7, _omitFieldNames ? '' : 'colors', subBuilder: ServerColors.create)
     ..aOS(8, _omitFieldNames ? '' : 'mediaPolicy')
-    ..pPS(9, _omitFieldNames ? '' : 'recommendedServerHosts')
+    ..aOB(9, _omitFieldNames ? '' : 'disableCountabilibar')
     ..hasRequiredFields = false
   ;
 
@@ -2175,10 +2173,18 @@ class ServerInfo extends $pb.GeneratedMessage {
   @$pb.TagNumber(8)
   void clearMediaPolicy() => clearField(8);
 
-  /// This will be replaced with FederationInfo soon.
-  @$core.Deprecated('This field is deprecated.')
+  /// If set, the Elm SPA's "Countabilibar" -- the row under the breadcrumbs counting the posts and events a
+  /// page shows per server/user, with checkboxes to hide them -- is not shown. (Field 9 was formerly
+  /// `repeated string recommended_server_hosts`, replaced by `FederationInfo.servers`; stored configurations
+  /// may still carry that old value, which is ignored.)
   @$pb.TagNumber(9)
-  $core.List<$core.String> get recommendedServerHosts => $_getList(8);
+  $core.bool get disableCountabilibar => $_getBF(8);
+  @$pb.TagNumber(9)
+  set disableCountabilibar($core.bool v) { $_setBool(8, v); }
+  @$pb.TagNumber(9)
+  $core.bool hasDisableCountabilibar() => $_has(8);
+  @$pb.TagNumber(9)
+  void clearDisableCountabilibar() => clearField(9);
 }
 
 /// Logo data for the server. Built atop Rellm [`Media` APIs](#rellm-Media).

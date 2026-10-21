@@ -5155,6 +5155,12 @@ directory</a> is (<code>{name}</code> denotes a
           <td>Limits results to those by the given author user ID.</td>
         </tr>
         <tr>
+          <td>excluded_author_user_ids</td>
+          <td><a href="#string">string</a></td>
+          <td>repeated</td>
+          <td>Excludes results by any of the given author user IDs. Applies to every feed-style listing (all listing types except single <code>post_id</code>/reply lookups). Numbered out of order (it logically belongs right after <code>author_user_id</code>) so as not to break compatibility; the order will be straightened out in a later protocol version.</td>
+        </tr>
+        <tr>
           <td>group_id</td>
           <td><a href="#string">string</a></td>
           <td>optional</td>
@@ -5840,6 +5846,12 @@ directory</a> is (<code>{name}</code> denotes a
           <td><a href="#string">string</a></td>
           <td>optional</td>
           <td>Limits results to those by the given author user ID.</td>
+        </tr>
+        <tr>
+          <td>excluded_author_user_ids</td>
+          <td><a href="#string">string</a></td>
+          <td>repeated</td>
+          <td>Excludes events by any of the given author user IDs. Applies to every feed-style listing (all but single <code>post_id</code>/<code>occasion_post_ids</code> lookups). Numbered out of order (it logically belongs right after <code>author_user_id</code>) so as not to break compatibility; the order will be straightened out in a later protocol version.</td>
         </tr>
         <tr>
           <td>group_id</td>
@@ -7938,10 +7950,10 @@ directory</a> is (<code>{name}</code> denotes a
           <td>The media policy for the server. Will be displayed during account creation and on the <code>/about</code> page.</td>
         </tr>
         <tr>
-          <td>recommended_server_hosts</td>
-          <td><a href="#string">string</a></td>
-          <td>repeated</td>
-          <td><strong>Deprecated.</strong> This will be replaced with FederationInfo soon.</td>
+          <td>disable_countabilibar</td>
+          <td><a href="#bool">bool</a></td>
+          <td>optional</td>
+          <td>If set, the Elm SPA's "Countabilibar" -- the row under the breadcrumbs counting the posts and events a page shows per server/user, with checkboxes to hide them -- is not shown. (Field 9 was formerly <code>repeated string recommended_server_hosts</code>, replaced by <code>FederationInfo.servers</code>; stored configurations may still carry that old value, which is ignored.)</td>
         </tr>
       </tbody>
     </table>

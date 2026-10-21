@@ -283,6 +283,9 @@ server, authenticated as its account if any -- for
 `Occasion` lookup. `authorUserId`, if given, restricts the results to
 that user's own events (mirrors `Components.Posts.fetchPosts`' own
 `authorUserId` param), for that module's use on a user's own events page.
+`excludedAuthorUserIds` leaves those users' events out
+(`GetEventsRequest.excluded_author_user_ids`) -- what hiding a user in
+`Shared.Countabilibar` sends.
 
 `GetEventsRequest.timeFilter.endsAfter` is the only time filter
 `backend/src/rpcs/events/get_events.rs` actually implements (see its
@@ -308,11 +311,12 @@ fetchEvents :
     AccountsPanel.Model
     -> AccountsPanel.MaybeAccountServer
     -> Maybe String
+    -> List String
     -> String
     -> Time.Posix
     -> Maybe String
     -> Task Grpc.Error ( Maybe AccountsPanel.Msg, GetEventsResponse )
-fetchEvents accountsPanelModel maybeAccountServer authorUserId searchText endsAfter anonymousAuthTokens =
+fetchEvents accountsPanelModel maybeAccountServer authorUserId excludedAuthorUserIds searchText endsAfter anonymousAuthTokens =
     let
         trimmedSearchText : String
         trimmedSearchText =
@@ -322,6 +326,7 @@ fetchEvents accountsPanelModel maybeAccountServer authorUserId searchText endsAf
         baseRequest =
             { defaultGetEventsRequest
                 | authorUserId = authorUserId
+                , excludedAuthorUserIds = excludedAuthorUserIds
                 , anonymousAttendeeAuthToken = anonymousAuthTokens
                 , timeFilter = Just { defaultTimeFilter | endsAfter = Just (posixToTimestamp endsAfter) }
             }

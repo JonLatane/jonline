@@ -1389,3 +1389,211 @@ mod text_search {
         });
     }
 }
+
+mod excluded_author_user_ids {
+    use super::*;
+
+    fn public_event(
+        conn: &mut crate::db_connection::PgPooledConnection,
+        author: &crate::models::User,
+        title: &str,
+    ) -> crate::models::Event {
+        create_simple_event(
+            conn,
+            author,
+            EventOpts {
+                visibility: Visibility::GlobalPublic,
+                title: Some(title.to_string()),
+                ..Default::default()
+            },
+            OccasionOpts {
+                visibility: Visibility::GlobalPublic,
+                ..Default::default()
+            },
+        )
+        .0
+    }
+
+    #[test]
+    fn default_listing_omits_excluded_authors() {
+        let mut conn = test_conn();
+        conn.test_transaction::<_, Status, _>(|conn| {
+            let kept = create_user(conn, "excl_events_kept");
+            let dropped = create_user(conn, "excl_events_dropped");
+            let kept_event = public_event(conn, &kept, "kept excl event");
+            let dropped_event = public_event(conn, &dropped, "dropped excl event");
+
+            let all = get_events(GetEventsRequest::default(), &None, conn)?;
+            assert!(ids(&all).contains(&dropped_event.post_id.to_proto_id()));
+
+            let response = get_events(
+                GetEventsRequest {
+                    excluded_author_user_ids: vec![dropped.id.to_proto_id()],
+                    ..Default::default()
+                },
+                &None,
+                conn,
+            )?;
+            assert!(ids(&response).contains(&kept_event.post_id.to_proto_id()));
+            assert!(!ids(&response).contains(&dropped_event.post_id.to_proto_id()));
+            Ok(())
+        });
+    }
+
+    #[test]
+    fn several_authors_can_be_excluded_at_once() {
+        let mut conn = test_conn();
+        conn.test_transaction::<_, Status, _>(|conn| {
+            let kept = create_user(conn, "excl_events_multi_kept");
+            let dropped1 = create_user(conn, "excl_events_multi_dropped1");
+            let dropped2 = create_user(conn, "excl_events_multi_dropped2");
+            let kept_event = public_event(conn, &kept, "kept multi event");
+            let dropped_event1 = public_event(conn, &dropped1, "dropped multi event 1");
+            let dropped_event2 = public_event(conn, &dropped2, "dropped multi event 2");
+
+            let response = get_events(
+                GetEventsRequest {
+                    excluded_author_user_ids: vec![
+                        dropped1.id.to_proto_id(),
+                        dropped2.id.to_proto_id(),
+                    ],
+                    ..Default::default()
+                },
+                &None,
+                conn,
+            )?;
+            let result_ids = ids(&response);
+            assert!(result_ids.contains(&kept_event.post_id.to_proto_id()));
+            assert!(!result_ids.contains(&dropped_event1.post_id.to_proto_id()));
+            assert!(!result_ids.contains(&dropped_event2.post_id.to_proto_id()));
+            Ok(())
+        });
+    }
+
+    #[test]
+    fn text_search_omits_excluded_authors() {
+        let mut conn = test_conn();
+        conn.test_transaction::<_, Status, _>(|conn| {
+            let kept = create_user(conn, "excl_evt_search_kept");
+            let dropped = create_user(conn, "excl_evt_search_dropped");
+            let kept_event = public_event(conn, &kept, "quuxevtexcl from kept");
+            let dropped_event = public_event(conn, &dropped, "quuxevtexcl from dropped");
+
+            let response = get_events(
+                GetEventsRequest {
+                    listing_type: EventListingType::EventTextSearch as i32,
+                    search_text: Some("quuxevtexcl".to_string()),
+                    excluded_author_user_ids: vec![dropped.id.to_proto_id()],
+                    ..Default::default()
+                },
+                &None,
+                conn,
+            )?;
+            assert_eq!(ids(&response), vec![kept_event.post_id.to_proto_id()]);
+            assert!(!ids(&response).contains(&dropped_event.post_id.to_proto_id()));
+            Ok(())
+        });
+    }
+
+    #[test]
+    fn author_listing_omits_excluded_authors() {
+        let mut conn = test_conn();
+        conn.test_transaction::<_, Status, _>(|conn| {
+            let author = create_user(conn, "excl_evt_author_listing");
+            let other = create_user(conn, "excl_evt_author_listing_other");
+            let event = public_event(conn, &author, "author listing event");
+
+            let excluded = get_events(
+                GetEventsRequest {
+                    author_user_id: Some(author.id.to_proto_id()),
+                    excluded_author_user_ids: vec![author.id.to_proto_id()],
+                    ..Default::default()
+                },
+                &None,
+                conn,
+            )?;
+            assert!(excluded.events.is_empty());
+
+            let kept = get_events(
+                GetEventsRequest {
+                    author_user_id: Some(author.id.to_proto_id()),
+                    excluded_author_user_ids: vec![other.id.to_proto_id()],
+                    ..Default::default()
+                },
+                &None,
+                conn,
+            )?;
+            assert_eq!(ids(&kept), vec![event.post_id.to_proto_id()]);
+            Ok(())
+        });
+    }
+
+    #[test]
+    fn group_listing_omits_excluded_authors() {
+        let mut conn = test_conn();
+        conn.test_transaction::<_, Status, _>(|conn| {
+            let kept = create_user(conn, "excl_evt_group_kept");
+            let dropped = create_user(conn, "excl_evt_group_dropped");
+            let group = create_group(
+                conn,
+                "excl-evt-group",
+                GroupOpts {
+                    non_member_permissions: vec![Permission::ViewPosts],
+                },
+            );
+            let mut group_event = |author: &crate::models::User| {
+                let (event, post) = create_event(
+                    conn,
+                    author,
+                    EventOpts {
+                        visibility: Visibility::GlobalPublic,
+                        ..Default::default()
+                    },
+                );
+                create_occasion(
+                    conn,
+                    &event,
+                    Some(author),
+                    OccasionOpts {
+                        visibility: Visibility::GlobalPublic,
+                        ..Default::default()
+                    },
+                );
+                create_group_post(conn, &post, &group, author, Moderation::Approved);
+                event
+            };
+            let kept_event = group_event(&kept);
+            group_event(&dropped);
+
+            let response = get_events(
+                GetEventsRequest {
+                    listing_type: EventListingType::GroupEvents as i32,
+                    group_id: Some(group.id.to_proto_id()),
+                    excluded_author_user_ids: vec![dropped.id.to_proto_id()],
+                    ..Default::default()
+                },
+                &None,
+                conn,
+            )?;
+            assert_eq!(ids(&response), vec![kept_event.post_id.to_proto_id()]);
+            Ok(())
+        });
+    }
+
+    #[test]
+    fn malformed_id_is_invalid_argument() {
+        let mut conn = test_conn();
+        conn.test_transaction::<_, Status, _>(|conn| {
+            let result = get_events(
+                GetEventsRequest {
+                    excluded_author_user_ids: vec!["not a real id!".to_string()],
+                    ..Default::default()
+                },
+                &None,
+                conn,
+            );
+            assert_eq!(result.unwrap_err().code(), Code::InvalidArgument);
+            Ok(())
+        });
+    }
+}

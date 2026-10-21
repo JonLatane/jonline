@@ -33,6 +33,11 @@ message GetPostsRequest {
   optional string post_id = 1;
   // Limits results to those by the given author user ID.
   optional string author_user_id = 2;
+  // Excludes results by any of the given author user IDs. Applies to every feed-style listing (all
+  // listing types except single `post_id`/reply lookups). Numbered out of order (it logically belongs
+  // right after `author_user_id`) so as not to break compatibility; the order will be straightened out in a
+  // later protocol version.
+  repeated string excluded_author_user_ids = 16;
   // Limits results to those in the given group ID.
   optional string group_id = 3;
   // Only supported for depth=2 for now.

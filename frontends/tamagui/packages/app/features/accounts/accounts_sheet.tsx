@@ -112,15 +112,15 @@ export function AccountsSheet({ selectedGroup, primaryEntity }: AccountsSheetPro
 
   const currentServerHosts = servers.map(s => s.host);
 
-  const currentServerRecommendedHosts = currentServer?.serverConfiguration?.serverInfo?.recommendedServerHosts ?? [];
+  const currentServerRecommendedHosts = currentServer?.serverConfiguration?.federationInfo?.servers?.map(f => f.host) ?? [];
   const allRecommendableServerHosts = [...new Set([
     ...(currentServer ? currentServerRecommendedHosts : []),
     ...servers.filter(s => s.host != currentServer?.host)
-      .flatMap(s => s.serverConfiguration?.serverInfo?.recommendedServerHosts ?? [])
+      .flatMap(s => s.serverConfiguration?.federationInfo?.servers?.map(f => f.host) ?? [])
   ])];
   const recommendedServerHostsUnfiltered = browsingServers
     ? allRecommendableServerHosts
-    : [...new Set(currentServer?.serverConfiguration?.serverInfo?.recommendedServerHosts ?? [])];
+    : [...new Set(currentServer?.serverConfiguration?.federationInfo?.servers?.map(f => f.host) ?? [])];
   const recommendedServerHosts = recommendedServerHostsUnfiltered
     .filter(host => !currentServerHosts.includes(host));
 

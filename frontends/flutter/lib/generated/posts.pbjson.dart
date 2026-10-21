@@ -74,6 +74,7 @@ const GetPostsRequest$json = {
   '2': [
     {'1': 'post_id', '3': 1, '4': 1, '5': 9, '9': 0, '10': 'postId', '17': true},
     {'1': 'author_user_id', '3': 2, '4': 1, '5': 9, '9': 1, '10': 'authorUserId', '17': true},
+    {'1': 'excluded_author_user_ids', '3': 16, '4': 3, '5': 9, '10': 'excludedAuthorUserIds'},
     {'1': 'group_id', '3': 3, '4': 1, '5': 9, '9': 2, '10': 'groupId', '17': true},
     {'1': 'reply_depth', '3': 4, '4': 1, '5': 13, '9': 3, '10': 'replyDepth', '17': true},
     {'1': 'context', '3': 5, '4': 1, '5': 14, '6': '.rellm.PostContext', '9': 4, '10': 'context', '17': true},
@@ -98,16 +99,17 @@ const GetPostsRequest$json = {
 /// Descriptor for `GetPostsRequest`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List getPostsRequestDescriptor = $convert.base64Decode(
     'Cg9HZXRQb3N0c1JlcXVlc3QSHAoHcG9zdF9pZBgBIAEoCUgAUgZwb3N0SWSIAQESKQoOYXV0aG'
-    '9yX3VzZXJfaWQYAiABKAlIAVIMYXV0aG9yVXNlcklkiAEBEh4KCGdyb3VwX2lkGAMgASgJSAJS'
-    'B2dyb3VwSWSIAQESJAoLcmVwbHlfZGVwdGgYBCABKA1IA1IKcmVwbHlEZXB0aIgBARIxCgdjb2'
-    '50ZXh0GAUgASgOMhIucmVsbG0uUG9zdENvbnRleHRIBFIHY29udGV4dIgBARIeCghwb3N0X2lk'
-    'cxgJIAEoCUgFUgdwb3N0SWRziAEBEjkKDGxpc3RpbmdfdHlwZRgKIAEoDjIWLnJlbGxtLlBvc3'
-    'RMaXN0aW5nVHlwZVILbGlzdGluZ1R5cGUSEgoEcGFnZRgPIAEoDVIEcGFnZRIkCgtzZWFyY2hf'
-    'dGV4dBgHIAEoCUgGUgpzZWFyY2hUZXh0iAEBEl4KG3B1Ymxpc2hlZF9vcl9jcmVhdGVkX2JlZm'
-    '9yZRgIIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBIB1IYcHVibGlzaGVkT3JDcmVh'
-    'dGVkQmVmb3JliAEBQgoKCF9wb3N0X2lkQhEKD19hdXRob3JfdXNlcl9pZEILCglfZ3JvdXBfaW'
-    'RCDgoMX3JlcGx5X2RlcHRoQgoKCF9jb250ZXh0QgsKCV9wb3N0X2lkc0IOCgxfc2VhcmNoX3Rl'
-    'eHRCHgocX3B1Ymxpc2hlZF9vcl9jcmVhdGVkX2JlZm9yZQ==');
+    '9yX3VzZXJfaWQYAiABKAlIAVIMYXV0aG9yVXNlcklkiAEBEjcKGGV4Y2x1ZGVkX2F1dGhvcl91'
+    'c2VyX2lkcxgQIAMoCVIVZXhjbHVkZWRBdXRob3JVc2VySWRzEh4KCGdyb3VwX2lkGAMgASgJSA'
+    'JSB2dyb3VwSWSIAQESJAoLcmVwbHlfZGVwdGgYBCABKA1IA1IKcmVwbHlEZXB0aIgBARIxCgdj'
+    'b250ZXh0GAUgASgOMhIucmVsbG0uUG9zdENvbnRleHRIBFIHY29udGV4dIgBARIeCghwb3N0X2'
+    'lkcxgJIAEoCUgFUgdwb3N0SWRziAEBEjkKDGxpc3RpbmdfdHlwZRgKIAEoDjIWLnJlbGxtLlBv'
+    'c3RMaXN0aW5nVHlwZVILbGlzdGluZ1R5cGUSEgoEcGFnZRgPIAEoDVIEcGFnZRIkCgtzZWFyY2'
+    'hfdGV4dBgHIAEoCUgGUgpzZWFyY2hUZXh0iAEBEl4KG3B1Ymxpc2hlZF9vcl9jcmVhdGVkX2Jl'
+    'Zm9yZRgIIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBIB1IYcHVibGlzaGVkT3JDcm'
+    'VhdGVkQmVmb3JliAEBQgoKCF9wb3N0X2lkQhEKD19hdXRob3JfdXNlcl9pZEILCglfZ3JvdXBf'
+    'aWRCDgoMX3JlcGx5X2RlcHRoQgoKCF9jb250ZXh0QgsKCV9wb3N0X2lkc0IOCgxfc2VhcmNoX3'
+    'RleHRCHgocX3B1Ymxpc2hlZF9vcl9jcmVhdGVkX2JlZm9yZQ==');
 
 @$core.Deprecated('Use getPostsResponseDescriptor instead')
 const GetPostsResponse$json = {
