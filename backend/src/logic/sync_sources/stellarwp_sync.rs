@@ -4,12 +4,19 @@
 //! The plugin's iCal export (`?post_type=tribe_events&ical=1&eventDisplay=list`) returns at most
 //! its "events per page" setting's worth of events (30 on many sites) -- a plain
 //! `ics_subscription_url` source on a busy calendar therefore only ever sees the next couple of
-//! weeks. The same URL with `&paged=2`, `&paged=3`, ... returns the following pages (neighboring
-//! pages can overlap by a day, so events are de-duplicated), and a page past the end is an
-//! HTTP 200 with an *empty* body. [`collect_pages`] fetches pages until one of those, merges them
+//! weeks. The same URL with `&paged=2`, `&paged=3`, ... returns the following pages, and a page past
+//! the end is an HTTP 200 with an *empty* body. Pages overlap heavily: `paged` steps through the
+//! list by the site's "events per page" *display* setting (12 on thetriangleweekender.com) while
+//! each iCal response is always 30 events long, so every page repeats most of the previous one and
+//! events are de-duplicated (a feed's reach is ~12 events per page fetched, not 30). [`collect_pages`] fetches pages until one of those, merges them
 //! into one [`Calendar`], and hands it to `event_sync::sync_source_calendar` -- everything after
 //! the fetch (recurrence expansion, upserting, missing-grace-period pruning) is shared with plain
 //! ICS sources.
+//!
+//! The list view only shows *upcoming* events, so an event drops out of the feed the moment it ends.
+//! Unlike a plain ICS file, that doesn't mean it was removed: the sync is told the feed is
+//! `upcoming_only` (see `FeedCoverage`) and never prunes occasions that have already ended, so past
+//! events stay in the data set.
 //!
 //! A feed that's still returning new events at [`MAX_PAGES`] is treated as *truncated*: the merged
 //! calendar's `coverage_horizon` (the latest start seen) is passed along so occasions beyond it
@@ -28,13 +35,17 @@ use icalendar::{Calendar, Component};
 use reqwest::Url;
 use tonic::{Code, Status};
 
-use super::event_sync::{get_date_property, parse_calendar, sync_source_calendar};
+use super::event_sync::{
+    get_date_property, parse_calendar, sync_source_calendar, FeedCoverage,
+};
 use crate::db_connection::PgPooledConnection;
 use crate::models;
 
-/// The most pages one sync fetches. A page is ~30 events, so this bounds a sync at ~1,200 events;
-/// real calendars seen so far run out at 25-35 pages (a year or so ahead).
-pub const MAX_PAGES: u32 = 40;
+/// The most pages one sync fetches. Because pages overlap (see the module doc), each adds only ~10-12
+/// new events, so this bounds a sync at roughly 1,000 events; the real calendars seen so far run out
+/// at 26-37 pages (thetriangleweekender.com: 453 events through May 2027; downtowndurham.com: 256
+/// through Sept 2027).
+pub const MAX_PAGES: u32 = 80;
 /// Pages fetched concurrently. Small, so a sync stays polite to a (usually small, shared-hosting)
 /// WordPress site while still finishing in a fraction of the time a purely sequential fetch takes
 /// (pages can take several seconds each).
@@ -42,7 +53,7 @@ const PAGES_PER_BATCH: u32 = 4;
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(60);
 const USER_AGENT: &str = "Rellm-SyncSource/1.0 (+https://rellm.org)";
 
-/// Syncs every page of `source`'s StellarWP endpoint (up to [`MAX_PAGES`]).
+/// Syncs every page of `source`'s StellarWP iCal URL (up to [`MAX_PAGES`]).
 pub fn sync_source_stellarwp(
     source: &models::SyncSource,
     conn: &mut PgPooledConnection,
@@ -50,7 +61,7 @@ pub fn sync_source_stellarwp(
     sync_pages(source, MAX_PAGES, conn)
 }
 
-/// Syncs only the first page of `source`'s StellarWP endpoint -- what a create/update RPC does
+/// Syncs only the first page of `source`'s StellarWP iCal URL -- what a create/update RPC does
 /// inline before handing the remaining pages to a background sync. Occasions past the first page's
 /// coverage are left alone rather than treated as missing.
 pub fn sync_source_stellarwp_first_page(
@@ -65,7 +76,7 @@ fn sync_pages(
     max_pages: u32,
     conn: &mut PgPooledConnection,
 ) -> Result<(), Status> {
-    let endpoint = stellarwp_subscription_endpoint(source)?;
+    let endpoint = stellarwp_ics_subscription_url(source)?;
     crate::init_crypto();
     let paged = in_blocking_context(|| {
         let client = reqwest::blocking::Client::builder()
@@ -80,16 +91,20 @@ fn sync_pages(
             fetch_page(&client, &stellarwp_page_url(endpoint, page)?)
         })
     })?;
-    sync_source_calendar(source, &paged.calendar, paged.coverage_horizon, conn)
+    let coverage = FeedCoverage {
+        truncated_after: paged.coverage_horizon,
+        upcoming_only: true,
+    };
+    sync_source_calendar(source, &paged.calendar, coverage, conn)
 }
 
-fn stellarwp_subscription_endpoint(source: &models::SyncSource) -> Result<&str, Status> {
+fn stellarwp_ics_subscription_url(source: &models::SyncSource) -> Result<&str, Status> {
     source
         .configuration
-        .get("stellarwp_subscription_endpoint")
+        .get("stellarwp_ics_subscription_url")
         .and_then(|v| v.as_str())
         .filter(|s| !s.trim().is_empty())
-        .ok_or_else(|| Status::new(Code::FailedPrecondition, "stellarwp_endpoint_required"))
+        .ok_or_else(|| Status::new(Code::FailedPrecondition, "stellarwp_ics_url_required"))
 }
 
 /// `endpoint` with its `paged` query parameter set to `page` (replacing any `paged` it already
@@ -116,7 +131,7 @@ pub fn stellarwp_page_url(endpoint: &str, page: u32) -> Result<Url, Status> {
 }
 
 fn invalid_endpoint() -> Status {
-    Status::new(Code::InvalidArgument, "stellarwp_subscription_endpoint_invalid")
+    Status::new(Code::InvalidArgument, "stellarwp_ics_subscription_url_invalid")
 }
 
 /// Same reasoning as `event_sync::fetch_ics`: handlers are plain sync functions but still run

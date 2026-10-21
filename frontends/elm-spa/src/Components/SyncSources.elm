@@ -49,7 +49,7 @@ syncedCountsLabel source =
         Just (Configuration.IcsSubscriptionUrl _) ->
             eventsAndOccasionsLabel source
 
-        Just (Configuration.StellarwpSubscriptionEndpoint _) ->
+        Just (Configuration.StellarwpIcsSubscriptionUrl _) ->
             eventsAndOccasionsLabel source
 
         _ ->
@@ -92,7 +92,7 @@ pluralCount count noun =
 {-| Whether `url` looks like an iCal export from [The Events Calendar](https://theeventscalendar.com/)
 (the StellarWP WordPress plugin) -- its `?ical=1` export, which the plugin caps at one page of events
 (30 on many sites), so a plain iCal source on it only ever sees the next couple of weeks. Such a
-source should be a `StellarwpSubscriptionEndpoint` instead, which follows the plugin's pagination
+source should be a `StellarwpIcsSubscriptionUrl` instead, which follows the plugin's pagination
 (see `protos/sync.proto`). Used to suggest exactly that switch in `Components.Pages.UserProfilePage`'s
 Sync Sources section.
 

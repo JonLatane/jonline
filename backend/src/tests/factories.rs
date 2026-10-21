@@ -694,17 +694,17 @@ pub fn serve_stellarwp_pages(pages: Vec<String>) -> String {
     format!("http://127.0.0.1:{port}/?post_type=tribe_events&ical=1&eventDisplay=list")
 }
 
-/// Mirrors `create_sync_source_row`, for a StellarWP "The Events Calendar" endpoint.
+/// Mirrors `create_sync_source_row`, for a StellarWP "The Events Calendar" iCal URL.
 pub fn create_stellarwp_sync_source_row(
     conn: &mut PgPooledConnection,
     user: &models::User,
-    stellarwp_subscription_endpoint: &str,
+    stellarwp_ics_subscription_url: &str,
 ) -> models::SyncSource {
     insert_into(sync_sources::table)
         .values(&models::NewSyncSource {
             user_id: user.id,
             sync_interval_seconds: 3600,
-            configuration: serde_json::json!({ "stellarwp_subscription_endpoint": stellarwp_subscription_endpoint }),
+            configuration: serde_json::json!({ "stellarwp_ics_subscription_url": stellarwp_ics_subscription_url }),
         })
         .get_result::<models::SyncSource>(conn)
         .expect("failed to create test sync source")

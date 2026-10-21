@@ -255,8 +255,10 @@ message SyncSource {
     // Events/Occasions, like `ics_subscription_url`, but each sync follows the plugin's `paged=N`
     // pagination to fetch as many pages as it can -- the plugin caps a single iCal response at its
     // "events per page" setting (30 on many sites), so a plain `ics_subscription_url` only ever
-    // sees the next couple of weeks of events on a busy calendar.
-    string stellarwp_subscription_endpoint = 21;
+    // sees the next couple of weeks of events on a busy calendar. The plugin's list only shows
+    // *upcoming* events, so unlike `ics_subscription_url` an event dropping out of the feed
+    // doesn't mean it was removed: events that have already ended are kept, not pruned.
+    string stellarwp_ics_subscription_url = 21;
     // The RSS subscription URL for the feed sync. Creates/updates plain Posts.
     string rss_subscription_url = 22;
     // The Atom subscription URL for the feed sync. Creates/updates plain Posts.

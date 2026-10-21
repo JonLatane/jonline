@@ -137,7 +137,7 @@ pub fn sync_source_text(
     conn: &mut PgPooledConnection,
 ) -> Result<(), Status> {
     let calendar = parse_calendar(ics_text)?;
-    sync_source_calendar(source, &calendar, None, conn)
+    sync_source_calendar(source, &calendar, FeedCoverage::default(), conn)
 }
 
 pub(super) fn parse_calendar(ics_text: &str) -> Result<Calendar, Status> {
@@ -147,16 +147,28 @@ pub(super) fn parse_calendar(ics_text: &str) -> Result<Calendar, Status> {
     })
 }
 
-/// Upserts everything in an already-parsed `calendar` into `source`'s Events/Occasions.
-///
-/// `missing_horizon` is for a feed known to be *truncated* (a paginated fetch that stopped at its
-/// page cap, or a deliberately first-page-only sync): `Some(t)` means "the feed's coverage ends at
-/// `t`", so an occasion starting after `t` isn't treated as missing -- it just wasn't fetched,
-/// which says nothing about whether it still exists upstream. `None` means the feed is complete.
+/// What a feed's contents say about events *absent* from it. A plain ICS file is the whole
+/// calendar, so an event it no longer lists has been removed upstream ([`FeedCoverage::default`]);
+/// other feeds only list part of it, and an event missing from the part they don't cover says
+/// nothing about whether it still exists.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct FeedCoverage {
+    /// For a *truncated* feed (a paginated fetch that stopped at its page cap, or a deliberately
+    /// first-page-only sync): `Some(t)` means "coverage ends at `t`", so an occasion starting after
+    /// `t` isn't treated as missing -- it just wasn't fetched.
+    pub truncated_after: Option<DateTime<Utc>>,
+    /// The feed only lists *upcoming* events (The Events Calendar's list view does), so an event
+    /// drops out of it as soon as it ends. Occasions that have already ended are never treated as
+    /// missing, so they stay in the data set instead of being pruned a few days after they happen.
+    pub upcoming_only: bool,
+}
+
+/// Upserts everything in an already-parsed `calendar` into `source`'s Events/Occasions. `coverage`
+/// says which absent events may be pruned -- see [`FeedCoverage`].
 pub fn sync_source_calendar(
     source: &models::SyncSource,
     calendar: &Calendar,
-    missing_horizon: Option<DateTime<Utc>>,
+    coverage: FeedCoverage,
     conn: &mut PgPooledConnection,
 ) -> Result<(), Status> {
     let now = Utc::now();
@@ -168,8 +180,14 @@ pub fn sync_source_calendar(
     let owner_user_id = source.user_id;
     let moderation = default_event_moderation(conn);
 
-    let window_start_db: SystemTime = window_start.into();
-    let missing_horizon_db: Option<SystemTime> = missing_horizon.map(Into::into);
+    // Occurrences are expanded/upserted over the full past window either way, but only occasions
+    // still within `prune_window_start_db` can be pruned as "missing" -- see `FeedCoverage`.
+    let prune_window_start_db: SystemTime = if coverage.upcoming_only {
+        now.into()
+    } else {
+        window_start.into()
+    };
+    let missing_horizon_db: Option<SystemTime> = coverage.truncated_after.map(Into::into);
 
     let result = conn.transaction::<(), diesel::result::Error, _>(|conn| {
         // Every currently-existing synced occasion's series UID -> parent Event id, via real,
@@ -208,7 +226,7 @@ pub fn sync_source_calendar(
                 owner_user_id,
                 &moderation,
                 group,
-                window_start_db,
+                prune_window_start_db,
                 missing_horizon_db,
                 now,
             )?;
@@ -238,7 +256,7 @@ pub fn sync_source_calendar(
                 owner_user_id,
                 &moderation,
                 &empty_group,
-                window_start_db,
+                prune_window_start_db,
                 missing_horizon_db,
                 now,
             )?;
@@ -375,7 +393,7 @@ fn location_json(location: &Option<String>) -> Option<serde_json::Value> {
 /// Creates/updates `Occasion`s (+ their `Post`s) for `group`'s occurrences under
 /// `event_id`, then reconciles any existing occasion under `event_id` that's no longer present
 /// in `group.occurrences` -- but only if that occasion's `ends_at` is still within the sync
-/// window (`>= window_start_db`); older ones are left untouched no matter what the feed says now.
+/// window (`>= prune_window_start_db`: a year back, or just "now" for an upcoming-only feed); older ones are left untouched no matter what the feed says now.
 /// Likewise, when `missing_horizon_db` is set (the feed is known to be truncated -- see
 /// `sync_source_calendar`), occasions starting after it are left untouched too.
 /// An in-window occasion that's missing isn't deleted immediately: the first sync that misses it
@@ -389,7 +407,7 @@ fn reconcile_occasions(
     owner_user_id: i64,
     moderation: &str,
     group: &EventGroup,
-    window_start_db: SystemTime,
+    prune_window_start_db: SystemTime,
     missing_horizon_db: Option<SystemTime>,
     now: DateTime<Utc>,
 ) -> Result<(), diesel::result::Error> {
@@ -494,7 +512,7 @@ fn reconcile_occasions(
     let mut expired_ids: Vec<i64> = vec![];
     for missing in existing_by_anchor
         .values()
-        .filter(|i| i.ends_at >= window_start_db)
+        .filter(|i| i.ends_at >= prune_window_start_db)
         .filter(|i| missing_horizon_db.map_or(true, |horizon| i.starts_at <= horizon))
     {
         match missing.sync_missing_since {

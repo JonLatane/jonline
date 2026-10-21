@@ -327,9 +327,11 @@ export interface SyncSource {
    * Events/Occasions, like `ics_subscription_url`, but each sync follows the plugin's `paged=N`
    * pagination to fetch as many pages as it can -- the plugin caps a single iCal response at its
    * "events per page" setting (30 on many sites), so a plain `ics_subscription_url` only ever
-   * sees the next couple of weeks of events on a busy calendar.
+   * sees the next couple of weeks of events on a busy calendar. The plugin's list only shows
+   * *upcoming* events, so unlike `ics_subscription_url` an event dropping out of the feed
+   * doesn't mean it was removed: events that have already ended are kept, not pruned.
    */
-  stellarwpSubscriptionEndpoint?:
+  stellarwpIcsSubscriptionUrl?:
     | string
     | undefined;
   /** The RSS subscription URL for the feed sync. Creates/updates plain Posts. */
@@ -1471,7 +1473,7 @@ function createBaseSyncSource(): SyncSource {
     occasionCount: 0,
     postCount: 0,
     icsSubscriptionUrl: undefined,
-    stellarwpSubscriptionEndpoint: undefined,
+    stellarwpIcsSubscriptionUrl: undefined,
     rssSubscriptionUrl: undefined,
     atomSubscriptionUrl: undefined,
   };
@@ -1509,8 +1511,8 @@ export const SyncSource: MessageFns<SyncSource> = {
     if (message.icsSubscriptionUrl !== undefined) {
       writer.uint32(162).string(message.icsSubscriptionUrl);
     }
-    if (message.stellarwpSubscriptionEndpoint !== undefined) {
-      writer.uint32(170).string(message.stellarwpSubscriptionEndpoint);
+    if (message.stellarwpIcsSubscriptionUrl !== undefined) {
+      writer.uint32(170).string(message.stellarwpIcsSubscriptionUrl);
     }
     if (message.rssSubscriptionUrl !== undefined) {
       writer.uint32(178).string(message.rssSubscriptionUrl);
@@ -1613,7 +1615,7 @@ export const SyncSource: MessageFns<SyncSource> = {
             break;
           }
 
-          message.stellarwpSubscriptionEndpoint = reader.string();
+          message.stellarwpIcsSubscriptionUrl = reader.string();
           continue;
         }
         case 22: {
@@ -1653,8 +1655,8 @@ export const SyncSource: MessageFns<SyncSource> = {
       occasionCount: isSet(object.occasionCount) ? globalThis.Number(object.occasionCount) : 0,
       postCount: isSet(object.postCount) ? globalThis.Number(object.postCount) : 0,
       icsSubscriptionUrl: isSet(object.icsSubscriptionUrl) ? globalThis.String(object.icsSubscriptionUrl) : undefined,
-      stellarwpSubscriptionEndpoint: isSet(object.stellarwpSubscriptionEndpoint)
-        ? globalThis.String(object.stellarwpSubscriptionEndpoint)
+      stellarwpIcsSubscriptionUrl: isSet(object.stellarwpIcsSubscriptionUrl)
+        ? globalThis.String(object.stellarwpIcsSubscriptionUrl)
         : undefined,
       rssSubscriptionUrl: isSet(object.rssSubscriptionUrl) ? globalThis.String(object.rssSubscriptionUrl) : undefined,
       atomSubscriptionUrl: isSet(object.atomSubscriptionUrl)
@@ -1695,8 +1697,8 @@ export const SyncSource: MessageFns<SyncSource> = {
     if (message.icsSubscriptionUrl !== undefined) {
       obj.icsSubscriptionUrl = message.icsSubscriptionUrl;
     }
-    if (message.stellarwpSubscriptionEndpoint !== undefined) {
-      obj.stellarwpSubscriptionEndpoint = message.stellarwpSubscriptionEndpoint;
+    if (message.stellarwpIcsSubscriptionUrl !== undefined) {
+      obj.stellarwpIcsSubscriptionUrl = message.stellarwpIcsSubscriptionUrl;
     }
     if (message.rssSubscriptionUrl !== undefined) {
       obj.rssSubscriptionUrl = message.rssSubscriptionUrl;
@@ -1724,7 +1726,7 @@ export const SyncSource: MessageFns<SyncSource> = {
     message.occasionCount = object.occasionCount ?? 0;
     message.postCount = object.postCount ?? 0;
     message.icsSubscriptionUrl = object.icsSubscriptionUrl ?? undefined;
-    message.stellarwpSubscriptionEndpoint = object.stellarwpSubscriptionEndpoint ?? undefined;
+    message.stellarwpIcsSubscriptionUrl = object.stellarwpIcsSubscriptionUrl ?? undefined;
     message.rssSubscriptionUrl = object.rssSubscriptionUrl ?? undefined;
     message.atomSubscriptionUrl = object.atomSubscriptionUrl ?? undefined;
     return message;

@@ -1,5 +1,5 @@
 //! Specs for `logic::sync_sources::stellarwp_sync` -- the paginated StellarWP "The Events
-//! Calendar" fetch behind a `stellarwp_subscription_endpoint` `SyncSource`. The page-collecting
+//! Calendar" fetch behind a `stellarwp_ics_subscription_url` `SyncSource`. The page-collecting
 //! logic is exercised with in-memory pages (no network); the end-to-end specs use
 //! `factories::serve_stellarwp_pages`'s local stub server.
 
@@ -77,6 +77,31 @@ fn collects_every_page_dedupes_overlap_and_stops_at_the_empty_page() {
 
     assert_eq!(uids(&paged), vec!["a", "b", "c", "d"]);
     assert_eq!(paged.coverage_horizon, None, "the feed ended, so it's complete");
+}
+
+#[test]
+fn collects_the_whole_feed_when_each_page_overlaps_the_last_by_most_of_its_length() {
+    // The real plugin's shape: `paged` steps through the list 12 events at a time (the site's
+    // "events per page" display setting) while each iCal response is 30 events long -- so with 50
+    // events in total, page n holds events [12(n-1), 12(n-1) + 30).
+    let events: Vec<(String, i64)> = (0..50).map(|i| (format!("e{i:02}"), 1 + i as i64)).collect();
+    let fetch = |n: u32| -> Result<String, Status> {
+        let from = 12 * (n as usize - 1);
+        if from >= events.len() {
+            return Ok(String::new());
+        }
+        let slice: Vec<(&str, i64)> = events[from..(from + 30).min(events.len())]
+            .iter()
+            .map(|(uid, days)| (uid.as_str(), *days))
+            .collect();
+        Ok(page(&slice))
+    };
+
+    let paged = collect_pages(80, fetch).expect("collect should succeed");
+
+    let expected: Vec<String> = (0..50).map(|i| format!("e{i:02}")).collect();
+    assert_eq!(uids(&paged), expected);
+    assert_eq!(paged.coverage_horizon, None);
 }
 
 #[test]
@@ -205,7 +230,7 @@ fn page_url_rejects_non_http_urls() {
     for bad in ["", "not a url", "ftp://example.com/cal", "file:///etc/passwd", "javascript:alert(1)"] {
         let err = stellarwp_page_url(bad, 1).unwrap_err();
         assert_eq!(err.code(), Code::InvalidArgument, "{bad:?}");
-        assert_eq!(err.message(), "stellarwp_subscription_endpoint_invalid");
+        assert_eq!(err.message(), "stellarwp_ics_subscription_url_invalid");
     }
 }
 
@@ -296,6 +321,55 @@ fn first_page_sync_only_fetches_page_one_and_does_not_prune_the_rest() {
 }
 
 #[test]
+fn events_that_have_ended_are_kept_when_they_drop_out_of_the_upcoming_only_feed() {
+    let mut conn = test_conn();
+    conn.test_transaction::<_, Status, _>(|conn| {
+        let user = create_user(conn, "swp_keeps_past");
+        let url = serve_stellarwp_pages(vec![page(&[("upcoming-1", 3)])]);
+        let source = create_stellarwp_sync_source_row(conn, &user, &url);
+
+        // Previously synced: one event that has since ended, one still to come, and a third
+        // still to come that the feed is about to stop listing.
+        sync_source_text(
+            &source,
+            &page(&[("ended", -2), ("upcoming-1", 3), ("cancelled", 5)]),
+            conn,
+        )
+        .expect("initial sync should succeed");
+        assert_eq!(synced_occasions(conn, source.id).len(), 3);
+
+        // The Events Calendar's list view only lists upcoming events: "ended" is gone from it
+        // simply because it's over, and "cancelled" is gone because it was really removed.
+        sync_source_stellarwp(&source, conn).expect("sync should succeed");
+
+        for (uid, occasion) in synced_occasions(conn, source.id) {
+            assert_eq!(
+                occasion.sync_missing_since.is_some(),
+                uid == "cancelled",
+                "{uid}: only the event that's still upcoming but no longer listed counts as missing"
+            );
+        }
+
+        // Even once the grace period is long over, the ended event survives.
+        diesel::update(occasions::table)
+            .set(occasions::sync_missing_since.eq(
+                std::time::SystemTime::now() - std::time::Duration::from_secs(30 * 24 * 3600),
+            ))
+            .filter(occasions::sync_missing_since.is_not_null())
+            .execute(conn)
+            .unwrap();
+        sync_source_stellarwp(&source, conn).expect("sync should succeed");
+        let remaining: Vec<String> = synced_occasions(conn, source.id)
+            .into_iter()
+            .map(|(uid, _)| uid)
+            .collect();
+        assert_eq!(remaining, vec!["ended", "upcoming-1"]);
+
+        Ok(())
+    });
+}
+
+#[test]
 fn a_failing_page_fails_the_sync_without_pruning_anything() {
     let mut conn = test_conn();
     conn.test_transaction::<_, Status, _>(|conn| {
@@ -310,7 +384,7 @@ fn a_failing_page_fails_the_sync_without_pruning_anything() {
             "<html>Just a moment...</html>".to_string(),
         ]);
         let source = models::SyncSource {
-            configuration: serde_json::json!({ "stellarwp_subscription_endpoint": broken }),
+            configuration: serde_json::json!({ "stellarwp_ics_subscription_url": broken }),
             ..source
         };
         assert!(sync_source_stellarwp(&source, conn).is_err());
@@ -324,7 +398,7 @@ fn a_failing_page_fails_the_sync_without_pruning_anything() {
 
 fn stellarwp_request(endpoint: &str) -> SyncSource {
     SyncSource {
-        configuration: Some(sync_source::Configuration::StellarwpSubscriptionEndpoint(
+        configuration: Some(sync_source::Configuration::StellarwpIcsSubscriptionUrl(
             endpoint.to_string(),
         )),
         ..Default::default()
@@ -360,7 +434,7 @@ fn create_rejects_an_invalid_endpoint() {
         let err = create_sync_source(stellarwp_request("ftp://example.invalid/cal"), &user, conn)
             .unwrap_err();
         assert_eq!(err.code(), Code::InvalidArgument);
-        assert_eq!(err.message(), "stellarwp_subscription_endpoint_invalid");
+        assert_eq!(err.message(), "stellarwp_ics_subscription_url_invalid");
 
         let err = create_sync_source(stellarwp_request("   "), &user, conn).unwrap_err();
         assert_eq!(err.message(), "subscription_url_required");

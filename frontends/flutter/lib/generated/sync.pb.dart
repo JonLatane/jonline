@@ -1098,7 +1098,7 @@ class SyncDestinationStatus extends $pb.GeneratedMessage {
 
 enum SyncSource_Configuration {
   icsSubscriptionUrl, 
-  stellarwpSubscriptionEndpoint, 
+  stellarwpIcsSubscriptionUrl, 
   rssSubscriptionUrl, 
   atomSubscriptionUrl, 
   notSet
@@ -1117,7 +1117,7 @@ class SyncSource extends $pb.GeneratedMessage {
     $fixnum.Int64? occasionCount,
     $fixnum.Int64? postCount,
     $core.String? icsSubscriptionUrl,
-    $core.String? stellarwpSubscriptionEndpoint,
+    $core.String? stellarwpIcsSubscriptionUrl,
     $core.String? rssSubscriptionUrl,
     $core.String? atomSubscriptionUrl,
   }) {
@@ -1152,8 +1152,8 @@ class SyncSource extends $pb.GeneratedMessage {
     if (icsSubscriptionUrl != null) {
       $result.icsSubscriptionUrl = icsSubscriptionUrl;
     }
-    if (stellarwpSubscriptionEndpoint != null) {
-      $result.stellarwpSubscriptionEndpoint = stellarwpSubscriptionEndpoint;
+    if (stellarwpIcsSubscriptionUrl != null) {
+      $result.stellarwpIcsSubscriptionUrl = stellarwpIcsSubscriptionUrl;
     }
     if (rssSubscriptionUrl != null) {
       $result.rssSubscriptionUrl = rssSubscriptionUrl;
@@ -1169,7 +1169,7 @@ class SyncSource extends $pb.GeneratedMessage {
 
   static const $core.Map<$core.int, SyncSource_Configuration> _SyncSource_ConfigurationByTag = {
     20 : SyncSource_Configuration.icsSubscriptionUrl,
-    21 : SyncSource_Configuration.stellarwpSubscriptionEndpoint,
+    21 : SyncSource_Configuration.stellarwpIcsSubscriptionUrl,
     22 : SyncSource_Configuration.rssSubscriptionUrl,
     23 : SyncSource_Configuration.atomSubscriptionUrl,
     0 : SyncSource_Configuration.notSet
@@ -1186,7 +1186,7 @@ class SyncSource extends $pb.GeneratedMessage {
     ..a<$fixnum.Int64>(8, _omitFieldNames ? '' : 'occasionCount', $pb.PbFieldType.OU6, defaultOrMaker: $fixnum.Int64.ZERO)
     ..a<$fixnum.Int64>(9, _omitFieldNames ? '' : 'postCount', $pb.PbFieldType.OU6, defaultOrMaker: $fixnum.Int64.ZERO)
     ..aOS(20, _omitFieldNames ? '' : 'icsSubscriptionUrl')
-    ..aOS(21, _omitFieldNames ? '' : 'stellarwpSubscriptionEndpoint')
+    ..aOS(21, _omitFieldNames ? '' : 'stellarwpIcsSubscriptionUrl')
     ..aOS(22, _omitFieldNames ? '' : 'rssSubscriptionUrl')
     ..aOS(23, _omitFieldNames ? '' : 'atomSubscriptionUrl')
     ..hasRequiredFields = false
@@ -1334,15 +1334,17 @@ class SyncSource extends $pb.GeneratedMessage {
   /// Events/Occasions, like `ics_subscription_url`, but each sync follows the plugin's `paged=N`
   /// pagination to fetch as many pages as it can -- the plugin caps a single iCal response at its
   /// "events per page" setting (30 on many sites), so a plain `ics_subscription_url` only ever
-  /// sees the next couple of weeks of events on a busy calendar.
+  /// sees the next couple of weeks of events on a busy calendar. The plugin's list only shows
+  /// *upcoming* events, so unlike `ics_subscription_url` an event dropping out of the feed
+  /// doesn't mean it was removed: events that have already ended are kept, not pruned.
   @$pb.TagNumber(21)
-  $core.String get stellarwpSubscriptionEndpoint => $_getSZ(10);
+  $core.String get stellarwpIcsSubscriptionUrl => $_getSZ(10);
   @$pb.TagNumber(21)
-  set stellarwpSubscriptionEndpoint($core.String v) { $_setString(10, v); }
+  set stellarwpIcsSubscriptionUrl($core.String v) { $_setString(10, v); }
   @$pb.TagNumber(21)
-  $core.bool hasStellarwpSubscriptionEndpoint() => $_has(10);
+  $core.bool hasStellarwpIcsSubscriptionUrl() => $_has(10);
   @$pb.TagNumber(21)
-  void clearStellarwpSubscriptionEndpoint() => clearField(21);
+  void clearStellarwpIcsSubscriptionUrl() => clearField(21);
 
   /// The RSS subscription URL for the feed sync. Creates/updates plain Posts.
   @$pb.TagNumber(22)

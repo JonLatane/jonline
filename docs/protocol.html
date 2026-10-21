@@ -9258,10 +9258,10 @@ Instagram account</strong>. Unlike <a href="#rellm-FacebookPage"><code>FacebookP
           <td>The iCal subscription URL for the calendar sync. Creates/updates Events/Occasions.</td>
         </tr>
         <tr>
-          <td>stellarwp_subscription_endpoint</td>
+          <td>stellarwp_ics_subscription_url</td>
           <td><a href="#string">string</a></td>
           <td></td>
-          <td>The iCal export URL of a site running <a href="https://theeventscalendar.com/">The Events Calendar</a> (a StellarWP WordPress plugin; the URL is the plugin's "Export" link, e.g. <code>https://example.com/?post_type=tribe_events&#x26;amp;ical=1&#x26;amp;eventDisplay=list</code>). Creates/updates Events/Occasions, like <code>ics_subscription_url</code>, but each sync follows the plugin's <code>paged=N</code> pagination to fetch as many pages as it can -- the plugin caps a single iCal response at its "events per page" setting (30 on many sites), so a plain <code>ics_subscription_url</code> only ever sees the next couple of weeks of events on a busy calendar.</td>
+          <td>The iCal export URL of a site running <a href="https://theeventscalendar.com/">The Events Calendar</a> (a StellarWP WordPress plugin; the URL is the plugin's "Export" link, e.g. <code>https://example.com/?post_type=tribe_events&#x26;amp;ical=1&#x26;amp;eventDisplay=list</code>). Creates/updates Events/Occasions, like <code>ics_subscription_url</code>, but each sync follows the plugin's <code>paged=N</code> pagination to fetch as many pages as it can -- the plugin caps a single iCal response at its "events per page" setting (30 on many sites), so a plain <code>ics_subscription_url</code> only ever sees the next couple of weeks of events on a busy calendar. The plugin's list only shows <em>upcoming</em> events, so unlike <code>ics_subscription_url</code> an event dropping out of the feed doesn't mean it was removed: events that have already ended are kept, not pruned.</td>
         </tr>
         <tr>
           <td>rss_subscription_url</td>

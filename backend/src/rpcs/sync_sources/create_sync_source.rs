@@ -30,7 +30,7 @@ pub fn create_sync_source(
     let configuration = source_configuration_to_json(&request.configuration);
     let has_subscription_url = [
         "ics_subscription_url",
-        "stellarwp_subscription_endpoint",
+        "stellarwp_ics_subscription_url",
         "rss_subscription_url",
         "atom_subscription_url",
     ]
@@ -49,7 +49,7 @@ pub fn create_sync_source(
         ));
     }
     if let Some(endpoint) = configuration
-        .get("stellarwp_subscription_endpoint")
+        .get("stellarwp_ics_subscription_url")
         .and_then(|v| v.as_str())
     {
         stellarwp_page_url(endpoint, 1)?;

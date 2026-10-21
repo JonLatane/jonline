@@ -581,7 +581,7 @@ syncSourceKindFromLabel label =
 syncSourceKindOf : SyncSource -> SyncSourceKind
 syncSourceKindOf source =
     case source.configuration of
-        Just (Configuration.StellarwpSubscriptionEndpoint _) ->
+        Just (Configuration.StellarwpIcsSubscriptionUrl _) ->
             StellarWp
 
         Just (Configuration.RssSubscriptionUrl _) ->
@@ -605,8 +605,8 @@ configurationForKindOf existing kind url =
         Just (Configuration.IcsSubscriptionUrl _) ->
             Configuration.IcsSubscriptionUrl url
 
-        Just (Configuration.StellarwpSubscriptionEndpoint _) ->
-            Configuration.StellarwpSubscriptionEndpoint url
+        Just (Configuration.StellarwpIcsSubscriptionUrl _) ->
+            Configuration.StellarwpIcsSubscriptionUrl url
 
         Just (Configuration.RssSubscriptionUrl _) ->
             Configuration.RssSubscriptionUrl url
@@ -620,7 +620,7 @@ configurationForKindOf existing kind url =
                     Configuration.IcsSubscriptionUrl url
 
                 StellarWp ->
-                    Configuration.StellarwpSubscriptionEndpoint url
+                    Configuration.StellarwpIcsSubscriptionUrl url
 
                 Rss ->
                     Configuration.RssSubscriptionUrl url
@@ -6640,7 +6640,7 @@ eventSyncUrl source =
         Just (Configuration.IcsSubscriptionUrl url) ->
             url
 
-        Just (Configuration.StellarwpSubscriptionEndpoint url) ->
+        Just (Configuration.StellarwpIcsSubscriptionUrl url) ->
             url
 
         Just (Configuration.RssSubscriptionUrl url) ->
@@ -6879,7 +6879,7 @@ syncSourceRowView targetHost browserTimeZone es source =
 `SyncSources.looksLikeStellarWpUrl` matches it: The Events Calendar (StellarWP's WordPress plugin)
 caps each iCal response at one page of events (30 on many sites), so a plain iCal source on it only
 ever sees the next couple of weeks, while a StellarWP source (`protos/sync.proto`'s
-`stellarwp_subscription_endpoint`) follows the plugin's pagination. `msg` is what the button does --
+`stellarwp_ics_subscription_url`) follows the plugin's pagination. `msg` is what the button does --
 on an existing row it saves the switch outright (`SyncSourceRowUseStellarWpClicked`), on the add form
 it just picks the StellarWP type (`SyncSourceAddKindChanged`) for the user to then create.
 -}

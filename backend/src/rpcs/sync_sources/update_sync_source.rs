@@ -52,7 +52,7 @@ pub fn update_sync_source(
         existing.configuration = source_configuration_to_json(&request.configuration);
         if let Some(endpoint) = existing
             .configuration
-            .get("stellarwp_subscription_endpoint")
+            .get("stellarwp_ics_subscription_url")
             .and_then(|v| v.as_str())
         {
             stellarwp_page_url(endpoint, 1)?;

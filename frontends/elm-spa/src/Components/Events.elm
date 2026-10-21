@@ -678,7 +678,7 @@ meaningfulPost post =
 {-| Whether `event` is pulled in from an ICS/iCal subscription (i.e. its own
 `Post.syncSource` -- see `posts.proto`'s `Post.sync_source`, which any Post
 can carry now, not just an `Event`'s -- has an `IcsSubscriptionUrl`
-or `StellarwpSubscriptionEndpoint` configuration) -- such an `Event` is re-synced from that feed on every run of
+or `StellarwpIcsSubscriptionUrl` configuration) -- such an `Event` is re-synced from that feed on every run of
 the backend's `sync_sources` job, so any local edit to its title/link/content
 would just be clobbered the next time that happens. Used by
 `Pages.Event.PostId_` to hide those fields' own edit buttons for a synced
@@ -690,7 +690,7 @@ hasIcsSyncSource event =
         Just (SyncSourceConfiguration.IcsSubscriptionUrl _) ->
             True
 
-        Just (SyncSourceConfiguration.StellarwpSubscriptionEndpoint _) ->
+        Just (SyncSourceConfiguration.StellarwpIcsSubscriptionUrl _) ->
             True
 
         _ ->
@@ -709,7 +709,7 @@ syncSourceView event =
         Just (SyncSourceConfiguration.IcsSubscriptionUrl url) ->
             syncedFromView url
 
-        Just (SyncSourceConfiguration.StellarwpSubscriptionEndpoint url) ->
+        Just (SyncSourceConfiguration.StellarwpIcsSubscriptionUrl url) ->
             syncedFromView url
 
         _ ->

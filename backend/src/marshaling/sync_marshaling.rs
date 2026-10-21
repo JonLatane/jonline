@@ -61,9 +61,9 @@ impl ToProtoMarshalableSyncSource for MarshalableSyncSource {
 }
 
 /// `configuration` JSONB shape today: one of `{"ics_subscription_url": "https://..."}`,
-/// `{"stellarwp_subscription_endpoint": "https://..."}`, `{"rss_subscription_url": "https://..."}`,
+/// `{"stellarwp_ics_subscription_url": "https://..."}`, `{"rss_subscription_url": "https://..."}`,
 /// or `{"atom_subscription_url": "https://..."}` -- mirrors the proto `oneof`'s 4 variants (an ICS
-/// URL or StellarWP endpoint syncs Events/Occasions; RSS/Atom sync plain Posts -- see
+/// URL or StellarWP iCal URL syncs Events/Occasions; RSS/Atom sync plain Posts -- see
 /// `logic::sync_sources::feed_sync`).
 pub fn source_configuration_to_proto(
     configuration: &serde_json::Value,
@@ -72,10 +72,10 @@ pub fn source_configuration_to_proto(
         return Some(sync_source::Configuration::IcsSubscriptionUrl(url.to_string()));
     }
     if let Some(url) = configuration
-        .get("stellarwp_subscription_endpoint")
+        .get("stellarwp_ics_subscription_url")
         .and_then(|v| v.as_str())
     {
-        return Some(sync_source::Configuration::StellarwpSubscriptionEndpoint(
+        return Some(sync_source::Configuration::StellarwpIcsSubscriptionUrl(
             url.to_string(),
         ));
     }
@@ -95,8 +95,8 @@ pub fn source_configuration_to_json(
         Some(sync_source::Configuration::IcsSubscriptionUrl(url)) => {
             serde_json::json!({ "ics_subscription_url": url })
         }
-        Some(sync_source::Configuration::StellarwpSubscriptionEndpoint(url)) => {
-            serde_json::json!({ "stellarwp_subscription_endpoint": url })
+        Some(sync_source::Configuration::StellarwpIcsSubscriptionUrl(url)) => {
+            serde_json::json!({ "stellarwp_ics_subscription_url": url })
         }
         Some(sync_source::Configuration::RssSubscriptionUrl(url)) => {
             serde_json::json!({ "rss_subscription_url": url })
@@ -110,7 +110,7 @@ pub fn source_configuration_to_json(
 
 /// Which permission gates creating/updating a `SyncSource` with this `configuration` -- one of
 /// `SyncEventsFromIcs`/`SyncPostsFromRss`/`SyncPostsFromAtom` (see `permissions.proto`), matching
-/// whichever `oneof` variant is set (a StellarWP endpoint syncs Events like an ICS URL does, so it
+/// whichever `oneof` variant is set (a StellarWP iCal URL syncs Events like an ICS URL does, so it
 /// shares `SyncEventsFromIcs`). Falls back to `SyncEventsFromIcs` for `None` (mirrors
 /// `source_configuration_to_json`'s own `None` fallback, and matches `create_sync_source`'s
 /// existing behavior before RSS/Atom sources existed).

@@ -27,7 +27,7 @@ fn has_config_string(source: &models::SyncSource, key: &str) -> bool {
 /// Dispatches a `SyncSource` sync to its underlying implementation based on which
 /// `configuration` variant is set: `event_sync::sync_source_ics` for an ICS subscription
 /// (creates/updates Events/Occasions), `stellarwp_sync::sync_source_stellarwp` for a paginated
-/// StellarWP "The Events Calendar" endpoint (also Events/Occasions), or
+/// StellarWP "The Events Calendar" iCal URL (also Events/Occasions), or
 /// `feed_sync::sync_source_feed` for an RSS or Atom subscription (creates/updates plain Posts) --
 /// both RSS and Atom dispatch to the same feed-sync implementation, since `feed-rs` parses either
 /// format into one unified shape.
@@ -35,7 +35,7 @@ pub fn sync_source(source: &models::SyncSource, conn: &mut PgPooledConnection) -
     if has_config_string(source, "ics_subscription_url") {
         return event_sync::sync_source_ics(source, conn);
     }
-    if has_config_string(source, "stellarwp_subscription_endpoint") {
+    if has_config_string(source, "stellarwp_ics_subscription_url") {
         return stellarwp_sync::sync_source_stellarwp(source, conn);
     }
     if source.configuration.get("rss_subscription_url").is_some()
@@ -59,7 +59,7 @@ pub fn sync_source_after_edit(
     source: &models::SyncSource,
     conn: &mut PgPooledConnection,
 ) -> Result<(), Status> {
-    if has_config_string(source, "stellarwp_subscription_endpoint") {
+    if has_config_string(source, "stellarwp_ics_subscription_url") {
         stellarwp_sync::sync_source_stellarwp_first_page(source, conn)?;
         spawn_background_sync(source.id);
         return Ok(());
