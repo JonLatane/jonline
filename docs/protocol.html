@@ -506,19 +506,48 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
       <li>
         <p><a href="#sync-proto">sync.proto</a></p>
         <ul>
-          <li><a href="#rellm-BlueskyAccount">BlueskyAccount</a></li>
-          <li><a href="#rellm-DeleteSyncDestinationRequest">DeleteSyncDestinationRequest</a></li>
-          <li><a href="#rellm-DeleteSyncSourceRequest">DeleteSyncSourceRequest</a></li>
-          <li><a href="#rellm-FacebookPage">FacebookPage</a></li>
-          <li><a href="#rellm-GetSyncDestinationsResponse">GetSyncDestinationsResponse</a></li>
-          <li><a href="#rellm-GetSyncSourcesResponse">GetSyncSourcesResponse</a></li>
-          <li><a href="#rellm-InstagramAccount">InstagramAccount</a></li>
-          <li><a href="#rellm-MastodonAccount">MastodonAccount</a></li>
-          <li><a href="#rellm-SyncDestination">SyncDestination</a></li>
-          <li><a href="#rellm-SyncDestinationStatus">SyncDestinationStatus</a></li>
-          <li><a href="#rellm-SyncSource">SyncSource</a></li>
-          <li><a href="#rellm-ThreadsAccount">ThreadsAccount</a></li>
-          <li><a href="#rellm-XTwitterAccount">XTwitterAccount</a></li>
+          <li>
+            <p><a href="#rellm-BlueskyAccount">BlueskyAccount</a></p>
+          </li>
+          <li>
+            <p><a href="#rellm-DeleteSyncDestinationRequest">DeleteSyncDestinationRequest</a></p>
+          </li>
+          <li>
+            <p><a href="#rellm-DeleteSyncSourceRequest">DeleteSyncSourceRequest</a></p>
+          </li>
+          <li>
+            <p><a href="#rellm-FacebookPage">FacebookPage</a></p>
+          </li>
+          <li>
+            <p><a href="#rellm-GetSyncDestinationsResponse">GetSyncDestinationsResponse</a></p>
+          </li>
+          <li>
+            <p><a href="#rellm-GetSyncSourcesResponse">GetSyncSourcesResponse</a></p>
+          </li>
+          <li>
+            <p><a href="#rellm-InstagramAccount">InstagramAccount</a></p>
+          </li>
+          <li>
+            <p><a href="#rellm-MastodonAccount">MastodonAccount</a></p>
+          </li>
+          <li>
+            <p><a href="#rellm-SyncDestination">SyncDestination</a></p>
+          </li>
+          <li>
+            <p><a href="#rellm-SyncDestinationStatus">SyncDestinationStatus</a></p>
+          </li>
+          <li>
+            <p><a href="#rellm-SyncSource">SyncSource</a></p>
+          </li>
+          <li>
+            <p><a href="#rellm-ThreadsAccount">ThreadsAccount</a></p>
+          </li>
+          <li>
+            <p><a href="#rellm-XTwitterAccount">XTwitterAccount</a></p>
+          </li>
+          <li>
+            <p><a href="#rellm-SyncSourceUserAgent">SyncSourceUserAgent</a></p>
+          </li>
         </ul>
       </li>
       <li>
@@ -9252,6 +9281,12 @@ Instagram account</strong>. Unlike <a href="#rellm-FacebookPage"><code>FacebookP
           <td>The number of posts total associated with this SyncSource. Populated for an RSS/Atom source (recomputed on each sync, like <code>event_count</code>/<code>occasion_count</code> are for an ICS or StellarWP source); always 0 for an ICS/StellarWP source, which syncs Events/Occasions instead.</td>
         </tr>
         <tr>
+          <td>user_agent</td>
+          <td><a href="#rellm-SyncSourceUserAgent">SyncSourceUserAgent</a></td>
+          <td>optional</td>
+          <td>The <code>User-Agent</code> this source's fetches send. Unset on create means <code>NO_USER_AGENT</code>; unset on update leaves the current value alone. Always set in responses.</td>
+        </tr>
+        <tr>
           <td>ics_subscription_url</td>
           <td><a href="#string">string</a></td>
           <td></td>
@@ -9377,6 +9412,39 @@ Instagram account</strong>. Unlike <a href="#rellm-FacebookPage"><code>FacebookP
           <td><a href="#string">string</a></td>
           <td>optional</td>
           <td>Only used (and required, alongside <code>authorization_code</code>) on <a href="#grpc-api-CreateSyncDestination"><code>CreateSyncDestination</code></a>: the PKCE code verifier the popup generated before sending its paired <code>code_challenge</code> to X's authorize endpoint. X mandates PKCE (unlike Threads/Facebook's plain code exchange), so the server needs this to complete the token exchange. Never populated in responses.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="rellm-SyncSourceUserAgent"></a></p>
+    <h3 id="syncsourceuseragent"><a class="anchor" aria-hidden="true" tabindex="-1" href="#syncsourceuseragent"><span class="octicon octicon-link"></span></a>SyncSourceUserAgent</h3>
+    <p>
+      The HTTP <code>User-Agent</code> a <a href="#rellm-SyncSource"><code>SyncSource</code></a> sends when fetching its feed. Some feeds
+      sit behind bot protection that only admits certain clients (e.g. raleighnc.gov's Cloudflare rules let
+      <code>curl/*</code> through and challenge everything else, including a request with no <code>User-Agent</code> at all).
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Number</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>NO_USER_AGENT</td>
+          <td>0</td>
+          <td>Send no <code>User-Agent</code> header at all. What every source did before this setting existed.</td>
+        </tr>
+        <tr>
+          <td>RELLM</td>
+          <td>1</td>
+          <td>Identify as Rellm: <code>Rellm-SyncSource/1.0 (&#x26;#43;https://rellm.org)</code>.</td>
+        </tr>
+        <tr>
+          <td>CURL</td>
+          <td>2</td>
+          <td>Identify as <code>curl/8.7.1</code>.</td>
         </tr>
       </tbody>
     </table>

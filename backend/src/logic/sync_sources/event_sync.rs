@@ -58,7 +58,7 @@ const MISSING_GRACE_PERIOD_DAYS: i64 = 3;
 /// without any network access.
 pub fn sync_source_ics(source: &models::SyncSource, conn: &mut PgPooledConnection) -> Result<(), Status> {
     let url = ics_subscription_url(source)?;
-    let ics_text = fetch_ics(url)?;
+    let ics_text = fetch_ics(source, url)?;
     sync_source_text(source, &ics_text, conn)
 }
 
@@ -70,10 +70,12 @@ pub fn sync_source_ics(source: &models::SyncSource, conn: &mut PgPooledConnectio
 /// which is exactly what makes the nested runtime safe to create/drop -- but `block_in_place`
 /// itself panics if there's no Tokio runtime at all (e.g. this same function called from a plain
 /// `#[test]` or a `bin/`), so it's only used when actually inside one.
-fn fetch_ics(url: &str) -> Result<String, Status> {
+fn fetch_ics(source: &models::SyncSource, url: &str) -> Result<String, Status> {
     crate::init_crypto();
     let fetch = || {
-        reqwest::blocking::get(url)
+        super::client_builder(source)
+            .build()
+            .and_then(|client| client.get(url).send())
             .and_then(|response| response.error_for_status())
             .map_err(|e| {
                 log::error!("Failed to fetch ICS from {}: {:?}", url, e);

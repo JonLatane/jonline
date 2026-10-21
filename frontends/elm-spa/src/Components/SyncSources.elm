@@ -5,6 +5,10 @@ module Components.SyncSources exposing
     , intervalOptions
     , looksLikeStellarWpUrl
     , syncedCountsLabel
+    , userAgentFromLabel
+    , userAgentLabel
+    , userAgentOf
+    , userAgentOptions
     , updateSyncSource
     )
 
@@ -28,6 +32,7 @@ import Grpc
 import Proto.Rellm exposing (GetSyncSourcesResponse, SyncSource, defaultUser)
 import Proto.Rellm.Rellm as Rellm
 import Proto.Rellm.SyncSource.Configuration as Configuration
+import Proto.Rellm.SyncSourceUserAgent as UserAgent exposing (SyncSourceUserAgent)
 import Shared.AccountsPanel as AccountsPanel
 import Shared.AccountsPanel.RellmServers as RellmServers exposing (withAccessToken)
 import Shared.Conversions as Conversions
@@ -87,6 +92,56 @@ pluralCount count noun =
             else
                 "s"
            )
+
+
+{-| The `User-Agent` choices offered for a source's fetches, in display order (`protos/sync.proto`'s
+`SyncSourceUserAgent`). Some feeds sit behind bot protection that only admits certain clients --
+raleighnc.gov's Cloudflare rules let `curl/*` through and challenge everything else, including a
+request with no `User-Agent` at all.
+-}
+userAgentOptions : List ( SyncSourceUserAgent, String )
+userAgentOptions =
+    [ ( UserAgent.NOUSERAGENT, "No User Agent" )
+    , ( UserAgent.RELLM, "Rellm" )
+    , ( UserAgent.CURL, "curl" )
+    ]
+
+
+userAgentLabel : SyncSourceUserAgent -> String
+userAgentLabel userAgent =
+    userAgentOptions
+        |> List.filter (\( option, _ ) -> option == userAgent)
+        |> List.head
+        |> Maybe.map Tuple.second
+        |> Maybe.withDefault "No User Agent"
+
+
+{-| The inverse of `userAgentLabel` (for a `<select>`'s value); an unrecognized label reads as
+"No User Agent".
+-}
+userAgentFromLabel : String -> SyncSourceUserAgent
+userAgentFromLabel label =
+    userAgentOptions
+        |> List.filter (\( _, optionLabel ) -> optionLabel == label)
+        |> List.head
+        |> Maybe.map Tuple.first
+        |> Maybe.withDefault UserAgent.NOUSERAGENT
+
+
+{-| `source`'s `User-Agent` setting; unset or a value this client doesn't know reads as "No User
+Agent" -- what every source did before the setting existed.
+-}
+userAgentOf : SyncSource -> SyncSourceUserAgent
+userAgentOf source =
+    case source.userAgent of
+        Just (UserAgent.SyncSourceUserAgentUnrecognized_ _) ->
+            UserAgent.NOUSERAGENT
+
+        Just userAgent ->
+            userAgent
+
+        Nothing ->
+            UserAgent.NOUSERAGENT
 
 
 {-| Whether `url` looks like an iCal export from [The Events Calendar](https://theeventscalendar.com/)

@@ -58,6 +58,9 @@ pub fn update_sync_source(
             stellarwp_page_url(endpoint, 1)?;
         }
     }
+    if request.user_agent.is_some() {
+        existing.user_agent = user_agent_to_db(request.user_agent)?;
+    }
     existing.updated_at = Some(SystemTime::now());
 
     let mut existing = diesel::update(sync_sources::table.filter(sync_sources::id.eq(existing.id)))

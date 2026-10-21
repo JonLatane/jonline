@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 use std::time::SystemTime;
 
+use tonic::{Code, Status};
+
 use super::{ToDbId, ToProtoAuthor, ToProtoId, ToProtoTime};
 use crate::db_connection::PgPooledConnection;
 use crate::models;
@@ -55,6 +57,7 @@ impl ToProtoMarshalableSyncSource for MarshalableSyncSource {
             event_count: source.event_count as u64,
             occasion_count: source.occasion_count as u64,
             post_count: source.post_count as u64,
+            user_agent: Some(user_agent_from_db(&source.user_agent) as i32),
             configuration: source_configuration_to_proto(&source.configuration),
         }
     }
@@ -86,6 +89,23 @@ pub fn source_configuration_to_proto(
         return Some(sync_source::Configuration::AtomSubscriptionUrl(url.to_string()));
     }
     None
+}
+
+/// The `SyncSourceUserAgent` stored in `sync_sources.user_agent` (its proto enum name); anything
+/// unrecognized reads as `NoUserAgent`, the setting every source had before the column existed.
+pub fn user_agent_from_db(user_agent: &str) -> SyncSourceUserAgent {
+    SyncSourceUserAgent::from_str_name(user_agent).unwrap_or(SyncSourceUserAgent::NoUserAgent)
+}
+
+/// What to store in `sync_sources.user_agent` for a request's `user_agent` field (`None` -> the
+/// default, `NO_USER_AGENT`); an enum value this server doesn't know is rejected.
+pub fn user_agent_to_db(user_agent: Option<i32>) -> Result<String, Status> {
+    match user_agent {
+        None => Ok(SyncSourceUserAgent::NoUserAgent.as_str_name().to_string()),
+        Some(value) => SyncSourceUserAgent::try_from(value)
+            .map(|user_agent| user_agent.as_str_name().to_string())
+            .map_err(|_| Status::new(Code::InvalidArgument, "invalid_user_agent")),
+    }
 }
 
 pub fn source_configuration_to_json(

@@ -104,6 +104,9 @@ pub struct SyncSource {
     pub event_count: i64,
     pub occasion_count: i64,
     pub post_count: i64,
+    /// A `SyncSourceUserAgent` proto enum name (`NO_USER_AGENT` | `RELLM` | `CURL`) -- see
+    /// `logic::sync_sources::user_agent_header`.
+    pub user_agent: String,
 }
 
 #[derive(Debug, Insertable)]
@@ -112,6 +115,7 @@ pub struct NewSyncSource {
     pub user_id: i64,
     pub sync_interval_seconds: i64,
     pub configuration: serde_json::Value,
+    pub user_agent: String,
 }
 
 /// A single Occasion's sync status against a single SyncDestination (see

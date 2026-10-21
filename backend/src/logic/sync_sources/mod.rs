@@ -15,6 +15,28 @@ use tonic::{Code, Status};
 use crate::db_connection::PgPooledConnection;
 use crate::models;
 
+/// The `User-Agent` header `source`'s fetches send (its `user_agent` setting), if any. Some feeds
+/// sit behind bot protection that only admits certain clients -- raleighnc.gov's Cloudflare rules
+/// let `curl/*` through and challenge everything else, including a request with no `User-Agent`.
+pub fn user_agent_header(source: &models::SyncSource) -> Option<&'static str> {
+    match crate::marshaling::user_agent_from_db(&source.user_agent) {
+        crate::protos::SyncSourceUserAgent::NoUserAgent => None,
+        crate::protos::SyncSourceUserAgent::Rellm => Some("Rellm-SyncSource/1.0 (+https://rellm.org)"),
+        crate::protos::SyncSourceUserAgent::Curl => Some("curl/8.7.1"),
+    }
+}
+
+/// A `reqwest` client builder carrying `source`'s `User-Agent` setting -- what every sync source
+/// type's HTTP fetch starts from. (Like any `reqwest::blocking` client it must be built, and used,
+/// inside the callers' `block_in_place` wrapper.)
+pub(super) fn client_builder(source: &models::SyncSource) -> reqwest::blocking::ClientBuilder {
+    let builder = reqwest::blocking::Client::builder();
+    match user_agent_header(source) {
+        Some(user_agent) => builder.user_agent(user_agent),
+        None => builder,
+    }
+}
+
 fn has_config_string(source: &models::SyncSource, key: &str) -> bool {
     source
         .configuration

@@ -16,6 +16,9 @@ import 'package:protobuf/protobuf.dart' as $pb;
 
 import 'google/protobuf/timestamp.pb.dart' as $13;
 import 'media.pb.dart' as $5;
+import 'sync.pbenum.dart';
+
+export 'sync.pbenum.dart';
 
 enum SyncDestination_Configuration {
   facebookPage, 
@@ -1116,6 +1119,7 @@ class SyncSource extends $pb.GeneratedMessage {
     $fixnum.Int64? eventCount,
     $fixnum.Int64? occasionCount,
     $fixnum.Int64? postCount,
+    SyncSourceUserAgent? userAgent,
     $core.String? icsSubscriptionUrl,
     $core.String? stellarwpIcsSubscriptionUrl,
     $core.String? rssSubscriptionUrl,
@@ -1148,6 +1152,9 @@ class SyncSource extends $pb.GeneratedMessage {
     }
     if (postCount != null) {
       $result.postCount = postCount;
+    }
+    if (userAgent != null) {
+      $result.userAgent = userAgent;
     }
     if (icsSubscriptionUrl != null) {
       $result.icsSubscriptionUrl = icsSubscriptionUrl;
@@ -1185,6 +1192,7 @@ class SyncSource extends $pb.GeneratedMessage {
     ..a<$fixnum.Int64>(7, _omitFieldNames ? '' : 'eventCount', $pb.PbFieldType.OU6, defaultOrMaker: $fixnum.Int64.ZERO)
     ..a<$fixnum.Int64>(8, _omitFieldNames ? '' : 'occasionCount', $pb.PbFieldType.OU6, defaultOrMaker: $fixnum.Int64.ZERO)
     ..a<$fixnum.Int64>(9, _omitFieldNames ? '' : 'postCount', $pb.PbFieldType.OU6, defaultOrMaker: $fixnum.Int64.ZERO)
+    ..e<SyncSourceUserAgent>(13, _omitFieldNames ? '' : 'userAgent', $pb.PbFieldType.OE, defaultOrMaker: SyncSourceUserAgent.NO_USER_AGENT, valueOf: SyncSourceUserAgent.valueOf, enumValues: SyncSourceUserAgent.values)
     ..aOS(20, _omitFieldNames ? '' : 'icsSubscriptionUrl')
     ..aOS(21, _omitFieldNames ? '' : 'stellarwpIcsSubscriptionUrl')
     ..aOS(22, _omitFieldNames ? '' : 'rssSubscriptionUrl')
@@ -1318,13 +1326,24 @@ class SyncSource extends $pb.GeneratedMessage {
   @$pb.TagNumber(9)
   void clearPostCount() => clearField(9);
 
+  /// The `User-Agent` this source's fetches send. Unset on create means `NO_USER_AGENT`; unset on
+  /// update leaves the current value alone. Always set in responses.
+  @$pb.TagNumber(13)
+  SyncSourceUserAgent get userAgent => $_getN(9);
+  @$pb.TagNumber(13)
+  set userAgent(SyncSourceUserAgent v) { setField(13, v); }
+  @$pb.TagNumber(13)
+  $core.bool hasUserAgent() => $_has(9);
+  @$pb.TagNumber(13)
+  void clearUserAgent() => clearField(13);
+
   /// The iCal subscription URL for the calendar sync. Creates/updates Events/Occasions.
   @$pb.TagNumber(20)
-  $core.String get icsSubscriptionUrl => $_getSZ(9);
+  $core.String get icsSubscriptionUrl => $_getSZ(10);
   @$pb.TagNumber(20)
-  set icsSubscriptionUrl($core.String v) { $_setString(9, v); }
+  set icsSubscriptionUrl($core.String v) { $_setString(10, v); }
   @$pb.TagNumber(20)
-  $core.bool hasIcsSubscriptionUrl() => $_has(9);
+  $core.bool hasIcsSubscriptionUrl() => $_has(10);
   @$pb.TagNumber(20)
   void clearIcsSubscriptionUrl() => clearField(20);
 
@@ -1338,31 +1357,31 @@ class SyncSource extends $pb.GeneratedMessage {
   /// *upcoming* events, so unlike `ics_subscription_url` an event dropping out of the feed
   /// doesn't mean it was removed: events that have already ended are kept, not pruned.
   @$pb.TagNumber(21)
-  $core.String get stellarwpIcsSubscriptionUrl => $_getSZ(10);
+  $core.String get stellarwpIcsSubscriptionUrl => $_getSZ(11);
   @$pb.TagNumber(21)
-  set stellarwpIcsSubscriptionUrl($core.String v) { $_setString(10, v); }
+  set stellarwpIcsSubscriptionUrl($core.String v) { $_setString(11, v); }
   @$pb.TagNumber(21)
-  $core.bool hasStellarwpIcsSubscriptionUrl() => $_has(10);
+  $core.bool hasStellarwpIcsSubscriptionUrl() => $_has(11);
   @$pb.TagNumber(21)
   void clearStellarwpIcsSubscriptionUrl() => clearField(21);
 
   /// The RSS subscription URL for the feed sync. Creates/updates plain Posts.
   @$pb.TagNumber(22)
-  $core.String get rssSubscriptionUrl => $_getSZ(11);
+  $core.String get rssSubscriptionUrl => $_getSZ(12);
   @$pb.TagNumber(22)
-  set rssSubscriptionUrl($core.String v) { $_setString(11, v); }
+  set rssSubscriptionUrl($core.String v) { $_setString(12, v); }
   @$pb.TagNumber(22)
-  $core.bool hasRssSubscriptionUrl() => $_has(11);
+  $core.bool hasRssSubscriptionUrl() => $_has(12);
   @$pb.TagNumber(22)
   void clearRssSubscriptionUrl() => clearField(22);
 
   /// The Atom subscription URL for the feed sync. Creates/updates plain Posts.
   @$pb.TagNumber(23)
-  $core.String get atomSubscriptionUrl => $_getSZ(12);
+  $core.String get atomSubscriptionUrl => $_getSZ(13);
   @$pb.TagNumber(23)
-  set atomSubscriptionUrl($core.String v) { $_setString(12, v); }
+  set atomSubscriptionUrl($core.String v) { $_setString(13, v); }
   @$pb.TagNumber(23)
-  $core.bool hasAtomSubscriptionUrl() => $_has(12);
+  $core.bool hasAtomSubscriptionUrl() => $_has(13);
   @$pb.TagNumber(23)
   void clearAtomSubscriptionUrl() => clearField(23);
 }

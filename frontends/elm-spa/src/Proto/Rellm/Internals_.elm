@@ -693,6 +693,7 @@ import Proto.Rellm.Rsvp.Attendee
 import Proto.Rellm.RsvpStatus
 import Proto.Rellm.SyncDestination.Configuration
 import Proto.Rellm.SyncSource.Configuration
+import Proto.Rellm.SyncSourceUserAgent
 import Proto.Rellm.UserListingType
 import Proto.Rellm.Visibility
 import Proto.Rellm.WebUserInterface
@@ -9859,6 +9860,7 @@ fieldNumbersProto__Rellm__SyncSource :
     , eventCount : Int
     , occasionCount : Int
     , postCount : Int
+    , userAgent : Int
     , configuration : FieldNumbersProto__Rellm__SyncSource__Configuration__Configuration
     }
 fieldNumbersProto__Rellm__SyncSource =
@@ -9871,6 +9873,7 @@ fieldNumbersProto__Rellm__SyncSource =
     , eventCount = 7
     , occasionCount = 8
     , postCount = 9
+    , userAgent = 13
     , configuration = fieldNumbersProto__Rellm__SyncSource__Configuration__Configuration
     }
 
@@ -9889,6 +9892,7 @@ defaultProto__Rellm__SyncSource =
     , eventCount = Protobuf.Types.Int64.fromInts 0 0
     , occasionCount = Protobuf.Types.Int64.fromInts 0 0
     , postCount = Protobuf.Types.Int64.fromInts 0 0
+    , userAgent = Nothing
     , configuration = Nothing
     }
 
@@ -9918,6 +9922,10 @@ decodeProto__Rellm__SyncSource =
         , Protobuf.Decode.optional 7 Protobuf.Decode.uint64 (\a r -> { r | eventCount = a })
         , Protobuf.Decode.optional 8 Protobuf.Decode.uint64 (\a r -> { r | occasionCount = a })
         , Protobuf.Decode.optional 9 Protobuf.Decode.uint64 (\a r -> { r | postCount = a })
+        , Protobuf.Decode.optional
+            13
+            (Protobuf.Decode.map Just Proto.Rellm.SyncSourceUserAgent.decodeSyncSourceUserAgent)
+            (\a r -> { r | userAgent = a })
         , decodeProto__Rellm__SyncSource__Configuration__Configuration (\a r -> { r | configuration = a })
         ]
 
@@ -9952,6 +9960,12 @@ encodeProto__Rellm__SyncSource value =
         , ( 7, Protobuf.Encode.uint64 value.eventCount )
         , ( 8, Protobuf.Encode.uint64 value.occasionCount )
         , ( 9, Protobuf.Encode.uint64 value.postCount )
+        , ( 13
+          , (Maybe.map Proto.Rellm.SyncSourceUserAgent.encodeSyncSourceUserAgent
+                >> Maybe.withDefault Protobuf.Encode.none
+            )
+                value.userAgent
+          )
         , encodeProto__Rellm__SyncSource__Configuration__Configuration value.configuration
         ]
 
@@ -9969,6 +9983,7 @@ type alias Proto__Rellm__SyncSource =
     , eventCount : Protobuf.Types.Int64.Int64
     , occasionCount : Protobuf.Types.Int64.Int64
     , postCount : Protobuf.Types.Int64.Int64
+    , userAgent : Maybe Proto.Rellm.SyncSourceUserAgent.SyncSourceUserAgent
     , configuration : Maybe Proto__Rellm__SyncSource__Configuration__Configuration
     }
 

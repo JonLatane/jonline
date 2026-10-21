@@ -215,6 +215,18 @@ message SyncDestinationStatus {
   optional google.protobuf.Timestamp synced_at = 4;
 }
 
+// The HTTP `User-Agent` a [`SyncSource`](#rellm-SyncSource) sends when fetching its feed. Some feeds
+// sit behind bot protection that only admits certain clients (e.g. raleighnc.gov's Cloudflare rules let
+// `curl/*` through and challenge everything else, including a request with no `User-Agent` at all).
+enum SyncSourceUserAgent {
+  // Send no `User-Agent` header at all. What every source did before this setting existed.
+  NO_USER_AGENT = 0;
+  // Identify as Rellm: `Rellm-SyncSource/1.0 (+https://rellm.org)`.
+  RELLM = 1;
+  // Identify as `curl/8.7.1`.
+  CURL = 2;
+}
+
 // A user-owned source to sync events from.
 message SyncSource {
   // Unique ID for the synchronization.
@@ -245,6 +257,10 @@ message SyncSource {
   // Field numbers 10-12 were the previous numbers of `post_count`/`rss_subscription_url`/
   // `atom_subscription_url`, before the `configuration` variants were renumbered into 20+.
   reserved 10, 11, 12;
+
+  // The `User-Agent` this source's fetches send. Unset on create means `NO_USER_AGENT`; unset on
+  // update leaves the current value alone. Always set in responses.
+  optional SyncSourceUserAgent user_agent = 13;
 
   oneof configuration {
     // The iCal subscription URL for the calendar sync. Creates/updates Events/Occasions.

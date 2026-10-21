@@ -53,7 +53,6 @@ const PAGES_PER_BATCH: u32 = 4;
 /// How many more pages, one at a time, to look at for an empty one after a page that added nothing new.
 const STALL_PROBE_PAGES: u32 = 6;
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(60);
-const USER_AGENT: &str = "Rellm-SyncSource/1.0 (+https://rellm.org)";
 
 /// Syncs every page of `source`'s StellarWP iCal URL (up to [`MAX_PAGES`]).
 pub fn sync_source_stellarwp(
@@ -92,8 +91,7 @@ pub fn fetch_stellarwp_pages(
     let endpoint = stellarwp_ics_subscription_url(source)?;
     crate::init_crypto();
     in_blocking_context(|| {
-        let client = reqwest::blocking::Client::builder()
-            .user_agent(USER_AGENT)
+        let client = super::client_builder(source)
             .timeout(REQUEST_TIMEOUT)
             .build()
             .map_err(|e| {

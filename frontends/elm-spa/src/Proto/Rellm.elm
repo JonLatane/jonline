@@ -7951,6 +7951,7 @@ fieldNumbersSyncSource :
     , eventCount : Int
     , occasionCount : Int
     , postCount : Int
+    , userAgent : Int
     , configuration : Proto.Rellm.Internals_.FieldNumbersProto__Rellm__SyncSource__Configuration__Configuration
     }
 fieldNumbersSyncSource =

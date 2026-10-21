@@ -13,6 +13,21 @@ import 'dart:convert' as $convert;
 import 'dart:core' as $core;
 import 'dart:typed_data' as $typed_data;
 
+@$core.Deprecated('Use syncSourceUserAgentDescriptor instead')
+const SyncSourceUserAgent$json = {
+  '1': 'SyncSourceUserAgent',
+  '2': [
+    {'1': 'NO_USER_AGENT', '2': 0},
+    {'1': 'RELLM', '2': 1},
+    {'1': 'CURL', '2': 2},
+  ],
+};
+
+/// Descriptor for `SyncSourceUserAgent`. Decode as a `google.protobuf.EnumDescriptorProto`.
+final $typed_data.Uint8List syncSourceUserAgentDescriptor = $convert.base64Decode(
+    'ChNTeW5jU291cmNlVXNlckFnZW50EhEKDU5PX1VTRVJfQUdFTlQQABIJCgVSRUxMTRABEggKBE'
+    'NVUkwQAg==');
+
 @$core.Deprecated('Use syncDestinationDescriptor instead')
 const SyncDestination$json = {
   '1': 'SyncDestination',
@@ -248,6 +263,7 @@ const SyncSource$json = {
     {'1': 'event_count', '3': 7, '4': 1, '5': 4, '10': 'eventCount'},
     {'1': 'occasion_count', '3': 8, '4': 1, '5': 4, '10': 'occasionCount'},
     {'1': 'post_count', '3': 9, '4': 1, '5': 4, '10': 'postCount'},
+    {'1': 'user_agent', '3': 13, '4': 1, '5': 14, '6': '.rellm.SyncSourceUserAgent', '9': 3, '10': 'userAgent', '17': true},
     {'1': 'ics_subscription_url', '3': 20, '4': 1, '5': 9, '9': 0, '10': 'icsSubscriptionUrl'},
     {'1': 'stellarwp_ics_subscription_url', '3': 21, '4': 1, '5': 9, '9': 0, '10': 'stellarwpIcsSubscriptionUrl'},
     {'1': 'rss_subscription_url', '3': 22, '4': 1, '5': 9, '9': 0, '10': 'rssSubscriptionUrl'},
@@ -257,6 +273,7 @@ const SyncSource$json = {
     {'1': 'configuration'},
     {'1': '_updated_at'},
     {'1': '_last_synced_at'},
+    {'1': '_user_agent'},
   ],
   '9': [
     {'1': 10, '2': 11},
@@ -274,12 +291,14 @@ final $typed_data.Uint8List syncSourceDescriptor = $convert.base64Decode(
     'bXBIAVIJdXBkYXRlZEF0iAEBEkUKDmxhc3Rfc3luY2VkX2F0GAYgASgLMhouZ29vZ2xlLnByb3'
     'RvYnVmLlRpbWVzdGFtcEgCUgxsYXN0U3luY2VkQXSIAQESHwoLZXZlbnRfY291bnQYByABKARS'
     'CmV2ZW50Q291bnQSJQoOb2NjYXNpb25fY291bnQYCCABKARSDW9jY2FzaW9uQ291bnQSHQoKcG'
-    '9zdF9jb3VudBgJIAEoBFIJcG9zdENvdW50EjIKFGljc19zdWJzY3JpcHRpb25fdXJsGBQgASgJ'
-    'SABSEmljc1N1YnNjcmlwdGlvblVybBJFCh5zdGVsbGFyd3BfaWNzX3N1YnNjcmlwdGlvbl91cm'
-    'wYFSABKAlIAFIbc3RlbGxhcndwSWNzU3Vic2NyaXB0aW9uVXJsEjIKFHJzc19zdWJzY3JpcHRp'
-    'b25fdXJsGBYgASgJSABSEnJzc1N1YnNjcmlwdGlvblVybBI0ChVhdG9tX3N1YnNjcmlwdGlvbl'
-    '91cmwYFyABKAlIAFITYXRvbVN1YnNjcmlwdGlvblVybEIPCg1jb25maWd1cmF0aW9uQg0KC191'
-    'cGRhdGVkX2F0QhEKD19sYXN0X3N5bmNlZF9hdEoECAoQC0oECAsQDEoECAwQDQ==');
+    '9zdF9jb3VudBgJIAEoBFIJcG9zdENvdW50Ej4KCnVzZXJfYWdlbnQYDSABKA4yGi5yZWxsbS5T'
+    'eW5jU291cmNlVXNlckFnZW50SANSCXVzZXJBZ2VudIgBARIyChRpY3Nfc3Vic2NyaXB0aW9uX3'
+    'VybBgUIAEoCUgAUhJpY3NTdWJzY3JpcHRpb25VcmwSRQoec3RlbGxhcndwX2ljc19zdWJzY3Jp'
+    'cHRpb25fdXJsGBUgASgJSABSG3N0ZWxsYXJ3cEljc1N1YnNjcmlwdGlvblVybBIyChRyc3Nfc3'
+    'Vic2NyaXB0aW9uX3VybBgWIAEoCUgAUhJyc3NTdWJzY3JpcHRpb25VcmwSNAoVYXRvbV9zdWJz'
+    'Y3JpcHRpb25fdXJsGBcgASgJSABSE2F0b21TdWJzY3JpcHRpb25VcmxCDwoNY29uZmlndXJhdG'
+    'lvbkINCgtfdXBkYXRlZF9hdEIRCg9fbGFzdF9zeW5jZWRfYXRCDQoLX3VzZXJfYWdlbnRKBAgK'
+    'EAtKBAgLEAxKBAgMEA0=');
 
 @$core.Deprecated('Use getSyncSourcesResponseDescriptor instead')
 const GetSyncSourcesResponse$json = {

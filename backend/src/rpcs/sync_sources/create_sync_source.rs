@@ -55,6 +55,8 @@ pub fn create_sync_source(
         stellarwp_page_url(endpoint, 1)?;
     }
 
+    let user_agent = user_agent_to_db(request.user_agent)?;
+
     let sync_interval_seconds = if request.sync_interval_seconds == 0 {
         DEFAULT_SYNC_INTERVAL_SECONDS
     } else if (request.sync_interval_seconds as i64) < MIN_SYNC_INTERVAL_SECONDS {
@@ -71,6 +73,7 @@ pub fn create_sync_source(
             user_id: current_user.id,
             sync_interval_seconds,
             configuration,
+            user_agent,
         })
         .get_result::<models::SyncSource>(conn)
         .map_err(|e| {
