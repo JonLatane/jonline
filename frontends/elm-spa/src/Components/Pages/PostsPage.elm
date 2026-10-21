@@ -744,9 +744,10 @@ applyHidden shared model =
 
 
 {-| Keeps `Shared.Countabilibar`'s counts in step with what this feed is showing -- see
-`Countabilibar.syncMsg`. Only top-level posts are counted (not `REPLY` context), only from real Rellm
-servers (a Mastodon/Bluesky post's author has no Rellm user id to hide by), never while the feed is
-scoped to one profile, and not at all on an animation tick (nothing it changes is counted).
+`Countabilibar.syncMsg`. Only top-level posts are counted (not `REPLY` context), from Rellm servers
+and Mastodon/Bluesky feeds alike (each feed's host is its `feedSourceKey`; a federated author's id is
+`Author.user_id` as `toAuthor` builds it), never while the feed is scoped to one profile, and not at all
+on an animation tick (nothing it changes is counted).
 -}
 countabilibarEffect : Shared.Model -> Msg -> Model -> Effect Msg
 countabilibarEffect shared msg model =
@@ -759,16 +760,16 @@ countabilibarEffect shared msg model =
                 Effect.none
 
             else
-                Countabilibar.syncMsg Countabilibar.PostsKind (pendingHosts model) (shownPosts shared model) shared.countabilibar
+                Countabilibar.syncMsg Countabilibar.PostsKind (pendingHosts model) (shownPosts model) shared.countabilibar
                     |> Maybe.map (Shared.CountabilibarSync >> Effect.fromShared)
                     |> Maybe.withDefault Effect.none
 
 
-{-| Every Rellm server's posts on screen -- the author and id of each -- exactly what `syncAnimations`
+{-| Every server's (or Mastodon instance's/Bluesky feed's) posts on screen -- the author and id of each -- exactly what `syncAnimations`
 shows: loaded, in this `context`, and not by anyone hidden. Posts without an author can't be counted.
 -}
-shownPosts : Shared.Model -> Model -> Dict String (List ( Proto.Rellm.Author, String ))
-shownPosts shared model =
+shownPosts : Model -> Dict String (List ( Proto.Rellm.Author, String ))
+shownPosts model =
     if model.context /= POST then
         Dict.empty
 
@@ -777,11 +778,7 @@ shownPosts shared model =
             (\_ feed shown ->
                 case feed.status of
                     Loaded posts ->
-                        if RellmServers.rellmServerForHost shared.accounts.servers feed.host == Nothing then
-                            shown
-
-                        else
-                            Dict.update feed.host
+                        Dict.update feed.host
                                 (\existing ->
                                     Just
                                         (Maybe.withDefault [] existing
@@ -1419,15 +1416,21 @@ relevantFeedSources shared model =
                         -- A Mastodon instance's public timeline can't be searched anonymously, so while
                         -- there's search text it has nothing matching to contribute -- showing its
                         -- unfiltered posts under a search would break "every result matches".
-                        List.map MastodonInstance
+                        -- Hidden in `Shared.Countabilibar` (by the same key the feed is counted under) means
+                        -- not fetched at all, like a hidden Rellm server (see `relevantServers`).
+                        ([ List.map MastodonInstance
                             (if String.isEmpty (String.trim model.searchText) then
                                 mastodonHostsToFetch shared
 
                              else
                                 []
                             )
-                            ++ List.map BlueskyFeed (List.filter .enabled shared.accounts.blueskyAccounts)
-                            ++ List.map (.host >> BlueskyAppViewFeed) (List.filter .enabled shared.accounts.blueskyAppViews)
+                         , List.map BlueskyFeed (List.filter .enabled shared.accounts.blueskyAccounts)
+                         , List.map (.host >> BlueskyAppViewFeed) (List.filter .enabled shared.accounts.blueskyAppViews)
+                         ]
+                            |> List.concat
+                            |> List.filter (\source -> not (Countabilibar.isHostHidden model.hidden (feedSourceKey source)))
+                        )
                    )
 
 

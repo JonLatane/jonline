@@ -67,8 +67,8 @@ import Animation
 import Browser.Dom as Dom
 import Components.Authors as Authors
 import Dict exposing (Dict)
-import Html exposing (Html, button, div, input, span, text)
-import Html.Attributes exposing (checked, class, disabled, id, title, type_)
+import Html exposing (Html, button, div, img, input, span, text)
+import Html.Attributes exposing (alt, checked, class, disabled, id, src, title, type_)
 import Html.Events exposing (onCheck, onClick)
 import Html.Keyed
 import Json.Decode as Decode
@@ -76,7 +76,9 @@ import Ports
 import Proto.Rellm exposing (Author)
 import Set exposing (Set)
 import Shared.AccountsPanel as AccountsPanel
+import Shared.AccountsPanel.MastodonServers as MastodonServers
 import Shared.AccountsPanel.RellmAccounts as RellmAccounts
+import Shared.AccountsPanel.BlueskyAppViews as BlueskyAppViews
 import Shared.AccountsPanel.RellmServers as RellmServers
 import Task
 import UI.Classes exposing (classes, escapeCSSClass, hostnameToCSSClass, openClosedClass)
@@ -1163,7 +1165,9 @@ visibilityCheckbox isEnabled isVisible kind =
 
 
 {-| A server the way the nav's Home button shows it: logo on the left, its (possibly two-line) name on the
-right. A plain host name until the server is known.
+right. Mastodon instances and Bluesky accounts/AppViews (hosts `"mastodon:<instance>"`/`"bluesky:<handle or
+host>"`, see `Components.Pages.PostsPage.feedSourceKey`) get the same layout from what's known about them
+(`federatedLabel`); a plain host name until a Rellm server is known.
 -}
 serverLabel : AccountsPanel.Model -> String -> Html msg
 serverLabel accountsPanelModel host =
@@ -1172,7 +1176,78 @@ serverLabel accountsPanelModel host =
             RellmServers.rellmServerNameAndLogo server RellmServers.HorizontalServerLogo
 
         Nothing ->
-            span [ class "countabilibar-host" ] [ text host ]
+            if String.startsWith "mastodon:" host then
+                let
+                    instanceHost : String
+                    instanceHost =
+                        String.dropLeft 9 host
+
+                    instance : Maybe MastodonServers.BrowsedMastodonInstance
+                    instance =
+                        accountsPanelModel.browsedMastodonInstances
+                            |> List.filter (\browsed -> browsed.host == instanceHost)
+                            |> List.head
+                in
+                federatedLabel False
+                    (instance |> Maybe.andThen .logoUrl)
+                    (instance
+                        |> Maybe.andThen .displayName
+                        |> Maybe.andThen
+                            (\name ->
+                                -- Many instances never customize their name from the generic "Mastodon".
+                                if String.trim name == "Mastodon" then
+                                    Nothing
+
+                                else
+                                    Just name
+                            )
+                        |> Maybe.withDefault instanceHost
+                    )
+                    "⇄ Mastodon"
+
+            else if String.startsWith "bluesky:" host then
+                let
+                    handleOrHost : String
+                    handleOrHost =
+                        String.dropLeft 8 host
+                in
+                case List.filter (\account -> account.handle == handleOrHost) accountsPanelModel.blueskyAccounts |> List.head of
+                    Just account ->
+                        federatedLabel True account.avatarUrl (Maybe.withDefault account.handle account.displayName) "⇄ Bluesky"
+
+                    Nothing ->
+                        federatedLabel False
+                            (BlueskyAppViews.logoUrlFor (AccountsPanel.allBlueskyServers accountsPanelModel) handleOrHost)
+                            (BlueskyAppViews.displayName handleOrHost)
+                            "⇄ Bluesky"
+
+            else
+                span [ class "countabilibar-host" ] [ text host ]
+
+
+{-| `serverLabel`'s layout for a server that isn't a Rellm one: `RellmServers.rellmServerNameAndLogo`'s
+own markup (so it's styled the same), with a logo image -- or the name's initial -- and a "⇄ Mastodon"/
+"⇄ Bluesky" second line.
+-}
+federatedLabel : Bool -> Maybe String -> String -> String -> Html msg
+federatedLabel circularLogo logoUrl name service =
+    div [ class "server-name-and-logo horizontal" ]
+        [ case logoUrl of
+            Just url ->
+                img
+                    [ classes ("server-logo-image" :: (if circularLogo then [ "server-logo-image-circular" ] else []))
+                    , src url
+                    , alt name
+                    ]
+                    []
+
+            Nothing ->
+                div [ class "server-logo-placeholder" ] [ text (RellmServers.initialLetter name) ]
+        , div [ class "server-name-breakdown", title name ]
+            [ div [ class "server-name-primary" ] [ text name ]
+            , div [ class "server-name-secondary" ] [ text service ]
+            ]
+        ]
 
 
 {-| A user's avatar and "username | Real Name" (just the username without a distinct real name).
@@ -1182,7 +1257,12 @@ authorLabel accountsPanelModel host author =
     let
         username : String
         username =
-            Authors.name (Just author)
+            if String.startsWith "mastodon:" host then
+                -- A Mastodon author's username is "user@instance"; the instance is already the server.
+                Authors.name (Just author) |> String.split "@" |> List.head |> Maybe.withDefault ""
+
+            else
+                Authors.name (Just author)
 
         realName : String
         realName =
