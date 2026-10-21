@@ -67,8 +67,9 @@ import Animation
 import Browser.Dom as Dom
 import Components.Authors as Authors
 import Dict exposing (Dict)
-import Html exposing (Html, button, div, img, input, span, text)
-import Html.Attributes exposing (alt, checked, class, disabled, id, src, title, type_)
+import Gen.Route as Route
+import Html exposing (Html, a, button, div, img, input, span, text)
+import Html.Attributes exposing (alt, checked, class, disabled, href, id, src, title, type_)
 import Html.Events exposing (onCheck, onClick)
 import Html.Keyed
 import Json.Decode as Decode
@@ -83,6 +84,7 @@ import Shared.AccountsPanel.RellmServers as RellmServers
 import Task
 import UI.Classes exposing (classes, escapeCSSClass, hostnameToCSSClass, openClosedClass)
 import UI.Flip
+import UI.HtmlEvents exposing (stopPropagationAndPreventDefaultOnClick)
 
 
 
@@ -1315,21 +1317,75 @@ unchecked -- highest-first, with the same checkboxes the bar's own user entries 
 every other panel, so opening/closing is a CSS transition; mounted as a `.navbar` child (see
 `UI.headerNav`) so it anchors under the whole bar.
 -}
-panel : AccountsPanel.Model -> Model -> Html Msg
-panel accountsPanelModel model =
+panel : String -> AccountsPanel.Model -> Model -> Html Msg
+panel basePath accountsPanelModel model =
     case model.openHost of
         Just host ->
             div [ classes [ "countabilibar-panel", "nav-panel", openClosedClass True ] ]
-                [ div [ class "countabilibar-panel-header" ] [ serverLabel accountsPanelModel host ]
+                [ div [ class "countabilibar-panel-header" ]
+                    [ serverLabel accountsPanelModel host
+                    , case RellmServers.rellmServerForHost accountsPanelModel.servers host of
+                        Just server ->
+                            serverInfoButton basePath server
+
+                        Nothing ->
+                            text ""
+                    ]
                 , div [ class "countabilibar-panel-list" ]
                     (authorEntries model host
                         |> List.sortBy (\data -> ( negate (data.posts + data.events), data.key ))
-                        |> List.map (panelRow accountsPanelModel (List.any (\server -> server.host == host) model.hiddenHosts))
+                        |> List.map (panelRow basePath accountsPanelModel (List.any (\server -> server.host == host) model.hiddenHosts))
                     )
                 ]
 
         Nothing ->
             div [ classes [ "countabilibar-panel", "nav-panel", openClosedClass False ] ] []
+
+
+{-| `authorLabel`, linked to the user's profile (a federated user's too -- `Authors.href` resolves those the
+same way a post card's author link does). Closes the popover: the nav isn't a page, so going to the
+profile doesn't otherwise change anything it's showing.
+-}
+authorLink : String -> AccountsPanel.Model -> String -> Author -> Html Msg
+authorLink basePath accountsPanelModel host author =
+    case Authors.href basePath accountsPanelModel.mainFrontendHost host (Just author) of
+        Just profileHref ->
+            a
+                [ classes [ "countabilibar-author-link" ]
+                , href profileHref
+                , stopPropagationAndPreventDefaultOnClick ClosePanel
+                ]
+                [ authorLabel accountsPanelModel host author ]
+
+        Nothing ->
+            authorLabel accountsPanelModel host author
+
+
+{-| The circular "i" next to the server's name -- to its `ServerInformationPage` -- the one a server chip
+in the Accounts Panel has (`UI.serverInfoButton`, which this mirrors: `UI` imports this module, so it
+can't be reused). Closes the popover like `authorLink`.
+-}
+serverInfoButton : String -> RellmServers.RellmServer -> Html Msg
+serverInfoButton basePath server =
+    let
+        -- Disconnected servers default to `https:` -- `ServerInformationPage`'s own probe re-negotiates.
+        serverIdentifier : String
+        serverIdentifier =
+            (if server.connected |> Maybe.map .tls |> Maybe.withDefault True then
+                "https:"
+
+             else
+                "http:"
+            )
+                ++ server.frontendHost
+    in
+    a
+        [ classes [ "panel-icon-button", "info-button", "countabilibar-info-button" ]
+        , href (basePath ++ Route.toHref (Route.Server__ServerIdentifier_ { serverIdentifier = serverIdentifier }))
+        , stopPropagationAndPreventDefaultOnClick ClosePanel
+        , title ("About " ++ server.frontendHost)
+        ]
+        [ text "i" ]
 
 
 {-| What the popover lists for `host`, as `( user id, visible, posts + events )`, highest-first.
@@ -1349,8 +1405,8 @@ popoverUsers host model =
             )
 
 
-panelRow : AccountsPanel.Model -> Bool -> EntryData -> Html Msg
-panelRow accountsPanelModel hostHidden data =
+panelRow : String -> AccountsPanel.Model -> Bool -> EntryData -> Html Msg
+panelRow basePath accountsPanelModel hostHidden data =
     case data.kind of
         AuthorEntry host author ->
             div
@@ -1365,7 +1421,7 @@ panelRow accountsPanelModel hostHidden data =
                     )
                 ]
                 [ visibilityCheckbox (not hostHidden) data.visible data.kind
-                , authorLabel accountsPanelModel host author
+                , authorLink basePath accountsPanelModel host author
                 , countsView data
                 ]
 

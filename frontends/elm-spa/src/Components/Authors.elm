@@ -1,4 +1,4 @@
-module Components.Authors exposing (avatar, avatarUrl, badges, compactBadges, link, name)
+module Components.Authors exposing (avatar, avatarUrl, badges, compactBadges, href, link, name)
 
 {-| Everything about displaying a `Proto.Rellm.Author` -- the
 post/authorship-centric, cacheable-in-the-UI sibling of `User` embedded

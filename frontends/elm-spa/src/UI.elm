@@ -4840,7 +4840,7 @@ countabilibarBar shared =
 -}
 countabilibarPanel : Shared.Model -> Html Shared.Msg
 countabilibarPanel shared =
-    Html.map Shared.CountabilibarMsg (Countabilibar.panel shared.accounts shared.countabilibar)
+    Html.map Shared.CountabilibarMsg (Countabilibar.panel shared.basePath shared.accounts shared.countabilibar)
 
 
 {-| The app-wide fullscreen image/video viewer (see `Shared.MediaViewerPanel`)

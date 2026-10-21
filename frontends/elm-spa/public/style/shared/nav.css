@@ -790,8 +790,33 @@
   transform: translateX(-50%) translateY(-8px);
 }
 
+.countabilibar-panel-header {
+  align-items: center;
+  display: flex;
+  gap: 0.5rem;
+  justify-content: space-between;
+}
+
 .countabilibar-panel-header .server-name-and-logo {
+  flex: 1 1 auto;
   min-width: 0;
+}
+
+.countabilibar-info-button {
+  flex: 0 0 auto;
+}
+
+.countabilibar-author-link {
+  color: inherit;
+  display: flex;
+  flex: 1 1 auto;
+  justify-content: flex-start;
+  min-width: 0;
+  text-decoration: none;
+}
+
+.countabilibar-author-link:hover .countabilibar-username {
+  text-decoration: underline;
 }
 
 .countabilibar-panel-list {
