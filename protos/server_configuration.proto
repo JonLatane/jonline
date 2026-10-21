@@ -588,8 +588,11 @@ message ServerInfo {
   // The media policy for the server. Will be displayed during account creation
   // and on the `/about` page.
   optional string media_policy = 8;
-  // This will be replaced with FederationInfo soon.
-  repeated string recommended_server_hosts = 9 [deprecated = true];
+  // If set, the Elm SPA's "Countabilibar" -- the row under the breadcrumbs counting the posts and events a
+  // page shows per server/user, with checkboxes to hide them -- is not shown. (Field 9 was formerly
+  // `repeated string recommended_server_hosts`, replaced by `FederationInfo.servers`; stored configurations
+  // may still carry that old value, which is ignored.)
+  optional bool disable_countabilibar = 9;
 }
 
 // Logo data for the server. Built atop Rellm [`Media` APIs](#rellm-Media).

@@ -372,7 +372,7 @@ sharedBackdrop shared =
 
             -- Shares the Breadcrumbs viewer's spot (and is never open together with it -- see
             -- `Shared.update`), so which of the two sits "behind" the other doesn't matter.
-            , { isOpen = Countabilibar.isPanelOpen shared.countabilibar
+            , { isOpen = Countabilibar.isPanelOpen shared.countabilibar && countabilibarEnabled shared
               , closeMsg = Shared.CountabilibarMsg Countabilibar.ClosePanel
               , blurs = True
               }
@@ -4832,7 +4832,23 @@ until there's something to count.
 -}
 countabilibarBar : Shared.Model -> Html Shared.Msg
 countabilibarBar shared =
-    Html.map Shared.CountabilibarMsg (Countabilibar.bar shared.accounts shared.countabilibar)
+    if countabilibarEnabled shared then
+        Html.map Shared.CountabilibarMsg (Countabilibar.bar shared.accounts shared.countabilibar)
+
+    else
+        text ""
+
+
+{-| Whether the main server (the one driving the nav's chrome, like `currentTabStyle`) hasn't turned the
+Countabilibar off -- `ServerInfo.disable_countabilibar`, set from the Theme tab of its Server Information
+page. Enabled while the server's configuration isn't known yet.
+-}
+countabilibarEnabled : Shared.Model -> Bool
+countabilibarEnabled shared =
+    mainServer shared
+        |> Maybe.andThen (\server -> (RellmServers.configurationOf server).serverInfo)
+        |> Maybe.andThen .disableCountabilibar
+        |> (/=) (Just True)
 
 
 {-| The popover under `countabilibarBar`, listing the users counted on the server tapped there -- a
@@ -4840,7 +4856,11 @@ countabilibarBar shared =
 -}
 countabilibarPanel : Shared.Model -> Html Shared.Msg
 countabilibarPanel shared =
-    Html.map Shared.CountabilibarMsg (Countabilibar.panel shared.basePath shared.accounts shared.countabilibar)
+    if countabilibarEnabled shared then
+        Html.map Shared.CountabilibarMsg (Countabilibar.panel shared.basePath shared.accounts shared.countabilibar)
+
+    else
+        text ""
 
 
 {-| The app-wide fullscreen image/video viewer (see `Shared.MediaViewerPanel`)

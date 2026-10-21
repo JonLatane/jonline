@@ -2265,7 +2265,7 @@ fieldNumbersProto__Rellm__ServerInfo :
     , webUserInterface : Int
     , colors : Int
     , mediaPolicy : Int
-    , recommendedServerHosts : Int
+    , disableCountabilibar : Int
     }
 fieldNumbersProto__Rellm__ServerInfo =
     { name = 1
@@ -2276,7 +2276,7 @@ fieldNumbersProto__Rellm__ServerInfo =
     , webUserInterface = 6
     , colors = 7
     , mediaPolicy = 8
-    , recommendedServerHosts = 9
+    , disableCountabilibar = 9
     }
 
 
@@ -2293,7 +2293,7 @@ defaultProto__Rellm__ServerInfo =
     , webUserInterface = Nothing
     , colors = Nothing
     , mediaPolicy = Nothing
-    , recommendedServerHosts = []
+    , disableCountabilibar = Nothing
     }
 
 
@@ -2324,11 +2324,10 @@ decodeProto__Rellm__ServerInfo =
             (Protobuf.Decode.map Just decodeProto__Rellm__ServerColors)
             (\a r -> { r | colors = a })
         , Protobuf.Decode.optional 8 (Protobuf.Decode.map Just Protobuf.Decode.string) (\a r -> { r | mediaPolicy = a })
-        , Protobuf.Decode.repeated
+        , Protobuf.Decode.optional
             9
-            Protobuf.Decode.string
-            .recommendedServerHosts
-            (\a r -> { r | recommendedServerHosts = a })
+            (Protobuf.Decode.map Just Protobuf.Decode.bool)
+            (\a r -> { r | disableCountabilibar = a })
         ]
 
 
@@ -2349,7 +2348,7 @@ encodeProto__Rellm__ServerInfo value =
           )
         , ( 7, (Maybe.map encodeProto__Rellm__ServerColors >> Maybe.withDefault Protobuf.Encode.none) value.colors )
         , ( 8, (Maybe.map Protobuf.Encode.string >> Maybe.withDefault Protobuf.Encode.none) value.mediaPolicy )
-        , ( 9, (Protobuf.Encode.list Protobuf.Encode.string) value.recommendedServerHosts )
+        , ( 9, (Maybe.map Protobuf.Encode.bool >> Maybe.withDefault Protobuf.Encode.none) value.disableCountabilibar )
         ]
 
 
@@ -2365,7 +2364,7 @@ type alias Proto__Rellm__ServerInfo =
     , webUserInterface : Maybe Proto.Rellm.WebUserInterface.WebUserInterface
     , colors : Maybe Proto__Rellm__ServerColors
     , mediaPolicy : Maybe String
-    , recommendedServerHosts : List String
+    , disableCountabilibar : Maybe Bool
     }
 
 

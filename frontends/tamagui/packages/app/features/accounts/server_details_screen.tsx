@@ -135,10 +135,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
   const serverExternalCdnConfig = serverConfiguration?.externalCdnConfig;
   const [externalCdnConfig, setExternalCdnConfig] = useState(serverExternalCdnConfig);
 
-  const serverRecommendedHosts = serverConfiguration?.serverInfo?.recommendedServerHosts;
-  const serverFederatedServers = serverConfiguration?.federationInfo?.servers?.length ?? 0 > 0
-    ? serverConfiguration?.federationInfo?.servers
-    : serverRecommendedHosts?.map(host => ({ host, configuredByDefault: true, pinnedByDefault: true }));
+  const serverFederatedServers = serverConfiguration?.federationInfo?.servers;
   // console.log('serverFederatedServers', serverFederatedServers);
   const [federatedServers, setFederatedServers] = useState(serverFederatedServers);
   const [newRecommendedHostName, setNewRecommendedHostName] = useState('');
@@ -243,7 +240,6 @@ export function BaseServerDetailsScreen(specificServer?: string) {
         ...serverConfiguration?.serverInfo?.colors,
         primary: newPrimaryColorInt, navigation: newNavColorInt
       },
-      recommendedServerHosts: federatedServers?.map(s => s.host) ?? [],
     },
     federationInfo: {
       ...serverConfiguration?.federationInfo,

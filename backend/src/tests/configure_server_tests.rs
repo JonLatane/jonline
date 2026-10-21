@@ -1059,3 +1059,32 @@ mod supported_contact_protocols_spec {
         });
     }
 }
+
+/// `ServerInfo` is stored as JSON. Field 9 used to be `recommended_server_hosts` (a list of strings, which
+/// the Tamagui client wrote on every save) and is now `disable_countabilibar`: stored rows still carrying
+/// the old key must keep loading (it's an unknown key now), and the new setting must round-trip.
+mod server_info_json {
+    use super::*;
+
+    #[test]
+    fn legacy_recommended_server_hosts_is_ignored() {
+        let info: ServerInfo = serde_json::from_value(serde_json::json!({
+            "name": "Legacy",
+            "recommended_server_hosts": ["jonline.io", "bullcity.social"],
+        }))
+        .unwrap();
+        assert_eq!(info.name.as_deref(), Some("Legacy"));
+        assert_eq!(info.disable_countabilibar, None);
+    }
+
+    #[test]
+    fn disable_countabilibar_round_trips() {
+        let info = ServerInfo {
+            disable_countabilibar: Some(true),
+            ..Default::default()
+        };
+        let value = serde_json::to_value(&info).unwrap();
+        let back: ServerInfo = serde_json::from_value(value).unwrap();
+        assert_eq!(back.disable_countabilibar, Some(true));
+    }
+}

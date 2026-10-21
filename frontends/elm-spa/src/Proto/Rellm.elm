@@ -1177,7 +1177,7 @@ fieldNumbersServerInfo :
     , webUserInterface : Int
     , colors : Int
     , mediaPolicy : Int
-    , recommendedServerHosts : Int
+    , disableCountabilibar : Int
     }
 fieldNumbersServerInfo =
     Proto.Rellm.Internals_.fieldNumbersProto__Rellm__ServerInfo
@@ -1208,13 +1208,6 @@ encodeServerInfo =
 
 
 {-|  User-facing information about the server displayed on the "about" page.
-
-
-## Fields
-
-### recommendedServerHosts
-
- This will be replaced with FederationInfo soon.
 
 
 -}

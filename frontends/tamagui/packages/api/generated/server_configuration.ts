@@ -1191,11 +1191,12 @@ export interface ServerInfo {
     | string
     | undefined;
   /**
-   * This will be replaced with FederationInfo soon.
-   *
-   * @deprecated
+   * If set, the Elm SPA's "Countabilibar" -- the row under the breadcrumbs counting the posts and events a
+   * page shows per server/user, with checkboxes to hide them -- is not shown. (Field 9 was formerly
+   * `repeated string recommended_server_hosts`, replaced by `FederationInfo.servers`; stored configurations
+   * may still carry that old value, which is ignored.)
    */
-  recommendedServerHosts: string[];
+  disableCountabilibar?: boolean | undefined;
 }
 
 /** Logo data for the server. Built atop Rellm [`Media` APIs](#rellm-Media). */
@@ -3855,7 +3856,7 @@ function createBaseServerInfo(): ServerInfo {
     webUserInterface: undefined,
     colors: undefined,
     mediaPolicy: undefined,
-    recommendedServerHosts: [],
+    disableCountabilibar: undefined,
   };
 }
 
@@ -3885,8 +3886,8 @@ export const ServerInfo: MessageFns<ServerInfo> = {
     if (message.mediaPolicy !== undefined) {
       writer.uint32(66).string(message.mediaPolicy);
     }
-    for (const v of message.recommendedServerHosts) {
-      writer.uint32(74).string(v!);
+    if (message.disableCountabilibar !== undefined) {
+      writer.uint32(72).bool(message.disableCountabilibar);
     }
     return writer;
   },
@@ -3963,11 +3964,11 @@ export const ServerInfo: MessageFns<ServerInfo> = {
           continue;
         }
         case 9: {
-          if (tag !== 74) {
+          if (tag !== 72) {
             break;
           }
 
-          message.recommendedServerHosts.push(reader.string());
+          message.disableCountabilibar = reader.bool();
           continue;
         }
       }
@@ -3989,9 +3990,9 @@ export const ServerInfo: MessageFns<ServerInfo> = {
       webUserInterface: isSet(object.webUserInterface) ? webUserInterfaceFromJSON(object.webUserInterface) : undefined,
       colors: isSet(object.colors) ? ServerColors.fromJSON(object.colors) : undefined,
       mediaPolicy: isSet(object.mediaPolicy) ? globalThis.String(object.mediaPolicy) : undefined,
-      recommendedServerHosts: globalThis.Array.isArray(object?.recommendedServerHosts)
-        ? object.recommendedServerHosts.map((e: any) => globalThis.String(e))
-        : [],
+      disableCountabilibar: isSet(object.disableCountabilibar)
+        ? globalThis.Boolean(object.disableCountabilibar)
+        : undefined,
     };
   },
 
@@ -4021,8 +4022,8 @@ export const ServerInfo: MessageFns<ServerInfo> = {
     if (message.mediaPolicy !== undefined) {
       obj.mediaPolicy = message.mediaPolicy;
     }
-    if (message.recommendedServerHosts?.length) {
-      obj.recommendedServerHosts = message.recommendedServerHosts;
+    if (message.disableCountabilibar !== undefined) {
+      obj.disableCountabilibar = message.disableCountabilibar;
     }
     return obj;
   },
@@ -4044,7 +4045,7 @@ export const ServerInfo: MessageFns<ServerInfo> = {
       ? ServerColors.fromPartial(object.colors)
       : undefined;
     message.mediaPolicy = object.mediaPolicy ?? undefined;
-    message.recommendedServerHosts = object.recommendedServerHosts?.map((e) => e) || [];
+    message.disableCountabilibar = object.disableCountabilibar ?? undefined;
     return message;
   },
 };

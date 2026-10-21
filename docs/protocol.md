@@ -3765,7 +3765,7 @@ User-facing information about the server displayed on the &#34;about&#34; page.
 | web_user_interface | [WebUserInterface](#rellm-WebUserInterface) | optional | The web UI to use (React/Tamagui (default) vs. Flutter Web) |
 | colors | [ServerColors](#rellm-ServerColors) | optional | The color scheme for the server. |
 | media_policy | [string](#string) | optional | The media policy for the server. Will be displayed during account creation and on the `/about` page. |
-| recommended_server_hosts | [string](#string) | repeated | **Deprecated.** This will be replaced with FederationInfo soon. |
+| disable_countabilibar | [bool](#bool) | optional | If set, the Elm SPA&#39;s &#34;Countabilibar&#34; -- the row under the breadcrumbs counting the posts and events a page shows per server/user, with checkboxes to hide them -- is not shown. (Field 9 was formerly `repeated string recommended_server_hosts`, replaced by `FederationInfo.servers`; stored configurations may still carry that old value, which is ignored.) |
 
 
 
