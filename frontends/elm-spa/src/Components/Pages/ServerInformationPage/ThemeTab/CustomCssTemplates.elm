@@ -250,7 +250,7 @@ sharedRefinements =
     font-size: 0.7rem;
     font-weight: 600;
   }
-  .events-calendar .fc .fc-col-header-cell-cushion { padding: 4px 0; }
+  .events-calendar .fc .fc-col-header-cell-cushion { padding: 4px 0; word-spacing: 100vw; }
 }
 
 /* Text-style buttons stay plain text: no background, border or shadow, and their own text color back. */
