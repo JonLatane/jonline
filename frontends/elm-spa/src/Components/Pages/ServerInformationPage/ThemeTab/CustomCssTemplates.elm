@@ -742,7 +742,7 @@ body::after {
 
 
 {-| `Standard Style` (same cards, page wash, frosted column and background images) with the top navigation turned
-into a side navigation on wide, tall-enough screens (1000x560px and up -- below that it is exactly Standard Style, and
+into a side navigation on wide screens (1000px and up -- below that it is exactly Standard Style, and
 the usual top bar). Pure CSS over the app's own markup: the `.nav-links` row becomes a grid whose first row is the Home link and
 the Starred / Messaging / Create toggles, and whose first column then continues downward with the tabs, still
 honoring the admin's tab style (icon only / text right / text under / text only). The Accounts button stays at the
@@ -754,9 +754,8 @@ standardSideNav images =
     String.join "\n"
         [ standardStyle images
         , """
-/* Side Navigation -- wide, reasonably tall screens only. Below 1000px wide (or 560px tall, where the tab
-   column would run off the bottom of the screen) this is plain Standard Style with the usual top bar. */
-@media (min-width: 1000px) and (min-height: 560px) {
+/* Side Navigation -- wide screens only. Below 1000px this is plain Standard Style with the usual top bar. */
+@media (min-width: 1000px) {
   /* The bar becomes a frosted band; Home and the tabs float on it as primary-colored pills. The blur lives on
      a pseudo-element behind the bar's content, never on .navbar itself (that would trap its fixed panels). */
   .navbar {
@@ -787,26 +786,66 @@ standardSideNav images =
     padding: 0 12px;
   }
 
-  /* One grid: row 1 is Home + the three toggles; the tabs stack down column 1 below Home. The fixed 68px
-     height keeps the bar as thin as before -- the tab pills overflow it downward into the empty margin beside
-     the content column (and stick with the bar as the page scrolls). */
+  /* The nav-links box holds just Home; its fixed 68px height keeps the bar as thin as before. */
   .nav-links {
     display: grid;
-    grid-template-columns: 156px repeat(3, max-content);
+    grid-template-columns: 156px;
     grid-template-rows: 68px;
     align-items: center;
     justify-content: start;
-    column-gap: 0.1rem;
     width: auto;
     height: 68px;
     position: relative;
     z-index: 1;
   }
-  .nav-links-scroll { display: contents; }
+
+  /* The scroller lays out over the bar as one grid: row 1 is the three toggles (sticky, so they stay put),
+     and the tabs stack down column 1 below an empty spacer where Home sits on top of it. The tab pills hang
+     below the bar into the empty margin beside the content column, and when there are more of them than fit
+     the screen's height the column scrolls vertically (no visible scrollbar; wheel/touch still work). It is
+     click-through except for its children, so the empty parts of its box never swallow clicks meant for the page. */
+  .nav-links-scroll {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: 156px repeat(3, max-content);
+    grid-template-rows: 68px;
+    grid-auto-rows: auto;
+    align-items: center;
+    justify-content: start;
+    column-gap: 0.1rem;
+    width: auto;
+    margin: 0;
+    padding-bottom: 12px;
+    max-height: calc(100vh - env(safe-area-inset-top, 0px));
+    max-height: calc(100dvh - env(safe-area-inset-top, 0px));
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: none;
+    pointer-events: none;
+  }
+  .nav-links-scroll::-webkit-scrollbar { display: none; }
+  .nav-links-scroll > * { pointer-events: auto; }
+  .nav-links-scroll::before {
+    content: "";
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .nav-links-scroll > :not(.nav-link) {
+    grid-row: 1;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+  }
 
   .nav-link-home {
     grid-column: 1;
     grid-row: 1;
+    position: relative;
+    z-index: 2;
     max-width: none;
     background-color: var(--primary-color, #4a90d9);
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.1);
@@ -898,8 +937,8 @@ standardSideNav images =
   }
 }
 
-/* Not very tall: squeeze the tab pills so the whole column still fits above the bottom of the screen. */
-@media (min-width: 1000px) and (min-height: 560px) and (max-height: 819px) {
+/* Not very tall: squeeze the tab pills so more of the column fits (it scrolls when it still doesn't). */
+@media (min-width: 1000px) and (max-height: 819px) {
   .navbar .nav-links .nav-links-scroll > .nav-link:not(.nav-link-home) {
     height: 34px;
     margin-top: 3px;
