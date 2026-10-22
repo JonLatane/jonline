@@ -387,7 +387,8 @@
   gap: 0.5rem;
   opacity: 1;
   transform: translateY(0);
-  transition: opacity 0.15s ease, transform 0.15s ease;
+  visibility: visible;
+  transition: opacity 0.15s ease, transform 0.15s ease, visibility 0s 0s;
 }
 
 @media (min-width: 640px) {
@@ -396,10 +397,16 @@
   }
 }
 
+/* `visibility: hidden` (after the fade) is what actually removes a closed panel's inputs -- the
+   Accounts panel's username/password fields -- from the accessibility tree and tab order, and
+   makes password managers (1Password etc.) treat them as hidden. `opacity: 0` alone leaves them
+   "visible", so they kept offering to log in as the page scrolled. */
 .nav-panel.is-closed {
   opacity: 0;
   transform: translateY(-8px);
   pointer-events: none;
+  visibility: hidden;
+  transition: opacity 0.15s ease, transform 0.15s ease, visibility 0s 0.15s;
 }
 
 .nav-panel.is-closed * {
