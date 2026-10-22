@@ -742,8 +742,8 @@ body::after {
 
 
 {-| `Standard Style` (same cards, page wash, frosted column and background images) with the top navigation turned
-into a side navigation on wide screens (1000px and up -- below that it is exactly Standard Style, and the usual top
-bar). Pure CSS over the app's own markup: the `.nav-links` row becomes a grid whose first row is the Home link and
+into a side navigation on wide, tall-enough screens (1000x560px and up -- below that it is exactly Standard Style, and
+the usual top bar). Pure CSS over the app's own markup: the `.nav-links` row becomes a grid whose first row is the Home link and
 the Starred / Messaging / Create toggles, and whose first column then continues downward with the tabs, still
 honoring the admin's tab style (icon only / text right / text under / text only). The Accounts button stays at the
 top right. The bar itself turns into a frosted band, and Home and the tabs wear the server's primary color as
@@ -754,12 +754,30 @@ standardSideNav images =
     String.join "\n"
         [ standardStyle images
         , """
-/* Side Navigation -- wide screens only. Below 1000px this is plain Standard Style with the usual top bar. */
-@media (min-width: 1000px) {
-  /* The bar becomes a frosted band; Home and the tabs float on it as primary-colored pills. */
+/* Side Navigation -- wide, reasonably tall screens only. Below 1000px wide (or 560px tall, where the tab
+   column would run off the bottom of the screen) this is plain Standard Style with the usual top bar. */
+@media (min-width: 1000px) and (min-height: 560px) {
+  /* The bar becomes a frosted band; Home and the tabs float on it as primary-colored pills. The blur lives on
+     a pseudo-element behind the bar's content, never on .navbar itself (that would trap its fixed panels). */
   .navbar {
-    background: color-mix(in srgb, var(--bg) 90%, transparent) !important;
+    background: color-mix(in srgb, var(--bg) 65%, transparent) !important;
     border-bottom: 1px solid color-mix(in srgb, var(--primary-color, var(--border)) 35%, var(--border));
+  }
+  .navbar::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    -webkit-backdrop-filter: blur(14px) saturate(1.4);
+    backdrop-filter: blur(14px) saturate(1.4);
+  }
+
+  /* The tab pills hang below the 68px bar, so the rows under it (breadcrumbs, Countabilibar) start past the
+     side column instead of running underneath the tabs. */
+  .countabilibar-clip,
+  .breadcrumbs-bar-container {
+    padding-left: 176px;
   }
 
   /* Home on the far left, Accounts on the far right. */
@@ -877,6 +895,22 @@ standardSideNav images =
   /* The breadcrumbs row (post pages) keeps the server's color, like the old bar did. */
   .breadcrumbs-bar-container {
     background-color: var(--primary-color, #4a90d9);
+  }
+}
+
+/* Not very tall: squeeze the tab pills so the whole column still fits above the bottom of the screen. */
+@media (min-width: 1000px) and (min-height: 560px) and (max-height: 819px) {
+  .navbar .nav-links .nav-links-scroll > .nav-link:not(.nav-link-home) {
+    height: 34px;
+    margin-top: 3px;
+  }
+  .navbar .nav-links.tab-style-icon-only .nav-links-scroll > .nav-link:not(.nav-link-home) {
+    width: 34px;
+  }
+  .navbar .nav-links.tab-style-icon-and-text-below .nav-links-scroll > .nav-link:not(.nav-link-home) {
+    min-height: 40px;
+    padding-top: 0.15rem;
+    padding-bottom: 0.15rem;
   }
 }
 """
