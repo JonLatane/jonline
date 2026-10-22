@@ -161,12 +161,21 @@
   margin-left: auto;
 } */
 
-.nav-links-scroll> .nav-link:first-of-type {
+.nav-links-scroll> .nav-link:first-of-type,
+.nav-tabs> .nav-link:first-of-type {
   margin-left: auto;
 }
 
-.nav-links-scroll>*:last-child {
+.nav-links-scroll>*:last-child,
+.nav-tabs>*:last-child {
   margin-right: auto;
+}
+
+/* The custom tabs' own wrapper (see `UI.headerNav`). Invisible to the default layout -- its tabs still
+   participate in `.nav-links-scroll`'s flex row as if they were direct children -- but a handle for
+   styles that lay the tabs out separately (e.g. the Standard Side Navigation template). */
+.nav-tabs {
+  display: contents;
 }
 
 /* Button-styled nav links. No background/text color of their own -- they

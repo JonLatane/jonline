@@ -742,8 +742,8 @@ body::after {
 
 
 {-| `Standard Style` (same cards, page wash, frosted column and background images) with the top navigation turned
-into a side navigation on wide screens (1000px and up -- below that it is exactly Standard Style, and the usual top
-bar). Pure CSS over the app's own markup: the `.nav-links` row becomes a grid whose first row is the Home link and
+into a side navigation on wide screens (1000px and up -- below that it is exactly Standard Style, and
+the usual top bar). Pure CSS over the app's own markup: the `.nav-links` row becomes a grid whose first row is the Home link and
 the Starred / Messaging / Create toggles, and whose first column then continues downward with the tabs, still
 honoring the admin's tab style (icon only / text right / text under / text only). The Accounts button stays at the
 top right. The bar itself turns into a frosted band, and Home and the tabs wear the server's primary color as
@@ -756,10 +756,27 @@ standardSideNav images =
         , """
 /* Side Navigation -- wide screens only. Below 1000px this is plain Standard Style with the usual top bar. */
 @media (min-width: 1000px) {
-  /* The bar becomes a frosted band; Home and the tabs float on it as primary-colored pills. */
+  /* The bar becomes a frosted band; Home and the tabs float on it as primary-colored pills. The blur lives on
+     a pseudo-element behind the bar's content, never on .navbar itself (that would trap its fixed panels). */
   .navbar {
     background: color-mix(in srgb, var(--bg) 90%, transparent) !important;
     border-bottom: 1px solid color-mix(in srgb, var(--primary-color, var(--border)) 35%, var(--border));
+  }
+  .navbar::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    -webkit-backdrop-filter: blur(14px) saturate(1.4);
+    backdrop-filter: blur(14px) saturate(1.4);
+  }
+
+  /* The tab pills hang below the 68px bar, so the rows under it (breadcrumbs, Countabilibar) start past the
+     side column instead of running underneath the tabs. */
+  .countabilibar-clip,
+  .breadcrumbs-bar-container {
+    padding-left: 176px;
   }
 
   /* Home on the far left, Accounts on the far right. */
@@ -769,9 +786,8 @@ standardSideNav images =
     padding: 0 12px;
   }
 
-  /* One grid: row 1 is Home + the three toggles; the tabs stack down column 1 below Home. The fixed 68px
-     height keeps the bar as thin as before -- the tab pills overflow it downward into the empty margin beside
-     the content column (and stick with the bar as the page scrolls). */
+  /* One grid: row 1 is Home + the three toggles (.nav-links-scroll just passes them through). The fixed 68px
+     height keeps the bar as thin as before. */
   .nav-links {
     display: grid;
     grid-template-columns: 156px repeat(3, max-content);
@@ -786,6 +802,28 @@ standardSideNav images =
   }
   .nav-links-scroll { display: contents; }
 
+  /* The tabs are their own column (.nav-tabs) hanging below Home into the empty margin beside the content
+     column, sticking with the bar as the page scrolls. When there are more tabs than fit the screen's height
+     the column scrolls vertically (no visible scrollbar; wheel/touch still work). The side padding keeps the
+     pills' shadows from being clipped; the negative left offset keeps the pills lined up with Home. */
+  .nav-tabs {
+    position: absolute;
+    top: 68px;
+    left: -6px;
+    box-sizing: border-box;
+    width: 168px;
+    padding: 0 6px 12px;
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100vh - 68px - env(safe-area-inset-top, 0px));
+    max-height: calc(100dvh - 68px - env(safe-area-inset-top, 0px));
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: none;
+  }
+  .nav-tabs::-webkit-scrollbar { display: none; }
+
   .nav-link-home {
     grid-column: 1;
     grid-row: 1;
@@ -795,9 +833,8 @@ standardSideNav images =
   }
 
   /* The tabs: a column of pills under Home. */
-  .navbar .nav-links .nav-links-scroll > .nav-link:not(.nav-link-home) {
-    grid-column: 1;
-    justify-self: stretch;
+  .navbar .nav-links .nav-tabs > .nav-link:not(.nav-link-home) {
+    flex: none;
     justify-content: flex-start;
     width: auto;
     height: 44px;
@@ -805,28 +842,28 @@ standardSideNav images =
     padding: 0 0.85rem;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.1);
   }
-  .navbar .nav-links .nav-links-scroll > .nav-link:not(.nav-link-home):not(.background-color-nav) {
+  .navbar .nav-links .nav-tabs > .nav-link:not(.nav-link-home):not(.background-color-nav) {
     background-color: var(--primary-color, #4a90d9);
   }
 
   /* Tab styles, vertically. Icon only: a round-ish square under Home's logo. */
-  .navbar .nav-links.tab-style-icon-only .nav-links-scroll > .nav-link:not(.nav-link-home) {
-    justify-self: start;
+  .navbar .nav-links.tab-style-icon-only .nav-tabs > .nav-link:not(.nav-link-home) {
+    align-self: flex-start;
     justify-content: center;
     width: 44px;
     margin-left: 10px;
     padding: 0;
   }
   /* Text under the icon: stacked, a little taller. */
-  .navbar .nav-links.tab-style-icon-and-text-below .nav-links-scroll > .nav-link:not(.nav-link-home) {
+  .navbar .nav-links.tab-style-icon-and-text-below .nav-tabs > .nav-link:not(.nav-link-home) {
     justify-content: center;
     height: auto;
     min-height: 52px;
     padding: 0.35rem 0.5rem;
   }
   /* Icon and text right, or text only: left-aligned rows. */
-  .navbar .nav-links.tab-style-icon-and-text-right .nav-links-scroll > .nav-link:not(.nav-link-home),
-  .navbar .nav-links.tab-style-text-only .nav-links-scroll > .nav-link:not(.nav-link-home) {
+  .navbar .nav-links.tab-style-icon-and-text-right .nav-tabs > .nav-link:not(.nav-link-home),
+  .navbar .nav-links.tab-style-text-only .nav-tabs > .nav-link:not(.nav-link-home) {
     justify-content: flex-start;
   }
 
@@ -877,6 +914,22 @@ standardSideNav images =
   /* The breadcrumbs row (post pages) keeps the server's color, like the old bar did. */
   .breadcrumbs-bar-container {
     background-color: var(--primary-color, #4a90d9);
+  }
+}
+
+/* Not very tall: squeeze the tab pills so more of the column fits (it scrolls when it still doesn't). */
+@media (min-width: 1000px) and (max-height: 819px) {
+  .navbar .nav-links .nav-tabs > .nav-link:not(.nav-link-home) {
+    height: 34px;
+    margin-top: 3px;
+  }
+  .navbar .nav-links.tab-style-icon-only .nav-tabs > .nav-link:not(.nav-link-home) {
+    width: 34px;
+  }
+  .navbar .nav-links.tab-style-icon-and-text-below .nav-tabs > .nav-link:not(.nav-link-home) {
+    min-height: 40px;
+    padding-top: 0.15rem;
+    padding-bottom: 0.15rem;
   }
 }
 """
