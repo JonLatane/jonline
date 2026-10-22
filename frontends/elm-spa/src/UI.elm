@@ -201,7 +201,15 @@ headerNav shared currentRoute =
                      , messagingToggle shared currentRoute
                      , newPostToggle shared
                      ]
-                        ++ customTabLinks shared currentRoute
+                        ++ (case customTabLinks shared currentRoute of
+                                [] ->
+                                    []
+
+                                tabs ->
+                                    -- `display: contents` by default (nav.css); a handle for layouts that
+                                    -- lay the tabs out on their own, like the Standard Side Navigation template.
+                                    [ div [ class "nav-tabs" ] tabs ]
+                           )
                     )
                 ]
             , div [ class "nav-right" ] [ accountsMenu shared currentRoute ]

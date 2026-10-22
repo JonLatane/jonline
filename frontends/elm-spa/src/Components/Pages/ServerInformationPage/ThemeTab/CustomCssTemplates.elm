@@ -786,75 +786,55 @@ standardSideNav images =
     padding: 0 12px;
   }
 
-  /* The nav-links box holds just Home; its fixed 68px height keeps the bar as thin as before. */
+  /* One grid: row 1 is Home + the three toggles (.nav-links-scroll just passes them through). The fixed 68px
+     height keeps the bar as thin as before. */
   .nav-links {
     display: grid;
-    grid-template-columns: 156px;
+    grid-template-columns: 156px repeat(3, max-content);
     grid-template-rows: 68px;
     align-items: center;
     justify-content: start;
+    column-gap: 0.1rem;
     width: auto;
     height: 68px;
     position: relative;
     z-index: 1;
   }
+  .nav-links-scroll { display: contents; }
 
-  /* The scroller lays out over the bar as one grid: row 1 is the three toggles (sticky, so they stay put),
-     and the tabs stack down column 1 below an empty spacer where Home sits on top of it. The tab pills hang
-     below the bar into the empty margin beside the content column, and when there are more of them than fit
-     the screen's height the column scrolls vertically (no visible scrollbar; wheel/touch still work). It is
-     click-through except for its children, so the empty parts of its box never swallow clicks meant for the page. */
-  .nav-links-scroll {
+  /* The tabs are their own column (.nav-tabs) hanging below Home into the empty margin beside the content
+     column, sticking with the bar as the page scrolls. When there are more tabs than fit the screen's height
+     the column scrolls vertically (no visible scrollbar; wheel/touch still work). The side padding keeps the
+     pills' shadows from being clipped; the negative left offset keeps the pills lined up with Home. */
+  .nav-tabs {
     position: absolute;
-    top: 0;
-    left: 0;
-    z-index: 1;
-    display: grid;
-    grid-template-columns: 156px repeat(3, max-content);
-    grid-template-rows: 68px;
-    grid-auto-rows: auto;
-    align-items: center;
-    justify-content: start;
-    column-gap: 0.1rem;
-    width: auto;
-    margin: 0;
-    padding-bottom: 12px;
-    max-height: calc(100vh - env(safe-area-inset-top, 0px));
-    max-height: calc(100dvh - env(safe-area-inset-top, 0px));
+    top: 68px;
+    left: -6px;
+    box-sizing: border-box;
+    width: 168px;
+    padding: 0 6px 12px;
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100vh - 68px - env(safe-area-inset-top, 0px));
+    max-height: calc(100dvh - 68px - env(safe-area-inset-top, 0px));
     overflow-x: hidden;
     overflow-y: auto;
     overscroll-behavior: contain;
     scrollbar-width: none;
-    pointer-events: none;
   }
-  .nav-links-scroll::-webkit-scrollbar { display: none; }
-  .nav-links-scroll > * { pointer-events: auto; }
-  .nav-links-scroll::before {
-    content: "";
-    grid-column: 1;
-    grid-row: 1;
-  }
-  .nav-links-scroll > :not(.nav-link) {
-    grid-row: 1;
-    position: sticky;
-    top: 0;
-    z-index: 2;
-  }
+  .nav-tabs::-webkit-scrollbar { display: none; }
 
   .nav-link-home {
     grid-column: 1;
     grid-row: 1;
-    position: relative;
-    z-index: 2;
     max-width: none;
     background-color: var(--primary-color, #4a90d9);
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.1);
   }
 
   /* The tabs: a column of pills under Home. */
-  .navbar .nav-links .nav-links-scroll > .nav-link:not(.nav-link-home) {
-    grid-column: 1;
-    justify-self: stretch;
+  .navbar .nav-links .nav-tabs > .nav-link:not(.nav-link-home) {
+    flex: none;
     justify-content: flex-start;
     width: auto;
     height: 44px;
@@ -862,28 +842,28 @@ standardSideNav images =
     padding: 0 0.85rem;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.1);
   }
-  .navbar .nav-links .nav-links-scroll > .nav-link:not(.nav-link-home):not(.background-color-nav) {
+  .navbar .nav-links .nav-tabs > .nav-link:not(.nav-link-home):not(.background-color-nav) {
     background-color: var(--primary-color, #4a90d9);
   }
 
   /* Tab styles, vertically. Icon only: a round-ish square under Home's logo. */
-  .navbar .nav-links.tab-style-icon-only .nav-links-scroll > .nav-link:not(.nav-link-home) {
-    justify-self: start;
+  .navbar .nav-links.tab-style-icon-only .nav-tabs > .nav-link:not(.nav-link-home) {
+    align-self: flex-start;
     justify-content: center;
     width: 44px;
     margin-left: 10px;
     padding: 0;
   }
   /* Text under the icon: stacked, a little taller. */
-  .navbar .nav-links.tab-style-icon-and-text-below .nav-links-scroll > .nav-link:not(.nav-link-home) {
+  .navbar .nav-links.tab-style-icon-and-text-below .nav-tabs > .nav-link:not(.nav-link-home) {
     justify-content: center;
     height: auto;
     min-height: 52px;
     padding: 0.35rem 0.5rem;
   }
   /* Icon and text right, or text only: left-aligned rows. */
-  .navbar .nav-links.tab-style-icon-and-text-right .nav-links-scroll > .nav-link:not(.nav-link-home),
-  .navbar .nav-links.tab-style-text-only .nav-links-scroll > .nav-link:not(.nav-link-home) {
+  .navbar .nav-links.tab-style-icon-and-text-right .nav-tabs > .nav-link:not(.nav-link-home),
+  .navbar .nav-links.tab-style-text-only .nav-tabs > .nav-link:not(.nav-link-home) {
     justify-content: flex-start;
   }
 
@@ -939,14 +919,14 @@ standardSideNav images =
 
 /* Not very tall: squeeze the tab pills so more of the column fits (it scrolls when it still doesn't). */
 @media (min-width: 1000px) and (max-height: 819px) {
-  .navbar .nav-links .nav-links-scroll > .nav-link:not(.nav-link-home) {
+  .navbar .nav-links .nav-tabs > .nav-link:not(.nav-link-home) {
     height: 34px;
     margin-top: 3px;
   }
-  .navbar .nav-links.tab-style-icon-only .nav-links-scroll > .nav-link:not(.nav-link-home) {
+  .navbar .nav-links.tab-style-icon-only .nav-tabs > .nav-link:not(.nav-link-home) {
     width: 34px;
   }
-  .navbar .nav-links.tab-style-icon-and-text-below .nav-links-scroll > .nav-link:not(.nav-link-home) {
+  .navbar .nav-links.tab-style-icon-and-text-below .nav-tabs > .nav-link:not(.nav-link-home) {
     min-height: 40px;
     padding-top: 0.15rem;
     padding-bottom: 0.15rem;
