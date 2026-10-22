@@ -740,6 +740,10 @@
   .events-calendar .fc .fc-col-header-cell-cushion {
     font-size: 0.7rem;
     padding: 4px 0;
+    /* FullCalendar renders the heading as one text run ("Fri 10/16"), so whether it wraps depends on whether
+       it happens to fit the column ("Sat 10/17" wrapped, "Fri 10/16" didn't). A space wider than any column
+       makes the one space always the line break: every heading wraps, as "Fri" over "10/16". */
+    word-spacing: 100vw;
   }
 
   /* The hour labels down the left ("6am", "all-day") shrink with them, so the axis column stays slim. */
