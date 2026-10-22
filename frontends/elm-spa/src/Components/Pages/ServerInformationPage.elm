@@ -299,7 +299,11 @@ init shared pageIsSecure targetHost navKey path query =
       -- either of this component's pages (`Pages.About`/
       -- `Pages.Server.ServerIdentifier_`) always shows the info it'd
       -- otherwise duplicate, so leaving the panel open reads as redundant.
-    , Effect.batch [ fetchEffect, setBreadcrumbsHost shared fetchedModel ]
+      -- Explicit rather than left to `setBreadcrumbsHost`'s `SetRoot` (which
+      -- closes all panels too): that's a no-op when the breadcrumbs already
+      -- point at this host, e.g. coming from the Home page to `mainFrontendHost`'s
+      -- own server page.
+    , Effect.batch [ fetchEffect, Effect.fromShared Shared.CloseAllPanels, setBreadcrumbsHost shared fetchedModel ]
     )
 
 
