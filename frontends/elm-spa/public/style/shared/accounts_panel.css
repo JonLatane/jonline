@@ -413,6 +413,15 @@
   pointer-events: none;
 }
 
+/* Descendants like `.collapsible.is-open` and `.add-account-server-pane.is-active` set their own
+   `visibility: visible`, which beats the value inherited from the closed panel -- so a form left
+   expanded (e.g. Log In picked) would keep focusable, scannable inputs. Force them hidden while
+   closed (after the fade); once the panel reopens this stops applying and their own rules resume. */
+.nav-panel.is-closed * {
+  visibility: hidden !important;
+  transition-delay: 0.15s !important;
+}
+
 /* Squared off to match the Accounts Panel toggle's own bottom-right corner
    (`.accounts-menu-toggle.is-open`, above) -- this panel's `right: 0` lines
    its right edge up exactly with the button's (see `.nav-panel`'s own `top`
