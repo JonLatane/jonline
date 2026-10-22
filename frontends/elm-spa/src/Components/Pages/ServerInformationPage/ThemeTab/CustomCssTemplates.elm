@@ -760,7 +760,7 @@ standardSideNav images =
   /* The bar becomes a frosted band; Home and the tabs float on it as primary-colored pills. The blur lives on
      a pseudo-element behind the bar's content, never on .navbar itself (that would trap its fixed panels). */
   .navbar {
-    background: color-mix(in srgb, var(--bg) 65%, transparent) !important;
+    background: color-mix(in srgb, var(--bg) 90%, transparent) !important;
     border-bottom: 1px solid color-mix(in srgb, var(--primary-color, var(--border)) 35%, var(--border));
   }
   .navbar::after {
