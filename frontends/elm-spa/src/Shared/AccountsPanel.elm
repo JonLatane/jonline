@@ -73,7 +73,6 @@ import Proto.Rellm.Visibility exposing (Visibility(..))
 import Proto.Rellm.WebUserInterface exposing (WebUserInterface)
 import Request exposing (Request)
 import Set exposing (Set)
-import Shared.AccountsPanel.AdminTab as AdminTab
 import Shared.AccountsPanel.BlueskyAccounts as BlueskyAccounts exposing (BlueskyAccount)
 import Shared.AccountsPanel.BlueskyAppViews as BlueskyAppViews exposing (BlueskyAppView)
 import Shared.AccountsPanel.DebugTab as DebugTab
@@ -320,14 +319,13 @@ type alias Model =
     , pendingServerChecks : Int
 
     -- Which of the Accounts Panel's tabs is showing (see `Tab`), plus the
-    -- Debug/Admin tabs' own state -- see `Shared.AccountsPanel.DebugTab`/
-    -- `Shared.AccountsPanel.AdminTab`. There's no `accountsAndServersTab` field
-    -- alongside these two, since that tab's content is everything else in this
-    -- `Model` -- the Accounts & Servers tab *is* the Accounts Panel, as far as
-    -- this module's concerned.
+    -- Debug tab's own state -- see `Shared.AccountsPanel.DebugTab`. There's no
+    -- `accountsAndServersTab` or `userPreferencesTab` field alongside it: the former's
+    -- content is everything else in this `Model` (the Accounts & Servers tab *is* the
+    -- Accounts Panel, as far as this module's concerned), and the latter's is
+    -- `Shared.UserPreferences`, which lives on `Shared.Model`.
     , activeTab : Tab
     , debugTab : DebugTab.Model
-    , adminTab : AdminTab.Model
 
     -- Every account (keyed by `rellmAccountId`) with an active Web Push subscription registered by
     -- this browser -- the value is the subscription's `endpoint`, so `DisableNotificationsClicked`
@@ -443,7 +441,6 @@ type alias Model =
 type Msg
     = TabSelected Tab
     | DebugTabMsg DebugTab.Msg
-    | AdminTabMsg AdminTab.Msg
     | ServerChanged String
     | UsernameChanged String
     | PasswordChanged String
@@ -632,16 +629,15 @@ type AccountOrServerFormType
 
 {-| Which of the Accounts Panel's tabs (see `UI.elm`'s `accountsPanel`/
 `accountsPanelTabBar`) is showing -- `TabAccountsAndServers` is the default (and only
-one always shown; the other two only appear once `UI.elm`'s `debugCount`/
-`hasAdminAccount` say there's something to show). Named inverted from
-`Shared.AccountsPanel.DebugTab`/`Shared.AccountsPanel.AdminTab` (`TabDebug`/
-`TabAdmin`, not `DebugTab`/`AdminTab`), mirroring
+one always shown, along with `TabUserPreferences`; `TabDebug` only appears once `UI.elm`'s
+`debugCount`/`hasAdminAccount` say there's something to show). Named inverted from
+`Shared.AccountsPanel.DebugTab` (`TabDebug`, not `DebugTab`), mirroring
 `Components.Pages.ServerInformationPage`'s own `Tab`/`TabAbout`/`TabTheme`/etc.
 -}
 type Tab
     = TabAccountsAndServers
+    | TabUserPreferences
     | TabDebug
-    | TabAdmin
 
 
 type alias AccountForm =
@@ -1647,7 +1643,6 @@ init req flags blueskyAccountsFlags mastodonAccountsAndServersFlags =
       , pendingServerChecks = initialPendingServerChecks
       , activeTab = TabAccountsAndServers
       , debugTab = DebugTab.init
-      , adminTab = AdminTab.init
       , pushSubscriptions = Dict.empty
       , notificationErrors = Dict.empty
       , pendingNotificationAccountId = Nothing
@@ -1911,9 +1906,6 @@ sendUpdate req msg model =
 
         DebugTabMsg subMsg ->
             ( { model | debugTab = DebugTab.update subMsg model.debugTab }, Cmd.none )
-
-        AdminTabMsg subMsg ->
-            ( { model | adminTab = AdminTab.update subMsg model.adminTab }, Cmd.none )
 
         ServerChanged server ->
             ( setServerField server model, Cmd.none )

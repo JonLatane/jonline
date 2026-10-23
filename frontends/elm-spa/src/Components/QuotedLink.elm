@@ -42,8 +42,9 @@ import Shared.AccountsPanel.RellmServers as RellmServers exposing (RellmServer)
 import Shared.Federation.FederatedLinks as FederatedLinks
 import Shared.Federation.RellmLinks exposing (Target)
 import Shared.QuoteLinks as QuoteLinks
-import SocialMediaEmbed
 import Shared.Time as SharedTime
+import Shared.UserPreferences as UserPreferences
+import SocialMediaEmbed
 
 
 type alias Config msg =
@@ -53,6 +54,9 @@ type alias Config msg =
     , quotes : QuoteLinks.Model
     , mediaPlayState : MediaRenderer.Model
     , onMediaPlayClicked : String -> msg
+
+    -- For the per-network "Embed ... Links" opt-outs of `socialEmbedView`.
+    , userPreferences : UserPreferences.Model
 
     -- The "Add <server>" button on a quote from a server the user hasn't added, and the "Enable" button
     -- of one they've disabled -- each gets the server's `frontendHost`.
@@ -109,18 +113,27 @@ view config postServerHost post =
             viewLinked config linked
 
         Nothing ->
-            socialEmbedView postServerHost post
+            socialEmbedView config.userPreferences postServerHost post
 
 
 {-| A `POST` whose `link` isn't a post on Rellm/Bluesky/Mastodon but one on Facebook, Instagram, LinkedIn, Pinterest,
-TikTok, X or YouTube gets that post embedded (`SocialMediaEmbed`) -- always, wherever a post card or page shows
-the quote slot. Same gate as `targetOf`: only a top-level `POST` on a Rellm server.
+TikTok, X or YouTube gets that post embedded (`SocialMediaEmbed`) -- wherever a post card or page shows
+the quote slot, unless the viewer turned that network's embeds off (`UserPreferences.embedDisabled`). Same gate as
+`targetOf`: only a top-level `POST` on a Rellm server.
 -}
-socialEmbedView : String -> Post -> Html msg
-socialEmbedView postServerHost post =
+socialEmbedView : UserPreferences.Model -> String -> Post -> Html msg
+socialEmbedView userPreferences postServerHost post =
     if post.context == POST && not (Posts.isFederatedHost postServerHost) && post.quotedPost == Nothing then
         post.link
             |> Maybe.andThen SocialMediaEmbed.fromLink
+            |> Maybe.andThen
+                (\embed ->
+                    if UserPreferences.embedDisabled (SocialMediaEmbed.network embed) userPreferences then
+                        Nothing
+
+                    else
+                        Just embed
+                )
             |> Maybe.map SocialMediaEmbed.view
             |> Maybe.withDefault (text "")
 

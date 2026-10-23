@@ -1,8 +1,8 @@
-module Shared.UserPreferences exposing (Model, Msg(..), init, update)
+module Shared.UserPreferences exposing (Model, Msg(..), embedDisabled, init, update)
 
 {-| Small, app-wide user preferences that aren't tied to any one page's own
 URL/local state -- `prefersCalendar`, `postsBefore`, `eventsAfter`,
-`pinnedPostsCollapsedToHidePostIds` (see each field's own doc), all one JSON
+`pinnedPostsCollapsedToHidePostIds`, `disable<Network>Embeds` (see each field's own doc), all one JSON
 object persisted to its own localStorage key (`Ports.persistUserPreferences`).
 
 Mirrors `Shared.StarredPanel`'s persist-to-localStorage half exactly, minus
@@ -58,6 +58,18 @@ type alias Model =
     -- automatically, without `Components.PinnedPosts` needing any collapse state of its own to
     -- reconcile in `syncIds`.
     , pinnedPostsCollapsedToHidePostIds : List String
+
+    -- Per-network opt-outs for `SocialMediaEmbed` (`Components.QuotedLink.socialEmbedView`): a link to a
+    -- post on that network is left as a plain link instead of embedded. Set from the Accounts Panel's
+    -- "Preferences" tab (see `UI.userPreferencesTab`); off (embeds shown) by default. Looked up by network
+    -- name via `embedDisabled`.
+    , disableFacebookEmbeds : Bool
+    , disableInstagramEmbeds : Bool
+    , disableLinkedInEmbeds : Bool
+    , disablePinterestEmbeds : Bool
+    , disableTikTokEmbeds : Bool
+    , disableXEmbeds : Bool
+    , disableYouTubeEmbeds : Bool
     }
 
 
@@ -66,6 +78,13 @@ type Msg
     | SetPostsBefore (Maybe Time.Posix)
     | SetEventsAfter (Maybe Time.Posix)
     | SetPinnedPostsCollapsedToHidePostIds (List String)
+    | SetDisableFacebookEmbeds Bool
+    | SetDisableInstagramEmbeds Bool
+    | SetDisableLinkedInEmbeds Bool
+    | SetDisablePinterestEmbeds Bool
+    | SetDisableTikTokEmbeds Bool
+    | SetDisableXEmbeds Bool
+    | SetDisableYouTubeEmbeds Bool
 
 
 {-| `flags` is the raw, persisted JSON object (see `Ports.persistUserPreferences`)
@@ -82,7 +101,20 @@ init flags =
     , pinnedPostsCollapsedToHidePostIds =
         Decode.decodeValue (Decode.field "pinnedPostsCollapsedToHidePostIds" (Decode.list Decode.string)) flags
             |> Result.withDefault []
+    , disableFacebookEmbeds = decodeBoolField "disableFacebookEmbeds" flags
+    , disableInstagramEmbeds = decodeBoolField "disableInstagramEmbeds" flags
+    , disableLinkedInEmbeds = decodeBoolField "disableLinkedInEmbeds" flags
+    , disablePinterestEmbeds = decodeBoolField "disablePinterestEmbeds" flags
+    , disableTikTokEmbeds = decodeBoolField "disableTikTokEmbeds" flags
+    , disableXEmbeds = decodeBoolField "disableXEmbeds" flags
+    , disableYouTubeEmbeds = decodeBoolField "disableYouTubeEmbeds" flags
     }
+
+
+decodeBoolField : String -> Decode.Value -> Bool
+decodeBoolField field flags =
+    Decode.decodeValue (Decode.field field Decode.bool) flags
+        |> Result.withDefault False
 
 
 decodePosixField : String -> Decode.Value -> Maybe Time.Posix
@@ -127,6 +159,91 @@ update msg model =
             in
             ( newModel, persistCmd newModel )
 
+        SetDisableFacebookEmbeds disableFacebookEmbeds ->
+            let
+                newModel : Model
+                newModel =
+                    { model | disableFacebookEmbeds = disableFacebookEmbeds }
+            in
+            ( newModel, persistCmd newModel )
+
+        SetDisableInstagramEmbeds disableInstagramEmbeds ->
+            let
+                newModel : Model
+                newModel =
+                    { model | disableInstagramEmbeds = disableInstagramEmbeds }
+            in
+            ( newModel, persistCmd newModel )
+
+        SetDisableLinkedInEmbeds disableLinkedInEmbeds ->
+            let
+                newModel : Model
+                newModel =
+                    { model | disableLinkedInEmbeds = disableLinkedInEmbeds }
+            in
+            ( newModel, persistCmd newModel )
+
+        SetDisablePinterestEmbeds disablePinterestEmbeds ->
+            let
+                newModel : Model
+                newModel =
+                    { model | disablePinterestEmbeds = disablePinterestEmbeds }
+            in
+            ( newModel, persistCmd newModel )
+
+        SetDisableTikTokEmbeds disableTikTokEmbeds ->
+            let
+                newModel : Model
+                newModel =
+                    { model | disableTikTokEmbeds = disableTikTokEmbeds }
+            in
+            ( newModel, persistCmd newModel )
+
+        SetDisableXEmbeds disableXEmbeds ->
+            let
+                newModel : Model
+                newModel =
+                    { model | disableXEmbeds = disableXEmbeds }
+            in
+            ( newModel, persistCmd newModel )
+
+        SetDisableYouTubeEmbeds disableYouTubeEmbeds ->
+            let
+                newModel : Model
+                newModel =
+                    { model | disableYouTubeEmbeds = disableYouTubeEmbeds }
+            in
+            ( newModel, persistCmd newModel )
+
+
+{-| Whether the user turned off embeds for `network` (a `SocialMediaEmbed.network` name). -}
+embedDisabled : String -> Model -> Bool
+embedDisabled network model =
+    case network of
+        "facebook" ->
+            model.disableFacebookEmbeds
+
+        "instagram" ->
+            model.disableInstagramEmbeds
+
+        "linkedin" ->
+            model.disableLinkedInEmbeds
+
+        "pinterest" ->
+            model.disablePinterestEmbeds
+
+        "tiktok" ->
+            model.disableTikTokEmbeds
+
+        "x" ->
+            model.disableXEmbeds
+
+        "youtube" ->
+            model.disableYouTubeEmbeds
+
+        _ ->
+            False
+
 
 persistCmd : Model -> Cmd Msg
 persistCmd model =
@@ -140,6 +257,13 @@ encode model =
         , ( "postsBefore", encodePosixField model.postsBefore )
         , ( "eventsAfter", encodePosixField model.eventsAfter )
         , ( "pinnedPostsCollapsedToHidePostIds", Encode.list Encode.string model.pinnedPostsCollapsedToHidePostIds )
+        , ( "disableFacebookEmbeds", Encode.bool model.disableFacebookEmbeds )
+        , ( "disableInstagramEmbeds", Encode.bool model.disableInstagramEmbeds )
+        , ( "disableLinkedInEmbeds", Encode.bool model.disableLinkedInEmbeds )
+        , ( "disablePinterestEmbeds", Encode.bool model.disablePinterestEmbeds )
+        , ( "disableTikTokEmbeds", Encode.bool model.disableTikTokEmbeds )
+        , ( "disableXEmbeds", Encode.bool model.disableXEmbeds )
+        , ( "disableYouTubeEmbeds", Encode.bool model.disableYouTubeEmbeds )
         ]
 
 

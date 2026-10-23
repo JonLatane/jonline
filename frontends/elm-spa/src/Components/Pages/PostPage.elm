@@ -1061,6 +1061,7 @@ quoteConfig shared =
     , quotes = shared.quoteLinks
     , mediaPlayState = shared.mediaRenderer
     , onMediaPlayClicked = \mediaId -> SharedMsg (Shared.MediaRendererMsg (MediaRenderer.PlayClicked mediaId))
+    , userPreferences = shared.userPreferences
     , onAddServerClicked = \host -> SharedMsg (Shared.AccountsPanelMsg (AccountsPanel.RecommendedServerClicked host))
     , onEnableServerClicked = \host -> SharedMsg (Shared.AccountsPanelMsg (AccountsPanel.ToggleServerEnabled host))
     , noOp = SharedMsg Shared.NoOp

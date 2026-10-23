@@ -12,6 +12,7 @@ import Dict
 import Expect
 import Html exposing (div)
 import Html.Attributes
+import Json.Encode as Encode
 import Proto.Rellm exposing (MediaReference, Post, defaultAuthor, defaultEvent, defaultMediaReference, defaultMediaSize, defaultOccasion, wrapPost)
 import Proto.Rellm.MediaConversion exposing (MediaConversion(..))
 import Proto.Rellm.PostContext exposing (PostContext(..))
@@ -21,6 +22,7 @@ import Shared.Federation.RellmLinks as RellmLinks
 import Shared.AccountsPanel.RellmServers exposing (RellmServer)
 import Shared.QuoteLinks as QuoteLinks
 import Shared.Time as SharedTime
+import Shared.UserPreferences as UserPreferences
 import Support.PostFactory as PostFactory
 import Support.RellmServerFactory as RellmServerFactory
 import Test exposing (Test, describe, test)
@@ -108,6 +110,7 @@ config quotes =
     , quotes = quotes
     , mediaPlayState = MediaRenderer.init
     , onMediaPlayClicked = \_ -> PlayMedia
+    , userPreferences = UserPreferences.init Encode.null
     , onAddServerClicked = AddServer
     , onEnableServerClicked = EnableServer
     , noOp = NoOp
