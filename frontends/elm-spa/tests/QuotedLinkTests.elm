@@ -311,7 +311,7 @@ suite =
                 \_ ->
                     rendered (federated blueskyTarget) "rellm.org" (quoting "https://bsky.app/profile/did:plc:abc/post/3k")
                         |> Query.find [ Selector.class "post-card-link-overlay" ]
-                        |> Query.has [ Selector.attribute (Html.Attributes.href "/post/did:plc:abc~3k@bluesky:") ]
+                        |> Query.has [ Selector.attribute (Html.Attributes.href "/post/did:plc:abc~3k@bluesky") ]
             , test "with its content" <|
                 \_ ->
                     rendered (federated blueskyTarget) "rellm.org" (quoting "https://bsky.app/profile/did:plc:abc/post/3k")

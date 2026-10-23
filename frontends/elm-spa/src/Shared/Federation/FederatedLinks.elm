@@ -10,7 +10,7 @@ servers. Pure: it only decides what a link _claims_ to point at.
 
 Accepted shapes, on any host (or relative, `/post/…`):
 
-  - Rellm's own routes for a federated post (`Components.Posts.postHref`): `/post/{did}~{rkey}@bluesky:` and
+  - Rellm's own routes for a federated post (`Components.Posts.postHref`): `/post/{did}~{rkey}@bluesky` (or the older `@bluesky:`) and
     `/post/{statusId}@mastodon:{instanceHost}`, or the `/~…` short form of either. Which Rellm server serves
     the link doesn't matter -- the id says everything -- so this works for a link to any of them.
   - Bluesky itself: `https://bsky.app/profile/{did-or-handle}/post/{rkey}`, and `at://{did-or-handle}/app.bsky.feed.post/{rkey}`.
@@ -143,11 +143,11 @@ parseUrl host path =
             Nothing
 
 
-{-| `/post/{id}@bluesky:` / `{id}@mastodon:{host}`, the part of `Components.Posts.postHref` after `/post/`.
+{-| `/post/{id}@bluesky` (or `@bluesky:`) / `{id}@mastodon:{host}`, the part of `Components.Posts.postHref` after `/post/`.
 -}
 parseRouteId : String -> Maybe Target
 parseRouteId idAndHost =
-    if String.contains "@bluesky:" idAndHost || String.contains "@mastodon:" idAndHost then
+    if String.contains "@bluesky:" idAndHost || String.endsWith "@bluesky" idAndHost || String.contains "@mastodon:" idAndHost then
         let
             ( id, host ) =
                 Posts.parsePostRouteId "" idAndHost

@@ -29,27 +29,13 @@ fn bluesky() -> FederatedPost {
 }
 
 #[test]
-fn parses_a_bluesky_id_in_every_spelling() {
-    assert_eq!(
-        parse_federated_id(&format!("{}~{}@bluesky:", DID, RKEY)),
-        Some(bluesky())
-    );
-    // The longer, percent-encoded `at://` form older links used.
-    assert_eq!(
-        parse_federated_id(&format!(
-            "at%3A%2F%2F{}%2Fapp.bsky.feed.post%2F{}@bluesky:",
-            DID.replace(':', "%3A"),
-            RKEY
-        )),
-        Some(bluesky())
-    );
-    assert_eq!(
-        parse_federated_id(&format!(
-            "at://{}/app.bsky.feed.post/{}@bluesky:",
-            DID, RKEY
-        )),
-        Some(bluesky())
-    );
+fn parses_a_bluesky_id_with_either_host_spelling() {
+    for host in ["bluesky:", "bluesky"] {
+        assert_eq!(
+            parse_federated_id(&format!("{}~{}@{}", DID, RKEY, host)),
+            Some(bluesky())
+        );
+    }
 }
 
 #[test]
@@ -74,7 +60,7 @@ fn rejects_ids_that_are_not_well_formed_federated_posts() {
         &format!("{}~@bluesky:", DID),                                 // no rkey
         &format!("{}~a<b>@bluesky:", DID),                             // markup in the rkey
         &format!("{}~a/b@bluesky:", DID),                              // path in the rkey
-        &format!("at://{}/app.bsky.feed.like/{}@bluesky:", DID, RKEY), // not a post
+        &format!("at://{}/app.bsky.feed.post/{}@bluesky:", DID, RKEY), // the long `at://` form is gone
         "abc@mastodon:mastodon.social",                                // status ids are numeric
         "123@mastodon:localhost",                                      // not a public domain name
         "123@mastodon:evil.example/x",                                 // path smuggled in the host

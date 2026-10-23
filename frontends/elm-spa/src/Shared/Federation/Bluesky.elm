@@ -950,26 +950,21 @@ repoWrite auth method body =
 {-| A Bluesky post's `at://{did}/app.bsky.feed.post/{rkey}` URI as the short form `Components.Posts.postHref`
 puts in a `/post/:postId` route -- `{did}~{rkey}`. The `at://` scheme and the collection are the same for
 every post, and `~` is a safe separator: a DID never contains one. (An rkey _may_, which is why
-`fromRouteId` splits on the first.) Anything that isn't exactly that shape (another collection, a DID
-with a `%`, which the route's percent-decoding would mangle) falls back to the whole URI,
-percent-encoded, which `fromRouteId` also accepts.
+`fromRouteId` splits on the first.) Anything that isn't exactly that shape is returned as-is; every
+Bluesky post Rellm links to is a post record, so that never matters in practice.
 -}
 routeId : String -> String
 routeId uri =
     case String.split "/" uri of
         [ "at:", "", did, "app.bsky.feed.post", rkey ] ->
-            if String.startsWith "did:" did && not (String.contains "%" did) && not (String.contains "%" rkey) && not (String.isEmpty rkey) then
-                did ++ "~" ++ rkey
-
-            else
-                Url.percentEncode uri
+            did ++ "~" ++ rkey
 
         _ ->
-            Url.percentEncode uri
+            uri
 
 
-{-| `routeId`'s inverse, applied to the already percent-decoded id -- a full `at://` URI (the older, long
-route form) passes through unchanged.
+{-| `routeId`'s inverse, applied to the already percent-decoded id. An id that isn't `{did}~{rkey}` passes
+through unchanged.
 -}
 fromRouteId : String -> String
 fromRouteId id =

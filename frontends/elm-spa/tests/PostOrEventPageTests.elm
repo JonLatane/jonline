@@ -28,7 +28,7 @@ suite =
         [ describe "Bluesky"
             [ recognized "~did:plc:wv5mhfadfpt6wmvoxedgqzyw~3mte7ozu3qc2s@bluesky:" (Just (BlueskyPostId { uri = blueskyUri }))
             , recognized ":did:plc:wv5mhfadfpt6wmvoxedgqzyw~3mte7ozu3qc2s@bluesky:" (Just (BlueskyPostId { uri = blueskyUri }))
-            , recognized "~at%3A%2F%2Fdid%3Aplc%3Awv5mhfadfpt6wmvoxedgqzyw%2Fapp.bsky.feed.post%2F3mte7ozu3qc2s@bluesky:" (Just (BlueskyPostId { uri = blueskyUri }))
+            , recognized "~did:plc:wv5mhfadfpt6wmvoxedgqzyw~3mte7ozu3qc2s@bluesky" (Just (BlueskyPostId { uri = blueskyUri }))
             ]
         , describe "Mastodon"
             [ recognized "~109876543210@mastodon:mastodon.social" (Just (MastodonPostId { instanceHost = "mastodon.social", statusId = "109876543210" }))

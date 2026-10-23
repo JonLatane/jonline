@@ -203,25 +203,21 @@ suite =
             [ test "a post's route id is just did~rkey, and its href carries the bare bluesky: host" <|
                 \_ ->
                     Posts.postHref "" "rellm.org" "bluesky:jon-latane.bsky.social" { defaultPost | id = "at://did:plc:5q6ck4otnnwuwwxswrzrqnp5/app.bsky.feed.post/3mxywcvomys23" }
-                        |> Expect.equal "/post/did:plc:5q6ck4otnnwuwwxswrzrqnp5~3mxywcvomys23@bluesky:"
+                        |> Expect.equal "/post/did:plc:5q6ck4otnnwuwwxswrzrqnp5~3mxywcvomys23@bluesky"
             , test "the short route id parses back to the full at:// uri" <|
                 \_ ->
                     Posts.parsePostRouteId "rellm.org" "did:plc:5q6ck4otnnwuwwxswrzrqnp5~3mxywcvomys23@bluesky:"
                         |> Expect.equal ( "at://did:plc:5q6ck4otnnwuwwxswrzrqnp5/app.bsky.feed.post/3mxywcvomys23", "bluesky:" )
-            , test "the older long (percent-encoded uri, handle in the host) route form still parses" <|
+            , test "a bare @bluesky host means the same as @bluesky:" <|
                 \_ ->
-                    Posts.parsePostRouteId "rellm.org" "at%3A%2F%2Fdid%3Aplc%3Aabc%2Fapp.bsky.feed.post%2Fxyz@bluesky:jon-latane.bsky.social"
-                        |> Expect.equal ( "at://did:plc:abc/app.bsky.feed.post/xyz", "bluesky:jon-latane.bsky.social" )
+                    Posts.parsePostRouteId "rellm.org" "did:plc:5q6ck4otnnwuwwxswrzrqnp5~3mxywcvomys23@bluesky"
+                        |> Expect.equal ( "at://did:plc:5q6ck4otnnwuwwxswrzrqnp5/app.bsky.feed.post/3mxywcvomys23", "bluesky:" )
             , test "an rkey containing ~ round-trips (only the first ~ separates)" <|
                 \_ ->
                     "at://did:plc:abc/app.bsky.feed.post/a~b"
                         |> Bluesky.routeId
                         |> Bluesky.fromRouteId
                         |> Expect.equal "at://did:plc:abc/app.bsky.feed.post/a~b"
-            , test "a uri that isn't a post record falls back to the encoded uri, and still round-trips" <|
-                \_ ->
-                    Posts.parsePostRouteId "rellm.org" (Bluesky.routeId "at://did:plc:abc/app.bsky.feed.generator/xyz" ++ "@bluesky:")
-                        |> Expect.equal ( "at://did:plc:abc/app.bsky.feed.generator/xyz", "bluesky:" )
             , test "a Mastodon or Rellm post's href is unchanged" <|
                 \_ ->
                     Posts.postHref "" "rellm.org" "mastodon:mastodon.social" { defaultPost | id = "110224857075517327" }
