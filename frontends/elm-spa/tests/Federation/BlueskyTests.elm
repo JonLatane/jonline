@@ -203,7 +203,7 @@ suite =
             [ test "a post's route id is just did~rkey, and its href carries the bare bluesky: host" <|
                 \_ ->
                     Posts.postHref "" "rellm.org" "bluesky:jon-latane.bsky.social" { defaultPost | id = "at://did:plc:5q6ck4otnnwuwwxswrzrqnp5/app.bsky.feed.post/3mxywcvomys23" }
-                        |> Expect.equal "/post/did:plc:5q6ck4otnnwuwwxswrzrqnp5~3mxywcvomys23@bluesky:"
+                        |> Expect.equal "/post/did:plc:5q6ck4otnnwuwwxswrzrqnp5~3mxywcvomys23@bluesky"
             , test "the short route id parses back to the full at:// uri" <|
                 \_ ->
                     Posts.parsePostRouteId "rellm.org" "did:plc:5q6ck4otnnwuwwxswrzrqnp5~3mxywcvomys23@bluesky:"

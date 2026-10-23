@@ -509,6 +509,11 @@ withHostSuffix viewingServerHost userServerHost id =
     if userServerHost == viewingServerHost then
         id
 
+    else if String.startsWith "bluesky:" userServerHost then
+        -- Which account's handle a Bluesky user was reached through doesn't matter to anything that
+        -- reads the route back (`parseUserRouteId` normalizes this to the `"bluesky:"` tag).
+        id ++ "@bluesky"
+
     else
         id ++ "@" ++ userServerHost
 

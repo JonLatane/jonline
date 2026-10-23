@@ -1415,7 +1415,7 @@ postHref basePath viewingServerHost postServerHost post =
     let
         -- A Bluesky post's id is an `at://did:.../app.bsky.feed.post/rkey` URI -- its slashes would
         -- otherwise split the one `:postId` route segment into several (a "Page not found"), so it's
-        -- shortened to `did~rkey` (`Bluesky.routeId`), and its host to the bare `bluesky:` tag -- which connected account's handle the post was reached through doesn't
+        -- shortened to `did~rkey` (`Bluesky.routeId`), and its host to the bare `bluesky` -- which connected account's handle the post was reached through doesn't
         -- matter to anything that reads this back (`parseFederatedPostId`).
         postId : String
         postId =
@@ -1423,7 +1423,7 @@ postHref basePath viewingServerHost postServerHost post =
                 post.id
 
             else if String.startsWith "bluesky:" postServerHost then
-                Bluesky.routeId post.id ++ "@bluesky:"
+                Bluesky.routeId post.id ++ "@bluesky"
 
             else
                 Url.percentEncode post.id ++ "@" ++ postServerHost

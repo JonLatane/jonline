@@ -180,7 +180,7 @@ viewFederated config target =
 
 
 {-| The synthetic `postServerHost` a federated post is rendered under (`Components.Posts.isFederatedHost`), which
-`Posts.postHref` turns into its `/post/…@bluesky:` / `@mastodon:{host}` page.
+`Posts.postHref` turns into its `/post/…@bluesky` / `@mastodon:{host}` page.
 -}
 federatedHost : FederatedLinks.Target -> String
 federatedHost target =
