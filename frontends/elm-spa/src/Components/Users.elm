@@ -70,6 +70,7 @@ import Shared.AccountsPanel.RellmAccounts exposing (RellmAccount)
 import Shared.AccountsPanel.RellmServers as RellmServers exposing (RellmServer, withAccessToken)
 import Task exposing (Task)
 import UI.Classes exposing (classes, hostnameToCSSClass)
+import Url
 
 
 {-| Fetches the user with `userId` from `maybeAccountServer`'s server,
@@ -524,10 +525,18 @@ federated server) -- mirrors `Components.Posts.parsePostRouteId`.
 -}
 parseUserRouteId : String -> String -> ( String, String )
 parseUserRouteId mainFrontendHost rawId =
+    let
+        -- The router hands a route segment through still percent-encoded (a username may be
+        -- non-ASCII, e.g. `jos%C3%A9`), so decode it before it's used for lookups. A no-op for an
+        -- id with nothing encoded in it.
+        decode : String -> String
+        decode id =
+            Url.percentDecode id |> Maybe.withDefault id
+    in
     case String.split "@" rawId of
         [ id, host ] ->
             -- A bare `@bluesky` means the same as `@bluesky:` (see `Components.Posts.parsePostRouteId`).
-            ( id
+            ( decode id
             , if host == "bluesky" then
                 "bluesky:"
 
@@ -536,7 +545,7 @@ parseUserRouteId mainFrontendHost rawId =
             )
 
         _ ->
-            ( rawId, mainFrontendHost )
+            ( decode rawId, mainFrontendHost )
 
 
 {-| Recognizes a Mastodon/Bluesky profile from `parseUserRouteId`'s own `( username, host )` pair --
