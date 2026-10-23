@@ -29,7 +29,7 @@
   //   @user@server.tld     Rellm server, Mastodon-style syntax -> /user@server.tld
   // (Mastodon's own content never reaches here as text: its mentions are `a.mention` links, which
   // `linkifyMentions` re-points at `/user@mastodon:instance.tld`.)
-  //   @handle.tld          Bluesky handle  -> /handle.tld@bluesky:bsky.social
+  //   @handle.tld          Bluesky handle  -> /handle.tld@bluesky
   //   @user                Rellm, this one -> /user
   // Rellm usernames are `[\w.-]+` with Rust's Unicode `\w` (`validate_username`), hence \p{...} here.
   var W = "\\p{L}\\p{N}\\p{M}_";
@@ -49,7 +49,7 @@
       return profilePath(m[2], m[1]);
     }
     if (/^[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+$/.test(mention)) {
-      return profilePath(mention, "bluesky:bsky.social");
+      return profilePath(mention, "bluesky");
     }
     if (LOCAL_USERNAME_RE.test(mention)) {
       return profilePath(mention);

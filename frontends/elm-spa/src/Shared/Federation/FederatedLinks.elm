@@ -147,7 +147,7 @@ parseUrl host path =
 -}
 parseRouteId : String -> Maybe Target
 parseRouteId idAndHost =
-    if String.contains "@bluesky:" idAndHost || String.contains "@mastodon:" idAndHost then
+    if String.contains "@bluesky:" idAndHost || String.endsWith "@bluesky" idAndHost || String.contains "@mastodon:" idAndHost then
         let
             ( id, host ) =
                 Posts.parsePostRouteId "" idAndHost

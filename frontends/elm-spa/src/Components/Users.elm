@@ -521,7 +521,14 @@ parseUserRouteId : String -> String -> ( String, String )
 parseUserRouteId mainFrontendHost rawId =
     case String.split "@" rawId of
         [ id, host ] ->
-            ( id, host )
+            -- A bare `@bluesky` means the same as `@bluesky:` (see `Components.Posts.parsePostRouteId`).
+            ( id
+            , if host == "bluesky" then
+                "bluesky:"
+
+              else
+                host
+            )
 
         _ ->
             ( rawId, mainFrontendHost )

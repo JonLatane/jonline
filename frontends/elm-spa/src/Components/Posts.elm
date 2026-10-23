@@ -1414,12 +1414,8 @@ postHref : String -> String -> String -> Post -> String
 postHref basePath viewingServerHost postServerHost post =
     let
         -- A Bluesky post's id is an `at://did:.../app.bsky.feed.post/rkey` URI -- its slashes would
-        -- otherwise split the one `:postId` route segment into several (a "Page not found"), so
-        -- federated ids are percent-encoded (`Url.Parser.string` decodes them back on the way in).
-        -- A real Rellm id is a plain UUID, unaffected either way.
-        --
-        -- A Bluesky post's id is shortened to `did~rkey` (`Bluesky.routeId`), and its host to the bare
-        -- `bluesky:` tag -- which connected account's handle the post was reached through doesn't
+        -- otherwise split the one `:postId` route segment into several (a "Page not found"), so it's
+        -- shortened to `did~rkey` (`Bluesky.routeId`), and its host to the bare `bluesky:` tag -- which connected account's handle the post was reached through doesn't
         -- matter to anything that reads this back (`parseFederatedPostId`).
         postId : String
         postId =
@@ -1823,22 +1819,23 @@ parsePostRouteId : String -> String -> ( String, String )
 parsePostRouteId mainFrontendHost rawPostId =
     case String.split "@" rawPostId of
         [ id, host ] ->
-            -- `postHref` percent-encodes a federated id (a Bluesky `at://...` URI); decode it back
-            -- here rather than trusting the router to (`Url.Parser.string` hands the segment
-            -- through still encoded), or the fetch would encode it a second time. A no-op for an
-            -- id with nothing encoded in it.
+            -- `postHref` percent-encodes a Mastodon id; decode it back here rather than trusting the
+            -- router to (`Url.Parser.string` hands the segment through still encoded), or the fetch
+            -- would encode it a second time. A no-op for an id with nothing encoded in it.
             let
                 decoded : String
                 decoded =
                     Url.percentDecode id |> Maybe.withDefault id
             in
-            ( if String.startsWith "bluesky:" host then
-                Bluesky.fromRouteId decoded
+            -- A Bluesky route id may end in a bare `@bluesky` as well as `@bluesky:` (the colon is what
+            -- a Rellm server host can't contain, but nothing is ever hosted at a host literally named
+            -- `bluesky`, and the colon is awkward to type and to end a URL in). Everything downstream
+            -- only knows the `"bluesky:"` tag, so normalize here.
+            if host == "bluesky" || String.startsWith "bluesky:" host then
+                ( Bluesky.fromRouteId decoded, "bluesky:" ++ String.dropLeft 8 host )
 
-              else
-                decoded
-            , host
-            )
+            else
+                ( decoded, host )
 
         _ ->
             ( rawPostId, mainFrontendHost )

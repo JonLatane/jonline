@@ -204,7 +204,7 @@ resolveHost host =
         lowered =
             String.toLower host
     in
-    if String.isEmpty lowered || String.startsWith "mastodon:" lowered || String.startsWith "bluesky:" lowered then
+    if String.isEmpty lowered || String.startsWith "mastodon:" lowered || String.startsWith "bluesky:" lowered || lowered == "bluesky" then
         Nothing
 
     else if String.all (\c -> Char.isAlphaNum c || c == '.' || c == '-' || c == ':') lowered then

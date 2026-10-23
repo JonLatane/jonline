@@ -33,8 +33,8 @@ impl FederatedPost {
     }
 }
 
-/// Recognizes `{id}@bluesky:` / `{id}@mastodon:{host}` -- the id half of a federated post's route segment (no leading
-/// `~`) -- percent-encoded or not. A Bluesky id is `{did}~{rkey}` or a whole (encoded) `at://` URI; a Mastodon id is the
+/// Recognizes `{id}@bluesky:` (or `{id}@bluesky`) / `{id}@mastodon:{host}` -- the id half of a federated post's route segment (no leading
+/// `~`) -- percent-encoded or not. A Bluesky id is `{did}~{rkey}`; a Mastodon id is the
 /// status id. Everything is validated, since it ends up in a lookup URL (Bluesky) or on a page (both).
 pub fn parse_federated_id(raw: &str) -> Option<FederatedPost> {
     let decoded = RawStr::new(raw).percent_decode_lossy();
@@ -50,19 +50,11 @@ pub fn parse_federated_id(raw: &str) -> Option<FederatedPost> {
             None
         };
     }
-    if host != "bluesky:" {
+    // A bare `@bluesky` means the same as `@bluesky:` (nothing is hosted at a host literally named `bluesky`).
+    if host != "bluesky:" && host != "bluesky" {
         return None;
     }
-    let (did, rkey) = match id.strip_prefix("at://") {
-        Some(uri) => {
-            let parts: Vec<&str> = uri.split('/').collect();
-            match parts.as_slice() {
-                [did, "app.bsky.feed.post", rkey] => (*did, *rkey),
-                _ => return None,
-            }
-        }
-        None => id.split_once('~')?,
-    };
+    let (did, rkey) = id.split_once('~')?;
     if is_did(did) && is_record_key(rkey) {
         Some(FederatedPost::Bluesky {
             did: did.to_string(),
