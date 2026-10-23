@@ -221,6 +221,26 @@ rendered quotes postServerHost post =
     Query.fromHtml (div [] [ QuotedLink.view (config quotes) postServerHost post ])
 
 
+{-| Like `rendered`, with the viewer's saved preferences decoded from `flags` -- just as `Shared.init` does.
+-}
+renderedWithPreferences : Encode.Value -> Post -> Query.Single Msg
+renderedWithPreferences flags post =
+    let
+        baseConfig : QuotedLink.Config Msg
+        baseConfig =
+            config QuoteLinks.init
+    in
+    Query.fromHtml
+        (div []
+            [ QuotedLink.view { baseConfig | userPreferences = UserPreferences.init flags } "rellm.org" post ]
+        )
+
+
+disabling : String -> Encode.Value
+disabling field =
+    Encode.object [ ( field, Encode.bool True ) ]
+
+
 {-| `Components.Markdown.view` renders content through a `<rellm-markdown content="...">` element.
 -}
 quotedContent : Selector.Selector
@@ -246,6 +266,17 @@ card =
 addButton : Selector.Selector
 addButton =
     Selector.all [ Selector.tag "button", Selector.class "server-action-button" ]
+
+
+{-| A link to a post on a network other than `link`'s own (a YouTube one, or an X one for a YouTube `link`).
+-}
+otherNetworkLink : String -> String
+otherNetworkLink link =
+    if String.contains "youtube" link then
+        "https://x.com/jack/status/20"
+
+    else
+        "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
 
 
 suite : Test
@@ -393,6 +424,43 @@ suite =
                     ]
                         |> List.map (lacks [ Selector.class "rsme-embed" ])
                         |> Expect.equalLists (List.repeat 2 Expect.pass)
+            , test "each network's disable preference removes only that network's embed" <|
+                \_ ->
+                    [ ( "disableFacebookEmbeds", "https://www.facebook.com/zuck/posts/1", "rsme-facebook-embed" )
+                    , ( "disableInstagramEmbeds", "https://www.instagram.com/p/CsY_NinvWDW/", "rsme-instagram-embed" )
+                    , ( "disableLinkedInEmbeds", "https://www.linkedin.com/feed/update/urn:li:activity:1", "rsme-linkedin-embed" )
+                    , ( "disablePinterestEmbeds", "https://www.pinterest.com/pin/1/", "rsme-pinterest-embed" )
+                    , ( "disableTikTokEmbeds", "https://www.tiktok.com/@a/video/1", "rsme-tiktok-embed" )
+                    , ( "disableXEmbeds", "https://x.com/jack/status/20", "rsme-x-embed" )
+                    , ( "disableYouTubeEmbeds", "https://www.youtube.com/watch?v=dQw4w9WgXcQ", "rsme-youtube-embed" )
+                    ]
+                        |> List.map
+                            (\( field, link, networkClass ) ->
+                                \_ ->
+                                    Expect.all
+                                        [ \_ -> renderedWithPreferences (disabling field) (quoting link) |> lacks [ Selector.class "rsme-embed" ]
+                                        , \_ -> renderedWithPreferences Encode.null (quoting link) |> Query.has [ Selector.class networkClass ]
+                                        , \_ ->
+                                            -- Another network still embeds with this one off.
+                                            renderedWithPreferences (disabling field) (quoting (otherNetworkLink link))
+                                                |> Query.has [ Selector.class "rsme-embed" ]
+                                        ]
+                                        ()
+                            )
+                        |> (\checks -> Expect.all checks ())
+            , test "saved preferences default to embeds on, and a saved disable flag round-trips" <|
+                \_ ->
+                    let
+                        saved : UserPreferences.Model
+                        saved =
+                            UserPreferences.init (disabling "disableXEmbeds")
+                    in
+                    Expect.equal
+                        [ UserPreferences.embedDisabled "x" saved
+                        , UserPreferences.embedDisabled "youtube" saved
+                        , UserPreferences.embedDisabled "x" (UserPreferences.init Encode.null)
+                        ]
+                        [ True, False, False ]
             , test "a Rellm post link is still a quote, not an embed" <|
                 \_ ->
                     rendered (loaded "rellm.org" "abc") "rellm.org" (quoting "/post/abc")
