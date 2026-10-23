@@ -25,14 +25,16 @@
 
   // In-app profile route for an `@` mention, or null if it isn't one. Shapes (profile routes are
   // `/:username[@host]`, see `Components.Users.parseFederatedUserId`):
-  //   @user@instance.tld   Mastodon        -> /user@mastodon:instance.tld
   //   @server.tld/user     Rellm server    -> /user@server.tld
+  //   @user@server.tld     Rellm server, Mastodon-style syntax -> /user@server.tld
+  // (Mastodon's own content never reaches here as text: its mentions are `a.mention` links, which
+  // `linkifyMentions` re-points at `/user@mastodon:instance.tld`.)
   //   @handle.tld          Bluesky handle  -> /handle.tld@bluesky:bsky.social
   //   @user                Rellm, this one -> /user
   function mentionHref(mention) {
     var m;
     if ((m = /^([\w.-]+)@([A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+)$/.exec(mention))) {
-      return basePath + "/" + m[1] + "@mastodon:" + m[2];
+      return basePath + "/" + m[1] + "@" + m[2];
     }
     if ((m = /^([A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+)\/([\w.-]+)$/.exec(mention))) {
       return basePath + "/" + m[2] + "@" + m[1];
