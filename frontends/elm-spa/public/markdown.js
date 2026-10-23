@@ -31,24 +31,36 @@
   // `linkifyMentions` re-points at `/user@mastodon:instance.tld`.)
   //   @handle.tld          Bluesky handle  -> /handle.tld@bluesky:bsky.social
   //   @user                Rellm, this one -> /user
+  // Rellm usernames are `[\w.-]+` with Rust's Unicode `\w` (`validate_username`), hence \p{...} here.
+  var W = "\\p{L}\\p{N}\\p{M}_";
+  var USERNAME_RE = new RegExp("^[" + W + ".-]+$", "u");
+  var LOCAL_USERNAME_RE = new RegExp("^[" + W + "-]+$", "u");
+
+  function profilePath(username, host) {
+    return basePath + "/" + encodeURIComponent(username) + (host ? "@" + host : "");
+  }
+
   function mentionHref(mention) {
     var m;
-    if ((m = /^([\w.-]+)@([A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+)$/.exec(mention))) {
-      return basePath + "/" + m[1] + "@" + m[2];
+    if ((m = /^(.+)@([A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+)$/.exec(mention)) && USERNAME_RE.test(m[1])) {
+      return profilePath(m[1], m[2]);
     }
-    if ((m = /^([A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+)\/([\w.-]+)$/.exec(mention))) {
-      return basePath + "/" + m[2] + "@" + m[1];
+    if ((m = /^([A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+)\/(.+)$/.exec(mention)) && USERNAME_RE.test(m[2])) {
+      return profilePath(m[2], m[1]);
     }
     if (/^[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+$/.test(mention)) {
-      return basePath + "/" + mention + "@bluesky:bsky.social";
+      return profilePath(mention, "bluesky:bsky.social");
     }
-    if (/^\w+$/.test(mention)) {
-      return basePath + "/" + mention;
+    if (LOCAL_USERNAME_RE.test(mention)) {
+      return profilePath(mention);
     }
     return null;
   }
 
-  var MENTION_RE = /(^|[^\w@.\/:+-])@([\w.-]+(?:\/[\w.-]+|@[A-Za-z0-9.-]+)?)/g;
+  var MENTION_RE = new RegExp(
+    "(^|[^" + W + "@./:+-])@([" + W + ".-]+(?:/[" + W + ".-]+|@[A-Za-z0-9.-]+)?)",
+    "gu"
+  );
 
   function linkifyText(node) {
     var text = node.nodeValue;
@@ -95,7 +107,7 @@
     // mailto: link; fold the leading `@` back in and make it a profile link instead.
     root.querySelectorAll('a[href^="mailto:"]').forEach(function (a) {
       var prev = a.previousSibling;
-      var href = prev && prev.nodeType === 3 && /(^|[^\w@.\/:+-])@$/.test(prev.nodeValue) && mentionHref(a.textContent);
+      var href = prev && prev.nodeType === 3 && new RegExp("(^|[^" + W + "@./:+-])@$", "u").test(prev.nodeValue) && mentionHref(a.textContent);
       if (href) {
         prev.nodeValue = prev.nodeValue.slice(0, -1);
         a.setAttribute("href", href);
