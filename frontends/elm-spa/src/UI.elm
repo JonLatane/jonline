@@ -1146,7 +1146,7 @@ accountsPanelTabBar shared =
         [ div [ class "accounts-panel-tabs" ]
             (List.filterMap identity
                 [ Just (accountsPanelTab shared AccountsPanel.TabAccountsAndServers "Accounts & Servers" False)
-                , Just (accountsPanelTab shared AccountsPanel.TabUserPreferences "Preferences" False)
+                , Just (accountsPanelTab shared AccountsPanel.TabUserPreferences "⚙️" True)
                 , if debugCount shared > 0 then
                     Just (accountsPanelTab shared AccountsPanel.TabDebug "🐛" True)
 
