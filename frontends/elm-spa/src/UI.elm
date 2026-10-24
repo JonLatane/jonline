@@ -22,7 +22,6 @@ import Proto.Rellm.WebUserInterface exposing (WebUserInterface(..))
 import Set
 import Shared
 import Shared.AccountsPanel as AccountsPanel
-import Shared.AccountsPanel.AdminTab as AdminTab
 import Shared.AccountsPanel.BlueskyAccounts exposing (BlueskyAccount)
 import Shared.AccountsPanel.BlueskyAppViews as BlueskyAppViews exposing (BlueskyAppView)
 import Shared.AccountsPanel.DebugTab as DebugTab
@@ -46,6 +45,7 @@ import Shared.MessagingPanel as MessagingPanel
 import Shared.MyMediaPanel as MyMediaPanel
 import Shared.StarredPanel as StarredPanel
 import Shared.Time as SharedTime
+import Shared.UserPreferences as UserPreferences
 import UI.Classes exposing (classes, hostnameToCSSClass, openClosedClass)
 import UI.CustomCssStylesheet as CustomCssStylesheet
 import UI.CustomNav as CustomNav
@@ -1127,15 +1127,15 @@ accountsPanel shared currentRoute =
             AccountsPanel.TabAccountsAndServers ->
                 accountsAndServersTab shared currentRoute
 
+            AccountsPanel.TabUserPreferences ->
+                userPreferencesTab shared
+
             AccountsPanel.TabDebug ->
                 debugTab shared
-
-            AccountsPanel.TabAdmin ->
-                adminTab shared
         ]
 
 
-{-| The tab bar itself: the "Accounts and Servers"/Settings/Admin tabs (see
+{-| The tab bar itself: the "Accounts and Servers"/Preferences/Debug tabs (see
 `accountsPanelTab`) on the left, the brightness toggle -- now alone since the
 "About" info button moved out to the header nav (see `aboutLink`) -- on the
 right.
@@ -1146,13 +1146,9 @@ accountsPanelTabBar shared =
         [ div [ class "accounts-panel-tabs" ]
             (List.filterMap identity
                 [ Just (accountsPanelTab shared AccountsPanel.TabAccountsAndServers "Accounts & Servers" False)
+                , Just (accountsPanelTab shared AccountsPanel.TabUserPreferences "Preferences" False)
                 , if debugCount shared > 0 then
                     Just (accountsPanelTab shared AccountsPanel.TabDebug "🐛" True)
-
-                  else
-                    Nothing
-                , if AccountsPanel.hasAdminAccount shared.accounts then
-                    Just (accountsPanelTab shared AccountsPanel.TabAdmin "🛡️" True)
 
                   else
                     Nothing
@@ -1202,7 +1198,7 @@ debugCount shared =
 
 {-| `shared.accounts.activeTab`, falling back to `TabAccountsAndServers`
 whenever the selected tab isn't actually visible right now (e.g. the signed-in
-admin account was just removed while the Admin tab was showing) -- so the
+admin account was just removed while the Debug tab was showing) -- so the
 panel never ends up rendering a tab's content with no matching tab button
 selected.
 -}
@@ -1216,12 +1212,8 @@ activeTab shared =
             else
                 AccountsPanel.TabAccountsAndServers
 
-        AccountsPanel.TabAdmin ->
-            if AccountsPanel.hasAdminAccount shared.accounts then
-                AccountsPanel.TabAdmin
-
-            else
-                AccountsPanel.TabAccountsAndServers
+        AccountsPanel.TabUserPreferences ->
+            AccountsPanel.TabUserPreferences
 
         AccountsPanel.TabAccountsAndServers ->
             AccountsPanel.TabAccountsAndServers
@@ -1261,6 +1253,31 @@ accountsAndServersTab shared currentRoute =
         ]
 
 
+{-| The Accounts Panel's "Preferences" tab -- shown to everyone, signed in or not. One "Embed ... Links" switch
+per `SocialMediaEmbed` network, backed by `Shared.UserPreferences`'s `disable<Network>Embeds` (so persisted, and
+the switch reads inverted: on = embeds shown). See `Components.QuotedLink.socialEmbedView`.
+-}
+userPreferencesTab : Shared.Model -> Html Shared.Msg
+userPreferencesTab shared =
+    div [ class "accounts-panel-tab-content" ]
+        [ embedSwitchRow shared.userPreferences.disableFacebookEmbeds "Embed Facebook Links" UserPreferences.SetDisableFacebookEmbeds
+        , embedSwitchRow shared.userPreferences.disableInstagramEmbeds "Embed Instagram Links" UserPreferences.SetDisableInstagramEmbeds
+        , embedSwitchRow shared.userPreferences.disableLinkedInEmbeds "Embed LinkedIn Links" UserPreferences.SetDisableLinkedInEmbeds
+        , embedSwitchRow shared.userPreferences.disablePinterestEmbeds "Embed Pinterest Links" UserPreferences.SetDisablePinterestEmbeds
+        , embedSwitchRow shared.userPreferences.disableTikTokEmbeds "Embed TikTok Links" UserPreferences.SetDisableTikTokEmbeds
+        , embedSwitchRow shared.userPreferences.disableXEmbeds "Embed X (Twitter) Links" UserPreferences.SetDisableXEmbeds
+        , embedSwitchRow shared.userPreferences.disableYouTubeEmbeds "Embed YouTube Links" UserPreferences.SetDisableYouTubeEmbeds
+        ]
+
+
+embedSwitchRow : Bool -> String -> (Bool -> UserPreferences.Msg) -> Html Shared.Msg
+embedSwitchRow disabled labelText toMsg =
+    label [ class "admin-switch-row" ]
+        [ switchInput (not disabled) False (Shared.UserPreferencesMsg (toMsg (not disabled)))
+        , span [] [ text labelText ]
+        ]
+
+
 {-| The "switch main server by tapping servers" (see `serverChip`), "Sign
 into other hosts with username/password" (see `rellmAddAccountServerForm`), "Show
 all event layouts" (see `Components.Pages.EventsPage.modeButtonsView`), and
@@ -1295,25 +1312,6 @@ debugTab shared =
             ]
         , div [ class "debug-tab-note" ]
             [ text "Posts Mastodon flags \"sensitive\", or Bluesky puts any content label on (porn, sexual, nudity, graphic-media, ...), are hidden from feeds by default. Shown, they carry a notice and a click to view the media." ]
-        ]
-
-
-{-| The per-admin-Account sections (see `adminAccountPanel`) from the old
-standalone Admin Panel.
--}
-adminTab : Shared.Model -> Html Shared.Msg
-adminTab shared =
-    let
-        adminAccounts : List RellmAccount
-        adminAccounts =
-            List.filter RellmAccounts.isAdmin shared.accounts.accounts
-    in
-    div [ class "accounts-panel-tab-content" ]
-        [ if List.isEmpty adminAccounts then
-            text ""
-
-          else
-            div [ class "admin-accounts-list" ] (List.map (adminAccountPanel shared) adminAccounts)
         ]
 
 
@@ -4665,94 +4663,6 @@ messagingPanel shared =
     Html.map Shared.MessagingPanelMsg (MessagingPanel.view shared.time shared.accounts shared.panels.messagingPanel)
 
 
-{-| A collapsible panel, one per admin-capable signed-in account, for setting
-which frontend (Flutter/React/Elm) that account's server serves at its root
-(`ServerInfo.webUserInterface`, via `AccountsPanel.SetWebUserInterfaceClicked`).
-Shows that account's server (hostname + name) above its username/avatar so
-it's clear which admin identity a change would be made as, since the RPC is
-authenticated per-account rather than "whichever account is currently
-active".
--}
-adminAccountPanel : Shared.Model -> RellmAccount -> Html Shared.Msg
-adminAccountPanel shared account =
-    let
-        id : String
-        id =
-            RellmAccounts.rellmAccountId account
-
-        isOpen : Bool
-        isOpen =
-            AdminTab.isAccountPanelOpen id shared.accounts.adminTab
-
-        adminServer : Maybe RellmServer
-        adminServer =
-            findServer shared account.server
-
-        adminServerName : String
-        adminServerName =
-            adminServer
-                |> Maybe.map (RellmServers.brandingOf >> .name)
-                |> Maybe.withDefault ""
-
-        adminServerLogo : Html Shared.Msg
-        adminServerLogo =
-            case adminServer of
-                Just s ->
-                    let
-                        branding : Branding
-                        branding =
-                            RellmServers.brandingOf s
-                    in
-                    imageOrInitial [ "admin-account-server-logo" ] branding.name branding.logoUrl
-
-                Nothing ->
-                    text ""
-    in
-    div [ class "admin-account-panel" ]
-        [ button
-            [ class "admin-account-toggle"
-            , onClick (Shared.AccountsPanelMsg (AccountsPanel.AdminTabMsg (AdminTab.ToggleAccountPanel id)))
-            ]
-            [ div [ class "admin-account-toggle-content" ]
-                [ div [ class "admin-account-server-row" ]
-                    [ adminServerLogo
-                    , span [ class "admin-account-server-host" ] [ text account.server ]
-                    , span [ class "admin-account-server-name" ] [ text adminServerName ]
-                    ]
-                , div [ class "admin-account-identity-row" ]
-                    [ accountsMenuAvatar shared account
-                    , span [ class "admin-account-username" ] [ text (RellmAccounts.rellmAccountDisplayName account) ]
-                    ]
-                ]
-            , span
-                [ classes
-                    ("admin-account-chevron"
-                        :: (if isOpen then
-                                [ "open" ]
-
-                            else
-                                []
-                           )
-                    )
-                ]
-                [ text "▾" ]
-            ]
-        , if isOpen then
-            let
-                currentUi : WebUserInterface
-                currentUi =
-                    adminServer
-                        |> Maybe.map RellmServers.rellmServerInfoOf
-                        |> Maybe.andThen .webUserInterface
-                        |> Maybe.withDefault REACTTAMAGUI
-            in
-            webUiToggleRow id account.server currentUi
-
-          else
-            text ""
-        ]
-
-
 {-| The "New Post" composer (see `Shared.CreateNewPanel`) -- toggled from its
 own nav icon (`newPostToggle`, below), like the Accounts/Starred panels,
 rather than opened contextually. Mounted directly in `layout` (not inside
@@ -4765,7 +4675,7 @@ it (see `create_new_panel.css`'s own z-index comment).
 -}
 createNewPanel : Shared.Model -> Html Shared.Msg
 createNewPanel shared =
-    Html.map Shared.CreateNewPanelMsg (CreateNewPanel.view shared.time shared.basePath shared.accounts shared.quoteLinks shared.panels.createNewPanel)
+    Html.map Shared.CreateNewPanelMsg (CreateNewPanel.view shared.time shared.basePath shared.accounts shared.quoteLinks shared.userPreferences shared.panels.createNewPanel)
 
 
 {-| The app-wide Markdown editor (see `Shared.MarkdownPanel`) -- unlike the

@@ -3,8 +3,7 @@ module Components.Pages.ServerInformationPage.ThemeTab exposing (Model, Msg, app
 {-| The Theme tab of `Components.Pages.ServerInformationPage` -- the server's square logo and its
 Primary/Navigation colors (editable by an admin, via `AccountsPanel.updateServerConfig`'s own
 "fetch fresh copy, then write" dance), the Default Web UI picker, which directly reuses
-`UI.webUiToggleRow` -- the same control shown per-admin-account in the Accounts Panel's own
-`UI.adminAccountPanel` -- rather than duplicating it, plus (at the bottom) the "Navigation Tabs"
+`UI.webUiToggleRow`, plus (at the bottom) the "Navigation Tabs"
 section, wired in as a sub-component -- see `Components.Pages.ServerInformationPage.ThemeTab.CustomTabsConfiguration`'s
 own module doc for why that one's split out -- and, below that, the "Custom CSS" section
 (`Components.Pages.ServerInformationPage.ThemeTab.CustomCssConfiguration`, likewise a sub-component).

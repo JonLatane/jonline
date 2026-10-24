@@ -20,8 +20,8 @@ module Shared exposing
 
 {-| The app-wide state: composes `Shared.AccountsPanel` (known servers,
 signed-into accounts, login/add-server forms, and -- via
-`Shared.AccountsPanel.DebugTab`/`Shared.AccountsPanel.AdminTab` -- the Accounts
-Panel's Debug/Admin tabs, shown when any signed-in account has `ADMIN`), plus the
+`Shared.AccountsPanel.DebugTab` -- the Accounts
+Panel's Debug tab, shown when any signed-in account has `ADMIN`), plus the
 appearance (dark/light/auto) setting that doesn't belong to it.
 -}
 

@@ -68,6 +68,7 @@ import Shared.MyMediaPanel as MyMediaPanel
 import Shared.QuoteLinks as QuoteLinks
 import Shared.Federation.RellmLinks as RellmLinks
 import Shared.Time as SharedTime
+import Shared.UserPreferences as UserPreferences
 import Task exposing (Task)
 import Time
 import TimeZone
@@ -729,8 +730,8 @@ saveTask browserTimeZone accountsPanelModel resolved model =
 `hostnameToCSSClass` (see module doc) so its Save button/mode chrome matches
 the server the draft will actually be posted to.
 -}
-view : SharedTime.Model -> String -> AccountsPanel.Model -> QuoteLinks.Model -> Model -> Html Msg
-view time basePath accountsPanelModel quotes model =
+view : SharedTime.Model -> String -> AccountsPanel.Model -> QuoteLinks.Model -> UserPreferences.Model -> Model -> Html Msg
+view time basePath accountsPanelModel quotes userPreferences model =
     let
         host : String
         host =
@@ -788,7 +789,7 @@ view time basePath accountsPanelModel quotes model =
                 , case shownQuote model of
                     -- A quote takes the place of the link: a post has the one `link`, and this is it.
                     Just quotedLink ->
-                        [ quotedPostField time basePath accountsPanelModel quotes quotedLink ]
+                        [ quotedPostField time basePath accountsPanelModel quotes userPreferences quotedLink ]
 
                     Nothing ->
                         [ linkField model ]
@@ -958,8 +959,8 @@ drop it (`QuotedPostCleared`), and below them the same embedded card the quoting
 can't be seen, or its server isn't reachable -- so the X is never the only thing there. The card's own link
 opens the quoted post's page; the draft survives that (see module doc).
 -}
-quotedPostField : SharedTime.Model -> String -> AccountsPanel.Model -> QuoteLinks.Model -> String -> Html Msg
-quotedPostField time basePath accountsPanelModel quotes quotedLink =
+quotedPostField : SharedTime.Model -> String -> AccountsPanel.Model -> QuoteLinks.Model -> UserPreferences.Model -> String -> Html Msg
+quotedPostField time basePath accountsPanelModel quotes userPreferences quotedLink =
     div [ class "create-new-panel-field" ]
         [ div [ class "create-new-panel-field-header" ]
             [ label [ class "create-new-panel-label" ] [ text "Quoting" ]
@@ -979,6 +980,7 @@ quotedPostField time basePath accountsPanelModel quotes quotedLink =
             , quotes = quotes
             , mediaPlayState = MediaRenderer.init
             , onMediaPlayClicked = \_ -> NoOp
+            , userPreferences = userPreferences
             , onAddServerClicked = AddQuotedServerClicked
             , onEnableServerClicked = EnableQuotedServerClicked
             , noOp = NoOp
