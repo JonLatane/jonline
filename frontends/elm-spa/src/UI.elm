@@ -1145,10 +1145,10 @@ accountsPanelTabBar shared =
     div [ class "accounts-panel-tab-bar" ]
         [ div [ class "accounts-panel-tabs" ]
             (List.filterMap identity
-                [ Just (accountsPanelTab shared AccountsPanel.TabAccountsAndServers "Accounts & Servers" False)
-                , Just (accountsPanelTab shared AccountsPanel.TabUserPreferences "⚙️" True)
+                [ Just (accountsPanelTab shared AccountsPanel.TabAccountsAndServers "Accounts & Servers" "Accounts & Servers" False)
+                , Just (accountsPanelTab shared AccountsPanel.TabUserPreferences "⚙️" "Preferences" True)
                 , if debugCount shared > 0 then
-                    Just (accountsPanelTab shared AccountsPanel.TabDebug "🐛" True)
+                    Just (accountsPanelTab shared AccountsPanel.TabDebug "🐛" "Debug" True)
 
                   else
                     Nothing
@@ -1158,8 +1158,8 @@ accountsPanelTabBar shared =
         ]
 
 
-accountsPanelTab : Shared.Model -> AccountsPanel.Tab -> String -> Bool -> Html Shared.Msg
-accountsPanelTab shared tab label isNarrow =
+accountsPanelTab : Shared.Model -> AccountsPanel.Tab -> String -> String -> Bool -> Html Shared.Msg
+accountsPanelTab shared tab label tooltip isNarrow =
     button
         [ classes
             ("accounts-panel-tab"
@@ -1176,6 +1176,8 @@ accountsPanelTab shared tab label isNarrow =
                         []
                    )
             )
+        , title tooltip
+        , attribute "aria-label" tooltip
         , onClick (Shared.AccountsPanelMsg (AccountsPanel.TabSelected tab))
         ]
         [ text label ]
